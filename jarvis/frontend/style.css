@@ -1,0 +1,87 @@
+:root {
+    --bg: #07090f;
+    --text: #d8e1ee;
+    --muted: #6b7a90;
+    --accent: #4aa8ff;
+    --idle-a: #1a3a5c;  --idle-b: #0b1624;
+    --listen-a: #2f7fd6; --listen-b: #143459;
+    --think-a: #e0b43a; --think-b: #7a5a10;
+    --speak-a: #45d4ff; --speak-b: #0e5a7a;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: radial-gradient(ellipse at center, #0d1422 0%, var(--bg) 70%);
+    color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+}
+
+#app {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+#orb {
+    width: 160px;
+    height: 160px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    background: radial-gradient(circle at 40% 38%, var(--a), var(--b));
+    box-shadow: 0 0 50px color-mix(in srgb, var(--a) 50%, transparent),
+                0 0 120px color-mix(in srgb, var(--a) 15%, transparent);
+    transition: background 0.4s, box-shadow 0.4s;
+}
+#orb:focus-visible { outline: 2px solid var(--accent); outline-offset: 8px; }
+
+#orb.idle      { --a: var(--idle-a);   --b: var(--idle-b); }
+#orb.listening { --a: var(--listen-a); --b: var(--listen-b); animation: pulse 1.6s ease-in-out infinite; }
+#orb.thinking  { --a: var(--think-a);  --b: var(--think-b);  animation: pulse 0.8s ease-in-out infinite; }
+#orb.speaking  { --a: var(--speak-a);  --b: var(--speak-b);  animation: pulse 0.5s ease-in-out infinite; }
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.07); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #orb { animation: none !important; }
+}
+
+#status {
+    min-height: 1.2em;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+#transcript {
+    width: 100%;
+    max-height: 40vh;
+    overflow-y: auto;
+    font-size: 15px;
+    line-height: 1.5;
+}
+#transcript .user   { color: var(--muted); margin-bottom: 6px; }
+#transcript .jarvis { color: var(--accent); margin-bottom: 14px; }
+
+#type-form { width: 100%; }
+#type-input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #1f2b3d;
+    background: #0c121c;
+    color: var(--text);
+    font-size: 15px;
+}
+#type-input:focus { outline: none; border-color: var(--accent); }

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S.</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <main id="app">
+        <button id="orb" class="idle" aria-label="Start or pause listening"></button>
+        <p id="status" aria-live="polite">Click the orb to wake Jarvis.</p>
+        <div id="transcript" aria-live="polite"></div>
+        <form id="type-form" autocomplete="off">
+            <input id="type-input" type="text" placeholder="…or type to Jarvis" aria-label="Message to Jarvis">
+        </form>
+    </main>
+    <script src="/static/main.js"></script>
+</body>
+</html>
