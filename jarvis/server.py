@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import tts
-from brain import Brain
+from brain import Brain, persona
 from config import ROOT, settings
 
 FRONTEND = ROOT / "frontend"
@@ -44,6 +44,7 @@ async def client_config():
     return {
         "speechLang": settings.speech_lang,
         "language": settings.language,
+        "name": persona(settings)["name"],
         "serverVoice": bool(settings.elevenlabs_api_key),
     }
 

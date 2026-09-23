@@ -5,12 +5,12 @@ const transcript = document.getElementById('transcript');
 const typeForm = document.getElementById('type-form');
 const typeInput = document.getElementById('type-input');
 
-let config = { speechLang: 'en-GB', serverVoice: false };
+let config = { speechLang: 'en-GB', serverVoice: false, name: 'Jarvis' };
 
 // UI text by language code; anything missing falls back to English.
 const STRINGS = {
     en: {
-        wake: 'Click the orb to wake Jarvis.',
+        wake: 'Click the orb to wake {name}.',
         reconnecting: 'Connection lost. Reconnecting…',
         thinking: 'Thinking…',
         listening: 'Listening…',
@@ -18,11 +18,11 @@ const STRINGS = {
         micBlocked: 'Microphone blocked. You can still type below.',
         noRecognition: 'Voice input needs Chrome or Edge. Type below instead.',
         noVoice: 'Your browser has no voice for this language. Set ELEVENLABS_API_KEY to hear replies.',
-        placeholder: '…or type to Jarvis',
+        placeholder: '…or type to {name}',
         you: 'You',
     },
     af: {
-        wake: 'Klik op die bol om Jarvis wakker te maak.',
+        wake: 'Klik op die bol om {name} wakker te maak.',
         reconnecting: 'Verbinding verloor. Koppel weer…',
         thinking: 'Dink…',
         listening: 'Luister…',
@@ -30,24 +30,29 @@ const STRINGS = {
         micBlocked: 'Mikrofoon geblokkeer. Jy kan steeds hieronder tik.',
         noRecognition: 'Steminvoer werk net in Chrome of Edge. Tik eerder hieronder.',
         noVoice: 'Jou blaaier het geen Afrikaanse stem nie. Stel ELEVENLABS_API_KEY om antwoorde te hoor.',
-        placeholder: '…of tik vir Jarvis',
+        placeholder: '…of tik vir {name}',
         you: 'Jy',
     },
 };
 
 function t(key) {
     const lang = config.speechLang.split('-')[0].toLowerCase();
-    return (STRINGS[lang] || STRINGS.en)[key] || STRINGS.en[key];
+    const text = (STRINGS[lang] || STRINGS.en)[key] || STRINGS.en[key];
+    return text.replace('{name}', config.name);
 }
 
-// Best browser voice for the configured language: exact match (af-ZA), then same language (af).
+// Best browser voice for the configured language: exact match (en-GB), then same language (en),
+// preferring a male voice within each since both butlers are men.
+const MALE_VOICE = /\b(male|daniel|george|arthur|ryan|oliver|thomas|guy)\b/i;
+
 function pickVoice() {
     const want = config.speechLang.toLowerCase().replace('_', '-');
-    const voices = speechSynthesis.getVoices();
     const norm = (v) => v.lang.toLowerCase().replace('_', '-');
-    return voices.find((v) => norm(v) === want)
-        || voices.find((v) => norm(v).split('-')[0] === want.split('-')[0])
-        || null;
+    const voices = speechSynthesis.getVoices();
+    const exact = voices.filter((v) => norm(v) === want);
+    const sameLang = voices.filter((v) => norm(v).split('-')[0] === want.split('-')[0]);
+    const male = (list) => list.find((v) => MALE_VOICE.test(v.name) && !/female/i.test(v.name));
+    return male(exact) || exact[0] || male(sameLang) || sameLang[0] || null;
 }
 let ws = null;
 let started = false;   // first click wakes Jarvis (and unlocks audio playback)
@@ -69,7 +74,7 @@ function setState(state, text = '') {
 function addLine(who, text) {
     const div = document.createElement('div');
     div.className = who;
-    div.textContent = `${who === 'user' ? t('you') : 'Jarvis'}: ${text}`;
+    div.textContent = `${who === 'user' ? t('you') : config.name}: ${text}`;
     transcript.appendChild(div);
     transcript.scrollTop = transcript.scrollHeight;
 }
@@ -230,7 +235,9 @@ typeForm.addEventListener('submit', (event) => {
 
 function applyLanguage() {
     document.documentElement.lang = config.speechLang;
+    document.title = config.name === 'Jarvis' ? 'J.A.R.V.I.S.' : config.name;
     typeInput.placeholder = t('placeholder');
+    typeInput.setAttribute('aria-label', `Message to ${config.name}`);
     if (!started) statusEl.textContent = t('wake');
 }
 

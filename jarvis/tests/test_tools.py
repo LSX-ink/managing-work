@@ -50,7 +50,8 @@ def test_websocket_rejects_other_origins(monkeypatch):
                 ws.receive_json()
         with client.websocket_connect("/ws", headers={"origin": "http://testserver"}):
             pass
-        assert client.get("/config").json()["speechLang"]
+        config = client.get("/config").json()
+        assert config["speechLang"] and config["name"]
 
 
 @pytest.mark.parametrize(

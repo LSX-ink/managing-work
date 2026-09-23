@@ -27,6 +27,7 @@ class Settings:
     tasks_file: str = os.getenv("JARVIS_TASKS_FILE", "")
     speech_lang: str = os.getenv("JARVIS_SPEECH_LANG", "en-GB")
     language: str = os.getenv("JARVIS_LANGUAGE", "English")
+    persona: str = os.getenv("JARVIS_PERSONA", "jarvis").strip().lower()
     elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
     elevenlabs_model: str = os.getenv("ELEVENLABS_MODEL", "")  # empty: picked from speech_lang

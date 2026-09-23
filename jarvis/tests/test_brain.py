@@ -151,3 +151,11 @@ async def test_error_line_is_in_the_configured_language():
     said = await run(b, "Hallo")
     assert said == [brain.LINES["af"]["error"]]
     assert b.messages == []
+
+
+def test_alfred_persona_changes_the_prompt():
+    alfred = replace(SETTINGS, persona="alfred")
+    prompt = brain.system_prompt(alfred)
+    assert prompt.startswith("You are Alfred")
+    assert brain.persona(alfred)["name"] == "Alfred"
+    assert brain.persona(replace(SETTINGS, persona="nobody"))["name"] == "Jarvis"

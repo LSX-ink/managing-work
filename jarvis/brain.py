@@ -41,12 +41,36 @@ _NO_EFFORT = ("claude-haiku-4-5", "claude-sonnet-4-5")
 _SERVER_FALLBACK = ("claude-opus-5", "claude-fable-5")
 
 
+PERSONAS = {
+    "jarvis": {
+        "name": "Jarvis",
+        "intro": "You are J.A.R.V.I.S., a personal voice assistant in the spirit of Tony Stark's AI butler.",
+        "personality": "dry, understated British wit; unfailingly loyal and polite, never rude. You may gently "
+                       "tease an obvious question or a questionable decision, but always help.",
+    },
+    "alfred": {
+        "name": "Alfred",
+        "intro": "You are Alfred, a personal voice assistant in the spirit of Alfred Pennyworth, "
+                 "the Wayne family's butler from Batman.",
+        "personality": "a warm, dignified, old-school English butler. Impeccable manners, quiet devotion and a "
+                       "gently fatherly concern for the user's wellbeing: you notice late nights, skipped meals "
+                       "and overwork, and say so kindly. Dry, understated humour and the occasional polite "
+                       "reproach, but always help. Speak in your own words rather than quoting the films.",
+    },
+}
+
+
+def persona(settings: Settings) -> dict:
+    return PERSONAS.get(settings.persona, PERSONAS["jarvis"])
+
+
 def system_prompt(settings: Settings) -> str:
+    p = persona(settings)
     who = f"Your principal is {settings.user_name}. " if settings.user_name else ""
     home = f"Their home city is {settings.city}. " if settings.city else ""
-    return f"""You are J.A.R.V.I.S., a personal voice assistant in the spirit of Tony Stark's AI butler. {who}{home}Address them as "{settings.user_address}".
+    return f"""{p["intro"]} {who}{home}Address them as "{settings.user_address}".
 
-Personality: dry, understated British wit; unfailingly loyal and polite, never rude. You may gently tease an obvious question or a questionable decision, but always help.
+Personality: {p["personality"]}
 
 Everything you write is read aloud by a text-to-speech voice, so:
 - Keep replies to one to three short sentences unless asked for more detail.
