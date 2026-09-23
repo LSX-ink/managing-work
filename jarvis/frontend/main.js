@@ -6,6 +6,49 @@ const typeForm = document.getElementById('type-form');
 const typeInput = document.getElementById('type-input');
 
 let config = { speechLang: 'en-GB', serverVoice: false };
+
+// UI text by language code; anything missing falls back to English.
+const STRINGS = {
+    en: {
+        wake: 'Click the orb to wake Jarvis.',
+        reconnecting: 'Connection lost. Reconnecting…',
+        thinking: 'Thinking…',
+        listening: 'Listening…',
+        paused: 'Paused. Click the orb to resume.',
+        micBlocked: 'Microphone blocked. You can still type below.',
+        noRecognition: 'Voice input needs Chrome or Edge. Type below instead.',
+        noVoice: 'Your browser has no voice for this language. Set ELEVENLABS_API_KEY to hear replies.',
+        placeholder: '…or type to Jarvis',
+        you: 'You',
+    },
+    af: {
+        wake: 'Klik op die bol om Jarvis wakker te maak.',
+        reconnecting: 'Verbinding verloor. Koppel weer…',
+        thinking: 'Dink…',
+        listening: 'Luister…',
+        paused: 'Onderbreek. Klik op die bol om voort te gaan.',
+        micBlocked: 'Mikrofoon geblokkeer. Jy kan steeds hieronder tik.',
+        noRecognition: 'Steminvoer werk net in Chrome of Edge. Tik eerder hieronder.',
+        noVoice: 'Jou blaaier het geen Afrikaanse stem nie. Stel ELEVENLABS_API_KEY om antwoorde te hoor.',
+        placeholder: '…of tik vir Jarvis',
+        you: 'Jy',
+    },
+};
+
+function t(key) {
+    const lang = config.speechLang.split('-')[0].toLowerCase();
+    return (STRINGS[lang] || STRINGS.en)[key] || STRINGS.en[key];
+}
+
+// Best browser voice for the configured language: exact match (af-ZA), then same language (af).
+function pickVoice() {
+    const want = config.speechLang.toLowerCase().replace('_', '-');
+    const voices = speechSynthesis.getVoices();
+    const norm = (v) => v.lang.toLowerCase().replace('_', '-');
+    return voices.find((v) => norm(v) === want)
+        || voices.find((v) => norm(v).split('-')[0] === want.split('-')[0])
+        || null;
+}
 let ws = null;
 let started = false;   // first click wakes Jarvis (and unlocks audio playback)
 let paused = false;    // user paused the microphone
@@ -26,7 +69,7 @@ function setState(state, text = '') {
 function addLine(who, text) {
     const div = document.createElement('div');
     div.className = who;
-    div.textContent = `${who === 'user' ? 'You' : 'Jarvis'}: ${text}`;
+    div.textContent = `${who === 'user' ? t('you') : 'Jarvis'}: ${text}`;
     transcript.appendChild(div);
     transcript.scrollTop = transcript.scrollHeight;
 }
@@ -50,7 +93,7 @@ function connect(onOpen) {
     };
     ws.onclose = () => {
         busy = false;
-        setState('idle', 'Connection lost. Reconnecting…');
+        setState('idle', t('reconnecting'));
         setTimeout(() => connect(() => { setState('idle', ''); maybeListen(); }), 2000);
     };
 }
@@ -59,7 +102,7 @@ function send(payload) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     busy = true;
     stopListening();
-    setState('thinking', 'Thinking…');
+    setState('thinking', t('thinking'));
     ws.send(JSON.stringify(payload));
 }
 
@@ -87,8 +130,12 @@ function playNext() {
     } else if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(msg.text);
         utterance.lang = config.speechLang;
-        const voice = speechSynthesis.getVoices().find((v) => v.lang === config.speechLang);
-        if (voice) utterance.voice = voice;
+        const voice = pickVoice();
+        if (voice) {
+            utterance.voice = voice;
+        } else if (speechSynthesis.getVoices().length) {
+            statusEl.textContent = t('noVoice');
+        }
         utterance.onend = utterance.onerror = finish;
         speechSynthesis.speak(utterance);
     } else {
@@ -117,7 +164,7 @@ if (Recognition) {
     recognition.onerror = (event) => {
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
             paused = true;
-            setState('idle', 'Microphone blocked. You can still type below.');
+            setState('idle', t('micBlocked'));
         }
     };
 }
@@ -125,14 +172,14 @@ if (Recognition) {
 function maybeListen() {
     if (!started || paused || busy || speaking || queue.length || listening) return;
     if (!recognition) {
-        setState('idle', 'Voice input needs Chrome or Edge. Type below instead.');
+        setState('idle', t('noRecognition'));
         return;
     }
     try {
         recognition.lang = config.speechLang;
         recognition.start();
         listening = true;
-        setState('listening', 'Listening…');
+        setState('listening', t('listening'));
     } catch (e) { /* already started */ }
 }
 
@@ -161,7 +208,7 @@ orb.addEventListener('click', () => {
     paused = !paused;
     if (paused) {
         stopListening();
-        setState('idle', 'Paused. Click the orb to resume.');
+        setState('idle', t('paused'));
     } else {
         maybeListen();
     }
@@ -181,4 +228,12 @@ typeForm.addEventListener('submit', (event) => {
     send({ text });
 });
 
-fetch('/config').then((r) => r.json()).then((c) => { config = c; }).catch(() => {});
+function applyLanguage() {
+    document.documentElement.lang = config.speechLang;
+    typeInput.placeholder = t('placeholder');
+    if (!started) statusEl.textContent = t('wake');
+}
+
+fetch('/config').then((r) => r.json()).then((c) => { config = c; applyLanguage(); }).catch(() => {});
+// Chrome loads its voice list asynchronously; touching it early starts the load.
+if ('speechSynthesis' in window) speechSynthesis.getVoices();

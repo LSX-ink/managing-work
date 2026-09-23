@@ -83,7 +83,7 @@ async def test_refusal_drops_the_turn_from_history():
     await run(b, "Hi")
     said = await run(b, "Something declined")
 
-    assert said == [brain.REFUSAL_LINE]
+    assert said == [brain.LINES["en"]["refusal"]]
     assert len(b.messages) == 2  # only the first exchange remains
 
 
@@ -130,3 +130,24 @@ def test_screen_and_web_tools_can_be_disabled():
     opts = request_options(replace(SETTINGS, enable_screen=False, enable_web=False))
     names = {t["name"] for t in opts["tools"]}
     assert names == {"get_weather", "get_tasks", "open_url"}
+
+
+def test_afrikaans_prompt_and_fixed_lines():
+    af = replace(SETTINGS, speech_lang="af-ZA", language="Afrikaans")
+    assert "Always reply in Afrikaans" in brain.system_prompt(af)
+    assert brain.line(af, "error") == brain.LINES["af"]["error"]
+    assert brain.line(replace(SETTINGS, speech_lang="xx-YY"), "error") == brain.LINES["en"]["error"]
+
+
+async def test_error_line_is_in_the_configured_language():
+    class Broken:
+        beta = SimpleNamespace(messages=SimpleNamespace(create=None))
+
+    async def boom(**kwargs):
+        raise RuntimeError("no key")
+
+    Broken.beta.messages.create = boom
+    b = Brain(replace(SETTINGS, speech_lang="af-ZA"), Broken(), http=None)
+    said = await run(b, "Hallo")
+    assert said == [brain.LINES["af"]["error"]]
+    assert b.messages == []

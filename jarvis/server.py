@@ -41,7 +41,11 @@ async def index():
 
 @app.get("/config")
 async def client_config():
-    return {"speechLang": settings.speech_lang, "serverVoice": bool(settings.elevenlabs_api_key)}
+    return {
+        "speechLang": settings.speech_lang,
+        "language": settings.language,
+        "serverVoice": bool(settings.elevenlabs_api_key),
+    }
 
 
 def same_origin(ws: WebSocket) -> bool:
