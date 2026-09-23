@@ -7,7 +7,7 @@ Inspired by [Julian-Ivanov/jarvis-voice-assistant](https://github.com/Julian-Iva
 | | Original | This version |
 |---|---|---|
 | Platform | Windows only (PowerShell, Win32) | Windows, macOS, Linux |
-| Language | German | English (any language via `JARVIS_SPEECH_LANG`) |
+| Language | German | English or Afrikaans, and other languages through settings |
 | Actions | `[ACTION:...]` tags parsed out of the reply with a regex | Claude's native tool use, with parallel calls and error results |
 | Web search | Playwright scraping DuckDuckGo | Claude's server-side `web_search` / `web_fetch`, so no browser automation is needed |
 | Voice | ElevenLabs required | ElevenLabs optional; otherwise the browser's own voice |
@@ -66,14 +66,51 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `JARVIS_EFFORT` | `low` | Thinking effort. `low` keeps voice replies fast. |
 | `ELEVENLABS_API_KEY` | (empty) | Optional, for a better voice. When empty, the browser's voice is used. |
 | `ELEVENLABS_VOICE_ID` | George | Any ElevenLabs voice ID |
+| `ELEVENLABS_MODEL` | (auto) | Empty picks `eleven_turbo_v2_5` for languages it speaks, otherwise `eleven_v3` |
+| `JARVIS_PERSONA` | `jarvis` | `jarvis` (Iron Man's AI) or `alfred` (Batman's butler) |
 | `JARVIS_USER_NAME` / `JARVIS_USER_ADDRESS` | (empty) / `sir` | How Jarvis addresses you |
 | `JARVIS_CITY` | (empty) | Home city for the weather |
 | `JARVIS_TASKS_FILE` | (empty) | A Markdown file with `- [ ] task` lines, such as an Obsidian note |
-| `JARVIS_SPEECH_LANG` | `en-GB` | Speech recognition and browser voice language |
+| `JARVIS_SPEECH_LANG` | `en-GB` | Language code for speech recognition, the voice and the page text |
+| `JARVIS_LANGUAGE` | `English` | The language Jarvis replies in |
 | `JARVIS_ENABLE_WEB` / `JARVIS_ENABLE_SCREEN` | `true` | Turn web search or screen viewing off |
 | `JARVIS_HOST` / `JARVIS_PORT` | `127.0.0.1` / `8340` | Where the server listens |
 
 On Opus 5 the server turns on the API's `fallbacks: "default"`. If a safety classifier declines a request, it is retried on a suitable model instead of failing.
+
+### Alfred (Batman's butler)
+
+Put these in `.env`:
+
+```
+JARVIS_PERSONA=alfred
+JARVIS_USER_ADDRESS=Master Bruce      # or "Master" plus your own name, or "sir"
+JARVIS_SPEECH_LANG=en-GB
+JARVIS_LANGUAGE=English
+```
+
+- **Personality:** a warm, dignified English butler who fusses kindly about late nights and skipped meals, with dry humour. He speaks in his own words, not lines from the films.
+- **Page:** the page, tab title and transcript show "Alfred".
+- **Voice with ElevenLabs:** the default George voice is a warm, older British voice that suits him. For something closer, search the ElevenLabs Voice Library for "English butler" or "old British gentleman" and put the voice ID in `ELEVENLABS_VOICE_ID`. The voice isn't a copy of any Batman actor's real voice: cloning a real person's voice needs their permission.
+- **Voice without ElevenLabs:** the browser picks a British male voice when it has one, such as "Google UK English Male" in Chrome.
+
+Alfred works in Afrikaans too: keep the Afrikaans settings below and add `JARVIS_PERSONA=alfred`.
+
+### Afrikaans
+
+Put these in `.env`:
+
+```
+JARVIS_SPEECH_LANG=af-ZA
+JARVIS_LANGUAGE=Afrikaans
+JARVIS_USER_ADDRESS=meneer
+ELEVENLABS_API_KEY=...
+```
+
+- **Listening:** Chrome and Edge understand Afrikaans (`af-ZA`).
+- **Replies:** Claude answers in Afrikaans. The page text and Jarvis's fixed lines ("something went wrong") switch to Afrikaans too.
+- **Voice:** use ElevenLabs. Most desktop browsers have no Afrikaans voice, and without one the browser reads Afrikaans with an English voice (the page tells you when this happens). ElevenLabs' fast Turbo model doesn't speak Afrikaans, so Jarvis switches to `eleven_v3` by itself. It sounds natural but takes a little longer per reply. Chrome on Android usually does have a Google Afrikaans voice, so there it can work without ElevenLabs.
+- **Accent:** the default voice (George) speaks Afrikaans with an English accent. For a local accent, pick a South African voice in the ElevenLabs Voice Library and put its ID in `ELEVENLABS_VOICE_ID`.
 
 ### Double-clap to wake (optional)
 

@@ -50,4 +50,19 @@ def test_websocket_rejects_other_origins(monkeypatch):
                 ws.receive_json()
         with client.websocket_connect("/ws", headers={"origin": "http://testserver"}):
             pass
-        assert client.get("/config").json()["speechLang"]
+        config = client.get("/config").json()
+        assert config["speechLang"] and config["name"]
+
+
+@pytest.mark.parametrize(
+    "lang, override, expected",
+    [
+        ("en-GB", "", "eleven_turbo_v2_5"),
+        ("af-ZA", "", "eleven_v3"),
+        ("af-ZA", "eleven_multilingual_v2", "eleven_multilingual_v2"),
+    ],
+)
+def test_elevenlabs_model_follows_language(lang, override, expected):
+    from config import Settings
+
+    assert tts.elevenlabs_model(Settings(speech_lang=lang, elevenlabs_model=override)) == expected

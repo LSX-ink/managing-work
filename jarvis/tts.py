@@ -8,6 +8,18 @@ from config import Settings
 
 CHUNK_CHARS = 400
 
+# Languages the fast Turbo v2.5 model speaks; anything else (e.g. Afrikaans) goes to Eleven v3.
+TURBO_LANGS = {
+    "ar", "bg", "cs", "da", "de", "el", "en", "es", "fi", "fil", "fr", "hi", "hr", "hu", "id", "it",
+    "ja", "ko", "ms", "nl", "no", "pl", "pt", "ro", "ru", "sk", "sv", "ta", "tr", "uk", "vi", "zh",
+}
+
+
+def elevenlabs_model(settings: Settings) -> str:
+    if settings.elevenlabs_model:
+        return settings.elevenlabs_model
+    return "eleven_turbo_v2_5" if settings.lang_code in TURBO_LANGS else "eleven_v3"
+
 
 def split_sentences(text: str, limit: int = CHUNK_CHARS) -> list[str]:
     """Group sentences into chunks of at most `limit` characters (a single long sentence stays whole)."""
@@ -35,7 +47,7 @@ async def synthesize(http: httpx.AsyncClient, settings: Settings, text: str) -> 
             headers={"xi-api-key": settings.elevenlabs_api_key, "Accept": "audio/mpeg"},
             json={
                 "text": chunk,
-                "model_id": "eleven_turbo_v2_5",
+                "model_id": elevenlabs_model(settings),
                 "voice_settings": {"stability": 0.5, "similarity_boost": 0.8},
             },
         )

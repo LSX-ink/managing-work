@@ -14,8 +14,25 @@ Speak = Callable[[str], Awaitable[None]]
 
 MAX_TOOL_ROUNDS = 8
 MAX_TURNS_KEPT = 20
-REFUSAL_LINE = "I'm afraid that's not something I can help with."
-ERROR_LINE = "Something went wrong on my end. Do try again."
+
+# Fixed lines Jarvis says without asking Claude, by language code.
+LINES = {
+    "en": {
+        "refusal": "I'm afraid that's not something I can help with.",
+        "error": "Something went wrong on my end. Do try again.",
+        "loop": "I seem to be going round in circles. Let's try that another way.",
+    },
+    "af": {
+        "refusal": "Ek is bevrees dis nie iets waarmee ek kan help nie.",
+        "error": "Iets het aan my kant skeefgeloop. Probeer asseblief weer.",
+        "loop": "Dit lyk of ek in sirkels draai. Kom ons probeer dit anders.",
+    },
+}
+
+
+def line(settings: Settings, key: str) -> str:
+    return LINES.get(settings.lang_code, LINES["en"])[key]
+
 
 # Models that take the newer web tool versions (dynamic filtering) and `output_config.effort`.
 _NEW_WEB_TOOLS = ("claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6",
@@ -24,16 +41,41 @@ _NO_EFFORT = ("claude-haiku-4-5", "claude-sonnet-4-5")
 _SERVER_FALLBACK = ("claude-opus-5", "claude-fable-5")
 
 
+PERSONAS = {
+    "jarvis": {
+        "name": "Jarvis",
+        "intro": "You are J.A.R.V.I.S., a personal voice assistant in the spirit of Tony Stark's AI butler.",
+        "personality": "dry, understated British wit; unfailingly loyal and polite, never rude. You may gently "
+                       "tease an obvious question or a questionable decision, but always help.",
+    },
+    "alfred": {
+        "name": "Alfred",
+        "intro": "You are Alfred, a personal voice assistant in the spirit of Alfred Pennyworth, "
+                 "the Wayne family's butler from Batman.",
+        "personality": "a warm, dignified, old-school English butler. Impeccable manners, quiet devotion and a "
+                       "gently fatherly concern for the user's wellbeing: you notice late nights, skipped meals "
+                       "and overwork, and say so kindly. Dry, understated humour and the occasional polite "
+                       "reproach, but always help. Speak in your own words rather than quoting the films.",
+    },
+}
+
+
+def persona(settings: Settings) -> dict:
+    return PERSONAS.get(settings.persona, PERSONAS["jarvis"])
+
+
 def system_prompt(settings: Settings) -> str:
+    p = persona(settings)
     who = f"Your principal is {settings.user_name}. " if settings.user_name else ""
     home = f"Their home city is {settings.city}. " if settings.city else ""
-    return f"""You are J.A.R.V.I.S., a personal voice assistant in the spirit of Tony Stark's AI butler. {who}{home}Address them as "{settings.user_address}".
+    return f"""{p["intro"]} {who}{home}Address them as "{settings.user_address}".
 
-Personality: dry, understated British wit; unfailingly loyal and polite, never rude. You may gently tease an obvious question or a questionable decision, but always help.
+Personality: {p["personality"]}
 
 Everything you write is read aloud by a text-to-speech voice, so:
 - Keep replies to one to three short sentences unless asked for more detail.
-- Plain spoken English only: no Markdown, lists, headings, emoji, URLs read out character by character, or stage directions in brackets.
+- Always reply in {settings.language}, whatever language tools or web pages return.
+- Plain spoken {settings.language} only: no Markdown, lists, headings, emoji, URLs read out character by character, or stage directions in brackets.
 - Say numbers and units the way a person would say them.
 
 Latency-sensitive; begin your visible answer immediately.
@@ -103,7 +145,7 @@ class Brain:
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive
             print(f"[jarvis] Error: {exc!r}", flush=True)
             del self.messages[start:]
-            await speak(ERROR_LINE)
+            await speak(line(self.settings, "error"))
         self.messages = trim_history(self.messages)
 
     async def _run(self, speak: Speak) -> None:
@@ -114,7 +156,7 @@ class Brain:
 
             if response.stop_reason == "refusal":
                 del self.messages[start:]  # drop the whole declined turn so history stays valid
-                await speak(REFUSAL_LINE)
+                await speak(line(self.settings, "refusal"))
                 return
 
             self.messages.append({"role": "assistant", "content": response.content})
@@ -131,7 +173,7 @@ class Brain:
             results = await asyncio.gather(*(self._tool_result(c) for c in calls))
             self.messages.append({"role": "user", "content": list(results)})
 
-        await speak("I seem to be going round in circles. Let's try that another way.")
+        await speak(line(self.settings, "loop"))
 
     async def _tool_result(self, call) -> dict:
         print(f"  tool: {call.name} {call.input}", flush=True)
