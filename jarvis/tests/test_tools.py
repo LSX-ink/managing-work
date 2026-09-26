@@ -66,3 +66,25 @@ def test_elevenlabs_model_follows_language(lang, override, expected):
     from config import Settings
 
     assert tts.elevenlabs_model(Settings(speech_lang=lang, elevenlabs_model=override)) == expected
+
+
+def test_websocket_confirmation_round_trip(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    import server
+
+    class FakeBrain:
+        def __init__(self, settings, client, http, confirm):
+            self.confirm = confirm
+
+        async def handle(self, text, speak):
+            await speak("answer: " + await self.confirm(["Left click at (1, 2)"]))
+
+    monkeypatch.setattr(server, "Brain", FakeBrain)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as ws:
+            ws.send_json({"text": "click"})
+            ask = ws.receive_json()
+            assert ask["type"] == "confirm" and ask["steps"] == ["Left click at (1, 2)"]
+            ws.send_json({"type": "confirm_reply", "id": ask["id"], "answer": "allow"})
+            assert ws.receive_json()["text"] == "answer: allow"
+            assert ws.receive_json()["type"] == "done"

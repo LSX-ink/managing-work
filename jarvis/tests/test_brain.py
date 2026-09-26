@@ -127,7 +127,7 @@ def test_request_options_depend_on_model(model, has_fallback, has_effort, search
 
 
 def test_screen_and_web_tools_can_be_disabled():
-    opts = request_options(replace(SETTINGS, enable_screen=False, enable_web=False))
+    opts = request_options(replace(SETTINGS, enable_screen=False, enable_web=False, enable_pc=False))
     names = {t["name"] for t in opts["tools"]}
     assert names == {"get_weather", "get_tasks", "open_url"}
 

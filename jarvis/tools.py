@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+import pc
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -57,7 +58,9 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
             },
         },
     ]
-    if settings.enable_screen:
+    if settings.enable_pc:
+        tools += pc.tool_definitions()
+    if settings.enable_screen and not settings.enable_computer:  # the computer toolset has its own screenshot
         tools.append({
             "name": "look_at_screen",
             "description": "Take a screenshot of the user's screen so you can see what they are looking at.",
@@ -171,4 +174,6 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return await open_url(args["url"])
     if name == "look_at_screen" and settings.enable_screen:
         return await look_at_screen()
+    if name in pc.NAMES and settings.enable_pc:
+        return await asyncio.to_thread(pc.run, name, args)
     raise ValueError(f"Unknown tool: {name}")

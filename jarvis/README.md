@@ -75,6 +75,8 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `JARVIS_SPEECH_LANG` | `en-GB` | Language code for speech recognition, the voice and the page text |
 | `JARVIS_LANGUAGE` | `English` | The language Jarvis replies in |
 | `JARVIS_ENABLE_WEB` / `JARVIS_ENABLE_SCREEN` | `true` | Turn web search or screen viewing off |
+| `JARVIS_ENABLE_PC` | `true` | Open apps, folders and files; media and volume; find and read files |
+| `JARVIS_ENABLE_COMPUTER` | `false` | Mouse and keyboard control, with your OK for every action (Opus 5 models) |
 | `JARVIS_HOST` / `JARVIS_PORT` | `127.0.0.1` / `8340` | Where the server listens |
 
 On Opus 5 the server turns on the API's `fallbacks: "default"`. If a safety classifier declines a request, it is retried on a suitable model instead of failing.
@@ -113,6 +115,24 @@ ELEVENLABS_API_KEY=...
 - **Voice:** use ElevenLabs. Most desktop browsers have no Afrikaans voice, and without one the browser reads Afrikaans with an English voice (the page tells you when this happens). ElevenLabs' fast Turbo model doesn't speak Afrikaans, so Jarvis switches to `eleven_v3` by itself. It sounds natural but takes a little longer per reply. Chrome on Android usually does have a Google Afrikaans voice, so there it can work without ElevenLabs.
 - **Accent:** the default voice (George) speaks Afrikaans with an English accent. For a local accent, pick a South African voice in the ElevenLabs Voice Library and put its ID in `ELEVENLABS_VOICE_ID`.
 
+### Controlling your computer
+
+**Everyday control** (`JARVIS_ENABLE_PC=true`, on by default):
+
+- "Open Spotify", "Open my Downloads folder": any installed app, including Microsoft Store apps.
+- "Pause the music", "Next song", "Turn the volume up", "Mute", "Lock my computer".
+- "Find my CV", "Read me the notes in shopping.txt", "Open the holiday photo": searches Desktop, Documents, Downloads, Pictures, Music and Videos.
+
+File access is **read-only** and limited to your home folder. Anything that looks like a secret is refused, such as `.env`, key files, password stores, or `.ssh`. Only documents, pictures and media are opened, never programs or scripts.
+
+**Mouse and keyboard** (`JARVIS_ENABLE_COMPUTER=true`, off by default). Alfred looks at your main screen and clicks and types like a person, for example "Reply to the last WhatsApp message saying I'm on my way". Safety:
+
+- **You approve every click and keystroke.** A panel on the page lists what he wants to do, with **Allow**, **Allow for this task** or **Deny**. If you don't answer within 2 minutes, it counts as Deny. Looking at the screen doesn't need approval.
+- **Emergency stop:** throw the mouse into any corner of the screen and the current action aborts.
+- Text on web pages, in files or on screen is treated as information, never as instructions.
+- This is slower and costs more than the other tools, because every step sends a screenshot. Alfred uses the simple tools first when they can do the job.
+- It needs an Opus 5 model (`claude-opus-5`, the default) and the `pyautogui` package (in `requirements.txt`). Typing works for plain letters, numbers and symbols; accented characters may be skipped.
+
 ### Double-clap to wake (optional)
 
 ```bash
@@ -150,6 +170,8 @@ The tests stand in a fake Claude client, so they need no API key or network.
 | `server.py` | FastAPI app: page, `/config`, `/ws` WebSocket |
 | `brain.py` | System prompt, model-specific options, tool loop, history trimming |
 | `tools.py` | Weather, tasks, open URL, screenshot |
+| `pc.py` | Apps, folders, media keys, find/read/open files |
+| `computer.py` | Mouse and keyboard for Claude's computer toolset |
 | `tts.py` | ElevenLabs text-to-speech |
 | `config.py` | Settings from the environment |
 | `frontend/` | Orb UI, speech in and out |
