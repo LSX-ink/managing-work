@@ -68,7 +68,7 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `ELEVENLABS_VOICE_ID` | George | Any ElevenLabs voice ID |
 | `ELEVENLABS_MODEL` | (auto) | Empty picks `eleven_turbo_v2_5` for languages it speaks, otherwise `eleven_v3` |
 | `JARVIS_PERSONA` | `jarvis` | `jarvis` (Iron Man's AI) or `alfred` (Batman's butler) |
-| `JARVIS_GREETING` | (empty) | A fixed line to say when woken, e.g. `Good evening, sir.` Empty gives the weather-and-tasks greeting |
+| `JARVIS_GREETING` | (empty) | A fixed line to say when woken, e.g. `Good {time_of_day}, sir.` (`{time_of_day}` becomes morning, afternoon or evening). Empty gives the weather-and-tasks greeting |
 | `JARVIS_USER_NAME` / `JARVIS_USER_ADDRESS` | (empty) / `sir` | How Jarvis addresses you |
 | `JARVIS_CITY` | (empty) | Home city for the weather |
 | `JARVIS_TASKS_FILE` | (empty) | A Markdown file with `- [ ] task` lines, such as an Obsidian note |

@@ -172,3 +172,21 @@ async def test_fixed_greeting_skips_claude():
     await b.activate(speak)
     assert said == ["Good evening, sir."]
     assert client.requests == [] and b.messages == []
+
+
+@pytest.mark.parametrize("hour, expected", [(6, "morning"), (11, "morning"), (12, "afternoon"),
+                                            (17, "afternoon"), (18, "evening"), (2, "evening")])
+def test_time_of_day(hour, expected):
+    assert brain.time_of_day(hour) == expected
+
+
+async def test_greeting_fills_in_time_of_day(monkeypatch):
+    monkeypatch.setattr(brain, "time_of_day", lambda: "afternoon")
+    b = Brain(replace(SETTINGS, greeting="Good {time_of_day}, sir."), FakeClient(), http=None)
+    said = []
+
+    async def speak(t):
+        said.append(t)
+
+    await b.activate(speak)
+    assert said == ["Good afternoon, sir."]

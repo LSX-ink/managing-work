@@ -117,6 +117,16 @@ def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT) -> list[
     return messages[starts[-max_turns]:]
 
 
+def time_of_day(hour: int | None = None) -> str:
+    """'morning' before noon, 'afternoon' until 6 pm, else 'evening' (local time)."""
+    hour = time.localtime().tm_hour if hour is None else hour
+    if 5 <= hour < 12:
+        return "morning"
+    if 12 <= hour < 18:
+        return "afternoon"
+    return "evening"
+
+
 def spoken_text(content) -> str:
     return " ".join(b.text.strip() for b in content if b.type == "text" and b.text.strip())
 
@@ -131,7 +141,7 @@ class Brain:
     async def activate(self, speak: Speak) -> None:
         """Greeting: a fixed line if configured, else weather and tasks (prefetched to skip a tool round-trip)."""
         if self.settings.greeting:
-            await speak(self.settings.greeting)
+            await speak(self.settings.greeting.replace("{time_of_day}", time_of_day()))
             return
         weather, task_text = await asyncio.gather(
             _safe(tools.get_weather(self.http, self.settings.city)),
