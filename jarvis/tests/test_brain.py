@@ -159,3 +159,16 @@ def test_alfred_persona_changes_the_prompt():
     assert prompt.startswith("You are Alfred")
     assert brain.persona(alfred)["name"] == "Alfred"
     assert brain.persona(replace(SETTINGS, persona="nobody"))["name"] == "Jarvis"
+
+
+async def test_fixed_greeting_skips_claude():
+    client = FakeClient()  # no scripted responses: any API call would fail
+    b = Brain(replace(SETTINGS, greeting="Good evening, sir."), client, http=None)
+    said = []
+
+    async def speak(t):
+        said.append(t)
+
+    await b.activate(speak)
+    assert said == ["Good evening, sir."]
+    assert client.requests == [] and b.messages == []

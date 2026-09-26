@@ -129,7 +129,10 @@ class Brain:
         self.messages: list[dict] = []
 
     async def activate(self, speak: Speak) -> None:
-        """Greeting: prefetch weather and tasks so the first reply needs no tool round-trip."""
+        """Greeting: a fixed line if configured, else weather and tasks (prefetched to skip a tool round-trip)."""
+        if self.settings.greeting:
+            await speak(self.settings.greeting)
+            return
         weather, task_text = await asyncio.gather(
             _safe(tools.get_weather(self.http, self.settings.city)),
             asyncio.to_thread(tools.get_tasks, self.settings),

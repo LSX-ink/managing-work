@@ -28,6 +28,7 @@ class Settings:
     speech_lang: str = os.getenv("JARVIS_SPEECH_LANG", "en-GB")
     language: str = os.getenv("JARVIS_LANGUAGE", "English")
     persona: str = os.getenv("JARVIS_PERSONA", "jarvis").strip().lower()
+    greeting: str = os.getenv("JARVIS_GREETING", "").strip()  # fixed wake-up line; empty = weather and tasks
     elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
     elevenlabs_model: str = os.getenv("ELEVENLABS_MODEL", "")  # empty: picked from speech_lang
