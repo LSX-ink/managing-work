@@ -4,6 +4,8 @@ const statusEl = document.getElementById('status');
 const transcript = document.getElementById('transcript');
 const typeForm = document.getElementById('type-form');
 const typeInput = document.getElementById('type-input');
+const confirmBox = document.getElementById('confirm');
+const confirmSteps = document.getElementById('confirm-steps');
 
 let config = { speechLang: 'en-GB', serverVoice: false, name: 'Jarvis' };
 
@@ -20,6 +22,11 @@ const STRINGS = {
         noVoice: 'Your browser has no voice for this language. Set ELEVENLABS_API_KEY to hear replies.',
         placeholder: '…or type to {name}',
         you: 'You',
+        confirmTitle: '{name} would like to:',
+        allow: 'Allow',
+        allowAll: 'Allow for this task',
+        deny: 'Deny',
+        waitingOk: 'Waiting for your OK…',
     },
     af: {
         wake: 'Klik op die bol om {name} wakker te maak.',
@@ -32,6 +39,11 @@ const STRINGS = {
         noVoice: 'Jou blaaier het geen Afrikaanse stem nie. Stel ELEVENLABS_API_KEY om antwoorde te hoor.',
         placeholder: '…of tik vir {name}',
         you: 'Jy',
+        confirmTitle: '{name} wil graag:',
+        allow: 'Laat toe',
+        allowAll: 'Laat toe vir hierdie taak',
+        deny: 'Weier',
+        waitingOk: 'Wag vir jou toestemming…',
     },
 };
 
@@ -91,6 +103,8 @@ function connect(onOpen) {
             addLine('jarvis', msg.text);
             queue.push(msg);
             playNext();
+        } else if (msg.type === 'confirm') {
+            showConfirm(msg);
         } else if (msg.type === 'done') {
             busy = false;
             maybeListen();
@@ -98,6 +112,7 @@ function connect(onOpen) {
     };
     ws.onclose = () => {
         busy = false;
+        confirmBox.hidden = true;
         setState('idle', t('reconnecting'));
         setTimeout(() => connect(() => { setState('idle', ''); maybeListen(); }), 2000);
     };
@@ -110,6 +125,32 @@ function send(payload) {
     setState('thinking', t('thinking'));
     ws.send(JSON.stringify(payload));
 }
+
+// ---- Approving mouse/keyboard actions ---------------------------------------
+
+function showConfirm(msg) {
+    stopListening();
+    document.getElementById('confirm-title').textContent = t('confirmTitle');
+    document.getElementById('confirm-allow').textContent = t('allow');
+    document.getElementById('confirm-allow-all').textContent = t('allowAll');
+    document.getElementById('confirm-deny').textContent = t('deny');
+    confirmSteps.replaceChildren(...msg.steps.map((step) => {
+        const li = document.createElement('li');
+        li.textContent = step;
+        return li;
+    }));
+    confirmBox.dataset.id = msg.id;
+    confirmBox.hidden = false;
+    setState('thinking', t('waitingOk'));
+}
+
+confirmBox.addEventListener('click', (event) => {
+    const answer = event.target.dataset && event.target.dataset.answer;
+    if (!answer || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'confirm_reply', id: Number(confirmBox.dataset.id), answer }));
+    confirmBox.hidden = true;
+    setState('thinking', t('thinking'));
+});
 
 // ---- Speech output ----------------------------------------------------------
 

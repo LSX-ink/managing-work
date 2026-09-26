@@ -127,7 +127,7 @@ def test_request_options_depend_on_model(model, has_fallback, has_effort, search
 
 
 def test_screen_and_web_tools_can_be_disabled():
-    opts = request_options(replace(SETTINGS, enable_screen=False, enable_web=False))
+    opts = request_options(replace(SETTINGS, enable_screen=False, enable_web=False, enable_pc=False))
     names = {t["name"] for t in opts["tools"]}
     assert names == {"get_weather", "get_tasks", "open_url"}
 
@@ -159,3 +159,34 @@ def test_alfred_persona_changes_the_prompt():
     assert prompt.startswith("You are Alfred")
     assert brain.persona(alfred)["name"] == "Alfred"
     assert brain.persona(replace(SETTINGS, persona="nobody"))["name"] == "Jarvis"
+
+
+async def test_fixed_greeting_skips_claude():
+    client = FakeClient()  # no scripted responses: any API call would fail
+    b = Brain(replace(SETTINGS, greeting="Good evening, sir."), client, http=None)
+    said = []
+
+    async def speak(t):
+        said.append(t)
+
+    await b.activate(speak)
+    assert said == ["Good evening, sir."]
+    assert client.requests == [] and b.messages == []
+
+
+@pytest.mark.parametrize("hour, expected", [(6, "morning"), (11, "morning"), (12, "afternoon"),
+                                            (17, "afternoon"), (18, "evening"), (2, "evening")])
+def test_time_of_day(hour, expected):
+    assert brain.time_of_day(hour) == expected
+
+
+async def test_greeting_fills_in_time_of_day(monkeypatch):
+    monkeypatch.setattr(brain, "time_of_day", lambda: "afternoon")
+    b = Brain(replace(SETTINGS, greeting="Good {time_of_day}, sir."), FakeClient(), http=None)
+    said = []
+
+    async def speak(t):
+        said.append(t)
+
+    await b.activate(speak)
+    assert said == ["Good afternoon, sir."]

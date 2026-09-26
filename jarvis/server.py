@@ -4,7 +4,9 @@ The browser does speech-to-text and plays the audio; this server thinks (Claude)
 speaks (ElevenLabs, or the browser's own voice as a fallback).
 """
 
+import asyncio
 import base64
+import itertools
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
@@ -15,10 +17,11 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import tts
-from brain import Brain, persona
+from brain import Brain, computer_enabled, persona
 from config import ROOT, settings
 
 FRONTEND = ROOT / "frontend"
+CONFIRM_TIMEOUT = 120  # seconds to approve mouse/keyboard actions before they are declined
 
 
 @asynccontextmanager
@@ -46,6 +49,7 @@ async def client_config():
         "language": settings.language,
         "name": persona(settings)["name"],
         "serverVoice": bool(settings.elevenlabs_api_key),
+        "computer": computer_enabled(settings),
     }
 
 
@@ -62,7 +66,8 @@ async def websocket(ws: WebSocket):
         return
     await ws.accept()
     http = ws.app.state.http
-    brain = Brain(settings, ws.app.state.client, http)
+    pending: dict[int, asyncio.Future] = {}
+    next_id = itertools.count(1)
 
     async def speak(text: str) -> None:
         print(f"  Jarvis: {text}", flush=True)
@@ -73,17 +78,50 @@ async def websocket(ws: WebSocket):
             "audio": base64.b64encode(audio).decode() if audio else "",
         })
 
-    try:
+    async def confirm(steps: list[str]) -> str:
+        """Ask the page to approve mouse/keyboard actions; no answer in time counts as no."""
+        cid = next(next_id)
+        pending[cid] = asyncio.get_running_loop().create_future()
+        await ws.send_json({"type": "confirm", "id": cid, "steps": steps})
+        try:
+            return await asyncio.wait_for(pending[cid], CONFIRM_TIMEOUT)
+        except asyncio.TimeoutError:
+            return "deny"
+        finally:
+            pending.pop(cid, None)
+
+    brain = Brain(settings, ws.app.state.client, http, confirm=confirm)
+    inbox: asyncio.Queue = asyncio.Queue()
+
+    async def worker() -> None:
         while True:
-            msg = await ws.receive_json()
+            msg = await inbox.get()
             if msg.get("type") == "activate":
                 await brain.activate(speak)
             elif text := str(msg.get("text", "")).strip():
                 print(f"  You:    {text}", flush=True)
                 await brain.handle(text, speak)
             await ws.send_json({"type": "done"})
+
+    task = asyncio.create_task(worker())
+    try:
+        # Keep reading while a turn runs, so approval clicks reach the waiting turn.
+        while True:
+            msg = await ws.receive_json()
+            if msg.get("type") == "confirm_reply":
+                fut = pending.get(msg.get("id"))
+                if fut and not fut.done():
+                    answer = msg.get("answer")
+                    fut.set_result(answer if answer in ("allow", "allow_all") else "deny")
+            else:
+                inbox.put_nowait(msg)
     except WebSocketDisconnect:
         pass
+    finally:
+        task.cancel()
+        for fut in pending.values():
+            if not fut.done():
+                fut.set_result("deny")
 
 
 if __name__ == "__main__":

@@ -6,12 +6,36 @@
     <title>J.A.R.V.I.S.</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Approval panel for mouse/keyboard actions (kept here so style.css stays yours to customise). */
+        #confirm { width: 100%; padding: 14px 16px; border: 1px solid var(--think-a); border-radius: 12px; background: #121016; }
+        #confirm[hidden] { display: none; }
+        #confirm-title { font-weight: 600; margin-bottom: 8px; }
+        #confirm-steps { margin: 0 0 12px 20px; font-size: 14px; line-height: 1.5; }
+        .confirm-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+        .confirm-buttons button {
+            flex: 1 1 auto; padding: 10px 14px; border-radius: 8px; border: 1px solid #2a3547;
+            background: #16202e; color: var(--text); font-size: 14px; cursor: pointer;
+        }
+        .confirm-buttons button[data-answer="allow"] { border-color: var(--accent); }
+        .confirm-buttons button[data-answer="deny"] { border-color: #c0504d; }
+        .confirm-buttons button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    </style>
 </head>
 <body>
     <main id="app">
         <button id="orb" class="idle" aria-label="Start or pause listening"></button>
         <p id="status" aria-live="polite">Click the orb to wake Jarvis.</p>
         <div id="transcript" aria-live="polite"></div>
+        <section id="confirm" hidden aria-live="assertive">
+            <p id="confirm-title"></p>
+            <ol id="confirm-steps"></ol>
+            <div class="confirm-buttons">
+                <button type="button" data-answer="allow" id="confirm-allow"></button>
+                <button type="button" data-answer="allow_all" id="confirm-allow-all"></button>
+                <button type="button" data-answer="deny" id="confirm-deny"></button>
+            </div>
+        </section>
         <form id="type-form" autocomplete="off">
             <input id="type-input" type="text" placeholder="…or type to Jarvis" aria-label="Message to Jarvis">
         </form>

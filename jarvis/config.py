@@ -28,11 +28,14 @@ class Settings:
     speech_lang: str = os.getenv("JARVIS_SPEECH_LANG", "en-GB")
     language: str = os.getenv("JARVIS_LANGUAGE", "English")
     persona: str = os.getenv("JARVIS_PERSONA", "jarvis").strip().lower()
+    greeting: str = os.getenv("JARVIS_GREETING", "").strip()  # fixed wake-up line; empty = weather and tasks
     elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
     elevenlabs_model: str = os.getenv("ELEVENLABS_MODEL", "")  # empty: picked from speech_lang
     enable_screen: bool = _bool("JARVIS_ENABLE_SCREEN", True)
     enable_web: bool = _bool("JARVIS_ENABLE_WEB", True)
+    enable_pc: bool = _bool("JARVIS_ENABLE_PC", True)  # open apps/folders/files, media keys, read files
+    enable_computer: bool = _bool("JARVIS_ENABLE_COMPUTER", False)  # mouse + keyboard, each action confirmed
     host: str = os.getenv("JARVIS_HOST", "127.0.0.1")
     port: int = int(os.getenv("JARVIS_PORT", "8340"))
 
