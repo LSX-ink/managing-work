@@ -122,6 +122,7 @@
         const cx = w / 2, cy = h / 2, r = Math.min(w, h) / 2 - 4;
         const color = COLORS[state()];
         ctx.clearRect(0, 0, w, h);
+        if (r <= 0) return;   // the radar panel is hidden in narrow windows
         ctx.strokeStyle = color;
         ctx.globalAlpha = 0.35;
         for (let i = 1; i <= 4; i++) {
@@ -213,10 +214,10 @@
     }
 
     function frame(t) {
+        requestAnimationFrame(frame);   // first, so one bad frame can't stop the animation
         drawSphere(t);
         drawRadar(t);
         drawWave(t);
-        requestAnimationFrame(frame);
     }
 
     function start(cfg) {
