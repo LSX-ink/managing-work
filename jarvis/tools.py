@@ -14,6 +14,7 @@ import aboutyou
 import agenda
 import alerts
 import filing
+import health
 import memory
 import music
 import pc
@@ -103,6 +104,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     tools += timers.tool_definitions()
     tools += reminders.tool_definitions()
     tools += agenda.tool_definitions()
+    tools += health.tool_definitions()
     tools += shopping.tool_definitions()
     if settings.email_enabled:
         tools.append({
@@ -267,6 +269,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
     if name == "check_inbox" and settings.email_enabled:
         hours = min(max(int(args.get("hours") or 24), 1), 168)
         return await asyncio.to_thread(inbox_text, settings, hours)
+    if name in health.NAMES:
+        return await asyncio.to_thread(health.run_tool, name, settings)
     if name in agenda.NAMES:
         days = min(max(int(args.get("days") or 1), 1), 31)
         return await agenda.upcoming(http, settings, days)
@@ -311,7 +315,7 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
             return "The Jarvis page isn't open, so there's nowhere to show the folder."
         await page({"type": "memory", "open": path.name})
         return f"Opened the {path.name} folder on the HUD."
-    if name in ("save_to_memory", "read_memory", "create_memory_folder", "delete_memory_folder"):
+    if name in ("save_to_memory", "read_memory", "create_memory_folder", "delete_memory_folder", "read_document"):
         return await asyncio.to_thread(memory.run_tool, name, args, settings)
     if name == "check_deliveries" and settings.email_enabled:
         days = min(max(int(args.get("days") or 3), 1), 14)

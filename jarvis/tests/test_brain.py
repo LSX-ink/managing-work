@@ -129,7 +129,7 @@ def test_request_options_depend_on_model(model, has_fallback, has_effort, search
 def test_screen_and_web_tools_can_be_disabled():
     opts = request_options(replace(SETTINGS, enable_screen=False, enable_web=False, enable_pc=False))
     names = {t["name"] for t in opts["tools"]}
-    assert names == {"get_weather", "get_tasks", "open_url", "save_to_memory", "read_memory", "download_file", "open_memory_folder", "create_memory_folder", "delete_memory_folder", "move_chat_panel", "remember_about_user", "forget_about_user", "set_reminder", "list_reminders", "cancel_reminder", "get_calendar", "shopping_list", "listen_for_name", "request_new_ability", "set_timer", "check_timers", "cancel_timer", "take_a_break"}
+    assert names == {"get_weather", "get_tasks", "open_url", "save_to_memory", "read_memory", "download_file", "open_memory_folder", "create_memory_folder", "delete_memory_folder", "move_chat_panel", "remember_about_user", "forget_about_user", "set_reminder", "list_reminders", "cancel_reminder", "get_calendar", "shopping_list", "listen_for_name", "read_document", "pc_health", "jarvis_status", "request_new_ability", "set_timer", "check_timers", "cancel_timer", "take_a_break"}
 
 
 def test_afrikaans_prompt_and_fixed_lines():
@@ -208,3 +208,11 @@ async def test_conversation_carries_over_a_restart(tmp_path):
     assert sent[1] == {"role": "assistant", "content": "One moment. Your slate is clean."}  # the greeting isn't kept
     (tmp_path / ".recent-chat.json").write_text("not json", encoding="utf-8")
     assert Brain(s, FakeClient(), http=None).messages == []
+
+
+def test_old_documents_are_pruned():
+    doc = {"type": "document", "source": {}}
+    messages = [{"role": "user", "content": [{"type": "tool_result", "content": [dict(doc)]}]} for _ in range(8)]
+    brain.prune_images(messages)
+    kinds = [m["content"][0]["content"][0]["type"] for m in messages]
+    assert kinds == ["text", "text"] + ["document"] * 6

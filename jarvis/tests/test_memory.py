@@ -268,3 +268,17 @@ def test_move_chat_panel(settings):
     with pytest.raises(ValueError):
         asyncio.run(tools.run_tool("move_chat_panel", {"position": "middle"}, settings, None, page))
     assert "isn't open" in asyncio.run(tools.run_tool("move_chat_panel", {"position": "centre"}, settings, None, None))
+
+
+def test_read_document(settings):
+    memory.save_file(settings, "Work", "slip.pdf", b"%PDF-1.4 fake")
+    memory.save_file(settings, "Work", "photo.jpg", b"\xff\xd8fake")
+    memory.save_note(settings, "Work", "plan", "build a shed")
+    pdf = memory.run_tool("read_document", {"folder": "work", "filename": "slip.pdf"}, settings)
+    assert pdf[0]["type"] == "document" and pdf[0]["source"]["media_type"] == "application/pdf"
+    assert pdf[1]["text"] == "slip.pdf, from the Work folder."
+    assert memory.document_content(settings, "Work", "photo.jpg")[0]["source"]["media_type"] == "image/jpeg"
+    assert "build a shed" in memory.document_content(settings, "Work", "plan.txt")
+    memory.save_file(settings, "Work", "song.mp3", b"x")
+    with pytest.raises(ValueError, match="not .mp3"):
+        memory.document_content(settings, "Work", "song.mp3")
