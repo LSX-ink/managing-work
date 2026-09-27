@@ -124,6 +124,12 @@ body.hud #transcript {
     border: 1px solid var(--hud-dim); background: var(--hud-panel); padding: 12px 14px; max-height: 26vh; font-size: 14px;
 }
 body.hud #transcript:empty { display: none; }
+body.hud #alerts { border: 1px solid var(--hud-dim); border-radius: 0; background: var(--hud-panel); }
+body.hud #alerts h2 { color: var(--hud-mid); }
+body.hud #alerts-list li { border-top-color: var(--hud-dim); }
+body.hud #alerts-list .kind { color: var(--hud-mid); }
+body.hud #alerts-list .text { color: var(--hud-bright); }
+body.hud #alerts-list .at, body.hud #alerts-list button { color: var(--hud-mid); }
 body.hud #transcript .user { color: var(--hud-mid); }
 body.hud #transcript .jarvis { color: var(--hud-bright); }
 body.hud #type-input {

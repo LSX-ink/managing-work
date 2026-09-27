@@ -25,7 +25,8 @@ import httpx
 
 from config import ROOT, Settings
 
-Announce = Callable[[str], Awaitable[None]]
+# announce(text, kind): kind is "email", "call" or "phone" and picks the icon on the page.
+Announce = Callable[[str, str], Awaitable[None]]
 
 # Who the email is from (address or display name, lower case) -> the name Jarvis says.
 DELIVERY_SENDERS = {
@@ -158,7 +159,7 @@ async def watch_email(settings: Settings, announce: Announce) -> None:
                 for mail in mails:
                     last_uid = max(last_uid, mail.uid)
                     if text := email_line(settings, mail):
-                        await announce(text)
+                        await announce(text, "email")
         except Exception as exc:  # bad password, no network: say so in the console and keep trying
             print(f"[jarvis] Email check failed: {exc}", flush=True)
         await asyncio.sleep(settings.email_check_seconds)
@@ -204,7 +205,7 @@ async def watch_phone(settings: Settings, announce: Announce, every: float = 2.0
                     binding = n.notification.visual.get_binding(KnownNotificationBindings.toast_generic)
                     texts = [t.text for t in binding.get_text_elements()] if binding else []
                     if text := call_line(settings, app, texts):
-                        await announce(text)
+                        await announce(text, "call" if "call" in text else "phone")
             seen = ids
         except Exception as exc:
             print(f"[jarvis] Reading notifications failed: {exc}", flush=True)
@@ -271,7 +272,7 @@ async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.
                     async for raw in response.aiter_lines():
                         if raw.strip() and (text := relay_line(settings, json.loads(raw))):
                             (linked_file or LINKED_FILE).touch()  # the phone works; stop showing the setup note
-                            await announce(text)
+                            await announce(text, "call" if "call" in text else "phone")
             except (httpx.HTTPError, ValueError) as exc:
                 print(f"[jarvis] Phone alert connection dropped ({exc}); retrying.", flush=True)
             await asyncio.sleep(retry)

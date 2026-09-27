@@ -111,7 +111,7 @@ def test_recent_deliveries_lists_only_deliveries(inbox):
 async def test_watch_email_announces_only_new_deliveries(inbox):
     said = []
 
-    async def announce(t):
+    async def announce(t, kind=None):
         said.append(t)
         if len(said) == 1:
             raise asyncio.CancelledError  # stop the loop after the first announcement
@@ -152,9 +152,20 @@ def test_server_says_announcements_on_open_pages(monkeypatch):
 
     with TestClient(server.app) as client:
         with client.websocket_connect("/ws", headers={"origin": "http://testserver"}) as ws:
-            client.portal.call(server.announce, server.app, "Sir, incoming call from Mum.")
-            msg = ws.receive_json()
-            assert msg["type"] == "say" and msg["text"] == "Sir, incoming call from Mum."
+            assert ws.receive_json() == {"type": "alerts", "items": []}
+            client.portal.call(server.announce, server.app, "Sir, incoming call from Mum.", "call")
+            alert = ws.receive_json()
+            assert alert["type"] == "alert" and alert["kind"] == "call" and alert["text"] == "Sir, incoming call from Mum."
+            say = ws.receive_json()
+            assert say["type"] == "say" and say["quiet"] is True  # shown as a notification, not in the transcript
+
+        # A page opened later still sees it, and removing it removes it everywhere.
+        with client.websocket_connect("/ws", headers={"origin": "http://testserver"}) as ws:
+            items = ws.receive_json()["items"]
+            assert [a["text"] for a in items] == ["Sir, incoming call from Mum."]
+            ws.send_json({"type": "dismiss", "id": items[0]["id"]})
+            assert ws.receive_json() == {"type": "dismissed", "id": items[0]["id"]}
+        assert server.app.state.alerts == []
         assert server.app.state.pages == {}
 
 
@@ -185,7 +196,7 @@ async def test_watch_relay_announces_posted_calls(tmp_path):
 
     said = []
 
-    async def announce(t):
+    async def announce(t, kind=None):
         said.append(t)
         raise asyncio.CancelledError
 

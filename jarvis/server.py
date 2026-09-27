@@ -9,6 +9,7 @@ import base64
 import hashlib
 import hmac
 import itertools
+import time
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, urlparse
 
@@ -29,14 +30,17 @@ WEATHER_TTL = 600  # seconds the HUD weather panel reuses a reading
 CONFIRM_TIMEOUT = 120  # seconds to approve mouse/keyboard actions before they are declined
 SESSION_COOKIE = "jarvis_session"
 SESSION_DAYS = 30
+MAX_ALERTS = 30  # notifications kept for the page
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.client = anthropic.AsyncAnthropic()
     app.state.http = httpx.AsyncClient(timeout=30)
-    app.state.pages = {}  # open pages: speak function -> that page's Brain
-    watchers = alerts.start(settings, lambda text: announce(app, text))
+    app.state.pages = {}  # open pages: id(WebSocket) -> (WebSocket, its speak function, its Brain)
+    app.state.alerts = []  # notifications shown on the page, newest last
+    app.state.alert_ids = itertools.count(1)
+    watchers = alerts.start(settings, lambda text, kind: announce(app, text, kind))
     yield
     for task in watchers:
         task.cancel()
@@ -48,15 +52,28 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
 
 
-async def announce(app: FastAPI, text: str) -> None:
-    """Say a heads-up (a delivery, a call) on every open Jarvis page."""
+async def announce(app: FastAPI, text: str, kind: str = "phone") -> None:
+    """Add a heads-up (a delivery, a call) to the notifications and say it on every open page."""
+    item = {"id": next(app.state.alert_ids), "kind": kind, "text": text, "at": time.strftime("%H:%M")}
+    app.state.alerts = [*app.state.alerts, item][-MAX_ALERTS:]
     if not app.state.pages:
         print(f"  Jarvis (no page open): {text}", flush=True)
-    for speak, brain in list(app.state.pages.items()):
+    for ws, speak, brain in list(app.state.pages.values()):
         brain.note(text)
         try:
-            await speak(text)
+            await ws.send_json({"type": "alert", **item})
+            await speak(text, quiet=True)
         except Exception:  # the page closed mid-send
+            pass
+
+
+async def dismiss_alert(app: FastAPI, alert_id) -> None:
+    """Remove one notification, from every open page."""
+    app.state.alerts = [a for a in app.state.alerts if a["id"] != alert_id]
+    for ws, _, _ in list(app.state.pages.values()):
+        try:
+            await ws.send_json({"type": "dismissed", "id": alert_id})
+        except Exception:
             pass
 
 
@@ -166,13 +183,15 @@ async def websocket(ws: WebSocket):
     pending: dict[int, asyncio.Future] = {}
     next_id = itertools.count(1)
 
-    async def speak(text: str) -> None:
+    async def speak(text: str, quiet: bool = False) -> None:
+        """Say text aloud; quiet leaves it out of the transcript (notifications show it instead)."""
         print(f"  Jarvis: {text}", flush=True)
         audio = await tts.synthesize(http, settings, text)
         await ws.send_json({
             "type": "say",
             "text": text,
             "audio": base64.b64encode(audio).decode() if audio else "",
+            "quiet": quiet,
         })
 
     async def confirm(steps: list[str]) -> str:
@@ -201,14 +220,17 @@ async def websocket(ws: WebSocket):
             await ws.send_json({"type": "done"})
 
     task = asyncio.create_task(worker())
-    ws.app.state.pages[speak] = brain
+    ws.app.state.pages[id(ws)] = (ws, speak, brain)
+    await ws.send_json({"type": "alerts", "items": ws.app.state.alerts})
     if note := alerts.setup_note(settings):
         await ws.send_json({"type": "note", "text": note})
     try:
         # Keep reading while a turn runs, so approval clicks reach the waiting turn.
         while True:
             msg = await ws.receive_json()
-            if msg.get("type") == "confirm_reply":
+            if msg.get("type") == "dismiss":
+                await dismiss_alert(ws.app, msg.get("id"))
+            elif msg.get("type") == "confirm_reply":
                 fut = pending.get(msg.get("id"))
                 if fut and not fut.done():
                     answer = msg.get("answer")
@@ -218,7 +240,7 @@ async def websocket(ws: WebSocket):
     except WebSocketDisconnect:
         pass
     finally:
-        ws.app.state.pages.pop(speak, None)
+        ws.app.state.pages.pop(id(ws), None)
         task.cancel()
         for fut in pending.values():
             if not fut.done():

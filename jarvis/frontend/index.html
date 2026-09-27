@@ -22,6 +22,19 @@
         .confirm-buttons button[data-answer="allow"] { border-color: var(--accent); }
         .confirm-buttons button[data-answer="deny"] { border-color: #c0504d; }
         .confirm-buttons button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        /* Notifications: delivery emails and calls, newest first, scrolling slowly when there are many. */
+        #alerts { width: 100%; padding: 10px 14px; border: 1px solid #1f2b3d; border-radius: 12px; background: #0c121c; }
+        #alerts[hidden] { display: none; }
+        #alerts h2 { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+        #alerts-list { list-style: none; margin: 0; padding: 0; max-height: 132px; overflow-y: auto; scrollbar-width: thin; }
+        #alerts-list li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-top: 1px solid #1f2b3d; font-size: 14px; line-height: 1.4; }
+        #alerts-list li:first-child { border-top: 0; }
+        #alerts-list .kind { flex: none; font-size: 11px; letter-spacing: 0.08em; color: var(--accent); min-width: 44px; }
+        #alerts-list .text { flex: 1; color: var(--text); overflow-wrap: anywhere; }
+        #alerts-list .at { flex: none; font-size: 12px; color: var(--muted); }
+        #alerts-list button { flex: none; border: 0; background: none; color: var(--muted); font-size: 16px; line-height: 1; padding: 2px 6px; cursor: pointer; }
+        #alerts-list button:hover, #alerts-list button:focus-visible { color: #ff7a7a; }
     </style>
 </head>
 <body>
@@ -56,6 +69,10 @@
             <button id="orb" class="idle" aria-label="Start or pause listening"></button>
         </div>
         <p id="status" aria-live="polite">Click the orb to wake Jarvis.</p>
+        <section id="alerts" hidden aria-label="Notifications">
+            <h2 id="alerts-title">Notifications</h2>
+            <ul id="alerts-list"></ul>
+        </section>
         <div id="transcript" aria-live="polite"></div>
         <section id="confirm" hidden aria-live="assertive">
             <p id="confirm-title"></p>

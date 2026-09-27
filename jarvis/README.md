@@ -155,6 +155,8 @@ File access is **read-only** and limited to your home folder. Anything that look
 
 Jarvis can speak up on his own when a delivery is on its way or your phone rings, for example "Sir, an email from Deliveroo: Your order is on its way" or "Sir, incoming call from Mum." The Jarvis page must be open to hear it. You can also ask "Is anything being delivered today?"
 
+Each alert also goes in the **Notifications** panel on the page, newest first. When there are more than fit, the panel scrolls down slowly by itself; put the mouse on it to stop it. Click **×** on a notification to remove it.
+
 Deliveroo, Just Eat and Uber Eats have no way for personal apps to log in, so Jarvis doesn't use your accounts with them. He reads the emails and phone notifications they already send you.
 
 **Delivery emails (Gmail).** Jarvis checks your inbox every minute and announces order and delivery emails from Deliveroo, Just Eat, Uber Eats, Amazon, Royal Mail, Evri, DPD, DHL, UPS, FedEx and Yodel. Adverts ("50% off") are skipped. He only reads the sender, subject and date, and never marks anything as read.
