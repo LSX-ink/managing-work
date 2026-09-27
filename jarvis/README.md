@@ -165,6 +165,8 @@ Say "Alfred, open my Work folder" and he opens it on the HUD, or "open my Work f
 
 Alfred can make new folders too: "Alfred, create a Fitness folder" makes one of his own, and "create an Invoices folder in Work" makes one inside the six. Then say "save this in Fitness", "download this into Work/Invoices" or "open Work/Invoices" (that one opens in File Explorer). Every folder you make also becomes a ringed star in the sky around the wolf: hover it to see its name, click it to open the folder on the PC. When Alfred opens one, its star flares. New folders also show at the top of their folder's panel.
 
+To remove one, say "Alfred, delete the Work/Payslips folder". He asks you to confirm first, and only deletes empty folders he or you made, never the wolf's six.
+
 Alfred can download files too: "Download this PDF into my Work folder" with a link, or "find the Python logo and save it in Ideas". He keeps the file's own name unless you give one. Downloads are limited to 200 MB, and he refuses links that point at your own PC or home network (your router, other devices).
 
 ### Timers and breaks

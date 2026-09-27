@@ -237,3 +237,19 @@ def test_alfreds_own_folders(settings, monkeypatch):
         sent.append(message)
     asyncio.run(tools.run_tool("open_memory_folder", {"folder": "fitness"}, replace(settings, theme="hud-stars"), None, page))
     assert launched[0].name == "Fitness" and sent == [{"type": "memory", "star": "Fitness"}]
+
+
+def test_delete_memory_folder(settings):
+    memory.create_folder(settings, "Work", "Payslips")
+    memory.create_folder(settings, "", "Fitness")
+    memory.save_note(settings, "Fitness", "Monday", "legs")
+    assert "Not deleted" in memory.run_tool("delete_memory_folder", {"folder": "Work/Payslips", "confirmed": False}, settings)
+    assert (memory.root(settings) / "Work" / "Payslips").is_dir()
+    assert memory.run_tool("delete_memory_folder", {"folder": "work/payslips", "confirmed": True}, settings) == "Deleted the empty folder Work/Payslips."
+    assert not (memory.root(settings) / "Work" / "Payslips").exists()
+    with pytest.raises(ValueError, match="still has 1"):
+        memory.delete_folder(settings, "Fitness")
+    with pytest.raises(ValueError, match="six folders"):
+        memory.delete_folder(settings, "Work")
+    with pytest.raises(ValueError, match="no folder"):
+        memory.delete_folder(settings, "Nope")

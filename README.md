@@ -1,6 +1,6 @@
 # Planning and tracking your work with GitHub Projects and Issues
 
-## Abstractttt
+## Abstract
 
 Learn how GitHub Issues and project planning capabilities balance structure and flexibility for complex software development. Get hands-on with the redesigned GitHub Issues experience and other enhancements and discover practical techniques for leveraging markdown-based issue templates and custom sections that adapt to your team's unique workflows. Perfect for developers and DevOps practitioners seeking to streamline collaboration without sacrificing visibility or accountability.
 

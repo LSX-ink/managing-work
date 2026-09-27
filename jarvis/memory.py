@@ -111,6 +111,19 @@ def create_folder(settings: Settings, parent: str, name: str) -> Path:
     return path
 
 
+def delete_folder(settings: Settings, which: str) -> str:
+    """Remove an empty folder Alfred or the user made. The six wolf folders and folders with things in stay."""
+    path = folder(settings, which)
+    if path.parent == root(settings) and path.name.lower() in {n.lower() for n in names(settings)}:
+        raise ValueError(f"{path.name} is one of the wolf's six folders, so it can't be deleted. It can be renamed.")
+    if any(path.iterdir()):
+        count = sum(1 for _ in path.iterdir())
+        raise ValueError(f"The {path.name} folder still has {count} thing(s) in it, so I left it alone. "
+                         "Empty it first (open it in File Explorer), then ask again.")
+    path.rmdir()
+    return path.relative_to(root(settings)).as_posix()
+
+
 def subfolders(path: Path) -> list[dict]:
     return [{"name": p.name, "count": sum(1 for _ in p.iterdir())}
             for p in sorted(path.iterdir(), key=lambda p: p.name.lower()) if p.is_dir()]
@@ -310,6 +323,22 @@ def tool_definitions() -> list[dict]:
             },
         },
         {
+            "name": "delete_memory_folder",
+            "description": "Delete an empty folder that you or the user made (e.g. 'Fitness' or 'Work/Payslips'). "
+                           "Always ask the user to confirm first, naming the folder, and only call this with "
+                           "confirmed true after they say yes. Folders with things in them, and the wolf's six "
+                           "folders, can't be deleted.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder": {"type": "string", "description": "Folder to delete, e.g. 'Fitness' or 'Work/Payslips'."},
+                    "confirmed": {"type": "boolean", "description": "True only once the user has said yes to deleting it."},
+                },
+                "required": ["folder", "confirmed"],
+                "additionalProperties": False,
+            },
+        },
+        {
             "name": "open_memory_folder",
             "description": "Open one of the user's memory folders so they can see what's in it: on the HUD "
                            "(the wolf's folder panel) by default, or in File Explorer on the PC when they ask for that.",
@@ -348,6 +377,10 @@ def run_tool(name: str, args: dict, settings: Settings) -> str:
     if name == "create_memory_folder":
         path = create_folder(settings, args.get("parent") or "", args["name"])
         return f"Created the folder {path.relative_to(root(settings)).as_posix()}."
+    if name == "delete_memory_folder":
+        if args.get("confirmed") is not True:
+            return "Not deleted. Ask the user to confirm first, then call again with confirmed true."
+        return f"Deleted the empty folder {delete_folder(settings, args['folder'])}."
     if name == "save_to_memory":
         path = save_note(settings, args["folder"], args["title"], args["text"])
         return f"Saved as {path.name} in the {path.parent.name} folder."
