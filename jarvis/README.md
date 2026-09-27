@@ -167,6 +167,12 @@ You can make new folders inside the six too: "Alfred, create an Invoices folder 
 
 Alfred can download files too: "Download this PDF into my Work folder" with a link, or "find the Python logo and save it in Ideas". He keeps the file's own name unless you give one. Downloads are limited to 200 MB, and he refuses links that point at your own PC or home network (your router, other devices).
 
+### New abilities
+
+When you ask for something Alfred can't do yet ("Alfred, set a timer for ten minutes"), he doesn't just say no. He sends the request to Claude, the AI that builds him, as a GitHub issue labelled `alfred-wish`. Claude checks for new requests every few hours, builds each one as a pull request, and tells you in the project chat. Merge it, run `git pull` and restart, and Alfred can do it. You can also ask him to improve something ("Alfred, get better at…"). A copy of every request goes in `wishes.md` next to `server.py`.
+
+To send requests automatically, make a fine-grained GitHub token at https://github.com/settings/personal-access-tokens/new with access to only this repository and **Issues: Read and write**, and put it in `.env` as `JARVIS_GITHUB_TOKEN`. Without a token, Alfred opens the request on GitHub in your browser and you click **Submit**.
+
 ### Deliveries and calls
 
 Jarvis can speak up on his own when a delivery is on its way or your phone rings, for example "Sir, an email from Deliveroo: Your order is on its way" or "Sir, incoming call from Mum." The Jarvis page must be open to hear it. You can also ask "Is anything being delivered today?"

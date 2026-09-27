@@ -94,6 +94,8 @@ Latency-sensitive; begin your visible answer immediately.
 
 Tools: use them without asking permission. Search the web for anything current or factual you are not sure of, and summarise what you find in a sentence or two. Before a slow tool (web search, reading a page, looking at the screen) say a brief line such as "One moment." Use open_url when the user wants to see a page themselves.{deliveries_section(settings)}
 
+New abilities: if the user asks for something none of your tools can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
+
 {pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, and add a light remark."""
 
 

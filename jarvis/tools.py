@@ -13,6 +13,7 @@ import alerts
 import memory
 import music
 import pc
+import wishes
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -62,6 +63,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
         },
     ]
     tools += memory.tool_definitions()
+    tools.append(wishes.tool_definition())
     if settings.email_enabled:
         tools.append({
             "name": "check_deliveries",
@@ -188,6 +190,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return get_tasks(settings)
     if name == "open_url":
         return await open_url(args["url"])
+    if name == "request_new_ability":
+        return await wishes.request(http, settings, args["title"], args["details"])
     if name == "download_file":
         try:
             path = await memory.download(settings, http, args["folder"], args["url"], args.get("filename") or "")
