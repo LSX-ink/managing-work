@@ -70,13 +70,21 @@ window.HudBrain = (() => {
         return [h * 60, s * 100, l * 100];
     }
     let base = null;   // [hue, saturation] of the theme's main colour
+    let palette = null;   // optional own hue per region, from the theme's --hud-brain-hues
 
     const pulses = [];   // signals travelling along edges
     let lastSpawn = 0;
 
     function draw(ctx, w, h, t, mix, themeColor, slow) {
-        if (!base) base = hexToHsl(themeColor);
+        if (!base) {
+            base = hexToHsl(themeColor);
+            const hues = getComputedStyle(document.body).getPropertyValue('--hud-brain-hues').trim().split(/\s+/).map(Number);
+            palette = hues.length === REGIONS.length && hues.every(Number.isFinite) ? hues : null;
+        }
         const hsl = (dh, l, a) => `hsla(${base[0] + dh}, ${base[1]}%, ${l}%, ${a})`;
+        // region colours: shades of the theme colour, or the theme's own palette
+        const hslR = (dh, l, a) => (palette
+            ? `hsla(${palette[REGIONS.findIndex((r) => r.hue === dh)]}, 100%, ${l * 0.72}%, ${a})` : hsl(dh, l, a));
         const speed = slow ? 0.25 : 1;
         const T = t * speed;
         const S = Math.min(w, h) * 0.42 * (0.85 + 0.15 * mix);
@@ -109,15 +117,15 @@ window.HudBrain = (() => {
             const x1 = (x0 + x2) / 2 + Math.cos(perp) * off, y1 = (y0 + y2) / 2 + Math.sin(perp) * off;
             const grad = ctx.createLinearGradient(x0, y0, x2, y2);
             const hue = REGIONS[st.from.region].hue;
-            grad.addColorStop(0, hsl(hue, 70, 0.55));
-            grad.addColorStop(1, hsl(hue, 70, 0));
+            grad.addColorStop(0, hslR(hue, 70, 0.55));
+            grad.addColorStop(1, hslR(hue, 70, 0));
             ctx.strokeStyle = grad;
             ctx.beginPath();
             ctx.moveTo(x0, y0);
             ctx.quadraticCurveTo(x1, y1, x2, y2);
             ctx.stroke();
             const tip = 0.5 + 0.5 * Math.sin(T / 500 + st.phase * 3);
-            ctx.fillStyle = hsl(hue, 85, 0.25 + tip * 0.5);
+            ctx.fillStyle = hslR(hue, 85, 0.25 + tip * 0.5);
             ctx.beginPath();
             ctx.arc(x2, y2, 1 + tip * 1.6, 0, Math.PI * 2);
             ctx.fill();
@@ -142,7 +150,7 @@ window.HudBrain = (() => {
         ctx.lineWidth = 1;
         for (const [i, j] of EDGES) {
             const a = NODES[i], b = NODES[j];
-            ctx.strokeStyle = hsl(REGIONS[a.region].hue, 70, 0.2 + (fire[i] + fire[j]) * 0.3);
+            ctx.strokeStyle = hslR(REGIONS[a.region].hue, 70, 0.2 + (fire[i] + fire[j]) * 0.3);
             ctx.beginPath();
             ctx.moveTo(X(a.x), Y(a.y));
             ctx.lineTo(X(b.x), Y(b.y));
@@ -158,7 +166,7 @@ window.HudBrain = (() => {
             const p = pulses[k], f = (T - p.at) / 500;
             if (f > 1) { pulses.splice(k, 1); continue; }
             const a = NODES[p.e[0]], b = NODES[p.e[1]];
-            ctx.fillStyle = hsl(REGIONS[a.region].hue, 90, 1 - f);
+            ctx.fillStyle = hslR(REGIONS[a.region].hue, 90, 1 - f);
             ctx.beginPath();
             ctx.arc(X(a.x + (b.x - a.x) * f), Y(a.y + (b.y - a.y) * f), 1.6, 0, Math.PI * 2);
             ctx.fill();
@@ -169,11 +177,11 @@ window.HudBrain = (() => {
             const hue = REGIONS[n.region].hue, f = fire[i];
             const r = n.size * (1.2 + f * 1.4);
             const g = ctx.createRadialGradient(X(n.x), Y(n.y), 0, X(n.x), Y(n.y), r * 3);
-            g.addColorStop(0, hsl(hue, 80, f * 0.35));
-            g.addColorStop(1, hsl(hue, 70, 0));
+            g.addColorStop(0, hslR(hue, 80, f * 0.35));
+            g.addColorStop(1, hslR(hue, 70, 0));
             ctx.fillStyle = g;
             ctx.fillRect(X(n.x) - r * 3, Y(n.y) - r * 3, r * 6, r * 6);
-            ctx.fillStyle = hsl(hue, 90, 0.45 + f * 0.55);
+            ctx.fillStyle = hslR(hue, 90, 0.45 + f * 0.55);
             ctx.fillRect(X(n.x) - r / 2, Y(n.y) - r / 2, r, r);
         });
         ctx.restore();
@@ -192,14 +200,14 @@ window.HudBrain = (() => {
             const lx = X(r.at[0]) - tw / 2, ly = Y(r.at[1] + 0.11);
             ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
             ctx.fillRect(lx - 4, ly - th / 2, tw + 8, th);
-            ctx.strokeStyle = hsl(r.hue, 70, 0.8);
+            ctx.strokeStyle = hslR(r.hue, 70, 0.8);
             ctx.lineWidth = 1;
             ctx.strokeRect(lx - 4, ly - th / 2, tw + 8, th);
-            ctx.fillStyle = hsl(r.hue, 85, 1);
+            ctx.fillStyle = hslR(r.hue, 85, 1);
             ctx.fillText(text, lx, ly + 0.5);
         });
         ctx.restore();
     }
 
-    return { draw, resetColors: () => { base = null; } };
+    return { draw, resetColors: () => { base = null; palette = null; } };
 })();

@@ -62,52 +62,54 @@ body.hud.hud-green {  /* terminal */
     --hud-idle: #3dff8a; --hud-listen: #7dffb4; --hud-think: #ffe14a; --hud-speak: #c8ffdc;
 }
 
-body.hud.hud-stars {  /* black and white, on a starfield */
+body.hud.hud-stars {  /* black and white, on a starfield of coloured stars */
     --hud: #e8ecf2; --hud-bright: #ffffff; --hud-dim: rgba(232, 236, 242, 0.28); --hud-faint: rgba(232, 236, 242, 0.015);
     --hud-panel: rgba(0, 0, 0, 0.72); --hud-bg: #000; --hud-glow: rgba(200, 210, 230, 0.12);
     --hud-idle: #d9dee6; --hud-listen: #ffffff; --hud-think: #ffffff; --hud-speak: #f2f4f8; --hud-warn: #ffffff;
+    /* the thinking brain in full colour: prefrontal, motor, sensory, association, language, predictive, hippocampus, cerebellum */
+    --hud-brain-hues: 205 350 220 320 185 275 135 40;
 }
 body.hud.hud-stars .hud-chips .on { color: #fff; border-color: #fff; }
 body.hud.hud-stars::before, body.hud.hud-stars::after {   /* two star layers that twinkle out of step */
     content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background-image:
-        radial-gradient(1.5px 1.5px at 121px 303px, #fff 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 189px 309px, #fff 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 310px 6px, #cfd6e0 50%, transparent 51%),
-        radial-gradient(1px 1px at 282px 119px, #9aa3b0 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 276px 281px, #9aa3b0 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 121px 303px, #9fffe0 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 189px 309px, #ff9f9f 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 310px 6px, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 282px 119px, #ff9f9f 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 276px 281px, #fff 50%, transparent 51%),
         radial-gradient(2px 2px at 77px 118px, #fff 50%, transparent 51%),
         radial-gradient(2px 2px at 267px 199px, #fff 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 32px 81px, #fff 50%, transparent 51%),
-        radial-gradient(1px 1px at 154px 15px, #9aa3b0 50%, transparent 51%),
-        radial-gradient(2px 2px at 304px 198px, #9aa3b0 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 202px 295px, #fff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 32px 81px, #9fffe0 50%, transparent 51%),
+        radial-gradient(1px 1px at 154px 15px, #9fc4ff 50%, transparent 51%),
+        radial-gradient(2px 2px at 304px 198px, #c7b3ff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 202px 295px, #ffd29a 50%, transparent 51%),
         radial-gradient(1px 1px at 187px 49px, #fff 50%, transparent 51%),
-        radial-gradient(1px 1px at 253px 111px, #9aa3b0 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 154px 215px, #9aa3b0 50%, transparent 51%);
+        radial-gradient(1px 1px at 253px 111px, #9fc4ff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 154px 215px, #ffd29a 50%, transparent 51%);
     background-size: 317px 317px;
     animation: hud-twinkle 6s ease-in-out infinite alternate;
 }
 body.hud.hud-stars::after {
     background-image:
-        radial-gradient(1.5px 1.5px at 293px 179px, #9aa3b0 50%, transparent 51%),
-        radial-gradient(1px 1px at 299px 118px, #fff 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 438px 143px, #fff 50%, transparent 51%),
-        radial-gradient(1px 1px at 357px 440px, #fff 50%, transparent 51%),
-        radial-gradient(1px 1px at 365px 335px, #cfd6e0 50%, transparent 51%),
-        radial-gradient(1px 1px at 145px 63px, #9aa3b0 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 437px 327px, #fff 50%, transparent 51%),
-        radial-gradient(1px 1px at 176px 409px, #9aa3b0 50%, transparent 51%),
-        radial-gradient(1px 1px at 459px 77px, #cfd6e0 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 218px 393px, #fff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 293px 179px, #9fc4ff 50%, transparent 51%),
+        radial-gradient(1px 1px at 299px 118px, #ff9f9f 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 438px 143px, #c7b3ff 50%, transparent 51%),
+        radial-gradient(1px 1px at 357px 440px, #ffd29a 50%, transparent 51%),
+        radial-gradient(1px 1px at 365px 335px, #c7b3ff 50%, transparent 51%),
+        radial-gradient(1px 1px at 145px 63px, #9fffe0 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 437px 327px, #9fc4ff 50%, transparent 51%),
+        radial-gradient(1px 1px at 176px 409px, #9fffe0 50%, transparent 51%),
+        radial-gradient(1px 1px at 459px 77px, #ffd29a 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 218px 393px, #9fc4ff 50%, transparent 51%),
         radial-gradient(1.5px 1.5px at 22px 309px, #fff 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 193px 367px, #cfd6e0 50%, transparent 51%),
-        radial-gradient(1px 1px at 282px 451px, #fff 50%, transparent 51%),
-        radial-gradient(1px 1px at 18px 158px, #fff 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 55px 307px, #fff 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 485px 101px, #cfd6e0 50%, transparent 51%),
-        radial-gradient(1px 1px at 312px 134px, #fff 50%, transparent 51%),
-        radial-gradient(1px 1px at 501px 444px, #cfd6e0 50%, transparent 51%);
+        radial-gradient(1.5px 1.5px at 193px 367px, #ffd29a 50%, transparent 51%),
+        radial-gradient(1px 1px at 282px 451px, #c7b3ff 50%, transparent 51%),
+        radial-gradient(1px 1px at 18px 158px, #ff9f9f 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 55px 307px, #ffd29a 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 485px 101px, #c7b3ff 50%, transparent 51%),
+        radial-gradient(1px 1px at 312px 134px, #ffd29a 50%, transparent 51%),
+        radial-gradient(1px 1px at 501px 444px, #9fc4ff 50%, transparent 51%);
     background-size: 503px 503px;
     animation-duration: 9s;
     animation-direction: alternate-reverse;
