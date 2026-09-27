@@ -107,6 +107,20 @@ function addLine(who, text) {
     transcript.scrollTop = transcript.scrollHeight;
 }
 
+// Where the chat sits: a corner ("bottom-left" etc.) or the centre column. Remembered in this browser.
+const CHAT_CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+function placeChat(corner) {
+    if (CHAT_CORNERS.includes(corner)) document.body.dataset.chat = corner;
+    else delete document.body.dataset.chat;
+    try { localStorage.setItem('jarvis-chat', CHAT_CORNERS.includes(corner) ? corner : 'centre'); } catch (e) { /* private window */ }
+    transcript.scrollTop = transcript.scrollHeight;
+    window.dispatchEvent(new Event('resize'));  // the folder stars move out of its way
+}
+try {
+    const saved = localStorage.getItem('jarvis-chat');
+    if (CHAT_CORNERS.includes(saved)) document.body.dataset.chat = saved;
+} catch (e) { /* private window */ }
+
 // ---- WebSocket --------------------------------------------------------------
 
 // A timer's chime: three soft rising beeps, made in the browser (no sound file needed).
@@ -150,6 +164,8 @@ function connect(onOpen) {
             addLine('jarvis', msg.text);  // shown, not spoken
         } else if (msg.type === 'chime') {
             chime();
+        } else if (msg.type === 'chat') {
+            placeChat(msg.corner);
         } else if (msg.type === 'memory') {
             document.dispatchEvent(new CustomEvent('jarvis:memory', { detail: msg }));  // memory.js opens the folder
         } else if (msg.type === 'confirm') {
