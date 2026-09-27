@@ -161,6 +161,8 @@ On the HUD, click **MEMORY** at the top right. Each of the wolf's six parts is l
 
 The folders are real folders on your PC, in `jarvis\memory` (or wherever `JARVIS_MEMORY_DIR` points). Git ignores them, so updates never touch them. You can also ask, for example "Alfred, save 'buy milk' in my Shopping folder" or "What's in my Ideas folder?"
 
+Alfred can download files too: "Download this PDF into my Work folder" with a link, or "find the Python logo and save it in Ideas". He keeps the file's own name unless you give one. Downloads are limited to 200 MB, and he refuses links that point at your own PC or home network (your router, other devices).
+
 ### Deliveries and calls
 
 Jarvis can speak up on his own when a delivery is on its way or your phone rings, for example "Sir, an email from Deliveroo: Your order is on its way" or "Sir, incoming call from Mum." The Jarvis page must be open to hear it. You can also ask "Is anything being delivered today?"
