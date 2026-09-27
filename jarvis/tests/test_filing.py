@@ -119,3 +119,14 @@ def test_no_connection_is_explained(settings, monkeypatch):
     monkeypatch.setattr(filing.imaplib, "IMAP4_SSL", Offline)
     msg = asyncio.run(filing.run_tool("add_email_rule", {"sender": "VGC", "folder": "HS2", "name": "VGC Payslip"}, settings))
     assert "couldn't connect to imap.gmail.com" in msg
+
+
+@pytest.mark.parametrize("address, host, expected", [
+    ("me@gmail.com", "", "imap.gmail.com"),
+    ("me@gmail.com", "  imap.gmail.com ", "imap.gmail.com"),
+    ("me@gmail.com", "me@gmail.com", "imap.gmail.com"),
+    ("me@hotmail.co.uk", "", "outlook.office365.com"),
+    ("me@work.com", "mail.work.com", "mail.work.com"),
+])
+def test_imap_host_is_fixed_up(address, host, expected):
+    assert Settings(email_address=address, email_imap_host=host).email_imap_host == expected
