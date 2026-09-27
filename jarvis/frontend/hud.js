@@ -184,7 +184,6 @@
         const up = Math.floor((Date.now() - t0) / 1000);
         $('hud-uptime').textContent = `${pad(Math.floor(up / 3600))}:${pad(Math.floor(up / 60) % 60)}:${pad(up % 60)}`;
         $('hud-status').textContent = state().toUpperCase();
-        $('hud-count').textContent = document.querySelectorAll('#transcript > div').length;
         const conn = navigator.connection && navigator.connection.effectiveType;
         $('hud-net').textContent = navigator.onLine ? `ONLINE${conn ? ' · ' + conn.toUpperCase() : ''}` : 'OFFLINE';
         const link = $('hud-link');
@@ -197,6 +196,17 @@
             const data = await (await fetch('/weather')).json();
             if (data.text) $('hud-weather').textContent = data.text;
         } catch (e) { /* keep the last reading */ }
+    }
+
+    async function loadEmails() {
+        try {
+            const data = await (await fetch('/emails')).json();
+            if (data.unread === null || data.unread === undefined) {
+                $('hud-emails').textContent = data.error ? 'CHECK FAILED' : 'NOT SET UP';
+            } else {
+                $('hud-emails').textContent = `${data.unread} UNREAD`;
+            }
+        } catch (e) { /* keep the last count */ }
     }
 
     function frame(t) {
@@ -228,6 +238,8 @@
         setInterval(tickText, 1000);
         loadWeather();
         setInterval(loadWeather, 10 * 60 * 1000);
+        loadEmails();
+        setInterval(loadEmails, 60 * 1000);
         requestAnimationFrame(frame);
     }
 

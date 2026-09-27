@@ -133,6 +133,17 @@ def fetch_mail(settings: Settings, days: int = 1, after_uid: int = 0, limit: int
     return sorted(mails, key=lambda m: m.uid)
 
 
+def unread_count(settings: Settings) -> int:
+    """How many unread emails are in the inbox. Read-only: nothing is marked as read."""
+    with imaplib.IMAP4_SSL(settings.email_imap_host) as imap:
+        imap.login(settings.email_address, settings.email_app_password.replace(" ", ""))
+        _, data = imap.status("INBOX", "(UNSEEN)")
+    found = re.search(rb"UNSEEN (\d+)", data[0] or b"")
+    if not found:
+        raise ValueError(f"unexpected reply from the mail server: {data!r}")
+    return int(found.group(1))
+
+
 def recent_deliveries(settings: Settings, days: int = 3) -> str:
     """Delivery emails from the last few days, for the check_deliveries tool."""
     found = []

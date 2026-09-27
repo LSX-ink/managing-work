@@ -28,6 +28,7 @@ from config import ROOT, settings
 
 FRONTEND = ROOT / "frontend"
 WEATHER_TTL = 600  # seconds the HUD weather panel reuses a reading
+EMAIL_TTL = 60  # seconds the HUD email counter reuses a count
 CONFIRM_TIMEOUT = 120  # seconds to approve mouse/keyboard actions before they are declined
 SESSION_COOKIE = "jarvis_session"
 SESSION_DAYS = 30
@@ -158,6 +159,7 @@ async def client_config():
 
 
 _weather: dict = {"at": 0.0, "text": ""}
+_emails: dict = {"at": 0.0, "unread": None}
 
 
 @app.get("/weather")
@@ -173,6 +175,21 @@ async def weather():
         except Exception as exc:
             return {"text": "", "error": str(exc)}
     return {"text": _weather["text"]}
+
+
+@app.get("/emails")
+async def emails():
+    """Unread email count for the HUD, cached so each page refresh doesn't log in to the mail server."""
+    if not settings.email_enabled:
+        return {"unread": None}
+    now = asyncio.get_running_loop().time()
+    if _emails["unread"] is None or now - _emails["at"] > EMAIL_TTL:
+        try:
+            _emails["unread"] = await asyncio.to_thread(alerts.unread_count, settings)
+            _emails["at"] = now
+        except Exception as exc:
+            return {"unread": _emails["unread"], "error": str(exc)}
+    return {"unread": _emails["unread"]}
 
 
 def same_origin(ws: WebSocket) -> bool:
