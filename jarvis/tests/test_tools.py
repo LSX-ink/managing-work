@@ -174,3 +174,17 @@ def test_inbox_text(monkeypatch):
     text = tools.inbox_text(Settings(), 24)
     assert text.startswith("2 emails in the last 24 hours")
     assert text.index("Mum") < text.index("VGC") and "(no subject)" in text and "Ancient" not in text
+
+
+def test_listen_for_name_tells_the_page():
+    import asyncio
+
+    import tools
+    from config import Settings
+
+    sent = []
+
+    async def page(message):
+        sent.append(message)
+    assert "only answering" in asyncio.run(tools.run_tool("listen_for_name", {"on": True}, Settings(), None, page))
+    assert sent == [{"type": "wakeword", "on": True}]

@@ -18,6 +18,7 @@ const STRINGS = {
         reconnecting: 'Connection lost. Reconnecting…',
         thinking: 'Thinking…',
         listening: 'Listening…',
+        listeningWake: 'Say "{name}" to talk to me…',
         paused: 'Paused. Click the orb to resume.',
         micBlocked: 'Microphone blocked. You can still type below.',
         noRecognition: 'Voice input needs Chrome or Edge. Type below instead.',
@@ -42,6 +43,7 @@ const STRINGS = {
         reconnecting: 'Verbinding verloor. Koppel weer…',
         thinking: 'Dink…',
         listening: 'Luister…',
+        listeningWake: 'Sê "{name}" om met my te praat…',
         paused: 'Onderbreek. Klik op die bol om voort te gaan.',
         micBlocked: 'Mikrofoon geblokkeer. Jy kan steeds hieronder tik.',
         noRecognition: 'Steminvoer werk net in Chrome of Edge. Tik eerder hieronder.',
@@ -93,6 +95,23 @@ const queue = [];
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 let listening = false;
+let stopper = null;    // listens for "stop" while Jarvis speaks
+let lastSpokeAt = 0;   // when Jarvis last finished speaking (follow-ups need no name)
+const FOLLOW_UP_MS = 20000;
+const STOP_WORDS = /^(?:(?:ok(?:ay)?|alfred|jarvis) )?(?:stop|quiet|be quiet|shush|hush|enough|that's enough|shut up)(?: (?:alfred|jarvis))?[.!]?$/i;
+let wakeOnly = null;   // only answer when called by name; null until /config arrives
+try { const w = localStorage.getItem('jarvis-wake'); if (w !== null) wakeOnly = w === 'on'; } catch (e) { /* private window */ }
+
+function setWakeOnly(on) {
+    wakeOnly = !!on;
+    try { localStorage.setItem('jarvis-wake', wakeOnly ? 'on' : 'off'); } catch (e) { /* private window */ }
+    if (listening) setState('listening', t(wakeOnly ? 'listeningWake' : 'listening'));
+}
+
+function calledByName(text) {
+    const names = [config.name, 'jarvis', 'alfred'].map((n) => n.toLowerCase());
+    return names.some((n) => new RegExp(`\\b${n}\\b`, 'i').test(text));
+}
 
 function setState(state, text = '') {
     orb.className = state;
@@ -164,6 +183,8 @@ function connect(onOpen) {
             addLine('jarvis', msg.text);  // shown, not spoken
         } else if (msg.type === 'chime') {
             chime();
+        } else if (msg.type === 'wakeword') {
+            setWakeOnly(msg.on);
         } else if (msg.type === 'chat') {
             placeChat(msg.corner);
         } else if (msg.type === 'memory') {
@@ -303,7 +324,8 @@ function playNext() {
     speaking = true;
     stopListening();
     setState('speaking');
-    const finish = () => { speaking = false; playNext(); };
+    startStopper();
+    const finish = () => { speaking = false; lastSpokeAt = Date.now(); stopStopper(); playNext(); };
 
     if (msg.audio) {
         const bytes = Uint8Array.from(atob(msg.audio), (c) => c.charCodeAt(0));
@@ -337,6 +359,9 @@ if (Recognition) {
     recognition.onresult = (event) => {
         const result = event.results[event.results.length - 1];
         const text = result[0].transcript.trim();
+        if (result.isFinal && text && wakeOnly && !calledByName(text) && Date.now() - lastSpokeAt > FOLLOW_UP_MS) {
+            return;  // not for Jarvis: he waits to be called by name
+        }
         if (result.isFinal && text) {
             addLine('user', text);
             send({ text });
@@ -364,8 +389,50 @@ function maybeListen() {
         recognition.lang = config.speechLang;
         recognition.start();
         listening = true;
-        setState('listening', t('listening'));
+        setState('listening', t(wakeOnly ? 'listeningWake' : 'listening'));
     } catch (e) { /* already started */ }
+}
+
+// While Jarvis speaks, a second recogniser listens only for "stop", "quiet", "that's enough"…
+function startStopper() {
+    if (!Recognition || paused || !started) return;
+    if (!stopper) {
+        stopper = new Recognition();
+        stopper.continuous = true;
+        stopper.interimResults = true;
+        stopper.onresult = (event) => {
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (STOP_WORDS.test(event.results[i][0].transcript.trim())) {
+                    skipSpeech();
+                    return;
+                }
+            }
+        };
+        stopper.onend = () => { stopper.running = false; if (speaking) setTimeout(startStopper, 200); };
+        stopper.onerror = () => {};
+    }
+    if (stopper.running) return;
+    try {
+        stopper.lang = config.speechLang;
+        stopper.start();
+        stopper.running = true;
+    } catch (e) { /* already started */ }
+}
+
+function stopStopper() {
+    if (stopper && stopper.running) stopper.abort();
+    if (stopper) stopper.running = false;
+}
+
+// Stop talking now and drop anything still queued.
+function skipSpeech() {
+    queue.length = 0;
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (currentAudio) currentAudio.pause();
+    speaking = false;
+    lastSpokeAt = Date.now();
+    stopStopper();
+    maybeListen();
 }
 
 function stopListening() {
@@ -382,12 +449,7 @@ orb.addEventListener('click', () => {
         return;
     }
     if (speaking) {
-        // Tap while speaking: skip the rest of what Jarvis is saying.
-        queue.length = 0;
-        if ('speechSynthesis' in window) speechSynthesis.cancel();
-        if (currentAudio) currentAudio.pause();
-        speaking = false;
-        maybeListen();
+        skipSpeech();  // tap while speaking: skip the rest of what Jarvis is saying
         return;
     }
     paused = !paused;
@@ -424,6 +486,7 @@ function applyLanguage() {
 
 fetch('/config').then((r) => r.json()).then((c) => {
     config = c;
+    if (wakeOnly === null) wakeOnly = !!config.wakeWord;
     applyLanguage();
     // "hud" or a colour variant such as "hud-gold": both classes go on the page
     if (config.theme && config.theme.startsWith('hud')) document.body.classList.add('hud', config.theme);

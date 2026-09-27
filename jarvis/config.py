@@ -39,6 +39,7 @@ class Settings:
     language: str = os.getenv("JARVIS_LANGUAGE", "English")
     persona: str = os.getenv("JARVIS_PERSONA", "jarvis").strip().lower()
     theme: str = os.getenv("JARVIS_THEME", "classic").strip().lower()  # "classic" orb or "hud" dashboard
+    wake_word: bool = _bool("JARVIS_WAKE_WORD", False)  # only answer speech that uses Alfred's name
     greeting: str = os.getenv("JARVIS_GREETING", "").strip()  # fixed wake-up line; empty = weather and tasks
     elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
