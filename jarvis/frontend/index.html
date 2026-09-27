@@ -54,7 +54,7 @@
     <header class="hud-only hud-bar">
         <span id="hud-title">J.A.R.V.I.S.</span>
         <span class="hud-sub">PERSONAL ASSISTANT // LOCAL NODE</span>
-        <span class="hud-chips"><span id="hud-link">LINK · STANDBY</span><span id="hud-mic">MIC · OFF</span></span>
+        <span class="hud-chips"><button id="hud-memory" type="button" aria-pressed="false" title="Show the memory folders">MEMORY</button><span id="hud-link">LINK · STANDBY</span><span id="hud-mic">MIC · OFF</span></span>
     </header>
     <aside class="hud-only hud-panel hud-left" aria-label="System status">
         <h2>SYSTEM</h2>
@@ -104,6 +104,22 @@
             <p id="hud-weather">—</p>
         </section>
     </main>
+    <aside id="memory-panel" class="hud-only hud-panel" hidden aria-label="Memory folder">
+        <div class="mem-head">
+            <input id="memory-name" type="text" aria-label="Folder name" maxlength="60">
+            <button id="memory-rename" type="button">RENAME</button>
+            <button id="memory-close" class="mem-close" type="button" aria-label="Close folder">×</button>
+        </div>
+        <ul id="memory-items"></ul>
+        <input id="memory-title" type="text" placeholder="Note title" aria-label="Note title" maxlength="60">
+        <textarea id="memory-text" placeholder="Write a note…" aria-label="Note"></textarea>
+        <div class="mem-row">
+            <button id="memory-save" type="button">SAVE NOTE</button>
+            <label class="mem-file" for="memory-file">ADD FILE</label>
+            <input id="memory-file" type="file" multiple>
+        </div>
+        <p id="memory-msg" class="mem-msg" aria-live="polite"></p>
+    </aside>
     <aside id="np-popup" class="hud-panel" hidden aria-live="polite">
         <img id="np-art" alt="" hidden>
         <div id="np-text">
@@ -114,6 +130,7 @@
     </aside>
     <script src="/static/main.js"></script>
     <script src="/static/neural.js"></script>
+    <script src="/static/memory.js"></script>
     <script src="/static/hud.js"></script>
 </body>
 </html>

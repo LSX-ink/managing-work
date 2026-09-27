@@ -1,4 +1,4 @@
-// HUD theme: particle sphere, radar, audio waveform, clock and live status. Only runs when body.hud is set.
+// HUD theme: particle sphere (the wolf while thinking), radar, audio waveform, clock and live status. Only runs when body.hud is set.
 (() => {
     const COLORS = { idle: '#3fa9ff', listening: '#4fd1ff', thinking: '#ffc24a', speaking: '#8ae9ff' };
     function loadColors() {   // the theme's CSS variables decide the colours
@@ -40,18 +40,25 @@
         return [Math.cos(theta) * r, y, Math.sin(theta) * r];
     });
     let level = 0.25;
-    let brainMix = 0;   // 0 = particle sphere, 1 = neural brain (while thinking)
+    let wolfMix = 0;     // 0 = particle sphere, 1 = the wolf (while thinking, or with the memory folders open)
+    let streamMix = 0;   // how much the wolf's dots stream out: only while thinking
 
     function drawSphere(t) {
         const [ctx, w, h] = fitCanvas($('hud-sphere'));
         const s = state();
         const color = COLORS[s];
         level += (ENERGY[s] + (s === 'listening' ? micLevel * 1.5 : 0) - level) * 0.05;
-        brainMix += ((s === 'thinking' && window.HudBrain ? 1 : 0) - brainMix) * 0.06;
-        const fade = 1 - brainMix;
-        const cx = w / 2, cy = h / 2, R = Math.min(w, h, 420) * 0.27 * (1 + level * 0.08 + Math.sin(t / 400) * 0.01 * level) * (1 - brainMix * 0.5);
+        const memory = window.HudMemory && window.HudMemory.open;
+        wolfMix += (((s === 'thinking' || memory) && window.HudWolf ? 1 : 0) - wolfMix) * 0.06;
+        streamMix += ((s === 'thinking' ? 1 : 0) - streamMix) * 0.04;
+        const fade = 1 - wolfMix;
+        const cx = w / 2, cy = h / 2, R = Math.min(w, h, 420) * 0.27 * (1 + level * 0.08 + Math.sin(t / 400) * 0.01 * level) * (1 - wolfMix * 0.5);
         ctx.clearRect(0, 0, w, h);
-        if (brainMix > 0.01) window.HudBrain.draw(ctx, w, h, t, brainMix, COLORS.idle, reduceMotion);
+        if (wolfMix > 0.01) {
+            window.HudWolf.draw(ctx, w, h, t, wolfMix, COLORS.idle, reduceMotion, {
+                stream: streamMix, labels: memory ? window.HudMemory.labels() : null, hover: memory ? window.HudMemory.hover : -1,
+            });
+        }
         if (fade < 0.01) return;
 
         // core glow

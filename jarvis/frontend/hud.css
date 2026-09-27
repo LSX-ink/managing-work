@@ -66,8 +66,6 @@ body.hud.hud-stars {  /* black and white, on a starfield of coloured stars */
     --hud: #e8ecf2; --hud-bright: #ffffff; --hud-dim: rgba(232, 236, 242, 0.28); --hud-faint: rgba(232, 236, 242, 0.015);
     --hud-panel: rgba(0, 0, 0, 0.72); --hud-bg: #000; --hud-glow: rgba(200, 210, 230, 0.12);
     --hud-idle: #d9dee6; --hud-listen: #ffffff; --hud-think: #ffffff; --hud-speak: #f2f4f8; --hud-warn: #ffffff;
-    /* the thinking brain in full colour: prefrontal, motor, sensory, association, language, predictive, hippocampus, cerebellum */
-    --hud-brain-hues: 205 350 220 320 185 275 135 40;
 }
 body.hud.hud-stars .hud-chips .on { color: #fff; border-color: #fff; }
 body.hud.hud-stars::before, body.hud.hud-stars::after {   /* two star layers that twinkle out of step */
@@ -131,7 +129,10 @@ body.hud .hud-bar {
 #hud-title { color: var(--hud); font-size: 18px; letter-spacing: 0.2em; text-shadow: 0 0 10px var(--hud); }
 .hud-sub { color: var(--hud-mid); flex: 1; }
 .hud-chips { display: flex; gap: 10px; }
-.hud-chips span { border: 1px solid var(--hud-dim); padding: 3px 8px; font-size: 12px; white-space: nowrap; }
+.hud-chips span, .hud-chips button { border: 1px solid var(--hud-dim); padding: 3px 8px; font-size: 12px; white-space: nowrap; }
+.hud-chips button { background: none; color: inherit; font: inherit; letter-spacing: inherit; cursor: pointer; }
+.hud-chips button:hover, .hud-chips button:focus-visible { border-color: var(--hud); outline: none; }
+.hud-chips button[aria-pressed="true"] { color: var(--hud-bright); border-color: var(--hud); box-shadow: 0 0 10px var(--hud-dim); }
 .hud-chips .on { color: #5dffb0; border-color: rgba(93, 255, 176, 0.5); }
 
 body.hud .hud-panel {
@@ -175,6 +176,37 @@ body.hud #orb {
     background: transparent; box-shadow: none; animation: none; border-radius: 50%;
 }
 body.hud #orb:focus-visible { outline: 1px dashed var(--hud); outline-offset: 10px; }
+/* memory mode: the wolf's parts are clickable folders, so the orb steps aside */
+body.hud #orb-wrap.memory #orb { pointer-events: none; }
+body.hud #orb-wrap.memory.over { cursor: pointer; }
+body.hud #memory-panel {
+    position: fixed; z-index: 20; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto;
+    display: grid; gap: 12px; background: var(--hud-bg); box-shadow: 0 0 40px var(--hud-glow);
+}
+body.hud #memory-panel[hidden] { display: none; }
+#memory-panel .mem-head { display: flex; gap: 8px; align-items: center; }
+#memory-panel input, #memory-panel textarea {
+    flex: 1; min-width: 0; background: var(--hud-bg); border: 1px solid var(--hud-dim); color: var(--hud-bright);
+    font: inherit; padding: 6px 8px;
+}
+#memory-panel textarea { width: 100%; box-sizing: border-box; min-height: 70px; resize: vertical; }
+#memory-panel input:focus, #memory-panel textarea:focus { border-color: var(--hud); outline: none; }
+#memory-panel button, #memory-panel label.mem-file {
+    background: none; border: 1px solid var(--hud-dim); color: var(--hud); font: inherit; font-size: 12px;
+    letter-spacing: 0.15em; padding: 6px 10px; cursor: pointer; white-space: nowrap;
+}
+#memory-panel button:hover, #memory-panel label.mem-file:hover, #memory-panel button:focus-visible { border-color: var(--hud); outline: none; }
+#memory-panel .mem-close { border: 0; font-size: 18px; padding: 0 4px; }
+#memory-panel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 30vh; overflow-y: auto; }
+#memory-panel li { display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--hud-dim); padding-top: 4px; }
+#memory-panel li a { flex: 1; color: var(--hud-bright); overflow-wrap: anywhere; }
+#memory-panel li .size { color: var(--hud-mid); font-size: 12px; }
+#memory-panel li button { border: 0; padding: 0 4px; font-size: 16px; color: var(--hud-mid); }
+#memory-panel .mem-empty { color: var(--hud-mid); font-size: 13px; }
+#memory-panel .mem-row { display: flex; gap: 8px; flex-wrap: wrap; }
+#memory-panel .mem-msg { color: var(--hud-warn); font-size: 13px; min-height: 1em; margin: 0; }
+#memory-file { position: absolute; width: 1px; height: 1px; opacity: 0; }
 body.hud #status { color: var(--hud); letter-spacing: 0.2em; text-transform: uppercase; }
 body.hud #transcript {
     border: 1px solid var(--hud-dim); background: var(--hud-panel); padding: 12px 14px; max-height: 26vh; font-size: 14px;
