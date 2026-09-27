@@ -23,6 +23,7 @@ import alerts
 import memory
 import nowplaying
 import pc
+import timers
 import tools
 import tts
 from brain import Brain, computer_enabled, persona
@@ -45,6 +46,7 @@ async def lifespan(app: FastAPI):
     app.state.alerts = []  # notifications shown on the page, newest last
     app.state.alert_ids = itertools.count(1)
     watchers = alerts.start(settings, lambda text, kind: announce(app, text, kind))
+    timers.set_announcer(lambda text, kind: announce(app, text, kind))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
     yield
@@ -77,7 +79,10 @@ async def announce(app: FastAPI, text: str, kind: str = "phone") -> None:
         brain.note(text)
         try:
             await ws.send_json({"type": "alert", **item})
-            await speak(text, quiet=True)
+            if kind == "timer":
+                await ws.send_json({"type": "chime"})
+            if not timers.on_break:  # on a break Alfred stays silent; it still goes in the notifications
+                await speak(text, quiet=True)
         except Exception:  # the page closed mid-send
             pass
 
@@ -334,10 +339,14 @@ async def websocket(ws: WebSocket):
         while True:
             msg = await inbox.get()
             if msg.get("type") == "activate":
+                timers.on_break = False  # clicking the orb ends a break too
                 await brain.activate(speak)
             elif text := str(msg.get("text", "")).strip():
                 print(f"  You:    {text}", flush=True)
-                await brain.handle(text, speak)
+                if timers.wakes_from_break(settings, text):
+                    await brain.handle(text, speak)
+                else:
+                    print("  (on a break: ignored until called by name)", flush=True)
             await ws.send_json({"type": "done"})
 
     task = asyncio.create_task(worker())

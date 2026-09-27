@@ -23,6 +23,8 @@ from typing import Awaitable, Callable
 
 import httpx
 
+import filing
+
 from config import ROOT, Settings
 
 # announce(text, kind): kind is "email", "call" or "phone" and picks the icon on the page.
@@ -294,6 +296,7 @@ def start(settings: Settings, announce: Announce) -> list[asyncio.Task]:
     tasks = []
     if settings.email_enabled:
         tasks.append(asyncio.create_task(watch_email(settings, announce)))
+        tasks.append(asyncio.create_task(filing.watch(settings, announce)))
     if settings.phone_alerts:
         tasks.append(asyncio.create_task(watch_phone(settings, announce)))
     if settings.phone_relay:
