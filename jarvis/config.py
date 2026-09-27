@@ -17,6 +17,16 @@ def _bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+# IMAP servers for common email providers, used when JARVIS_EMAIL_IMAP_HOST is left empty.
+IMAP_HOSTS = {
+    "gmail.com": "imap.gmail.com", "googlemail.com": "imap.gmail.com",
+    "outlook.com": "outlook.office365.com", "hotmail.com": "outlook.office365.com",
+    "hotmail.co.uk": "outlook.office365.com", "live.com": "outlook.office365.com", "live.co.uk": "outlook.office365.com",
+    "yahoo.com": "imap.mail.yahoo.com", "yahoo.co.uk": "imap.mail.yahoo.com",
+    "icloud.com": "imap.mail.me.com", "me.com": "imap.mail.me.com",
+}
+
+
 @dataclass(frozen=True)
 class Settings:
     model: str = os.getenv("JARVIS_MODEL", "claude-opus-5")
@@ -44,7 +54,7 @@ class Settings:
     # Delivery emails: IMAP login (for Gmail, an app password, not your normal one)
     email_address: str = os.getenv("JARVIS_EMAIL_ADDRESS", "").strip()
     email_app_password: str = os.getenv("JARVIS_EMAIL_APP_PASSWORD", "").strip()
-    email_imap_host: str = os.getenv("JARVIS_EMAIL_IMAP_HOST", "imap.gmail.com")
+    email_imap_host: str = os.getenv("JARVIS_EMAIL_IMAP_HOST", "").strip()  # empty: picked from the address
     email_check_seconds: int = int(os.getenv("JARVIS_EMAIL_CHECK_SECONDS", "60"))
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
     # Calls over the internet: your phone posts to a private ntfy topic that Jarvis makes up himself
@@ -56,6 +66,14 @@ class Settings:
     # New abilities: requests Alfred can't handle go to Claude as GitHub issues on this repository
     github_repo: str = os.getenv("JARVIS_GITHUB_REPO", "LSX-ink/managing-work").strip()
     github_token: str = os.getenv("JARVIS_GITHUB_TOKEN", "").strip()  # empty: open the issue page to click Submit
+
+    def __post_init__(self) -> None:
+        # A blank or mistyped host (an email address, a space) can't connect; pick it from the email address instead.
+        host = self.email_imap_host.strip()
+        if not host or "@" in host or " " in host:
+            domain = self.email_address.rpartition("@")[2].lower()
+            host = IMAP_HOSTS.get(domain, "imap.gmail.com")
+        object.__setattr__(self, "email_imap_host", host)
 
     @property
     def email_enabled(self) -> bool:

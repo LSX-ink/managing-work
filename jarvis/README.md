@@ -82,7 +82,7 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `JARVIS_ENABLE_COMPUTER` | `false` | Mouse and keyboard control, with your OK for every action (Opus 5 models) |
 | `JARVIS_PASSWORD` | (empty) | When set, the page asks for this password first. A browser stays logged in for 30 days, or until you change the password |
 | `JARVIS_EMAIL_ADDRESS` / `JARVIS_EMAIL_APP_PASSWORD` | (empty) | Your email and an app password, for delivery alerts. See [Deliveries and calls](#deliveries-and-calls) |
-| `JARVIS_EMAIL_IMAP_HOST` / `JARVIS_EMAIL_CHECK_SECONDS` | `imap.gmail.com` / `60` | Mail server, and how often to look for new mail |
+| `JARVIS_EMAIL_IMAP_HOST` / `JARVIS_EMAIL_CHECK_SECONDS` | picked from your address / `60` | Mail server (left blank or mistyped, it is picked from your email address), and how often to look for new mail |
 | `JARVIS_PHONE_ALERTS` | `false` | Announce phone calls and delivery-app notifications that Phone Link shows (Windows) |
 | `JARVIS_CALL_ALERTS` | `true` | Call alerts from your phone over the internet. See [Calls over the internet](#calls-over-the-internet-android) |
 | `JARVIS_HOST` / `JARVIS_PORT` | `127.0.0.1` / `8340` | Where the server listens |
