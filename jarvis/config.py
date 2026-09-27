@@ -40,6 +40,7 @@ class Settings:
     host: str = os.getenv("JARVIS_HOST", "127.0.0.1")
     port: int = int(os.getenv("JARVIS_PORT", "8340"))
     password: str = os.getenv("JARVIS_PASSWORD", "")  # empty: no login page
+    memory_dir: str = os.getenv("JARVIS_MEMORY_DIR", "").strip() or str(ROOT / "memory")  # the brain's folders
     # Delivery emails: IMAP login (for Gmail, an app password, not your normal one)
     email_address: str = os.getenv("JARVIS_EMAIL_ADDRESS", "").strip()
     email_app_password: str = os.getenv("JARVIS_EMAIL_APP_PASSWORD", "").strip()

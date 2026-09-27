@@ -1,0 +1,85 @@
+from dataclasses import replace
+
+import pytest
+from fastapi.testclient import TestClient
+
+import memory
+from config import Settings
+
+
+@pytest.fixture
+def settings(tmp_path):
+    return Settings(memory_dir=str(tmp_path / "memory"))
+
+
+def test_default_folders_are_created(settings):
+    assert [f["name"] for f in memory.listing(settings)] == memory.DEFAULT_FOLDERS
+    assert (memory.root(settings) / "Ideas").is_dir()
+
+
+def test_rename_keeps_place_and_files(settings):
+    memory.save_note(settings, 1, "Standup", "Ship the HUD")
+    assert memory.rename(settings, 1, "Job") == "Job"
+    folders = memory.listing(settings)
+    assert folders[1]["name"] == "Job"
+    assert folders[1]["items"][0]["name"] == "Standup.txt"
+    with pytest.raises(ValueError):
+        memory.rename(settings, 0, "job")  # already taken, any case
+
+
+def test_notes_by_name_and_duplicates(settings):
+    memory.save_note(settings, "ideas", "Idea", "one")
+    memory.save_note(settings, "Ideas", "Idea", "two")
+    names = sorted(i["name"] for i in memory.listing(settings)[0]["items"])
+    assert names == ["Idea (2).txt", "Idea.txt"]
+    text = memory.read(settings, "Ideas")
+    assert "one" in text and "two" in text
+    assert "Ideas: " in memory.read(settings)
+
+
+@pytest.mark.parametrize("bad", ["", "  ..  ", "CON", "x" * 61])
+def test_unsafe_names_refused(settings, bad):
+    with pytest.raises(ValueError):
+        memory.rename(settings, 0, bad)
+
+
+def test_path_characters_are_stripped(settings):
+    path = memory.save_file(settings, 0, "../../evil.txt", b"hi")
+    assert path.parent == memory.root(settings) / "Ideas"
+    assert path.name == "....evil.txt".strip(".") or path.name == "evil.txt"
+
+
+def test_unknown_folder(settings):
+    with pytest.raises(ValueError):
+        memory.save_note(settings, "Nope", "t", "x")
+    with pytest.raises(ValueError):
+        memory.folder(settings, 9)
+
+
+def test_tools_save_and_read(settings):
+    assert "Saved as Milk.txt in the Shopping folder" in memory.run_tool(
+        "save_to_memory", {"folder": "shopping", "title": "Milk", "text": "2 litres"}, settings)
+    assert "2 litres" in memory.run_tool("read_memory", {"folder": "Shopping"}, settings)
+
+
+def test_memory_endpoints(monkeypatch, tmp_path):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    import server
+
+    monkeypatch.setattr(server, "settings", replace(server.settings, memory_dir=str(tmp_path / "m"), password=""))
+    ours = {"origin": "http://testserver"}
+    with TestClient(server.app) as client:
+        assert len(client.get("/memory").json()["folders"]) == 6
+        # other websites can't change the folders
+        assert client.post("/memory/0/rename", json={"name": "Hacked"}).status_code == 403
+        assert client.post("/memory/0/rename", json={"name": "Hacked"}, headers={"origin": "http://evil.com"}).status_code == 403
+        assert client.post("/memory/0/rename", json={"name": "Big ideas"}, headers=ours).json() == {"name": "Big ideas"}
+        assert client.post("/memory/0/note", json={"title": "Plan", "text": "hello"}, headers=ours).json() == {"name": "Plan.txt"}
+        assert client.put("/memory/0/files/pic.png", content=b"\x89PNG", headers=ours).json() == {"name": "pic.png"}
+        opened = client.get("/memory/0/files/Plan.txt")
+        assert opened.text == "hello" and opened.headers["content-security-policy"] == "sandbox"
+        assert client.post("/memory/0/rename", json={"name": "a/b:c"}, headers=ours).json() == {"name": "abc"}
+        assert client.post("/memory/0/rename", json={"name": "?"}, headers=ours).status_code == 400
+        assert client.delete("/memory/0/files/pic.png", headers=ours).json() == {"ok": True}
+        assert [i["name"] for i in client.get("/memory").json()["folders"][0]["items"]] == ["Plan.txt"]
+        assert client.get("/memory/0/files/pic.png").status_code == 400

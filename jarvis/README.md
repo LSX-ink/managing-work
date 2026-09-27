@@ -68,7 +68,7 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `ELEVENLABS_VOICE_ID` | George | Any ElevenLabs voice ID |
 | `ELEVENLABS_MODEL` | (auto) | Empty picks `eleven_turbo_v2_5` for languages it speaks, otherwise `eleven_v3` |
 | `JARVIS_PERSONA` | `jarvis` | `jarvis` (Iron Man's AI) or `alfred` (Batman's butler) |
-| `JARVIS_THEME` | `classic` | `classic` (plain orb) or a HUD dashboard: `hud` (blue), `hud-gold`, `hud-purple`, `hud-red`, `hud-green` |
+| `JARVIS_THEME` | `classic` | `classic` (plain orb) or a HUD dashboard: `hud` (blue), `hud-gold`, `hud-purple`, `hud-red`, `hud-green`, `hud-stars` (black and white on a starfield). The HUD's centre is a dotted wolf head that streams dots while he is thinking |
 | `JARVIS_GREETING` | (empty) | A fixed line to say when woken, e.g. `Good {time_of_day}, sir.` (`{time_of_day}` becomes morning, afternoon or evening). Empty gives the weather-and-tasks greeting |
 | `JARVIS_USER_NAME` / `JARVIS_USER_ADDRESS` | (empty) / `sir` | How Jarvis addresses you |
 | `JARVIS_CITY` | (empty) | Home city for the weather |
@@ -155,6 +155,12 @@ File access is **read-only** and limited to your home folder. Anything that look
 - This is slower and costs more than the other tools, because every step sends a screenshot. Alfred uses the simple tools first when they can do the job.
 - It needs an Opus 5 model (`claude-opus-5`, the default) and the `pyautogui` package (in `requirements.txt`). Typing works for plain letters, numbers and symbols; accented characters may be skipped.
 
+### Memory folders
+
+On the HUD, click **MEMORY** at the top right. Each of the wolf's six parts is labelled as a folder: Ideas, Work, Music, Personal, Shopping and Reminders. Click a part to open its folder. There you can rename it, save a note, add files with **ADD FILE**, open what's inside, or delete something with **×**. Click **MEMORY** again to hide the labels.
+
+The folders are real folders on your PC, in `jarvis\memory` (or wherever `JARVIS_MEMORY_DIR` points). Git ignores them, so updates never touch them. You can also ask, for example "Alfred, save 'buy milk' in my Shopping folder" or "What's in my Ideas folder?"
+
 ### Deliveries and calls
 
 Jarvis can speak up on his own when a delivery is on its way or your phone rings, for example "Sir, an email from Deliveroo: Your order is on its way" or "Sir, incoming call from Mum." The Jarvis page must be open to hear it. You can also ask "Is anything being delivered today?"
@@ -225,6 +231,7 @@ Clap twice and it starts the server if it isn't running, then opens Jarvis in yo
 - "Look up the latest news on the James Webb telescope."
 - "Open the BBC weather page."
 - "What am I looking at?" (uses the screen)
+- "Remember that the wifi password is on the router, in my Personal folder."
 
 ## Costs and privacy
 
