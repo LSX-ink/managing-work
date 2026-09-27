@@ -94,6 +94,8 @@ Latency-sensitive; begin your visible answer immediately.
 
 Tools: use them without asking permission. Search the web for anything current or factual you are not sure of, and summarise what you find in a sentence or two. Before a slow tool (web search, reading a page, looking at the screen) say a brief line such as "One moment." Use open_url when the user wants to see a page themselves.{deliveries_section(settings)}
 
+New abilities: if the user asks for something none of your tools can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
+
 {pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, and add a light remark."""
 
 
@@ -194,8 +196,9 @@ def spoken_text(content) -> str:
 
 class Brain:
     def __init__(self, settings: Settings, client: anthropic.AsyncAnthropic, http: httpx.AsyncClient,
-                 confirm: Confirm | None = None, pc_control=None):
+                 confirm: Confirm | None = None, pc_control=None, page=None):
         self.settings = settings
+        self.page = page  # async function that sends a message to this page (e.g. open a memory folder)
         self.client = client
         self.http = http
         self.confirm = confirm
@@ -276,7 +279,7 @@ class Brain:
     async def _tool_result(self, call) -> dict:
         print(f"  tool: {call.name} {call.input}", flush=True)
         try:
-            content = await tools.run_tool(call.name, dict(call.input), self.settings, self.http)
+            content = await tools.run_tool(call.name, dict(call.input), self.settings, self.http, self.page)
             return {"type": "tool_result", "tool_use_id": call.id, "content": content}
         except Exception as exc:  # report any tool failure back to Claude rather than crash the turn
             return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {exc}", "is_error": True}

@@ -128,6 +128,8 @@ function connect(onOpen) {
             showNowPlaying(msg);
         } else if (msg.type === 'note') {
             addLine('jarvis', msg.text);  // shown, not spoken
+        } else if (msg.type === 'memory') {
+            document.dispatchEvent(new CustomEvent('jarvis:memory', { detail: msg }));  // memory.js opens the folder
         } else if (msg.type === 'confirm') {
             showConfirm(msg);
         } else if (msg.type === 'done') {

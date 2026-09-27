@@ -188,7 +188,7 @@ def is_secret(path: Path) -> bool:
     return bool(SECRET_NAME.search(path.name)) or any(part in SECRET_DIRS for part in path.parts)
 
 
-def _launch(path: Path) -> None:
+def launch(path: Path) -> None:
     if WINDOWS:
         os.startfile(str(path))  # type: ignore[attr-defined]
     elif MAC:
@@ -214,7 +214,7 @@ def open_folder(folder: str) -> str:
     path = resolve_folder(folder)
     if not path:
         return f"Couldn't find a folder called {folder!r} in the home folder."
-    _launch(path)
+    launch(path)
     return f"Opened {path}."
 
 
@@ -285,7 +285,7 @@ def open_file(path_str: str) -> str:
     path = _checked_path(path_str)
     if path.suffix.lower() not in OPENABLE:
         return f"I only open documents, pictures and media, not {path.suffix or 'files without an extension'}."
-    _launch(path)
+    launch(path)
     return f"Opened {path.name}."
 
 

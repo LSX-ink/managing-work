@@ -40,6 +40,7 @@ class Settings:
     host: str = os.getenv("JARVIS_HOST", "127.0.0.1")
     port: int = int(os.getenv("JARVIS_PORT", "8340"))
     password: str = os.getenv("JARVIS_PASSWORD", "")  # empty: no login page
+    memory_dir: str = os.getenv("JARVIS_MEMORY_DIR", "").strip() or str(ROOT / "memory")  # the brain's folders
     # Delivery emails: IMAP login (for Gmail, an app password, not your normal one)
     email_address: str = os.getenv("JARVIS_EMAIL_ADDRESS", "").strip()
     email_app_password: str = os.getenv("JARVIS_EMAIL_APP_PASSWORD", "").strip()
@@ -52,6 +53,9 @@ class Settings:
     phone_relay: bool = _bool("JARVIS_CALL_ALERTS", True)
     ntfy_topic: str = os.getenv("JARVIS_NTFY_TOPIC", "").strip()  # empty: made up and kept in .phone-topic
     ntfy_server: str = os.getenv("JARVIS_NTFY_SERVER", "https://ntfy.sh").strip()
+    # New abilities: requests Alfred can't handle go to Claude as GitHub issues on this repository
+    github_repo: str = os.getenv("JARVIS_GITHUB_REPO", "LSX-ink/managing-work").strip()
+    github_token: str = os.getenv("JARVIS_GITHUB_TOKEN", "").strip()  # empty: open the issue page to click Submit
 
     @property
     def email_enabled(self) -> bool:
