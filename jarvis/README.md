@@ -177,6 +177,8 @@ To send requests automatically, make a fine-grained GitHub token at https://gith
 
 Jarvis can speak up on his own when a delivery is on its way or your phone rings, for example "Sir, an email from Deliveroo: Your order is on its way" or "Sir, incoming call from Mum." The Jarvis page must be open to hear it. You can also ask "Is anything being delivered today?"
 
+On the HUD, the **EMAILS** line in the SYSTEM panel shows how many unread emails are in your inbox, checked every minute.
+
 Each alert also goes in the **Notifications** panel on the page, newest first. When there are more than fit, the panel scrolls down slowly by itself; put the mouse on it to stop it. Click **×** on a notification to remove it.
 
 Deliveroo, Just Eat and Uber Eats have no way for personal apps to log in, so Jarvis doesn't use your accounts with them. He reads the emails and phone notifications they already send you.

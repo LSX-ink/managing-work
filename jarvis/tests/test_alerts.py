@@ -73,6 +73,10 @@ class FakeIMAP:
     def select(self, box, readonly=False):
         FakeIMAP.readonly = readonly
 
+    def status(self, box, what):
+        unseen = len(self.inbox) - 1
+        return "OK", [f'"{box}" (UNSEEN {unseen})'.encode()]
+
     def uid(self, command, *args):
         if command == "search":
             return "OK", [" ".join(str(u) for u, *_ in self.inbox).encode()]
@@ -225,3 +229,21 @@ def test_setup_note_until_phone_is_linked(tmp_path, monkeypatch):
     (tmp_path / "linked").touch()
     assert alerts.setup_note(settings) == ""
     assert alerts.setup_note(Settings(phone_relay=False)) == ""
+
+
+def test_unread_count(inbox):
+    assert alerts.unread_count(SETTINGS) == 1
+
+
+def test_emails_endpoint(monkeypatch, inbox):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    from fastapi.testclient import TestClient
+
+    import server
+
+    monkeypatch.setattr(server, "_emails", {"at": 0.0, "unread": None})
+    with TestClient(server.app) as client:
+        monkeypatch.setattr(server, "settings", Settings(email_address="", email_app_password=""))
+        assert client.get("/emails").json() == {"unread": None}
+        monkeypatch.setattr(server, "settings", SETTINGS)
+        assert client.get("/emails").json() == {"unread": 1}
