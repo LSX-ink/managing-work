@@ -200,7 +200,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
     if name == "open_memory_folder":
         path = (await asyncio.to_thread(memory.folder, settings, args["folder"])).resolve()
-        inner = path.parent != memory.root(settings).resolve()  # a folder made inside one of the six
+        six = {n.lower() for n in memory.names(settings)}
+        inner = path.parent != memory.root(settings).resolve() or path.name.lower() not in six  # a star, not a wolf part
         if args.get("on_pc") or inner or not settings.theme.startswith("hud"):  # the HUD panel shows the six
             if inner and page:  # its star on the HUD flares as it opens
                 await page({"type": "memory", "star": path.relative_to(memory.root(settings).resolve()).as_posix()})

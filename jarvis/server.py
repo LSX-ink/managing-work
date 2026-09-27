@@ -205,7 +205,20 @@ async def memory_call(request: Request | None, fn, *args):
 
 @app.get("/memory")
 async def memory_list():
-    return {"folders": await memory_call(None, memory.listing)}
+    return {"folders": await memory_call(None, memory.listing), "extra": await memory_call(None, memory.extras)}
+
+
+@app.post("/memory/open")
+async def memory_open_path(request: Request):
+    """Open any memory folder by its path ("Fitness", "Work/Invoices") in File Explorer: the folder stars."""
+    path = await memory_call(request, memory.folder, str((await request.json()).get("path", "")))
+    if isinstance(path, Response):
+        return path
+    try:
+        await asyncio.to_thread(pc.launch, path.resolve())
+    except OSError:
+        return Response("Couldn't open File Explorer on this PC.", status_code=400)
+    return {"opened": path.name}
 
 
 @app.post("/memory/{index}/rename")

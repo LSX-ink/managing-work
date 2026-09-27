@@ -210,3 +210,30 @@ def test_open_inner_folder_goes_to_file_explorer(settings, monkeypatch):
     msg = asyncio.run(tools.run_tool("open_memory_folder", {"folder": "work/invoices"}, replace(settings, theme="hud-stars"), None, page))
     assert "File Explorer" in msg and launched[0].name == "Invoices"
     assert sent == [{"type": "memory", "star": "Work/Invoices"}]  # its star flares on the HUD
+
+
+def test_alfreds_own_folders(settings, monkeypatch):
+    import asyncio
+    import pc
+    import tools
+
+    path = memory.create_folder(settings, "", "Fitness")
+    assert path == memory.root(settings) / "Fitness"
+    assert memory.extras(settings) == [{"name": "Fitness", "count": 0}]
+    assert [f["name"] for f in memory.listing(settings)] == memory.DEFAULT_FOLDERS  # the wolf keeps its six
+    memory.save_note(settings, "fitness", "Monday", "legs")
+    memory.create_folder(settings, "Fitness", "Plans")
+    assert "Fitness: Alfred's own folder, 2 items" in memory.read(settings)
+    with pytest.raises(ValueError, match="already"):
+        memory.create_folder(settings, "", "work")  # one of the six
+    with pytest.raises(ValueError, match="already"):
+        memory.rename(settings, 0, "Fitness")
+    assert memory.run_tool("create_memory_folder", {"name": "Books"}, settings) == "Created the folder Books."
+
+    launched, sent = [], []
+    monkeypatch.setattr(pc, "launch", launched.append)
+
+    async def page(message):
+        sent.append(message)
+    asyncio.run(tools.run_tool("open_memory_folder", {"folder": "fitness"}, replace(settings, theme="hud-stars"), None, page))
+    assert launched[0].name == "Fitness" and sent == [{"type": "memory", "star": "Fitness"}]

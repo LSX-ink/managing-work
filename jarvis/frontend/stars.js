@@ -1,4 +1,4 @@
-// Folder stars: every folder made inside a memory folder ("Work/Invoices") is a bright star on the HUD.
+// Folder stars: every folder Alfred or the user makes ("Fitness", or "Work/Invoices" inside a wolf folder) is a star.
 // Hover a star to see its name, click it to open that folder on the PC. When Alfred opens one, its star flares.
 window.HudStars = (() => {
     const layer = document.createElement('div');
@@ -35,11 +35,13 @@ window.HudStars = (() => {
     }
 
     async function load() {
-        let folders = [];
-        try { folders = (await (await fetch('/memory')).json()).folders || []; } catch (e) { return; }
+        let data;
+        try { data = await (await fetch('/memory')).json(); } catch (e) { return; }
+        const all = (data.extra || []).map((f) => ({ path: f.name, count: f.count }));
+        for (const top of data.folders || []) for (const sub of top.folders || []) all.push({ path: `${top.name}/${sub.name}`, count: sub.count });
         const seen = new Set();
-        folders.forEach((top, index) => (top.folders || []).forEach((sub) => {
-            const path = `${top.name}/${sub.name}`, key = path.toLowerCase();
+        all.forEach(({ path, count }) => {
+            const key = path.toLowerCase();
             seen.add(key);
             let star = stars.get(key);
             if (!star) {
@@ -49,9 +51,9 @@ window.HudStars = (() => {
                 star.innerHTML = '<span class="dot"></span><span class="name"></span>';
                 star.addEventListener('click', async () => {
                     flare(path);
-                    await fetch(`/memory/${star.dataset.index}/open`, {
+                    await fetch('/memory/open', {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ folder: star.dataset.sub }),
+                        body: JSON.stringify({ path: star.dataset.path }),
                     });
                 });
                 layer.append(star);
@@ -59,11 +61,10 @@ window.HudStars = (() => {
                 place(key, star);
                 setTimeout(() => star.classList.remove('new'), 2500);
             }
-            star.dataset.index = index;
-            star.dataset.sub = sub.name;
-            star.querySelector('.name').textContent = `${path} · ${sub.count}`;
+            star.dataset.path = path;
+            star.querySelector('.name').textContent = `${path} · ${count}`;
             star.setAttribute('aria-label', `Open the ${path} folder`);
-        }));
+        });
         for (const [key, star] of stars) if (!seen.has(key)) { star.remove(); stars.delete(key); }
     }
 

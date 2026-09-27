@@ -68,12 +68,13 @@ def folder(settings: Settings, which: int | str, create: bool = False) -> Path:
             raise ValueError("There is no such folder.")
         return root(settings) / all_names[i]
     top, *inner = [p for p in re.split(r"[/\\]", str(which)) if p.strip()] or [""]
-    for name in all_names:
+    for name in all_names + [e["name"] for e in extras(settings)]:
         if name.lower() == top.strip().lower():
             path = root(settings) / name
             break
     else:
-        raise ValueError(f"There is no folder called {top}. The folders are: {', '.join(all_names)}.")
+        others = [e["name"] for e in extras(settings)]
+        raise ValueError(f"There is no folder called {top}. The folders are: {', '.join(all_names + others)}.")
     for part in inner:
         part = safe_name(part, "folder name")
         found = next((p for p in path.iterdir() if p.is_dir() and p.name.lower() == part.lower()), None) if path.is_dir() else None
@@ -92,9 +93,16 @@ def inner_folder(settings: Settings, index: int, sub: str) -> Path:
     return folder(settings, f"{folder(settings, index).name}/{sub}")
 
 
+def extras(settings: Settings) -> list[dict]:
+    """Alfred's own folders: ones made alongside the six wolf folders rather than inside them."""
+    six = {n.lower() for n in names(settings)}
+    return [f for f in subfolders(root(settings)) if f["name"].lower() not in six]
+
+
 def create_folder(settings: Settings, parent: str, name: str) -> Path:
-    """Make a new folder inside a memory folder (or inside one made earlier)."""
-    base = folder(settings, parent)
+    """Make a new folder inside a memory folder (or inside one made earlier); no parent makes one of Alfred's own."""
+    base = folder(settings, parent) if str(parent or "").strip() else root(settings)
+    names(settings)  # make sure the six exist, so a new folder can't take one of their names
     name = safe_name(name, "folder name")
     if any(p.is_dir() and p.name.lower() == name.lower() for p in base.iterdir()):
         raise ValueError(f"There is already a folder called {name} in {base.name}.")
@@ -122,7 +130,8 @@ def rename(settings: Settings, which: int | str, new_name: str) -> str:
     old = folder(settings, which)
     new_name = safe_name(new_name, "folder name")
     all_names = names(settings)
-    if new_name.lower() != old.name.lower() and any(n.lower() == new_name.lower() for n in all_names):
+    taken = all_names + [e["name"] for e in extras(settings)]
+    if new_name.lower() != old.name.lower() and any(n.lower() == new_name.lower() for n in taken):
         raise ValueError(f"There is already a folder called {new_name}.")
     old.rename(old.with_name(new_name))
     all_names[all_names.index(old.name)] = new_name
@@ -237,6 +246,8 @@ def read(settings: Settings, which: int | str | None = None) -> str:
         for entry in listing(settings):
             files = ", ".join([f"{f['name']}/ (folder)" for f in entry["folders"]] + [i["name"] for i in entry["items"]]) or "empty"
             lines.append(f"{entry['name']}: {files}")
+        for entry in extras(settings):
+            lines.append(f"{entry['name']}: Alfred's own folder, {entry['count']} items")
         return "Memory folders:\n" + "\n".join(lines)
     path = folder(settings, which)
     parts, used = [f"--- {f['name']}/ (folder, {f['count']} items) ---" for f in subfolders(path)], 0
@@ -283,16 +294,18 @@ def tool_definitions() -> list[dict]:
         },
         {
             "name": "create_memory_folder",
-            "description": "Create a new folder inside one of the user's memory folders, e.g. an 'Invoices' folder "
-                           "in Work. Afterwards save or download into it as 'Work/Invoices'.",
+            "description": "Create a new folder: a new folder of your own (e.g. 'Fitness'), or one inside a memory "
+                           "folder (e.g. 'Invoices' in Work). Afterwards save, download or open it by name, "
+                           "'Fitness' or 'Work/Invoices'. Each new folder shows as a star on the HUD.",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "parent": {"type": "string", "description": "The memory folder to make it in, e.g. 'Work' "
-                                                                "(or 'Work/Invoices' to go deeper)."},
+                    "parent": {"type": "string", "description": "The folder to make it in, e.g. 'Work' (or "
+                                                                "'Work/Invoices' to go deeper). Leave out to make a "
+                                                                "new folder of your own alongside the six."},
                     "name": {"type": "string", "description": "Name of the new folder."},
                 },
-                "required": ["parent", "name"],
+                "required": ["name"],
                 "additionalProperties": False,
             },
         },
@@ -333,7 +346,7 @@ def tool_definitions() -> list[dict]:
 
 def run_tool(name: str, args: dict, settings: Settings) -> str:
     if name == "create_memory_folder":
-        path = create_folder(settings, args["parent"], args["name"])
+        path = create_folder(settings, args.get("parent") or "", args["name"])
         return f"Created the folder {path.relative_to(root(settings)).as_posix()}."
     if name == "save_to_memory":
         path = save_note(settings, args["folder"], args["title"], args["text"])
