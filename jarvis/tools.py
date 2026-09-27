@@ -9,6 +9,8 @@ from urllib.parse import urlparse
 
 import httpx
 
+import alerts
+import music
 import pc
 from config import Settings
 
@@ -58,8 +60,20 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
             },
         },
     ]
+    if settings.email_enabled:
+        tools.append({
+            "name": "check_deliveries",
+            "description": "Order and delivery emails (Deliveroo, Just Eat, Uber Eats, Amazon, couriers) from the "
+                           "user's inbox in the last few days, with when they arrived.",
+            "input_schema": {
+                "type": "object",
+                "properties": {"days": {"type": "integer", "description": "How many days back, 1 to 14. Default 3."}},
+                "additionalProperties": False,
+            },
+        })
     if settings.enable_pc:
         tools += pc.tool_definitions()
+        tools.append(music.tool_definition())
     if settings.enable_screen and not settings.enable_computer:  # the computer toolset has its own screenshot
         tools.append({
             "name": "look_at_screen",
@@ -172,8 +186,13 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return get_tasks(settings)
     if name == "open_url":
         return await open_url(args["url"])
+    if name == "check_deliveries" and settings.email_enabled:
+        days = min(max(int(args.get("days") or 3), 1), 14)
+        return await asyncio.to_thread(alerts.recent_deliveries, settings, days)
     if name == "look_at_screen" and settings.enable_screen:
         return await look_at_screen()
+    if name == "apple_music" and settings.enable_pc:
+        return await music.apple_music(http, settings, args["query"], args.get("kind") or "song")
     if name in pc.NAMES and settings.enable_pc:
         return await asyncio.to_thread(pc.run, name, args)
     raise ValueError(f"Unknown tool: {name}")

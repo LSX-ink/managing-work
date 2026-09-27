@@ -6,6 +6,8 @@ const typeForm = document.getElementById('type-form');
 const typeInput = document.getElementById('type-input');
 const confirmBox = document.getElementById('confirm');
 const confirmSteps = document.getElementById('confirm-steps');
+const alertsBox = document.getElementById('alerts');
+const alertsList = document.getElementById('alerts-list');
 
 let config = { speechLang: 'en-GB', serverVoice: false, name: 'Jarvis' };
 
@@ -27,6 +29,12 @@ const STRINGS = {
         allowAll: 'Allow for this task',
         deny: 'Deny',
         waitingOk: 'Waiting for your OK…',
+        notifications: 'Notifications',
+        remove: 'Remove',
+        email: 'EMAIL',
+        call: 'CALL',
+        phone: 'PHONE',
+        nowPlaying: 'NOW PLAYING',
     },
     af: {
         wake: 'Klik op die bol om {name} wakker te maak.',
@@ -44,6 +52,12 @@ const STRINGS = {
         allowAll: 'Laat toe vir hierdie taak',
         deny: 'Weier',
         waitingOk: 'Wag vir jou toestemming…',
+        notifications: 'Kennisgewings',
+        remove: 'Verwyder',
+        email: 'E-POS',
+        call: 'OPROEP',
+        phone: 'FOON',
+        nowPlaying: 'SPEEL NOU',
     },
 };
 
@@ -100,9 +114,20 @@ function connect(onOpen) {
     ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         if (msg.type === 'say') {
-            addLine('jarvis', msg.text);
+            if (!msg.quiet) addLine('jarvis', msg.text);
             queue.push(msg);
             playNext();
+        } else if (msg.type === 'alerts') {
+            alertsList.replaceChildren();
+            msg.items.forEach(addAlert);
+        } else if (msg.type === 'alert') {
+            addAlert(msg);
+        } else if (msg.type === 'dismissed') {
+            removeAlert(msg.id);
+        } else if (msg.type === 'nowplaying') {
+            showNowPlaying(msg);
+        } else if (msg.type === 'note') {
+            addLine('jarvis', msg.text);  // shown, not spoken
         } else if (msg.type === 'confirm') {
             showConfirm(msg);
         } else if (msg.type === 'done') {
@@ -124,6 +149,80 @@ function send(payload) {
     stopListening();
     setState('thinking', t('thinking'));
     ws.send(JSON.stringify(payload));
+}
+
+// ---- Notifications (delivery emails, calls) ---------------------------------
+
+function addAlert(item) {
+    const li = document.createElement('li');
+    li.dataset.id = item.id;
+    const part = (cls, text) => {
+        const span = document.createElement('span');
+        span.className = cls;
+        span.textContent = text;
+        return span;
+    };
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '×';
+    remove.title = t('remove');
+    remove.setAttribute('aria-label', `${t('remove')}: ${item.text}`);
+    remove.addEventListener('click', () => {
+        removeAlert(item.id);
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'dismiss', id: item.id }));
+    });
+    li.append(part('kind', STRINGS.en[item.kind] ? t(item.kind) : item.kind), part('text', item.text), part('at', item.at || ''), remove);
+    alertsList.prepend(li);   // newest at the top
+    alertsList.scrollTop = 0;
+    alertHold = ALERT_HOLD_TICKS;
+    alertsBox.hidden = false;
+}
+
+function removeAlert(id) {
+    const li = alertsList.querySelector(`li[data-id="${Number(id)}"]`);
+    if (li) li.remove();
+    alertsBox.hidden = !alertsList.children.length;
+}
+
+// Scroll slowly down through the notifications, rest at each end, then start again from the top.
+// Pauses while the mouse or keyboard is on the list, and stays still for people who prefer less motion.
+const ALERT_HOLD_TICKS = 60;   // 3 seconds at 50 ms per tick
+let alertHold = ALERT_HOLD_TICKS;
+let alertsPaused = false;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+alertsList.addEventListener('mouseenter', () => { alertsPaused = true; });
+alertsList.addEventListener('mouseleave', () => { alertsPaused = false; });
+alertsList.addEventListener('focusin', () => { alertsPaused = true; });
+alertsList.addEventListener('focusout', () => { alertsPaused = false; });
+setInterval(() => {
+    const max = alertsList.scrollHeight - alertsList.clientHeight;
+    if (alertsPaused || reduceMotion || max <= 0) return;
+    if (alertHold > 0) { alertHold--; return; }
+    if (alertsList.scrollTop >= max - 1) {
+        alertsList.scrollTop = 0;
+        alertHold = ALERT_HOLD_TICKS;
+        return;
+    }
+    alertsList.scrollTop += 1;   // about 20 pixels a second
+    if (alertsList.scrollTop >= max - 1) alertHold = ALERT_HOLD_TICKS;
+}, 50);
+
+// ---- Now playing pop-up ------------------------------------------------------
+
+const NOW_PLAYING_MS = 8000;   // how long the card stays before sliding away
+let nowPlayingTimer = null;
+
+function showNowPlaying(song) {
+    const box = document.getElementById('np-popup');
+    const art = document.getElementById('np-art');
+    document.getElementById('np-label').textContent = t('nowPlaying');
+    document.getElementById('np-title').textContent = song.title;
+    document.getElementById('np-artist').textContent = [song.artist, song.album].filter(Boolean).join(' · ');
+    art.hidden = !song.art;
+    if (song.art) art.src = song.art;
+    box.hidden = false;
+    clearTimeout(nowPlayingTimer);
+    nowPlayingTimer = setTimeout(() => { box.hidden = true; }, NOW_PLAYING_MS);
 }
 
 // ---- Approving mouse/keyboard actions ---------------------------------------
@@ -278,6 +377,7 @@ function applyLanguage() {
     document.documentElement.lang = config.speechLang;
     document.title = config.name === 'Jarvis' ? 'J.A.R.V.I.S.' : config.name;
     typeInput.placeholder = t('placeholder');
+    document.getElementById('alerts-title').textContent = t('notifications');
     typeInput.setAttribute('aria-label', `Message to ${config.name}`);
     if (!started) statusEl.textContent = t('wake');
 }

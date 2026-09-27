@@ -82,6 +82,7 @@ def test_websocket_confirmation_round_trip(monkeypatch):
     monkeypatch.setattr(server, "Brain", FakeBrain)
     with TestClient(server.app) as client:
         with client.websocket_connect("/ws") as ws:
+            assert ws.receive_json()["type"] == "alerts"  # the notifications list comes first
             ws.send_json({"text": "click"})
             ask = ws.receive_json()
             assert ask["type"] == "confirm" and ask["steps"] == ["Left click at (1, 2)"]
