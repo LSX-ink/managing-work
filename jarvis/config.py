@@ -53,7 +53,7 @@ class Settings:
     memory_dir: str = os.getenv("JARVIS_MEMORY_DIR", "").strip() or str(ROOT / "memory")  # the brain's folders
     # Delivery emails: IMAP login (for Gmail, an app password, not your normal one)
     email_address: str = os.getenv("JARVIS_EMAIL_ADDRESS", "").strip()
-    email_app_password: str = os.getenv("JARVIS_EMAIL_APP_PASSWORD", "").strip()
+    email_app_password: str = "".join(os.getenv("JARVIS_EMAIL_APP_PASSWORD", "").split())  # Google shows it with spaces
     email_imap_host: str = os.getenv("JARVIS_EMAIL_IMAP_HOST", "").strip()  # empty: picked from the address
     email_check_seconds: int = int(os.getenv("JARVIS_EMAIL_CHECK_SECONDS", "60"))
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
