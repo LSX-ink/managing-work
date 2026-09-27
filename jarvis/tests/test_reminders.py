@@ -62,3 +62,10 @@ def test_watch_waits_for_a_page(s, monkeypatch):
     asyncio.run(main())
     assert said[0][0].startswith("Sir, a reminder: stretch (this was due") and said[0][1] == "timer"
     assert reminders.load(s) == []
+
+
+def test_later_today(s):
+    assert reminders.later_today(s, NOW) == ""
+    reminders.add(s, "2026-09-25 19:00", "call Mum", now=NOW)
+    reminders.add(s, "2026-09-26 09:00", "dentist", now=NOW)
+    assert reminders.later_today(s, NOW) == "19:00 call Mum"

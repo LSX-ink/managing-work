@@ -134,3 +134,26 @@ def test_password_locks_page_config_and_websocket(monkeypatch):
         assert 'name="password"' not in client.get("/").text
         with client.websocket_connect("/ws"):
             pass
+
+
+def test_weather_forecast_for_coming_days():
+    import asyncio
+
+    import httpx
+    import tools
+
+    def handler(request):
+        if "geocoding" in request.url.host:
+            return httpx.Response(200, json={"results": [{"name": "Leeds", "country": "UK", "latitude": 1, "longitude": 2}]})
+        assert request.url.params["forecast_days"] == "2"
+        return httpx.Response(200, json={
+            "current": {"temperature_2m": 12, "apparent_temperature": 10, "weather_code": 3, "wind_speed_10m": 9},
+            "daily": {"time": ["2026-09-27", "2026-09-28"], "weather_code": [3, 61], "temperature_2m_max": [14, 11],
+                      "temperature_2m_min": [7, 6], "precipitation_probability_max": [10, 80]},
+        })
+
+    async def main():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+            return await tools.get_weather(http, "Leeds", 2)
+    text = asyncio.run(main())
+    assert text.endswith("Monday: " + tools.WEATHER_CODES[61] + ", high 11°C, low 6°C, 80% chance of rain.")

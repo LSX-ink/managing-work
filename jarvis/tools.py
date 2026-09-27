@@ -4,6 +4,7 @@ import asyncio
 import base64
 import io
 import webbrowser
+from datetime import date
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -44,10 +45,14 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     tools = [
         {
             "name": "get_weather",
-            "description": "Current weather for a city. Defaults to the user's home city when no city is given.",
+            "description": "Current weather for a city, plus a forecast for the coming days when asked (tomorrow, "
+                           "the weekend, the week). Defaults to the user's home city when no city is given.",
             "input_schema": {
                 "type": "object",
-                "properties": {"city": {"type": "string", "description": "City name, e.g. 'London'."}},
+                "properties": {
+                    "city": {"type": "string", "description": "City name, e.g. 'London'."},
+                    "days": {"type": "integer", "description": "Days of forecast including today, 1 to 7. Default 1."},
+                },
                 "additionalProperties": False,
             },
         },
@@ -107,7 +112,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     return tools
 
 
-async def get_weather(http: httpx.AsyncClient, city: str) -> str:
+async def get_weather(http: httpx.AsyncClient, city: str, days: int = 1) -> str:
     if not city:
         return "No city given and no home city configured (set JARVIS_CITY)."
     geo = await http.get(
@@ -125,8 +130,8 @@ async def get_weather(http: httpx.AsyncClient, city: str) -> str:
             "latitude": place["latitude"],
             "longitude": place["longitude"],
             "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation",
-            "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
-            "forecast_days": 1,
+            "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+            "forecast_days": days,
             "timezone": "auto",
         },
     )
@@ -134,11 +139,16 @@ async def get_weather(http: httpx.AsyncClient, city: str) -> str:
     data = forecast.json()
     now, daily = data["current"], data["daily"]
     sky = WEATHER_CODES.get(now["weather_code"], "unknown conditions")
+    ahead = "".join(
+        f" {day}: {WEATHER_CODES.get(daily['weather_code'][i], 'unknown conditions')}, high {daily['temperature_2m_max'][i]}°C, "
+        f"low {daily['temperature_2m_min'][i]}°C, {daily['precipitation_probability_max'][i]}% chance of rain."
+        for i, day in enumerate((date.fromisoformat(d).strftime("%A") for d in daily["time"][1:]), start=1)
+    ) if days > 1 else ""
     return (
         f"{place['name']}, {place.get('country', '')}: {now['temperature_2m']}°C "
         f"(feels like {now['apparent_temperature']}°C), {sky}, wind {now['wind_speed_10m']} km/h. "
         f"Today: high {daily['temperature_2m_max'][0]}°C, low {daily['temperature_2m_min'][0]}°C, "
-        f"{daily['precipitation_probability_max'][0]}% chance of rain."
+        f"{daily['precipitation_probability_max'][0]}% chance of rain.{ahead}"
     )
 
 
@@ -205,7 +215,8 @@ async def look_at_screen() -> list[dict]:
 async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient, page=None) -> str | list[dict]:
     """Execute one client tool. Raises on failure; the caller reports it as an error result."""
     if name == "get_weather":
-        return await get_weather(http, args.get("city") or settings.city)
+        days = min(max(int(args.get("days") or 1), 1), 7)
+        return await get_weather(http, args.get("city") or settings.city, days)
     if name == "get_tasks":
         return get_tasks(settings)
     if name == "open_url":
