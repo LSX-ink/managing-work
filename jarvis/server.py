@@ -174,6 +174,7 @@ async def client_config():
         "theme": settings.theme,
         "model": settings.model,
         "city": settings.city,
+        "wakeWord": settings.wake_word,
     }
 
 

@@ -175,6 +175,10 @@ Tell him things worth knowing ("Alfred, remember my sister Lebo's birthday is 3 
 
 He also remembers your last ten exchanges, so after a restart or a page reload you can carry on where you left off ("what did you just say?"). They're kept in `jarvis\memory\.recent-chat.json`; delete that file to wipe them.
 
+### Talking hands-free
+
+Once you've clicked the orb, Alfred keeps listening. Say **"stop"**, **"quiet"** or **"that's enough"** while he's talking and he stops at once. With the TV on or friends round, say "Alfred, only listen when I say your name". After that he ignores anything that doesn't include "Alfred", except follow-ups within 20 seconds of his reply. "Answer everything again" turns it off. To start in that mode every time, set `JARVIS_WAKE_WORD=true` in `.env`.
+
 ### Moving the chat
 
 Say "Alfred, move the chat to the bottom left" (or top left, top right, bottom right) to keep the centre free for the wolf. "Put the chat back in the middle" undoes it. Your browser remembers where you put it. On narrow windows it stays in the middle.

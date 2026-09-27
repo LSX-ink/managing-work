@@ -85,6 +85,18 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
             "additionalProperties": False,
         },
     })
+    tools.append({
+        "name": "listen_for_name",
+        "description": "Turn name-only listening on or off. On: you ignore speech that doesn't use your name "
+                       "(handy with the TV on or guests talking), except follow-ups within 20 seconds of your "
+                       "reply. Off: you answer everything you hear. The page remembers it.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"on": {"type": "boolean"}},
+            "required": ["on"],
+            "additionalProperties": False,
+        },
+    })
     tools += aboutyou.tool_definitions()
     tools += memory.tool_definitions()
     tools.append(wishes.tool_definition())
@@ -264,6 +276,12 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return await asyncio.to_thread(reminders.run_tool, name, args, settings)
     if name in timers.NAMES:
         return timers.run_tool(name, args, settings)
+    if name == "listen_for_name":
+        if not page:
+            return "The Jarvis page isn't open."
+        await page({"type": "wakeword", "on": bool(args.get("on"))})
+        return ("Now only answering when called by name (follow-ups within 20 seconds are fine)."
+                if args.get("on") else "Now answering everything I hear.")
     if name == "move_chat_panel":
         position = args.get("position")
         if position not in (*CHAT_CORNERS, "centre"):

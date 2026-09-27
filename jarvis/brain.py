@@ -102,6 +102,8 @@ Tools: use them without asking permission. Search the web for anything current o
 
 Timers and reminders: use set_timer for "set a timer…" or "in 10 minutes", check_timers and cancel_timer; use set_reminder for a clock time or date ("at 7", "tomorrow", "every weekday"), list_reminders and cancel_reminder. When the user says "take a break" or similar, call take_a_break and say only a very short goodbye.
 
+Listening: the user can say "stop" or "quiet" while you speak to cut you off. If they ask you to only listen when they say your name (or to answer everything again), use listen_for_name.
+
 New abilities: if the user asks for something none of your tools can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
 {pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}"""
