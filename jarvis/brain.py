@@ -194,8 +194,9 @@ def spoken_text(content) -> str:
 
 class Brain:
     def __init__(self, settings: Settings, client: anthropic.AsyncAnthropic, http: httpx.AsyncClient,
-                 confirm: Confirm | None = None, pc_control=None):
+                 confirm: Confirm | None = None, pc_control=None, page=None):
         self.settings = settings
+        self.page = page  # async function that sends a message to this page (e.g. open a memory folder)
         self.client = client
         self.http = http
         self.confirm = confirm
@@ -276,7 +277,7 @@ class Brain:
     async def _tool_result(self, call) -> dict:
         print(f"  tool: {call.name} {call.input}", flush=True)
         try:
-            content = await tools.run_tool(call.name, dict(call.input), self.settings, self.http)
+            content = await tools.run_tool(call.name, dict(call.input), self.settings, self.http, self.page)
             return {"type": "tool_result", "tool_use_id": call.id, "content": content}
         except Exception as exc:  # report any tool failure back to Claude rather than crash the turn
             return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {exc}", "is_error": True}

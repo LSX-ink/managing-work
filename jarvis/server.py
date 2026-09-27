@@ -282,7 +282,7 @@ async def websocket(ws: WebSocket):
         finally:
             pending.pop(cid, None)
 
-    brain = Brain(settings, ws.app.state.client, http, confirm=confirm)
+    brain = Brain(settings, ws.app.state.client, http, confirm=confirm, page=ws.send_json)
     inbox: asyncio.Queue = asyncio.Queue()
 
     async def worker() -> None:

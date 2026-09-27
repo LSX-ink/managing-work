@@ -153,3 +153,21 @@ def test_download_refuses_this_pc_and_home_network(url):
 
 def test_public_address_is_allowed():
     run(memory.check_public("http://93.184.215.14/file.pdf"))
+
+
+def test_open_memory_folder_on_hud_and_pc(settings, monkeypatch):
+    import asyncio
+    import pc
+    import tools
+
+    sent, launched = [], []
+
+    async def page(message):
+        sent.append(message)
+    monkeypatch.setattr(pc, "launch", launched.append)
+    hud = replace(settings, theme="hud-stars")
+    assert "HUD" in asyncio.run(tools.run_tool("open_memory_folder", {"folder": "ideas"}, hud, None, page))
+    assert sent == [{"type": "memory", "open": "Ideas"}]
+    assert "File Explorer" in asyncio.run(tools.run_tool("open_memory_folder", {"folder": "Work", "on_pc": True}, hud, None, page))
+    assert "File Explorer" in asyncio.run(tools.run_tool("open_memory_folder", {"folder": "Music"}, replace(settings, theme="classic"), None, page))
+    assert [p.name for p in launched] == ["Work", "Music"] and launched[0].is_absolute()

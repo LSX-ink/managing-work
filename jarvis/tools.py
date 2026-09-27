@@ -180,7 +180,7 @@ async def look_at_screen() -> list[dict]:
     ]
 
 
-async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient) -> str | list[dict]:
+async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient, page=None) -> str | list[dict]:
     """Execute one client tool. Raises on failure; the caller reports it as an error result."""
     if name == "get_weather":
         return await get_weather(http, args.get("city") or settings.city)
@@ -194,6 +194,15 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         except httpx.HTTPError as e:
             raise ValueError(f"The download failed: {e}") from None
         return f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
+    if name == "open_memory_folder":
+        path = (await asyncio.to_thread(memory.folder, settings, args["folder"])).resolve()
+        if args.get("on_pc") or not settings.theme.startswith("hud"):  # only the HUD has the folder panel
+            await asyncio.to_thread(pc.launch, path)
+            return f"Opened the {path.name} folder in File Explorer."
+        if not page:
+            return "The Jarvis page isn't open, so there's nowhere to show the folder."
+        await page({"type": "memory", "open": path.name})
+        return f"Opened the {path.name} folder on the HUD."
     if name in ("save_to_memory", "read_memory"):
         return await asyncio.to_thread(memory.run_tool, name, args, settings)
     if name == "check_deliveries" and settings.email_enabled:

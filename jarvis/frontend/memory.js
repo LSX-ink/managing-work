@@ -119,6 +119,14 @@ window.HudMemory = (() => {
             await load();
         });
 
+        // "Alfred, open my Ideas folder": show the labels and open that folder's panel.
+        document.addEventListener('jarvis:memory', async (e) => {
+            if (!state.open) setOpen(true);
+            await load();
+            const i = state.folders.findIndex((f) => f.name === e.detail.open);
+            if (i >= 0) { say(''); showFolder(i); }
+        });
+
         // Alfred may have saved something while thinking: refresh when a reply finishes.
         const orb = $('orb');
         let wasThinking = false;

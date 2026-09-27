@@ -241,6 +241,20 @@ def tool_definitions() -> list[dict]:
             },
         },
         {
+            "name": "open_memory_folder",
+            "description": "Open one of the user's memory folders so they can see what's in it: on the HUD "
+                           "(the wolf's folder panel) by default, or in File Explorer on the PC when they ask for that.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder": {"type": "string", "description": "Folder name, e.g. 'Ideas'."},
+                    "on_pc": {"type": "boolean", "description": "True to open it in File Explorer instead of the HUD."},
+                },
+                "required": ["folder"],
+                "additionalProperties": False,
+            },
+        },
+        {
             "name": "download_file",
             "description": "Download a file from a web link and store it in one of the user's memory folders "
                            "(PDFs, pictures, music, documents; up to 200 MB). Use it when they ask you to download, "
