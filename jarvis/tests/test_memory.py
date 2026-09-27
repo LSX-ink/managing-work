@@ -203,7 +203,10 @@ def test_open_inner_folder_goes_to_file_explorer(settings, monkeypatch):
     monkeypatch.setattr(pc, "launch", launched.append)
     memory.create_folder(settings, "Work", "Invoices")
 
+    sent = []
+
     async def page(message):
-        raise AssertionError("inner folders open on the PC")
-    msg = asyncio.run(tools.run_tool("open_memory_folder", {"folder": "Work/Invoices"}, replace(settings, theme="hud-stars"), None, page))
+        sent.append(message)
+    msg = asyncio.run(tools.run_tool("open_memory_folder", {"folder": "work/invoices"}, replace(settings, theme="hud-stars"), None, page))
     assert "File Explorer" in msg and launched[0].name == "Invoices"
+    assert sent == [{"type": "memory", "star": "Work/Invoices"}]  # its star flares on the HUD

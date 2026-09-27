@@ -137,6 +137,7 @@ window.HudMemory = (() => {
 
         // "Alfred, open my Ideas folder": show the labels and open that folder's panel.
         document.addEventListener('jarvis:memory', async (e) => {
+            if (!e.detail.open) return;   // a folder star (stars.js)
             if (!state.open) setOpen(true);
             await load();
             const i = state.folders.findIndex((f) => f.name === e.detail.open);

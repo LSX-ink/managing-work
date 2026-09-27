@@ -163,7 +163,7 @@ The folders are real folders on your PC, in `jarvis\memory` (or wherever `JARVIS
 
 Say "Alfred, open my Work folder" and he opens it on the HUD, or "open my Work folder on the PC" for File Explorer.
 
-You can make new folders inside the six too: "Alfred, create an Invoices folder in Work". Then say "save this in Work/Invoices", "download this into Work/Invoices" or "open Work/Invoices" (that one opens in File Explorer). New folders show at the top of their folder's panel on the HUD; click one to open it on the PC.
+You can make new folders inside the six too: "Alfred, create an Invoices folder in Work". Then say "save this in Work/Invoices", "download this into Work/Invoices" or "open Work/Invoices" (that one opens in File Explorer). Every folder you make also becomes a ringed star in the sky around the wolf: hover it to see its name, click it to open the folder on the PC. When Alfred opens one, its star flares. New folders also show at the top of their folder's panel.
 
 Alfred can download files too: "Download this PDF into my Work folder" with a link, or "find the Python logo and save it in Ideas". He keeps the file's own name unless you give one. Downloads are limited to 200 MB, and he refuses links that point at your own PC or home network (your router, other devices).
 
