@@ -13,6 +13,7 @@ import alerts
 import memory
 import music
 import pc
+import wishes
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -62,6 +63,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
         },
     ]
     tools += memory.tool_definitions()
+    tools.append(wishes.tool_definition())
     if settings.email_enabled:
         tools.append({
             "name": "check_deliveries",
@@ -180,7 +182,7 @@ async def look_at_screen() -> list[dict]:
     ]
 
 
-async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient) -> str | list[dict]:
+async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient, page=None) -> str | list[dict]:
     """Execute one client tool. Raises on failure; the caller reports it as an error result."""
     if name == "get_weather":
         return await get_weather(http, args.get("city") or settings.city)
@@ -188,13 +190,28 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return get_tasks(settings)
     if name == "open_url":
         return await open_url(args["url"])
+    if name == "request_new_ability":
+        return await wishes.request(http, settings, args["title"], args["details"])
     if name == "download_file":
         try:
             path = await memory.download(settings, http, args["folder"], args["url"], args.get("filename") or "")
         except httpx.HTTPError as e:
             raise ValueError(f"The download failed: {e}") from None
         return f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
-    if name in ("save_to_memory", "read_memory"):
+    if name == "open_memory_folder":
+        path = (await asyncio.to_thread(memory.folder, settings, args["folder"])).resolve()
+        six = {n.lower() for n in memory.names(settings)}
+        inner = path.parent != memory.root(settings).resolve() or path.name.lower() not in six  # a star, not a wolf part
+        if args.get("on_pc") or inner or not settings.theme.startswith("hud"):  # the HUD panel shows the six
+            if inner and page:  # its star on the HUD flares as it opens
+                await page({"type": "memory", "star": path.relative_to(memory.root(settings).resolve()).as_posix()})
+            await asyncio.to_thread(pc.launch, path)
+            return f"Opened the {path.name} folder in File Explorer."
+        if not page:
+            return "The Jarvis page isn't open, so there's nowhere to show the folder."
+        await page({"type": "memory", "open": path.name})
+        return f"Opened the {path.name} folder on the HUD."
+    if name in ("save_to_memory", "read_memory", "create_memory_folder"):
         return await asyncio.to_thread(memory.run_tool, name, args, settings)
     if name == "check_deliveries" and settings.email_enabled:
         days = min(max(int(args.get("days") or 3), 1), 14)

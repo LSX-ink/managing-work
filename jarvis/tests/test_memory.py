@@ -153,3 +153,87 @@ def test_download_refuses_this_pc_and_home_network(url):
 
 def test_public_address_is_allowed():
     run(memory.check_public("http://93.184.215.14/file.pdf"))
+
+
+def test_open_memory_folder_on_hud_and_pc(settings, monkeypatch):
+    import asyncio
+    import pc
+    import tools
+
+    sent, launched = [], []
+
+    async def page(message):
+        sent.append(message)
+    monkeypatch.setattr(pc, "launch", launched.append)
+    hud = replace(settings, theme="hud-stars")
+    assert "HUD" in asyncio.run(tools.run_tool("open_memory_folder", {"folder": "ideas"}, hud, None, page))
+    assert sent == [{"type": "memory", "open": "Ideas"}]
+    assert "File Explorer" in asyncio.run(tools.run_tool("open_memory_folder", {"folder": "Work", "on_pc": True}, hud, None, page))
+    assert "File Explorer" in asyncio.run(tools.run_tool("open_memory_folder", {"folder": "Music"}, replace(settings, theme="classic"), None, page))
+    assert [p.name for p in launched] == ["Work", "Music"] and launched[0].is_absolute()
+
+
+def test_create_folders_inside_memory_folders(settings):
+    path = memory.create_folder(settings, "work", "Invoices")
+    assert path == memory.root(settings) / "Work" / "Invoices" and path.is_dir()
+    with pytest.raises(ValueError, match="already"):
+        memory.create_folder(settings, "Work", "invoices")
+    memory.save_note(settings, "Work/invoices", "March", "paid")
+    assert (path / "March.txt").read_text() == "paid"
+    assert memory.listing(settings)[1]["folders"] == [{"name": "Invoices", "count": 1}]
+    assert "Invoices/ (folder)" in memory.read(settings)
+    assert "Invoices/ (folder, 1 items)" in memory.read(settings, "Work")
+    assert "paid" in memory.read(settings, "Work\\Invoices")
+    assert memory.inner_folder(settings, 1, "Invoices") == path
+    memory.create_folder(settings, "Work/Invoices", "2026")
+    assert (path / "2026").is_dir()
+    with pytest.raises(ValueError, match="no folder called Receipts"):
+        memory.save_note(settings, "Work/Receipts", "x", "y")
+    with pytest.raises(ValueError):
+        memory.create_folder(settings, "Work", "..")
+    assert "Created the folder Work/Taxes." == memory.run_tool("create_memory_folder", {"parent": "Work", "name": "Taxes"}, settings)
+
+
+def test_open_inner_folder_goes_to_file_explorer(settings, monkeypatch):
+    import asyncio
+    import pc
+    import tools
+
+    launched = []
+    monkeypatch.setattr(pc, "launch", launched.append)
+    memory.create_folder(settings, "Work", "Invoices")
+
+    sent = []
+
+    async def page(message):
+        sent.append(message)
+    msg = asyncio.run(tools.run_tool("open_memory_folder", {"folder": "work/invoices"}, replace(settings, theme="hud-stars"), None, page))
+    assert "File Explorer" in msg and launched[0].name == "Invoices"
+    assert sent == [{"type": "memory", "star": "Work/Invoices"}]  # its star flares on the HUD
+
+
+def test_alfreds_own_folders(settings, monkeypatch):
+    import asyncio
+    import pc
+    import tools
+
+    path = memory.create_folder(settings, "", "Fitness")
+    assert path == memory.root(settings) / "Fitness"
+    assert memory.extras(settings) == [{"name": "Fitness", "count": 0}]
+    assert [f["name"] for f in memory.listing(settings)] == memory.DEFAULT_FOLDERS  # the wolf keeps its six
+    memory.save_note(settings, "fitness", "Monday", "legs")
+    memory.create_folder(settings, "Fitness", "Plans")
+    assert "Fitness: Alfred's own folder, 2 items" in memory.read(settings)
+    with pytest.raises(ValueError, match="already"):
+        memory.create_folder(settings, "", "work")  # one of the six
+    with pytest.raises(ValueError, match="already"):
+        memory.rename(settings, 0, "Fitness")
+    assert memory.run_tool("create_memory_folder", {"name": "Books"}, settings) == "Created the folder Books."
+
+    launched, sent = [], []
+    monkeypatch.setattr(pc, "launch", launched.append)
+
+    async def page(message):
+        sent.append(message)
+    asyncio.run(tools.run_tool("open_memory_folder", {"folder": "fitness"}, replace(settings, theme="hud-stars"), None, page))
+    assert launched[0].name == "Fitness" and sent == [{"type": "memory", "star": "Fitness"}]

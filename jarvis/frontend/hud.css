@@ -207,6 +207,7 @@ body.hud #memory-panel[hidden] { display: none; }
 #memory-panel li a { flex: 1; color: var(--hud-bright); overflow-wrap: anywhere; }
 #memory-panel li .size { color: var(--hud-mid); font-size: 12px; }
 #memory-panel li button { border: 0; padding: 0 4px; font-size: 16px; color: var(--hud-mid); }
+#memory-panel li.mem-folder button { flex: 1; text-align: left; font-size: 13px; letter-spacing: 0.05em; color: var(--hud-bright); }
 #memory-panel .mem-empty { color: var(--hud-mid); font-size: 13px; }
 #memory-panel .mem-row { display: flex; gap: 8px; flex-wrap: wrap; }
 #memory-panel .mem-msg { color: var(--hud-warn); font-size: 13px; min-height: 1em; margin: 0; }
@@ -247,3 +248,32 @@ body.hud #confirm { border-color: var(--hud-warn); border-radius: 0; background:
     body.hud #hud-sphere { width: min(420px, 90vw); height: min(420px, 90vw); margin: 0; }
     body.hud #orb { width: min(250px, 55vw); height: min(250px, 55vw); }
 }
+
+/* Folder stars (stars.js): each folder made inside a memory folder is a star you can click to open it. */
+#folder-stars { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+body:not(.hud) #folder-stars { display: none; }
+.folder-star {
+    position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer;
+    background: none; border: 0; padding: 8px; display: flex; align-items: center; gap: 6px; font: inherit;
+}
+.folder-star .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--hud-bright, #fff);
+    box-shadow: 0 0 6px 2px var(--hud-bright, #fff);
+    animation: folder-star 3.2s ease-in-out infinite;
+}
+.folder-star::before {   /* a faint ring marks folder stars apart from the background stars */
+    content: ""; position: absolute; left: 8px; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -5px;
+    border: 1px solid var(--hud-bright, #fff); border-radius: 50%; opacity: 0.35; pointer-events: none;
+}
+.folder-star .name {
+    opacity: 0; transition: opacity 0.2s; white-space: nowrap; font-size: 11px; letter-spacing: 0.12em;
+    color: var(--hud-bright, #fff); background: rgba(0, 0, 0, 0.75); border: 1px solid var(--hud-dim, #555); padding: 2px 6px;
+    text-transform: uppercase; pointer-events: none;
+}
+.folder-star:hover .name, .folder-star:focus-visible .name, .folder-star.new .name, .folder-star.flare .name { opacity: 1; }
+.folder-star:hover .dot, .folder-star:focus-visible .dot { transform: scale(1.6); }
+.folder-star:focus-visible { outline: none; }
+.folder-star.flare .dot, .folder-star.new .dot { animation: folder-star-flare 1.4s ease-out 2; }
+@keyframes folder-star { 50% { opacity: 0.55; } }
+@keyframes folder-star-flare { 0% { transform: scale(1); } 30% { transform: scale(3.2); box-shadow: 0 0 22px 8px var(--hud-bright, #fff); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .folder-star .dot { animation: none !important; } }

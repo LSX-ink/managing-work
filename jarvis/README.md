@@ -161,7 +161,17 @@ On the HUD, click **MEMORY** at the top right. Each of the wolf's six parts is l
 
 The folders are real folders on your PC, in `jarvis\memory` (or wherever `JARVIS_MEMORY_DIR` points). Git ignores them, so updates never touch them. You can also ask, for example "Alfred, save 'buy milk' in my Shopping folder" or "What's in my Ideas folder?"
 
+Say "Alfred, open my Work folder" and he opens it on the HUD, or "open my Work folder on the PC" for File Explorer.
+
+Alfred can make new folders too: "Alfred, create a Fitness folder" makes one of his own, and "create an Invoices folder in Work" makes one inside the six. Then say "save this in Fitness", "download this into Work/Invoices" or "open Work/Invoices" (that one opens in File Explorer). Every folder you make also becomes a ringed star in the sky around the wolf: hover it to see its name, click it to open the folder on the PC. When Alfred opens one, its star flares. New folders also show at the top of their folder's panel.
+
 Alfred can download files too: "Download this PDF into my Work folder" with a link, or "find the Python logo and save it in Ideas". He keeps the file's own name unless you give one. Downloads are limited to 200 MB, and he refuses links that point at your own PC or home network (your router, other devices).
+
+### New abilities
+
+When you ask for something Alfred can't do yet ("Alfred, set a timer for ten minutes"), he doesn't just say no. He sends the request to Claude, the AI that builds him, as a GitHub issue labelled `alfred-wish`. Claude checks for new requests every few hours, builds each one as a pull request, and tells you in the project chat. Merge it, run `git pull` and restart, and Alfred can do it. You can also ask him to improve something ("Alfred, get better at…"). A copy of every request goes in `wishes.md` next to `server.py`.
+
+To send requests automatically, make a fine-grained GitHub token at https://github.com/settings/personal-access-tokens/new with access to only this repository and **Issues: Read and write**, and put it in `.env` as `JARVIS_GITHUB_TOKEN`. Without a token, Alfred opens the request on GitHub in your browser and you click **Submit**.
 
 ### Deliveries and calls
 

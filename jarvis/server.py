@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 import alerts
 import memory
 import nowplaying
+import pc
 import tools
 import tts
 from brain import Brain, computer_enabled, persona
@@ -204,7 +205,20 @@ async def memory_call(request: Request | None, fn, *args):
 
 @app.get("/memory")
 async def memory_list():
-    return {"folders": await memory_call(None, memory.listing)}
+    return {"folders": await memory_call(None, memory.listing), "extra": await memory_call(None, memory.extras)}
+
+
+@app.post("/memory/open")
+async def memory_open_path(request: Request):
+    """Open any memory folder by its path ("Fitness", "Work/Invoices") in File Explorer: the folder stars."""
+    path = await memory_call(request, memory.folder, str((await request.json()).get("path", "")))
+    if isinstance(path, Response):
+        return path
+    try:
+        await asyncio.to_thread(pc.launch, path.resolve())
+    except OSError:
+        return Response("Couldn't open File Explorer on this PC.", status_code=400)
+    return {"opened": path.name}
 
 
 @app.post("/memory/{index}/rename")
@@ -227,6 +241,20 @@ async def memory_upload(index: int, filename: str, request: Request):
         return Response("That file is too big; the limit is 20 MB.", status_code=413)
     result = await memory_call(request, memory.save_file, index, filename, await request.body())
     return result if isinstance(result, Response) else {"name": result.name}
+
+
+@app.post("/memory/{index}/open")
+async def memory_open(index: int, request: Request):
+    """Open a folder made inside a memory folder in File Explorer (the HUD panel lists them)."""
+    sub = str((await request.json()).get("folder", ""))
+    path = await memory_call(request, memory.inner_folder, index, sub)
+    if isinstance(path, Response):
+        return path
+    try:
+        await asyncio.to_thread(pc.launch, path.resolve())
+    except OSError:
+        return Response("Couldn't open File Explorer on this PC.", status_code=400)
+    return {"opened": path.name}
 
 
 @app.get("/memory/{index}/files/{filename}")
@@ -282,7 +310,7 @@ async def websocket(ws: WebSocket):
         finally:
             pending.pop(cid, None)
 
-    brain = Brain(settings, ws.app.state.client, http, confirm=confirm)
+    brain = Brain(settings, ws.app.state.client, http, confirm=confirm, page=ws.send_json)
     inbox: asyncio.Queue = asyncio.Queue()
 
     async def worker() -> None:

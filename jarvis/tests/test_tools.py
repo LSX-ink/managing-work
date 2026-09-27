@@ -73,7 +73,7 @@ def test_websocket_confirmation_round_trip(monkeypatch):
     import server
 
     class FakeBrain:
-        def __init__(self, settings, client, http, confirm):
+        def __init__(self, settings, client, http, confirm, page=None):
             self.confirm = confirm
 
         async def handle(self, text, speak):

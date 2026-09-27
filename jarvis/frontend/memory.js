@@ -33,7 +33,23 @@ window.HudMemory = (() => {
         if (document.activeElement !== $('memory-name')) $('memory-name').value = folder.name;
         const list = $('memory-items');
         list.replaceChildren();
-        if (!folder.items.length) {
+        for (const sub of folder.folders || []) {           // folders made inside this one ("Work/Invoices")
+            const li = document.createElement('li');
+            li.className = 'mem-folder';
+            const open = document.createElement('button');
+            open.type = 'button';
+            open.textContent = `▸ ${sub.name}/`;
+            open.title = 'Open in File Explorer';
+            open.addEventListener('click', async () => {
+                try { await call('POST', `/memory/${i}/open`, { folder: sub.name }); say(`Opened ${sub.name} on the PC.`); } catch (e) { say(e.message); }
+            });
+            const size = document.createElement('span');
+            size.className = 'size';
+            size.textContent = `${sub.count} item${sub.count === 1 ? '' : 's'}`;
+            li.append(open, size);
+            list.append(li);
+        }
+        if (!folder.items.length && !(folder.folders || []).length) {
             const li = document.createElement('li');
             li.className = 'mem-empty';
             li.textContent = 'Nothing saved here yet.';
@@ -117,6 +133,15 @@ window.HudMemory = (() => {
             }
             e.target.value = '';
             await load();
+        });
+
+        // "Alfred, open my Ideas folder": show the labels and open that folder's panel.
+        document.addEventListener('jarvis:memory', async (e) => {
+            if (!e.detail.open) return;   // a folder star (stars.js)
+            if (!state.open) setOpen(true);
+            await load();
+            const i = state.folders.findIndex((f) => f.name === e.detail.open);
+            if (i >= 0) { say(''); showFolder(i); }
         });
 
         // Alfred may have saved something while thinking: refresh when a reply finishes.
