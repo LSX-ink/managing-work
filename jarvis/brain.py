@@ -285,6 +285,7 @@ class Brain:
             content = await tools.run_tool(call.name, dict(call.input), self.settings, self.http, self.page)
             return {"type": "tool_result", "tool_use_id": call.id, "content": content}
         except Exception as exc:  # report any tool failure back to Claude rather than crash the turn
+            print(f"  tool {call.name} failed: {exc!r}", flush=True)
             return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {exc}", "is_error": True}
 
 

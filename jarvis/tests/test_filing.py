@@ -100,3 +100,22 @@ def test_run_once_files_each_email_once(settings, monkeypatch):
                      "VGC Payslip 2025-10-27.pdf", "VGC Payslip 2025-10-27.txt"]
     assert filing.run_once(settings, 400) == []  # already filed
     assert len(json.loads(filing.filed_path(settings).read_text())) == 2
+
+
+def test_login_failure_is_explained(settings, monkeypatch):
+    class Refused(FakeIMAP):
+        def login(self, user, password):
+            raise filing.imaplib.IMAP4.error("b'[AUTHENTICATIONFAILED] Invalid credentials (Failure)'")
+    monkeypatch.setattr(filing.imaplib, "IMAP4_SSL", Refused)
+    msg = asyncio.run(filing.run_tool("add_email_rule", {"sender": "VGC", "folder": "HS2", "name": "VGC Payslip"}, settings))
+    assert msg.startswith("Rule saved") and "refused the login" in msg and "app password" in msg
+    assert filing.rules(settings)  # the rule is kept, and will file once the login works
+
+
+def test_no_connection_is_explained(settings, monkeypatch):
+    class Offline(FakeIMAP):
+        def __init__(self, host):
+            raise OSError("getaddrinfo failed")
+    monkeypatch.setattr(filing.imaplib, "IMAP4_SSL", Offline)
+    msg = asyncio.run(filing.run_tool("add_email_rule", {"sender": "VGC", "folder": "HS2", "name": "VGC Payslip"}, settings))
+    assert "couldn't connect to imap.gmail.com" in msg
