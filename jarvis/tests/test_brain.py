@@ -129,7 +129,7 @@ def test_request_options_depend_on_model(model, has_fallback, has_effort, search
 def test_screen_and_web_tools_can_be_disabled():
     opts = request_options(replace(SETTINGS, enable_screen=False, enable_web=False, enable_pc=False))
     names = {t["name"] for t in opts["tools"]}
-    assert names == {"get_weather", "get_tasks", "open_url", "save_to_memory", "read_memory", "download_file", "open_memory_folder", "create_memory_folder", "delete_memory_folder", "move_chat_panel", "request_new_ability", "set_timer", "check_timers", "cancel_timer", "take_a_break"}
+    assert names == {"get_weather", "get_tasks", "open_url", "save_to_memory", "read_memory", "download_file", "open_memory_folder", "create_memory_folder", "delete_memory_folder", "move_chat_panel", "remember_about_user", "forget_about_user", "request_new_ability", "set_timer", "check_timers", "cancel_timer", "take_a_break"}
 
 
 def test_afrikaans_prompt_and_fixed_lines():

@@ -7,6 +7,7 @@ from typing import Awaitable, Callable
 import anthropic
 import httpx
 
+import aboutyou
 import alerts
 import computer
 import tools
@@ -98,7 +99,7 @@ Timers: use set_timer for "set a timer…", check_timers and cancel_timer. When 
 
 New abilities: if the user asks for something none of your tools can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
-{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, and add a light remark."""
+{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, and add a light remark.{aboutyou.prompt_section(settings)}"""
 
 
 def deliveries_section(settings: Settings) -> str:

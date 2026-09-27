@@ -169,6 +169,10 @@ To remove one, say "Alfred, delete the Work/Payslips folder". He asks you to con
 
 Alfred can download files too: "Download this PDF into my Work folder" with a link, or "find the Python logo and save it in Ideas". He keeps the file's own name unless you give one. Downloads are limited to 200 MB, and he refuses links that point at your own PC or home network (your router, other devices).
 
+### Alfred remembers you
+
+Tell him things worth knowing ("Alfred, remember my sister Lebo's birthday is 3 May", "remember I don't eat pork") and he keeps them for every future conversation, even after a restart. He also saves things you mention in passing that are clearly worth knowing. "Forget the thing about pork" removes it. The facts are in `jarvis\memory\about-you.md`, one per line, so you can read or edit them yourself.
+
 ### Moving the chat
 
 Say "Alfred, move the chat to the bottom left" (or top left, top right, bottom right) to keep the centre free for the wolf. "Put the chat back in the middle" undoes it. Your browser remembers where you put it. On narrow windows it stays in the middle.

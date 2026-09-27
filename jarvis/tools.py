@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+import aboutyou
 import alerts
 import filing
 import memory
@@ -76,6 +77,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
             "additionalProperties": False,
         },
     })
+    tools += aboutyou.tool_definitions()
     tools += memory.tool_definitions()
     tools.append(wishes.tool_definition())
     tools += timers.tool_definitions()
@@ -208,6 +210,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return await open_url(args["url"])
     if name in filing.NAMES and settings.email_enabled:
         return await filing.run_tool(name, args, settings)
+    if name in aboutyou.NAMES:
+        return await asyncio.to_thread(aboutyou.run_tool, name, args, settings)
     if name in timers.NAMES:
         return timers.run_tool(name, args, settings)
     if name == "move_chat_panel":
