@@ -4,19 +4,21 @@ import asyncio
 import base64
 import io
 import webbrowser
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
 
 import aboutyou
+import agenda
 import alerts
 import filing
 import memory
 import music
 import pc
 import reminders
+import shopping
 import timers
 import wishes
 from config import Settings
@@ -88,7 +90,20 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     tools.append(wishes.tool_definition())
     tools += timers.tool_definitions()
     tools += reminders.tool_definitions()
+    tools += agenda.tool_definitions()
+    tools += shopping.tool_definitions()
     if settings.email_enabled:
+        tools.append({
+            "name": "check_inbox",
+            "description": "The newest emails in the user's inbox (sender, subject, when), to answer 'anything "
+                           "important?' or 'did X email me?'. Summarise: pick out what matters and skip adverts "
+                           "and newsletters. Read-only; nothing is marked as read.",
+            "input_schema": {
+                "type": "object",
+                "properties": {"hours": {"type": "integer", "description": "How far back, 1 to 168. Default 24."}},
+                "additionalProperties": False,
+            },
+        })
         tools.append({
             "name": "check_deliveries",
             "description": "Order and delivery emails (Deliveroo, Just Eat, Uber Eats, Amazon, couriers) from the "
@@ -150,6 +165,18 @@ async def get_weather(http: httpx.AsyncClient, city: str, days: int = 1) -> str:
         f"Today: high {daily['temperature_2m_max'][0]}°C, low {daily['temperature_2m_min'][0]}°C, "
         f"{daily['precipitation_probability_max'][0]}% chance of rain.{ahead}"
     )
+
+
+def inbox_text(settings: Settings, hours: int = 24) -> str:
+    """The newest inbox emails, newest first, for Alfred to summarise."""
+    cutoff = datetime.now().astimezone() - timedelta(hours=hours)
+    mails = [m for m in alerts.fetch_mail(settings, days=max(1, -(-hours // 24)), limit=60)
+             if not m.date or m.date >= cutoff]
+    if not mails:
+        return f"No emails in the last {hours} hours."
+    lines = [f"- {m.date:%a %H:%M} " if m.date else "- " for m in mails]
+    return f"{len(mails)} emails in the last {hours} hours, newest first:\n" + "\n".join(
+        f"{when}from {m.sender}: {m.subject or '(no subject)'}" for when, m in reversed(list(zip(lines, mails))))
 
 
 def read_open_tasks(tasks_file: str) -> list[str]:
@@ -225,6 +252,14 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return await filing.run_tool(name, args, settings)
     if name in aboutyou.NAMES:
         return await asyncio.to_thread(aboutyou.run_tool, name, args, settings)
+    if name == "check_inbox" and settings.email_enabled:
+        hours = min(max(int(args.get("hours") or 24), 1), 168)
+        return await asyncio.to_thread(inbox_text, settings, hours)
+    if name in agenda.NAMES:
+        days = min(max(int(args.get("days") or 1), 1), 31)
+        return await agenda.upcoming(http, settings, days)
+    if name in shopping.NAMES:
+        return await asyncio.to_thread(shopping.run_tool, args, settings)
     if name in reminders.NAMES:
         return await asyncio.to_thread(reminders.run_tool, name, args, settings)
     if name in timers.NAMES:

@@ -10,6 +10,7 @@ import anthropic
 import httpx
 
 import aboutyou
+import agenda
 import alerts
 import computer
 import reminders
@@ -103,7 +104,7 @@ Timers and reminders: use set_timer for "set a timer…" or "in 10 minutes", che
 
 New abilities: if the user asks for something none of your tools can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
-{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}"""
+{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}"""
 
 
 def deliveries_section(settings: Settings) -> str:
@@ -264,6 +265,8 @@ class Brain:
             jobs.append(_safe(asyncio.to_thread(alerts.recent_deliveries, self.settings, 1)))
         weather, task_text, *deliveries = await asyncio.gather(*jobs)
         extra = f"\nDeliveries: {deliveries[0]}" if deliveries else ""
+        if agenda.configured(self.settings):
+            extra += f"\nCalendar today: {await _safe(agenda.upcoming(self.http, self.settings, 1))}"
         today = await asyncio.to_thread(reminders.later_today, self.settings)
         extra += f"\nReminders later today: {today}" if today else ""
         await self.handle(f"[activate]\nWeather: {weather}\nTasks: {task_text}{extra}", speak)

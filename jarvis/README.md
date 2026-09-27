@@ -183,6 +183,21 @@ Say "Alfred, move the chat to the bottom left" (or top left, top right, bottom r
 
 "Alfred, set a timer for 10 minutes" (or "a pasta timer for 8 minutes"). When it ends he chimes and tells you, and it goes in the notifications. Ask "how long is left?" or "cancel the pasta timer". Say "Alfred, take a break" and he goes quiet, ignoring everything including his own announcements (they still appear in the notifications) until you say "Alfred" again or click the orb.
 
+### Start with Windows
+
+In PowerShell, in the jarvis folder, run `.\scripts\autostart.ps1` once. From then on Jarvis starts minimised when you log in, and the HUD opens in your browser. `.\scripts\autostart.ps1 -Remove` turns it off. You can also double-click `scripts\start-jarvis.cmd` to start him by hand. (If you changed `JARVIS_PORT`, change 8340 in that file too.)
+
+### Calendar
+
+Alfred can read your calendar: "what's on today?", "am I free Friday?", "what's my week like?". His greeting mentions today's events. He can only look, never change anything. Give him your calendar's private iCal address as `JARVIS_CALENDAR_URL=` in `.env`:
+- **Google Calendar** (on a computer): Settings, click your calendar on the left, then *Integrate calendar*, then copy *Secret address in iCal format*.
+- **Outlook.com**: Settings, Calendar, Shared calendars, *Publish a calendar*, then copy the ICS link.
+- **iCloud** (iPhone calendar): in the Calendar app, tap the calendar's ⓘ, turn on *Public Calendar* and share the link. Anyone with the link can see it, so keep it private.
+
+### Inbox and shopping list
+
+With email set up, "Alfred, anything important in my email today?" gets a summary that skips the adverts. "Add milk and eggs to the shopping list", "what's on my shopping list?", "tick off milk" and "clear the list" keep a list in `memory\Shopping\list.md`.
+
 ### Reminders
 
 "Alfred, remind me at 7 pm to call Mum", "remind me tomorrow at 9 about the dentist" or "every weekday at 8 remind me to take my tablets". He says it with a chime at that time. Reminders are saved in `jarvis\memory\reminders.json`, so they survive a restart. If Jarvis is closed when one comes due, he says it (and when it was due) as soon as you open the page again. Ask "what reminders do I have?" or "cancel the dentist reminder".
