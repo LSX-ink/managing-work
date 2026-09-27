@@ -10,9 +10,11 @@ from urllib.parse import urlparse
 import httpx
 
 import alerts
+import filing
 import memory
 import music
 import pc
+import timers
 import wishes
 from config import Settings
 
@@ -64,6 +66,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     ]
     tools += memory.tool_definitions()
     tools.append(wishes.tool_definition())
+    tools += timers.tool_definitions()
     if settings.email_enabled:
         tools.append({
             "name": "check_deliveries",
@@ -75,6 +78,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
                 "additionalProperties": False,
             },
         })
+        tools += filing.tool_definitions()
     if settings.enable_pc:
         tools += pc.tool_definitions()
         tools.append(music.tool_definition())
@@ -190,6 +194,10 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return get_tasks(settings)
     if name == "open_url":
         return await open_url(args["url"])
+    if name in filing.NAMES and settings.email_enabled:
+        return await filing.run_tool(name, args, settings)
+    if name in timers.NAMES:
+        return timers.run_tool(name, args, settings)
     if name == "request_new_ability":
         return await wishes.request(http, settings, args["title"], args["details"])
     if name == "download_file":

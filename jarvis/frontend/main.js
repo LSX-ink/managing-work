@@ -32,6 +32,7 @@ const STRINGS = {
         notifications: 'Notifications',
         remove: 'Remove',
         email: 'EMAIL',
+        timer: 'TIMER',
         call: 'CALL',
         phone: 'PHONE',
         nowPlaying: 'NOW PLAYING',
@@ -55,6 +56,7 @@ const STRINGS = {
         notifications: 'Kennisgewings',
         remove: 'Verwyder',
         email: 'E-POS',
+        timer: 'TYDHOUER',
         call: 'OPROEP',
         phone: 'FOON',
         nowPlaying: 'SPEEL NOU',
@@ -107,6 +109,24 @@ function addLine(who, text) {
 
 // ---- WebSocket --------------------------------------------------------------
 
+// A timer's chime: three soft rising beeps, made in the browser (no sound file needed).
+function chime() {
+    try {
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        [0, 0.35, 0.7].forEach((at, i) => {
+            const osc = audio.createOscillator(), gain = audio.createGain();
+            osc.frequency.value = 660 + i * 220;
+            gain.gain.setValueAtTime(0.0001, audio.currentTime + at);
+            gain.gain.exponentialRampToValueAtTime(0.3, audio.currentTime + at + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + at + 0.3);
+            osc.connect(gain).connect(audio.destination);
+            osc.start(audio.currentTime + at);
+            osc.stop(audio.currentTime + at + 0.32);
+        });
+        setTimeout(() => audio.close(), 1500);
+    } catch (e) { /* no audio */ }
+}
+
 function connect(onOpen) {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     ws = new WebSocket(`${proto}://${location.host}/ws`);
@@ -128,6 +148,8 @@ function connect(onOpen) {
             showNowPlaying(msg);
         } else if (msg.type === 'note') {
             addLine('jarvis', msg.text);  // shown, not spoken
+        } else if (msg.type === 'chime') {
+            chime();
         } else if (msg.type === 'memory') {
             document.dispatchEvent(new CustomEvent('jarvis:memory', { detail: msg }));  // memory.js opens the folder
         } else if (msg.type === 'confirm') {

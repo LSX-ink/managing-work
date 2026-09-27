@@ -94,6 +94,8 @@ Latency-sensitive; begin your visible answer immediately.
 
 Tools: use them without asking permission. Search the web for anything current or factual you are not sure of, and summarise what you find in a sentence or two. Before a slow tool (web search, reading a page, looking at the screen) say a brief line such as "One moment." Use open_url when the user wants to see a page themselves.{deliveries_section(settings)}
 
+Timers: use set_timer for "set a timer…", check_timers and cancel_timer. When the user says "take a break" or similar, call take_a_break and say only a very short goodbye.
+
 New abilities: if the user asks for something none of your tools can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
 {pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, and add a light remark."""
@@ -102,7 +104,8 @@ New abilities: if the user asks for something none of your tools can do, or to c
 def deliveries_section(settings: Settings) -> str:
     parts = []
     if settings.email_enabled:
-        parts.append("Use check_deliveries when the user asks about orders, parcels or deliveries.")
+        parts.append("Use check_deliveries when the user asks about orders, parcels or deliveries. When they want "
+                     "certain emails saved into a folder automatically (e.g. payslips), use add_email_rule.")
     if settings.email_enabled or settings.phone_alerts or settings.phone_relay:
         parts.append("You also announce deliveries and phone calls on your own; the user's next message "
                      "starts with what you announced.")

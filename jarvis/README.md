@@ -167,6 +167,14 @@ Alfred can make new folders too: "Alfred, create a Fitness folder" makes one of 
 
 Alfred can download files too: "Download this PDF into my Work folder" with a link, or "find the Python logo and save it in Ideas". He keeps the file's own name unless you give one. Downloads are limited to 200 MB, and he refuses links that point at your own PC or home network (your router, other devices).
 
+### Timers and breaks
+
+"Alfred, set a timer for 10 minutes" (or "a pasta timer for 8 minutes"). When it ends he chimes and tells you, and it goes in the notifications. Ask "how long is left?" or "cancel the pasta timer". Say "Alfred, take a break" and he goes quiet, ignoring everything including his own announcements (they still appear in the notifications) until you say "Alfred" again or click the orb.
+
+### Filing emails automatically
+
+With your email set up (see Deliveries below), say "Alfred, save every payslip email from VGC into my HS2 folder". He files matching emails from the last four months straight away and then every new one as it arrives: each attachment (the payslip PDF) and the email text, named by the date the email was sent, e.g. `VGC Payslip 2025-09-27.pdf`. A folder that doesn't exist is created (it shows as a star). Ask "what email rules do I have?" or "stop filing VGC emails". Your inbox is only read, never changed.
+
 ### New abilities
 
 When you ask for something Alfred can't do yet ("Alfred, set a timer for ten minutes"), he doesn't just say no. He sends the request to Claude, the AI that builds him, as a GitHub issue labelled `alfred-wish`. Claude checks for new requests every few hours, builds each one as a pull request, and tells you in the project chat. Merge it, run `git pull` and restart, and Alfred can do it. You can also ask him to improve something ("Alfred, get better at…"). A copy of every request goes in `wishes.md` next to `server.py`.
