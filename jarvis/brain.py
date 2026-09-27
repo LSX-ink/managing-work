@@ -7,6 +7,7 @@ from typing import Awaitable, Callable
 import anthropic
 import httpx
 
+import alerts
 import computer
 import tools
 from config import Settings
@@ -91,9 +92,19 @@ Everything you write is read aloud by a text-to-speech voice, so:
 
 Latency-sensitive; begin your visible answer immediately.
 
-Tools: use them without asking permission. Search the web for anything current or factual you are not sure of, and summarise what you find in a sentence or two. Before a slow tool (web search, reading a page, looking at the screen) say a brief line such as "One moment." Use open_url when the user wants to see a page themselves.
+Tools: use them without asking permission. Search the web for anything current or factual you are not sure of, and summarise what you find in a sentence or two. Before a slow tool (web search, reading a page, looking at the screen) say a brief line such as "One moment." Use open_url when the user wants to see a page themselves.{deliveries_section(settings)}
 
-{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, and add a light remark."""
+{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, and add a light remark."""
+
+
+def deliveries_section(settings: Settings) -> str:
+    parts = []
+    if settings.email_enabled:
+        parts.append("Use check_deliveries when the user asks about orders, parcels or deliveries.")
+    if settings.email_enabled or settings.phone_alerts:
+        parts.append("You also announce deliveries and phone calls on your own; the user's next message "
+                     "starts with what you announced.")
+    return "".join(" " + p for p in parts)
 
 
 def pc_section(settings: Settings) -> str:
@@ -191,6 +202,7 @@ class Brain:
         self._computer = pc_control  # created on first use; tests pass a fake
         self._allow_all = False  # "allow for this task": lasts until the user's next message
         self.messages: list[dict] = []
+        self._notes: list[str] = []  # announcements made since the user last spoke
 
     @property
     def computer(self):
@@ -203,17 +215,25 @@ class Brain:
         if self.settings.greeting:
             await speak(self.settings.greeting.replace("{time_of_day}", time_of_day()))
             return
-        weather, task_text = await asyncio.gather(
-            _safe(tools.get_weather(self.http, self.settings.city)),
-            asyncio.to_thread(tools.get_tasks, self.settings),
-        )
-        await self.handle(f"[activate]\nWeather: {weather}\nTasks: {task_text}", speak)
+        jobs = [_safe(tools.get_weather(self.http, self.settings.city)),
+                asyncio.to_thread(tools.get_tasks, self.settings)]
+        if self.settings.email_enabled:
+            jobs.append(_safe(asyncio.to_thread(alerts.recent_deliveries, self.settings, 1)))
+        weather, task_text, *deliveries = await asyncio.gather(*jobs)
+        extra = f"\nDeliveries: {deliveries[0]}" if deliveries else ""
+        await self.handle(f"[activate]\nWeather: {weather}\nTasks: {task_text}{extra}", speak)
+
+    def note(self, text: str) -> None:
+        """Remember a heads-up Jarvis said on his own, so "who was that?" can be answered next turn."""
+        self._notes.append(f"{time.strftime('%H:%M')} {text}")
 
     async def handle(self, user_text: str, speak: Speak) -> None:
         stamp = time.strftime("%A %d %B, %H:%M")
         start = len(self.messages)
         self._allow_all = False
-        self.messages.append({"role": "user", "content": f"(Local time: {stamp})\n{user_text}"})
+        notes = "".join(f"(You announced at {n})\n" for n in self._notes)
+        self._notes.clear()
+        self.messages.append({"role": "user", "content": f"(Local time: {stamp})\n{notes}{user_text}"})
         try:
             await self._run(speak)
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive

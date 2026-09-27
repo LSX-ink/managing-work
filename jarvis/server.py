@@ -18,6 +18,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+import alerts
 import tools
 import tts
 from brain import Brain, computer_enabled, persona
@@ -34,13 +35,29 @@ SESSION_DAYS = 30
 async def lifespan(app: FastAPI):
     app.state.client = anthropic.AsyncAnthropic()
     app.state.http = httpx.AsyncClient(timeout=30)
+    app.state.pages = {}  # open pages: speak function -> that page's Brain
+    watchers = alerts.start(settings, lambda text: announce(app, text))
     yield
+    for task in watchers:
+        task.cancel()
     await app.state.http.aclose()
     await app.state.client.close()
 
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
+
+
+async def announce(app: FastAPI, text: str) -> None:
+    """Say a heads-up (a delivery, a call) on every open Jarvis page."""
+    if not app.state.pages:
+        print(f"  Jarvis (no page open): {text}", flush=True)
+    for speak, brain in list(app.state.pages.items()):
+        brain.note(text)
+        try:
+            await speak(text)
+        except Exception:  # the page closed mid-send
+            pass
 
 
 # ---- password (JARVIS_PASSWORD) ----------------------------------------------
@@ -184,6 +201,7 @@ async def websocket(ws: WebSocket):
             await ws.send_json({"type": "done"})
 
     task = asyncio.create_task(worker())
+    ws.app.state.pages[speak] = brain
     try:
         # Keep reading while a turn runs, so approval clicks reach the waiting turn.
         while True:
@@ -198,6 +216,7 @@ async def websocket(ws: WebSocket):
     except WebSocketDisconnect:
         pass
     finally:
+        ws.app.state.pages.pop(speak, None)
         task.cancel()
         for fut in pending.values():
             if not fut.done():

@@ -79,6 +79,9 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `JARVIS_ENABLE_PC` | `true` | Open apps, folders and files; media and volume; find and read files |
 | `JARVIS_ENABLE_COMPUTER` | `false` | Mouse and keyboard control, with your OK for every action (Opus 5 models) |
 | `JARVIS_PASSWORD` | (empty) | When set, the page asks for this password first. A browser stays logged in for 30 days, or until you change the password |
+| `JARVIS_EMAIL_ADDRESS` / `JARVIS_EMAIL_APP_PASSWORD` | (empty) | Your email and an app password, for delivery alerts. See [Deliveries and calls](#deliveries-and-calls) |
+| `JARVIS_EMAIL_IMAP_HOST` / `JARVIS_EMAIL_CHECK_SECONDS` | `imap.gmail.com` / `60` | Mail server, and how often to look for new mail |
+| `JARVIS_PHONE_ALERTS` | `false` | Announce phone calls and delivery-app notifications that Phone Link shows (Windows) |
 | `JARVIS_HOST` / `JARVIS_PORT` | `127.0.0.1` / `8340` | Where the server listens |
 
 On Opus 5 the server turns on the API's `fallbacks: "default"`. If a safety classifier declines a request, it is retried on a suitable model instead of failing.
@@ -147,6 +150,39 @@ File access is **read-only** and limited to your home folder. Anything that look
 - This is slower and costs more than the other tools, because every step sends a screenshot. Alfred uses the simple tools first when they can do the job.
 - It needs an Opus 5 model (`claude-opus-5`, the default) and the `pyautogui` package (in `requirements.txt`). Typing works for plain letters, numbers and symbols; accented characters may be skipped.
 
+### Deliveries and calls
+
+Jarvis can speak up on his own when a delivery is on its way or your phone rings, for example "Sir, an email from Deliveroo: Your order is on its way" or "Sir, incoming call from Mum." The Jarvis page must be open to hear it. You can also ask "Is anything being delivered today?"
+
+Deliveroo, Just Eat and Uber Eats have no way for personal apps to log in, so Jarvis doesn't use your accounts with them. He reads the emails and phone notifications they already send you.
+
+**Delivery emails (Gmail).** Jarvis checks your inbox every minute and announces order and delivery emails from Deliveroo, Just Eat, Uber Eats, Amazon, Royal Mail, Evri, DPD, DHL, UPS, FedEx and Yodel. Adverts ("50% off") are skipped. He only reads the sender, subject and date, and never marks anything as read.
+
+1. Turn on 2-Step Verification for your Google account, if it isn't on: <https://myaccount.google.com/signinoptions/twosv>
+2. Make an app password at <https://myaccount.google.com/apppasswords>. Call it "Jarvis". Google shows a 16-letter password once, so copy it.
+3. Put these in `.env` and restart Jarvis:
+
+```
+JARVIS_EMAIL_ADDRESS=you@gmail.com
+JARVIS_EMAIL_APP_PASSWORD=abcd efgh ijkl mnop
+```
+
+The console then says `Watching you@gmail.com for delivery emails.` Only mail that arrives after that is announced. To stop it, delete the app password on the same Google page. Other providers work too: set `JARVIS_EMAIL_IMAP_HOST` (Outlook is `outlook.office365.com`).
+
+**Phone calls (Windows with Phone Link).** Phone Link shows your phone's calls and notifications on your PC. Jarvis reads those notifications and announces incoming calls, plus Deliveroo, Just Eat and Uber Eats app notifications such as "Your rider is nearby".
+
+1. Link your phone in the **Phone Link** app on Windows (Android or iPhone). In Phone Link's settings, turn on calls and notifications from your phone.
+2. Put `JARVIS_PHONE_ALERTS=true` in `.env`.
+3. Install the extra Windows packages, from the `jarvis` folder:
+
+```
+pip install -r requirements.txt
+```
+
+4. Start Jarvis. If Windows asks whether Python may read your notifications, allow it. If the console says Windows blocked it, open **Settings > Privacy & security > Notifications**, turn on notification access for apps, and restart Jarvis.
+
+Phone Link must be running. Jarvis says who is calling but can't answer or reject the call.
+
 ### Double-clap to wake (optional)
 
 ```bash
@@ -169,6 +205,7 @@ Clap twice and it starts the server if it isn't running, then opens Jarvis in yo
 - Each reply is one or more Claude API calls. Web searches are billed per search, and screenshots are billed as image input.
 - "What am I looking at?" sends a screenshot of your whole screen to Anthropic. Set `JARVIS_ENABLE_SCREEN=false` if you don't want that.
 - Chrome's speech recognition sends your audio to Google.
+- With delivery or call alerts on, the subjects of delivery emails and what Jarvis announced (such as who called) are sent to Claude with your next message. Other emails are never sent anywhere.
 
 ## Development
 
@@ -183,7 +220,8 @@ The tests stand in a fake Claude client, so they need no API key or network.
 |---|---|
 | `server.py` | FastAPI app: page, `/config`, `/ws` WebSocket |
 | `brain.py` | System prompt, model-specific options, tool loop, history trimming |
-| `tools.py` | Weather, tasks, open URL, screenshot |
+| `tools.py` | Weather, tasks, open URL, screenshot, deliveries |
+| `alerts.py` | Delivery emails (IMAP) and phone calls (Phone Link) announced on their own |
 | `pc.py` | Apps, folders, media keys, find/read/open files |
 | `computer.py` | Mouse and keyboard for Claude's computer toolset |
 | `tts.py` | ElevenLabs text-to-speech |

@@ -5,3 +5,10 @@ httpx>=0.27.0
 python-dotenv>=1.0.0
 Pillow>=10.0.0
 pyautogui>=0.9.54
+# Phone alerts (JARVIS_PHONE_ALERTS): read Phone Link's notifications on Windows
+winrt-runtime>=3.0; sys_platform == "win32"
+winrt-Windows.Foundation>=3.0; sys_platform == "win32"
+winrt-Windows.Foundation.Collections>=3.0; sys_platform == "win32"
+winrt-Windows.ApplicationModel>=3.0; sys_platform == "win32"
+winrt-Windows.UI.Notifications>=3.0; sys_platform == "win32"
+winrt-Windows.UI.Notifications.Management>=3.0; sys_platform == "win32"

@@ -40,7 +40,16 @@ class Settings:
     host: str = os.getenv("JARVIS_HOST", "127.0.0.1")
     port: int = int(os.getenv("JARVIS_PORT", "8340"))
     password: str = os.getenv("JARVIS_PASSWORD", "")  # empty: no login page
+    # Delivery emails: IMAP login (for Gmail, an app password, not your normal one)
+    email_address: str = os.getenv("JARVIS_EMAIL_ADDRESS", "").strip()
+    email_app_password: str = os.getenv("JARVIS_EMAIL_APP_PASSWORD", "").strip()
+    email_imap_host: str = os.getenv("JARVIS_EMAIL_IMAP_HOST", "imap.gmail.com")
+    email_check_seconds: int = int(os.getenv("JARVIS_EMAIL_CHECK_SECONDS", "60"))
+    phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
 
+    @property
+    def email_enabled(self) -> bool:
+        return bool(self.email_address and self.email_app_password)
 
     @property
     def lang_code(self) -> str:
