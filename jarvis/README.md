@@ -82,6 +82,18 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 
 On Opus 5 the server turns on the API's `fallbacks: "default"`. If a safety classifier declines a request, it is retried on a suitable model instead of failing.
 
+### Your own colours
+
+Updates replace `style.css` and `hud.css`, so don't put your colours there. Put them in `frontend/custom.css` instead. Git ignores that file, so updates never touch it, and it loads last, so it wins over any theme.
+
+Start from the example (in PowerShell, from the `jarvis` folder):
+
+```
+Copy-Item frontend\custom.example.css frontend\custom.css
+```
+
+Then change the colours in `frontend/custom.css` and refresh the page. `JARVIS_THEME` still picks the look (`classic` or a `hud` layout), and your colours go on top. Without a `custom.css`, the page looks as usual and the server logs a harmless `404` for it.
+
 ### Alfred (Batman's butler)
 
 Put these in `.env`:

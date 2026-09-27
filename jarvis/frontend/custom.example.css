@@ -1,0 +1,21 @@
+/* Your own colours. Copy this file to custom.css and edit that copy:
+   custom.css is ignored by git, so updates never overwrite it. It loads last, so it wins.
+   Delete any line you don't want to change. */
+
+/* Classic orb (JARVIS_THEME=classic) */
+:root {
+    --bg: #07031a;
+    --accent: #b388ff;
+    --idle-a: #3a1f6b;   --idle-b: #140a2a;
+    --listen-a: #9d6bff; --listen-b: #3a1a70;
+    --think-a: #ffc24a;  --think-b: #7a5a10;
+    --speak-a: #e6c7ff;  --speak-b: #5a2a8a;
+}
+body:not(.hud) { background: radial-gradient(ellipse at center, #1a0d2e 0%, var(--bg) 70%); }
+
+/* HUD dashboard (JARVIS_THEME=hud, hud-gold, ...). The doubled .hud lets this beat every colour variant. */
+body.hud.hud {
+    --hud: #b388ff; --hud-bright: #e2d2ff; --hud-dim: rgba(179, 136, 255, 0.3); --hud-faint: rgba(179, 136, 255, 0.07);
+    --hud-panel: rgba(18, 8, 36, 0.75); --hud-bg: #07031a; --hud-glow: rgba(110, 40, 200, 0.35);
+    --hud-idle: #9d6bff; --hud-listen: #c77dff; --hud-think: #ffc24a; --hud-speak: #e6c7ff; --hud-warn: #ffc24a;
+}
