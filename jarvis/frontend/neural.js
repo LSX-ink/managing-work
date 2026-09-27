@@ -1,7 +1,7 @@
-// HUD "thinking" visual: a glowing head with a neuron network that fires in brainwaves.
+// HUD "thinking" visual: a neuron network shaped like a brain that fires in brainwaves.
 // hud.js cross-fades the particle sphere into this while Alfred is thinking.
 window.HudBrain = (() => {
-    // Head in profile, facing left, in unit coordinates (y points down).
+    // Head in profile, facing left, in unit coordinates (y points down). Not drawn: it only shapes the brain.
     const HEAD = [
         [0.31, 0.92], [0.34, 0.72], [0.52, 0.52], [0.66, 0.22], [0.70, -0.08], [0.64, -0.38], [0.48, -0.64],
         [0.24, -0.82], [-0.04, -0.88], [-0.32, -0.78], [-0.50, -0.58], [-0.58, -0.34], [-0.58, -0.16],
@@ -57,15 +57,8 @@ window.HudBrain = (() => {
     const STRANDS = Array.from({ length: 70 }, () => {
         const from = NODES[Math.floor(rand() * NODES.length)];
         const ang = Math.atan2(from.y - CENTRE[1], from.x - CENTRE[0]) + gauss() * 0.9;
-        return { from, ang, len: 0.55 + rand() * 0.75, bend: gauss() * 0.5, phase: rand() * Math.PI * 2 };
+        return { from, ang, len: 0.35 + rand() * 0.45, bend: gauss() * 0.5, phase: rand() * Math.PI * 2 };
     });
-    // faint particles filling the head, like the sphere's dust
-    const DUST = [];
-    while (DUST.length < 420) {
-        const x = -0.75 + rand() * 1.5, y = -0.9 + rand() * 1.95;
-        if (inHead(x, y)) DUST.push([x, y, rand()]);
-    }
-
     function hexToHsl(hex) {
         const m = hex.replace('#', '').match(/../g);
         if (!m) return [35, 100, 60];
@@ -86,8 +79,8 @@ window.HudBrain = (() => {
         const hsl = (dh, l, a) => `hsla(${base[0] + dh}, ${base[1]}%, ${l}%, ${a})`;
         const speed = slow ? 0.25 : 1;
         const T = t * speed;
-        const S = Math.min(w, h) * 0.37 * (0.85 + 0.15 * mix);
-        const ox = w / 2 + S * 0.05, oy = h / 2 - S * 0.02;
+        const S = Math.min(w, h) * 0.42 * (0.85 + 0.15 * mix);
+        const ox = w / 2 - CENTRE[0] * S, oy = h / 2 - (CENTRE[1] + 0.12) * S;
         const X = (x) => ox + x * S, Y = (y) => oy + y * S;
         const ccx = X(CENTRE[0]), ccy = Y(CENTRE[1]);
 
@@ -130,29 +123,12 @@ window.HudBrain = (() => {
             ctx.fill();
         }
 
-        // glowing head silhouette
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.scale(S, S);
-        const fill = ctx.createRadialGradient(-0.5, -0.1, 0, 0.1, -0.1, 0.9);
-        fill.addColorStop(0, hsl(10, 85, 0.32));
-        fill.addColorStop(0.45, hsl(0, 55, 0.12));
-        fill.addColorStop(1, hsl(-10, 40, 0.06));
-        ctx.fillStyle = fill;
-        ctx.fill(headPath);
-        ctx.shadowColor = hsl(10, 80, 1);
-        ctx.shadowBlur = 18;
-        ctx.strokeStyle = hsl(10, 88, 0.9);
-        ctx.lineWidth = 2.2 / S;
-        ctx.stroke(headPath);
-        ctx.restore();
-
-        // dust
-        for (const [x, y, r] of DUST) {
-            const tw = 0.3 + 0.7 * Math.abs(Math.sin(T / 700 + r * 20));
-            ctx.fillStyle = hsl(10, 85, 0.35 * tw);
-            ctx.fillRect(X(x) - 0.7, Y(y) - 0.7, 1.4, 1.4);
-        }
+        // soft glow behind the brain
+        const glow = ctx.createRadialGradient(ccx, ccy, 0, ccx, ccy, S * 0.8);
+        glow.addColorStop(0, hsl(10, 80, 0.28));
+        glow.addColorStop(1, hsl(0, 60, 0));
+        ctx.fillStyle = glow;
+        ctx.fillRect(ccx - S, ccy - S, S * 2, S * 2);
 
         // how strongly each node fires: a wave front sweeping out from the centre, plus its own rhythm
         const fire = NODES.map((n) => {
@@ -205,14 +181,14 @@ window.HudBrain = (() => {
         // region labels, fading in after the brain
         ctx.save();
         ctx.globalAlpha = Math.max(0, mix * 1.6 - 0.6);
-        ctx.font = `${Math.max(8, S * 0.046)}px 'Share Tech Mono', monospace`;
+        ctx.font = `${Math.min(11, Math.max(8, S * 0.046))}px 'Share Tech Mono', monospace`;
         ctx.textBaseline = 'middle';
         REGIONS.forEach((r, ri) => {
             const nodes = NODES.map((n, i) => [n, fire[i]]).filter(([n]) => n.region === ri);
             if (!nodes.length) return;
             const level = nodes.reduce((sum, [, f]) => sum + f, 0) / nodes.length;
             const text = `${r.name} ${level.toFixed(2)}`;
-            const tw = ctx.measureText(text).width, th = S * 0.07;
+            const tw = ctx.measureText(text).width, th = Math.min(16, S * 0.07);
             const lx = X(r.at[0]) - tw / 2, ly = Y(r.at[1] + 0.11);
             ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
             ctx.fillRect(lx - 4, ly - th / 2, tw + 8, th);
