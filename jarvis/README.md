@@ -173,6 +173,8 @@ Alfred can download files too: "Download this PDF into my Work folder" with a li
 
 Tell him things worth knowing ("Alfred, remember my sister Lebo's birthday is 3 May", "remember I don't eat pork") and he keeps them for every future conversation, even after a restart. He also saves things you mention in passing that are clearly worth knowing. "Forget the thing about pork" removes it. The facts are in `jarvis\memory\about-you.md`, one per line, so you can read or edit them yourself.
 
+He also remembers your last ten exchanges, so after a restart or a page reload you can carry on where you left off ("what did you just say?"). They're kept in `jarvis\memory\.recent-chat.json`; delete that file to wipe them.
+
 ### Moving the chat
 
 Say "Alfred, move the chat to the bottom left" (or top left, top right, bottom right) to keep the centre free for the wolf. "Put the chat back in the middle" undoes it. Your browser remembers where you put it. On narrow windows it stays in the middle.

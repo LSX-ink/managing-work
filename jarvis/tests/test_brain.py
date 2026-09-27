@@ -190,3 +190,21 @@ async def test_greeting_fills_in_time_of_day(monkeypatch):
 
     await b.activate(speak)
     assert said == ["Good afternoon, sir."]
+
+
+async def test_conversation_carries_over_a_restart(tmp_path):
+    s = replace(SETTINGS, memory_dir=str(tmp_path))
+    first = Brain(s, FakeClient(reply("tool_use", text("One moment."), tool_use("get_tasks", {})),
+                                reply("end_turn", text("Your slate is clean."))), http=None)
+    await run(first, "What's on my list?")
+    await run(Brain(s, FakeClient(reply("end_turn", text("Good evening."))), http=None), "[activate]\nWeather: fine")
+
+    client = FakeClient(reply("end_turn", text("I said it was clean.")))
+    later = Brain(s, client, http=None)  # a restart or a page reload
+    await run(later, "What did you just tell me?")
+    sent = client.requests[0]["messages"]
+    assert [m["role"] for m in sent] == ["user", "assistant", "user"]
+    assert sent[0]["content"].endswith("What's on my list?")
+    assert sent[1] == {"role": "assistant", "content": "One moment. Your slate is clean."}  # the greeting isn't kept
+    (tmp_path / ".recent-chat.json").write_text("not json", encoding="utf-8")
+    assert Brain(s, FakeClient(), http=None).messages == []

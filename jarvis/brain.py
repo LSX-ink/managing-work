@@ -1,7 +1,9 @@
 """Jarvis's brain: a Claude conversation with a manual tool-use loop."""
 
 import asyncio
+import json
 import time
+from pathlib import Path
 from typing import Awaitable, Callable
 
 import anthropic
@@ -20,6 +22,7 @@ Confirm = Callable[[list[str]], Awaitable[str]]
 MAX_TOOL_ROUNDS = 30
 MAX_IMAGES_KEPT = 12
 MAX_TURNS_KEPT = 20
+CARRY_OVER_TURNS = 10  # exchanges remembered across restarts and page reloads
 
 # Fixed lines Jarvis says without asking Claude, by language code.
 LINES = {
@@ -198,6 +201,38 @@ def spoken_text(content) -> str:
     return " ".join(b.text.strip() for b in content if b.type == "text" and b.text.strip())
 
 
+def carry_over_path(settings: Settings) -> Path:
+    return Path(settings.memory_dir) / ".recent-chat.json"
+
+
+def load_carry_over(settings: Settings) -> list[dict]:
+    """The last few exchanges from before a restart, as plain text messages."""
+    try:
+        saved = json.loads(carry_over_path(settings).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    messages = []
+    for turn in saved if isinstance(saved, list) else []:
+        if isinstance(turn, dict) and isinstance(turn.get("user"), str) and isinstance(turn.get("reply"), str) and turn["reply"]:
+            messages += [{"role": "user", "content": turn["user"]}, {"role": "assistant", "content": turn["reply"]}]
+    return messages
+
+
+def save_carry_over(settings: Settings, user_text: str, reply: str) -> None:
+    path = carry_over_path(settings)
+    try:
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        saved = saved if isinstance(saved, list) else []
+    except (OSError, ValueError):
+        saved = []
+    saved = [*saved, {"user": user_text, "reply": reply}][-CARRY_OVER_TURNS:]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(saved, indent=1), encoding="utf-8")
+    except OSError as exc:
+        print(f"[jarvis] Couldn't save the conversation: {exc!r}", flush=True)
+
+
 class Brain:
     def __init__(self, settings: Settings, client: anthropic.AsyncAnthropic, http: httpx.AsyncClient,
                  confirm: Confirm | None = None, pc_control=None, page=None):
@@ -208,7 +243,7 @@ class Brain:
         self.confirm = confirm
         self._computer = pc_control  # created on first use; tests pass a fake
         self._allow_all = False  # "allow for this task": lasts until the user's next message
-        self.messages: list[dict] = []
+        self.messages: list[dict] = load_carry_over(settings)  # picks up where the last session left off
         self._notes: list[str] = []  # announcements made since the user last spoke
 
     @property
@@ -243,6 +278,10 @@ class Brain:
         self.messages.append({"role": "user", "content": f"(Local time: {stamp})\n{notes}{user_text}"})
         try:
             await self._run(speak)
+            reply = " ".join(filter(None, (spoken_text(m["content"]) for m in self.messages[start + 1:]
+                                           if m["role"] == "assistant" and not isinstance(m["content"], str))))
+            if reply and not user_text.startswith("[activate]"):
+                await asyncio.to_thread(save_carry_over, self.settings, self.messages[start]["content"], reply)
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive
             print(f"[jarvis] Error: {exc!r}", flush=True)
             del self.messages[start:]
