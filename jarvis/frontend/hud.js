@@ -40,14 +40,19 @@
         return [Math.cos(theta) * r, y, Math.sin(theta) * r];
     });
     let level = 0.25;
+    let brainMix = 0;   // 0 = particle sphere, 1 = neural brain (while thinking)
 
     function drawSphere(t) {
         const [ctx, w, h] = fitCanvas($('hud-sphere'));
         const s = state();
         const color = COLORS[s];
         level += (ENERGY[s] + (s === 'listening' ? micLevel * 1.5 : 0) - level) * 0.05;
-        const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.27 * (1 + level * 0.08 + Math.sin(t / 400) * 0.01 * level);
+        brainMix += ((s === 'thinking' && window.HudBrain ? 1 : 0) - brainMix) * 0.06;
+        const fade = 1 - brainMix;
+        const cx = w / 2, cy = h / 2, R = Math.min(w, h, 420) * 0.27 * (1 + level * 0.08 + Math.sin(t / 400) * 0.01 * level) * (1 - brainMix * 0.5);
         ctx.clearRect(0, 0, w, h);
+        if (brainMix > 0.01) window.HudBrain.draw(ctx, w, h, t, brainMix, COLORS.idle, reduceMotion);
+        if (fade < 0.01) return;
 
         // core glow
         const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.1);
@@ -55,6 +60,7 @@
         glow.addColorStop(0.35, color + '33');
         glow.addColorStop(1, 'transparent');
         ctx.fillStyle = glow;
+        ctx.globalAlpha = fade;
         ctx.fillRect(0, 0, w, h);
 
         // particles
@@ -66,7 +72,7 @@
             const x1 = x0 * cyr + z0 * sy, z1 = -x0 * sy + z0 * cyr;
             const y2 = y0 * cxr - z1 * sx, z2 = y0 * sx + z1 * cxr;
             const depth = (z2 + 1) / 2;
-            ctx.globalAlpha = 0.15 + depth * 0.85;
+            ctx.globalAlpha = (0.15 + depth * 0.85) * fade;
             const size = 0.6 + depth * 1.4;
             ctx.fillRect(cx + x1 * R - size / 2, cy + y2 * R - size / 2, size, size);
         }
@@ -78,7 +84,7 @@
         for (let i = 0; i < 90; i++) {
             const a = spin + (i / 90) * Math.PI * 2;
             const long = i % 5 === 0;
-            ctx.globalAlpha = long ? 0.9 : 0.4;
+            ctx.globalAlpha = (long ? 0.9 : 0.4) * fade;
             ctx.lineWidth = long ? 2 : 1;
             ctx.beginPath();
             ctx.moveTo(cx + Math.cos(a) * ring, cy + Math.sin(a) * ring);
@@ -89,12 +95,12 @@
         ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
             const start = -spin * 1.6 + (i * Math.PI * 2) / 3;
-            ctx.globalAlpha = 0.7;
+            ctx.globalAlpha = 0.7 * fade;
             ctx.beginPath();
             ctx.arc(cx, cy, R * 1.25, start, start + 0.9);
             ctx.stroke();
         }
-        ctx.globalAlpha = 0.25;
+        ctx.globalAlpha = 0.25 * fade;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(cx, cy, ring + 20, 0, Math.PI * 2);

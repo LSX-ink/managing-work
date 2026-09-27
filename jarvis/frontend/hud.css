@@ -112,7 +112,8 @@ body.hud .hud-bottom p { color: var(--hud-bright); line-height: 1.5; }
 /* ---- centre column: sphere, transcript, input ------------------------------ */
 
 body.hud #app { grid-area: center; max-width: 720px; margin: 0 auto; gap: 16px; }
-body.hud #hud-sphere { width: 420px; height: 420px; max-width: 100%; }
+/* the canvas spills 90px past its box so the thinking brain has room; clicks pass through to the page */
+body.hud #hud-sphere { width: 600px; height: 600px; margin: -90px; pointer-events: none; }
 body.hud #orb {
     position: absolute; inset: 0; margin: auto;
     width: 250px; height: 250px;
@@ -152,6 +153,6 @@ body.hud #confirm { border-color: var(--hud-warn); border-radius: 0; background:
     body.hud .hud-left, body.hud .hud-right { display: none; }
     body.hud #np-popup { top: 64px; right: 16px; }
     body.hud .hud-sub { display: none; }
-    body.hud #hud-sphere { width: min(420px, 90vw); height: min(420px, 90vw); }
+    body.hud #hud-sphere { width: min(420px, 90vw); height: min(420px, 90vw); margin: 0; }
     body.hud #orb { width: min(250px, 55vw); height: min(250px, 55vw); }
 }
