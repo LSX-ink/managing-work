@@ -23,6 +23,17 @@
         .confirm-buttons button[data-answer="deny"] { border-color: #c0504d; }
         .confirm-buttons button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+        /* The chat (transcript, approvals, typing box): in the centre column, or in a corner Alfred moves it to. */
+        #chat { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+        @media (min-width: 1001px) {
+            body[data-chat] #chat { position: fixed; z-index: 15; width: min(420px, 30vw); }
+            body[data-chat] #transcript { background: var(--hud-bg, var(--bg, #000)); }  /* solid, over any panel */
+            body[data-chat$="left"] #chat { left: 24px; }
+            body[data-chat$="right"] #chat { right: 24px; }
+            body[data-chat^="top"] #chat { top: 84px; }
+            body[data-chat^="bottom"] #chat { bottom: 24px; }
+        }
+
         /* Notifications: delivery emails and calls, newest first, scrolling slowly when there are many. */
         #alerts { width: 100%; padding: 10px 14px; border: 1px solid #1f2b3d; border-radius: 12px; background: #0c121c; }
         #alerts[hidden] { display: none; }
@@ -86,19 +97,21 @@
             <h2 id="alerts-title">Notifications</h2>
             <ul id="alerts-list"></ul>
         </section>
-        <div id="transcript" aria-live="polite"></div>
-        <section id="confirm" hidden aria-live="assertive">
-            <p id="confirm-title"></p>
-            <ol id="confirm-steps"></ol>
-            <div class="confirm-buttons">
-                <button type="button" data-answer="allow" id="confirm-allow"></button>
-                <button type="button" data-answer="allow_all" id="confirm-allow-all"></button>
-                <button type="button" data-answer="deny" id="confirm-deny"></button>
-            </div>
-        </section>
-        <form id="type-form" autocomplete="off">
-            <input id="type-input" type="text" placeholder="…or type to Jarvis" aria-label="Message to Jarvis">
-        </form>
+        <div id="chat">
+            <div id="transcript" aria-live="polite"></div>
+            <section id="confirm" hidden aria-live="assertive">
+                <p id="confirm-title"></p>
+                <ol id="confirm-steps"></ol>
+                <div class="confirm-buttons">
+                    <button type="button" data-answer="allow" id="confirm-allow"></button>
+                    <button type="button" data-answer="allow_all" id="confirm-allow-all"></button>
+                    <button type="button" data-answer="deny" id="confirm-deny"></button>
+                </div>
+            </section>
+            <form id="type-form" autocomplete="off">
+                <input id="type-input" type="text" placeholder="…or type to Jarvis" aria-label="Message to Jarvis">
+            </form>
+        </div>
         <section class="hud-only hud-panel hud-bottom" aria-label="Weather">
             <h2 id="hud-city">ENVIRONMENT</h2>
             <p id="hud-weather">—</p>

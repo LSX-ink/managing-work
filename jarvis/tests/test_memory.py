@@ -253,3 +253,18 @@ def test_delete_memory_folder(settings):
         memory.delete_folder(settings, "Work")
     with pytest.raises(ValueError, match="no folder"):
         memory.delete_folder(settings, "Nope")
+
+
+def test_move_chat_panel(settings):
+    import asyncio
+    import tools
+
+    sent = []
+
+    async def page(message):
+        sent.append(message)
+    assert asyncio.run(tools.run_tool("move_chat_panel", {"position": "bottom-left"}, settings, None, page)) == "Moved the chat panel to the bottom left."
+    assert sent == [{"type": "chat", "corner": "bottom-left"}]
+    with pytest.raises(ValueError):
+        asyncio.run(tools.run_tool("move_chat_panel", {"position": "middle"}, settings, None, page))
+    assert "isn't open" in asyncio.run(tools.run_tool("move_chat_panel", {"position": "centre"}, settings, None, None))

@@ -34,6 +34,7 @@ WEATHER_CODES = {
 
 # Longest edge of a screenshot sent to Claude; larger images are downscaled anyway.
 SCREEN_MAX_EDGE = 1568
+CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
@@ -64,6 +65,17 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
             },
         },
     ]
+    tools.append({
+        "name": "move_chat_panel",
+        "description": "Move the chat panel (the conversation and typing box) on the user's screen to a corner, "
+                       "or back to the centre. The page remembers it.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"position": {"type": "string", "enum": [*CHAT_CORNERS, "centre"]}},
+            "required": ["position"],
+            "additionalProperties": False,
+        },
+    })
     tools += memory.tool_definitions()
     tools.append(wishes.tool_definition())
     tools += timers.tool_definitions()
@@ -198,6 +210,14 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return await filing.run_tool(name, args, settings)
     if name in timers.NAMES:
         return timers.run_tool(name, args, settings)
+    if name == "move_chat_panel":
+        position = args.get("position")
+        if position not in (*CHAT_CORNERS, "centre"):
+            raise ValueError("Pick top-left, top-right, bottom-left, bottom-right or centre.")
+        if not page:
+            return "The Jarvis page isn't open, so there's no chat panel to move."
+        await page({"type": "chat", "corner": position})
+        return f"Moved the chat panel to the {position.replace('-', ' ')}."
     if name == "request_new_ability":
         return await wishes.request(http, settings, args["title"], args["details"])
     if name == "download_file":
