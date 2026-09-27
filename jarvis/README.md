@@ -181,6 +181,10 @@ Say "Alfred, move the chat to the bottom left" (or top left, top right, bottom r
 
 "Alfred, set a timer for 10 minutes" (or "a pasta timer for 8 minutes"). When it ends he chimes and tells you, and it goes in the notifications. Ask "how long is left?" or "cancel the pasta timer". Say "Alfred, take a break" and he goes quiet, ignoring everything including his own announcements (they still appear in the notifications) until you say "Alfred" again or click the orb.
 
+### Reminders
+
+"Alfred, remind me at 7 pm to call Mum", "remind me tomorrow at 9 about the dentist" or "every weekday at 8 remind me to take my tablets". He says it with a chime at that time. Reminders are saved in `jarvis\memory\reminders.json`, so they survive a restart. If Jarvis is closed when one comes due, he says it (and when it was due) as soon as you open the page again. Ask "what reminders do I have?" or "cancel the dentist reminder".
+
 ### Filing emails automatically
 
 With your email set up (see Deliveries below), say "Alfred, save every payslip email from VGC into my HS2 folder". He files matching emails from the last four months straight away and then every new one as it arrives: each attachment (the payslip PDF) and the email text, named by the date the email was sent, e.g. `VGC Payslip 2025-09-27.pdf`. A folder that doesn't exist is created (it shows as a star). Ask "what email rules do I have?" or "stop filing VGC emails". Your inbox is only read, never changed.
