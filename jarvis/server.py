@@ -202,6 +202,8 @@ async def websocket(ws: WebSocket):
 
     task = asyncio.create_task(worker())
     ws.app.state.pages[speak] = brain
+    if note := alerts.setup_note(settings):
+        await ws.send_json({"type": "note", "text": note})
     try:
         # Keep reading while a turn runs, so approval clicks reach the waiting turn.
         while True:

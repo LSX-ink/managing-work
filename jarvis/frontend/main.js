@@ -103,6 +103,8 @@ function connect(onOpen) {
             addLine('jarvis', msg.text);
             queue.push(msg);
             playNext();
+        } else if (msg.type === 'note') {
+            addLine('jarvis', msg.text);  // shown, not spoken
         } else if (msg.type === 'confirm') {
             showConfirm(msg);
         } else if (msg.type === 'done') {

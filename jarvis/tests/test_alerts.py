@@ -171,10 +171,11 @@ def test_relay_line(event, said):
     assert alerts.relay_line(SETTINGS, event) == said
 
 
-async def test_watch_relay_announces_posted_calls():
+async def test_watch_relay_announces_posted_calls(tmp_path):
     import httpx
 
-    settings = Settings(user_address="sir", ntfy_topic="jarvis-secret", ntfy_server="https://ntfy.example/")
+    settings = Settings(user_address="sir", phone_relay=True, ntfy_topic="jarvis-secret",
+                        ntfy_server="https://ntfy.example/")
     seen_urls = []
 
     def handler(request):
@@ -189,6 +190,27 @@ async def test_watch_relay_announces_posted_calls():
         raise asyncio.CancelledError
 
     with pytest.raises(asyncio.CancelledError):
-        await asyncio.wait_for(alerts.watch_relay(settings, announce, transport=httpx.MockTransport(handler)), 2)
+        await asyncio.wait_for(alerts.watch_relay(settings, announce, transport=httpx.MockTransport(handler),
+                                                  linked_file=tmp_path / "linked"), 2)
+    assert (tmp_path / "linked").exists()
     assert seen_urls == ["https://ntfy.example/jarvis-secret/json"]
     assert said == ["Sir, incoming call from +44 7700 900123."]
+
+
+def test_relay_url_is_made_up_once_and_kept(tmp_path):
+    settings = Settings(phone_relay=True, ntfy_topic="", ntfy_server="https://ntfy.sh")
+    topic_file = tmp_path / ".phone-topic"
+    url = alerts.relay_url(settings, topic_file)
+    assert url.startswith("https://ntfy.sh/jarvis-") and len(url) > len("https://ntfy.sh/jarvis-") + 20
+    assert alerts.relay_url(settings, topic_file) == url
+    assert alerts.relay_url(Settings(phone_relay=False), topic_file) == ""
+
+
+def test_setup_note_until_phone_is_linked(tmp_path, monkeypatch):
+    monkeypatch.setattr(alerts, "TOPIC_FILE", tmp_path / "topic")
+    monkeypatch.setattr(alerts, "LINKED_FILE", tmp_path / "linked")
+    settings = Settings(phone_relay=True, ntfy_topic="")
+    assert "https://ntfy.sh/jarvis-" in alerts.setup_note(settings)
+    (tmp_path / "linked").touch()
+    assert alerts.setup_note(settings) == ""
+    assert alerts.setup_note(Settings(phone_relay=False)) == ""

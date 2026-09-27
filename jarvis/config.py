@@ -46,8 +46,9 @@ class Settings:
     email_imap_host: str = os.getenv("JARVIS_EMAIL_IMAP_HOST", "imap.gmail.com")
     email_check_seconds: int = int(os.getenv("JARVIS_EMAIL_CHECK_SECONDS", "60"))
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
-    # Calls over the internet: your phone posts to this private ntfy topic; empty turns it off
-    ntfy_topic: str = os.getenv("JARVIS_NTFY_TOPIC", "").strip()
+    # Calls over the internet: your phone posts to a private ntfy topic that Jarvis makes up himself
+    phone_relay: bool = _bool("JARVIS_CALL_ALERTS", True)
+    ntfy_topic: str = os.getenv("JARVIS_NTFY_TOPIC", "").strip()  # empty: made up and kept in .phone-topic
     ntfy_server: str = os.getenv("JARVIS_NTFY_SERVER", "https://ntfy.sh").strip()
 
     @property

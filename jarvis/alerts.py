@@ -5,7 +5,7 @@
 - Phone: on Windows, reads the notifications Phone Link mirrors from your phone and
   announces incoming calls and delivery-app notifications.
 - Phone over the internet: an app on your phone (e.g. MacroDroid) posts calls to a private
-  ntfy.sh topic, and Jarvis listens to that topic. No cable or Bluetooth needed.
+  ntfy.sh address that Jarvis makes up, and Jarvis listens there. No cable or Bluetooth needed.
 """
 
 import asyncio
@@ -13,15 +13,17 @@ import email.utils
 import imaplib
 import json
 import re
+import secrets
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 from email.header import decode_header, make_header
 from typing import Awaitable, Callable
 
 import httpx
 
-from config import Settings
+from config import ROOT, Settings
 
 Announce = Callable[[str], Awaitable[None]]
 
@@ -212,6 +214,34 @@ async def watch_phone(settings: Settings, announce: Announce, every: float = 2.0
 # ---- phone over the internet (ntfy) ------------------------------------------
 
 RELAY_MAX_CHARS = 200
+TOPIC_FILE = ROOT / ".phone-topic"  # the made-up private address; git ignores it
+LINKED_FILE = ROOT / ".phone-linked"  # exists once the phone has sent its first alert
+
+
+def relay_url(settings: Settings, topic_file: Path | None = None) -> str:
+    """The private address the phone posts to, made up on first use. Empty when call alerts are off."""
+    if not settings.phone_relay:
+        return ""
+    topic = settings.ntfy_topic
+    topic_file = topic_file or TOPIC_FILE
+    if not topic:
+        try:
+            topic = topic_file.read_text(encoding="utf-8").strip()
+        except FileNotFoundError:
+            topic = ""
+        if not topic:
+            topic = "jarvis-" + secrets.token_hex(12)
+            topic_file.write_text(topic + "\n", encoding="utf-8")
+    return f"{settings.ntfy_server.rstrip('/')}/{topic}"
+
+
+def setup_note(settings: Settings) -> str:
+    """Shown in the page's messages until the phone sends its first alert."""
+    url = relay_url(settings)
+    if not url or LINKED_FILE.exists():
+        return ""
+    return (f"For call alerts from your phone, set up MacroDroid to send calls to {url} "
+            "(steps in the README under Calls over the internet). Keep this address private.")
 
 
 def relay_line(settings: Settings, event: dict) -> str | None:
@@ -228,17 +258,19 @@ def relay_line(settings: Settings, event: dict) -> str | None:
     return f"{settings.user_address.capitalize()}, {text}."
 
 
-async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.0, transport=None) -> None:
-    """Listen to the private ntfy topic the phone posts calls to, reconnecting whenever it drops."""
-    url = f"{settings.ntfy_server.rstrip('/')}/{settings.ntfy_topic}/json"
+async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.0, transport=None,
+                      linked_file: Path | None = None) -> None:
+    """Listen to the private ntfy address the phone posts calls to, reconnecting whenever it drops."""
+    url = relay_url(settings) + "/json"
     async with httpx.AsyncClient(timeout=httpx.Timeout(10, read=None), transport=transport) as http:
         while True:
             try:
                 async with http.stream("GET", url) as response:
                     response.raise_for_status()
-                    print("[jarvis] Listening for phone alerts over the internet.", flush=True)
+                    print(f"[jarvis] Listening for phone alerts at {url[:-5]}", flush=True)
                     async for raw in response.aiter_lines():
                         if raw.strip() and (text := relay_line(settings, json.loads(raw))):
+                            (linked_file or LINKED_FILE).touch()  # the phone works; stop showing the setup note
                             await announce(text)
             except (httpx.HTTPError, ValueError) as exc:
                 print(f"[jarvis] Phone alert connection dropped ({exc}); retrying.", flush=True)
@@ -252,6 +284,6 @@ def start(settings: Settings, announce: Announce) -> list[asyncio.Task]:
         tasks.append(asyncio.create_task(watch_email(settings, announce)))
     if settings.phone_alerts:
         tasks.append(asyncio.create_task(watch_phone(settings, announce)))
-    if settings.ntfy_topic:
+    if settings.phone_relay:
         tasks.append(asyncio.create_task(watch_relay(settings, announce)))
     return tasks
