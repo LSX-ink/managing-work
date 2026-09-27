@@ -196,14 +196,15 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
     if name == "open_memory_folder":
         path = (await asyncio.to_thread(memory.folder, settings, args["folder"])).resolve()
-        if args.get("on_pc") or not settings.theme.startswith("hud"):  # only the HUD has the folder panel
+        inner = path.parent != memory.root(settings).resolve()  # a folder made inside one of the six
+        if args.get("on_pc") or inner or not settings.theme.startswith("hud"):  # the HUD panel shows the six
             await asyncio.to_thread(pc.launch, path)
             return f"Opened the {path.name} folder in File Explorer."
         if not page:
             return "The Jarvis page isn't open, so there's nowhere to show the folder."
         await page({"type": "memory", "open": path.name})
         return f"Opened the {path.name} folder on the HUD."
-    if name in ("save_to_memory", "read_memory"):
+    if name in ("save_to_memory", "read_memory", "create_memory_folder"):
         return await asyncio.to_thread(memory.run_tool, name, args, settings)
     if name == "check_deliveries" and settings.email_enabled:
         days = min(max(int(args.get("days") or 3), 1), 14)

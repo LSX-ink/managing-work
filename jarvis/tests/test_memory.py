@@ -171,3 +171,39 @@ def test_open_memory_folder_on_hud_and_pc(settings, monkeypatch):
     assert "File Explorer" in asyncio.run(tools.run_tool("open_memory_folder", {"folder": "Work", "on_pc": True}, hud, None, page))
     assert "File Explorer" in asyncio.run(tools.run_tool("open_memory_folder", {"folder": "Music"}, replace(settings, theme="classic"), None, page))
     assert [p.name for p in launched] == ["Work", "Music"] and launched[0].is_absolute()
+
+
+def test_create_folders_inside_memory_folders(settings):
+    path = memory.create_folder(settings, "work", "Invoices")
+    assert path == memory.root(settings) / "Work" / "Invoices" and path.is_dir()
+    with pytest.raises(ValueError, match="already"):
+        memory.create_folder(settings, "Work", "invoices")
+    memory.save_note(settings, "Work/invoices", "March", "paid")
+    assert (path / "March.txt").read_text() == "paid"
+    assert memory.listing(settings)[1]["folders"] == [{"name": "Invoices", "count": 1}]
+    assert "Invoices/ (folder)" in memory.read(settings)
+    assert "Invoices/ (folder, 1 items)" in memory.read(settings, "Work")
+    assert "paid" in memory.read(settings, "Work\\Invoices")
+    assert memory.inner_folder(settings, 1, "Invoices") == path
+    memory.create_folder(settings, "Work/Invoices", "2026")
+    assert (path / "2026").is_dir()
+    with pytest.raises(ValueError, match="no folder called Receipts"):
+        memory.save_note(settings, "Work/Receipts", "x", "y")
+    with pytest.raises(ValueError):
+        memory.create_folder(settings, "Work", "..")
+    assert "Created the folder Work/Taxes." == memory.run_tool("create_memory_folder", {"parent": "Work", "name": "Taxes"}, settings)
+
+
+def test_open_inner_folder_goes_to_file_explorer(settings, monkeypatch):
+    import asyncio
+    import pc
+    import tools
+
+    launched = []
+    monkeypatch.setattr(pc, "launch", launched.append)
+    memory.create_folder(settings, "Work", "Invoices")
+
+    async def page(message):
+        raise AssertionError("inner folders open on the PC")
+    msg = asyncio.run(tools.run_tool("open_memory_folder", {"folder": "Work/Invoices"}, replace(settings, theme="hud-stars"), None, page))
+    assert "File Explorer" in msg and launched[0].name == "Invoices"

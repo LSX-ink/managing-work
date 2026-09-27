@@ -207,6 +207,7 @@ body.hud #memory-panel[hidden] { display: none; }
 #memory-panel li a { flex: 1; color: var(--hud-bright); overflow-wrap: anywhere; }
 #memory-panel li .size { color: var(--hud-mid); font-size: 12px; }
 #memory-panel li button { border: 0; padding: 0 4px; font-size: 16px; color: var(--hud-mid); }
+#memory-panel li.mem-folder button { flex: 1; text-align: left; font-size: 13px; letter-spacing: 0.05em; color: var(--hud-bright); }
 #memory-panel .mem-empty { color: var(--hud-mid); font-size: 13px; }
 #memory-panel .mem-row { display: flex; gap: 8px; flex-wrap: wrap; }
 #memory-panel .mem-msg { color: var(--hud-warn); font-size: 13px; min-height: 1em; margin: 0; }

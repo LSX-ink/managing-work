@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 import alerts
 import memory
 import nowplaying
+import pc
 import tools
 import tts
 from brain import Brain, computer_enabled, persona
@@ -227,6 +228,20 @@ async def memory_upload(index: int, filename: str, request: Request):
         return Response("That file is too big; the limit is 20 MB.", status_code=413)
     result = await memory_call(request, memory.save_file, index, filename, await request.body())
     return result if isinstance(result, Response) else {"name": result.name}
+
+
+@app.post("/memory/{index}/open")
+async def memory_open(index: int, request: Request):
+    """Open a folder made inside a memory folder in File Explorer (the HUD panel lists them)."""
+    sub = str((await request.json()).get("folder", ""))
+    path = await memory_call(request, memory.inner_folder, index, sub)
+    if isinstance(path, Response):
+        return path
+    try:
+        await asyncio.to_thread(pc.launch, path.resolve())
+    except OSError:
+        return Response("Couldn't open File Explorer on this PC.", status_code=400)
+    return {"opened": path.name}
 
 
 @app.get("/memory/{index}/files/{filename}")
