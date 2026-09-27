@@ -88,3 +88,20 @@ def test_websocket_confirmation_round_trip(monkeypatch):
             ws.send_json({"type": "confirm_reply", "id": ask["id"], "answer": "allow"})
             assert ws.receive_json()["text"] == "answer: allow"
             assert ws.receive_json()["type"] == "done"
+
+
+def test_config_reports_theme_and_weather_endpoint(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    from dataclasses import replace
+
+    import server
+
+    async def fake_weather(http, city):
+        return f"{city}: 18°C"
+
+    monkeypatch.setattr(server, "settings", replace(server.settings, theme="hud-gold", city="Johannesburg"))
+    monkeypatch.setattr(server.tools, "get_weather", fake_weather)
+    monkeypatch.setattr(server, "_weather", {"at": 0.0, "text": ""})
+    with TestClient(server.app) as client:
+        assert client.get("/config").json()["theme"] == "hud-gold"
+        assert client.get("/weather").json() == {"text": "Johannesburg: 18°C"}

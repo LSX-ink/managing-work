@@ -6,6 +6,7 @@
     <title>J.A.R.V.I.S.</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/hud.css">
     <style>
         /* Approval panel for mouse/keyboard actions (kept here so style.css stays yours to customise). */
         #confirm { width: 100%; padding: 14px 16px; border: 1px solid var(--think-a); border-radius: 12px; background: #121016; }
@@ -23,8 +24,36 @@
     </style>
 </head>
 <body>
+    <header class="hud-only hud-bar">
+        <span id="hud-title">J.A.R.V.I.S.</span>
+        <span class="hud-sub">PERSONAL ASSISTANT // LOCAL NODE</span>
+        <span class="hud-chips"><span id="hud-link">LINK · STANDBY</span><span id="hud-mic">MIC · OFF</span></span>
+    </header>
+    <aside class="hud-only hud-panel hud-left" aria-label="System status">
+        <h2>SYSTEM</h2>
+        <dl>
+            <dt>STATUS</dt><dd id="hud-status">STANDBY</dd>
+            <dt>MODEL</dt><dd id="hud-model">—</dd>
+            <dt>VOICE</dt><dd id="hud-voice">—</dd>
+            <dt>MESSAGES</dt><dd id="hud-count">0</dd>
+            <dt>SESSION</dt><dd id="hud-uptime">00:00:00</dd>
+            <dt>BATTERY</dt><dd id="hud-battery">—</dd>
+            <dt>NETWORK</dt><dd id="hud-net">—</dd>
+        </dl>
+    </aside>
+    <aside class="hud-only hud-panel hud-right" aria-label="Clock and audio">
+        <div id="hud-clock">00:00:00</div>
+        <div id="hud-date">—</div>
+        <h2>SCAN</h2>
+        <canvas id="hud-radar" width="220" height="220"></canvas>
+        <h2>AUDIO</h2>
+        <canvas id="hud-wave" width="240" height="70"></canvas>
+    </aside>
     <main id="app">
-        <button id="orb" class="idle" aria-label="Start or pause listening"></button>
+        <div id="orb-wrap">
+            <canvas id="hud-sphere" class="hud-only" width="420" height="420"></canvas>
+            <button id="orb" class="idle" aria-label="Start or pause listening"></button>
+        </div>
         <p id="status" aria-live="polite">Click the orb to wake Jarvis.</p>
         <div id="transcript" aria-live="polite"></div>
         <section id="confirm" hidden aria-live="assertive">
@@ -39,7 +68,12 @@
         <form id="type-form" autocomplete="off">
             <input id="type-input" type="text" placeholder="…or type to Jarvis" aria-label="Message to Jarvis">
         </form>
+        <section class="hud-only hud-panel hud-bottom" aria-label="Weather">
+            <h2 id="hud-city">ENVIRONMENT</h2>
+            <p id="hud-weather">—</p>
+        </section>
     </main>
     <script src="/static/main.js"></script>
+    <script src="/static/hud.js"></script>
 </body>
 </html>

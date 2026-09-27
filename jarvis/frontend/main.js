@@ -282,6 +282,12 @@ function applyLanguage() {
     if (!started) statusEl.textContent = t('wake');
 }
 
-fetch('/config').then((r) => r.json()).then((c) => { config = c; applyLanguage(); }).catch(() => {});
+fetch('/config').then((r) => r.json()).then((c) => {
+    config = c;
+    applyLanguage();
+    // "hud" or a colour variant such as "hud-gold": both classes go on the page
+    if (config.theme && config.theme.startsWith('hud')) document.body.classList.add('hud', config.theme);
+    document.dispatchEvent(new CustomEvent('jarvis:config', { detail: config }));
+}).catch(() => {});
 // Chrome loads its voice list asynchronously; touching it early starts the load.
 if ('speechSynthesis' in window) speechSynthesis.getVoices();
