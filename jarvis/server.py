@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 
 import alerts
+import nowplaying
 import tools
 import tts
 from brain import Brain, computer_enabled, persona
@@ -41,6 +42,8 @@ async def lifespan(app: FastAPI):
     app.state.alerts = []  # notifications shown on the page, newest last
     app.state.alert_ids = itertools.count(1)
     watchers = alerts.start(settings, lambda text, kind: announce(app, text, kind))
+    if settings.now_playing:
+        watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
     yield
     for task in watchers:
         task.cancel()
@@ -67,14 +70,19 @@ async def announce(app: FastAPI, text: str, kind: str = "phone") -> None:
             pass
 
 
+async def broadcast(app: FastAPI, message: dict) -> None:
+    """Send a message to every open page."""
+    for ws, _, _ in list(app.state.pages.values()):
+        try:
+            await ws.send_json(message)
+        except Exception:  # the page closed mid-send
+            pass
+
+
 async def dismiss_alert(app: FastAPI, alert_id) -> None:
     """Remove one notification, from every open page."""
     app.state.alerts = [a for a in app.state.alerts if a["id"] != alert_id]
-    for ws, _, _ in list(app.state.pages.values()):
-        try:
-            await ws.send_json({"type": "dismissed", "id": alert_id})
-        except Exception:
-            pass
+    await broadcast(app, {"type": "dismissed", "id": alert_id})
 
 
 # ---- password (JARVIS_PASSWORD) ----------------------------------------------

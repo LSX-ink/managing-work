@@ -77,6 +77,7 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `JARVIS_LANGUAGE` | `English` | The language Jarvis replies in |
 | `JARVIS_ENABLE_WEB` / `JARVIS_ENABLE_SCREEN` | `true` | Turn web search or screen viewing off |
 | `JARVIS_ENABLE_PC` | `true` | Open apps, folders and files; media and volume; find and read files |
+| `JARVIS_NOW_PLAYING` | `true` | Pop-up card with the song, artist and cover when a new song starts (Windows) |
 | `JARVIS_MUSIC_COUNTRY` | (from `JARVIS_SPEECH_LANG`) | Apple Music store country, e.g. `gb`, `za`, `us` |
 | `JARVIS_ENABLE_COMPUTER` | `false` | Mouse and keyboard control, with your OK for every action (Opus 5 models) |
 | `JARVIS_PASSWORD` | (empty) | When set, the page asks for this password first. A browser stays logged in for 30 days, or until you change the password |
@@ -140,6 +141,7 @@ ELEVENLABS_API_KEY=...
 
 - "Open Spotify", "Open my Downloads folder": any installed app, including Microsoft Store apps.
 - "Pause the music", "Next song", "Turn the volume up", "Mute", "Lock my computer". These work with Apple Music, Spotify and most players.
+- **Now playing:** when a new song starts in Apple Music, Spotify, YouTube or any player, a card with the cover, song and artist slides in at the top of the page for 8 seconds (Windows). Set `JARVIS_NOW_PLAYING=false` to turn it off.
 - "Put on Bohemian Rhapsody on Apple Music", "Find Adele on Apple Music": opens the song, album or artist in the Apple Music app (from the Microsoft Store on Windows), or on music.apple.com if the app isn't installed. Press play there; Apple lets no outside app start a new song by itself. No Apple login is needed for this. Set `JARVIS_MUSIC_COUNTRY` (e.g. `gb`, `za`) if songs come from the wrong country's store.
 - "Find my CV", "Read me the notes in shopping.txt", "Open the holiday photo": searches Desktop, Documents, Downloads, Pictures, Music and Videos.
 
@@ -248,6 +250,7 @@ The tests stand in a fake Claude client, so they need no API key or network.
 | `alerts.py` | Delivery emails (IMAP) and phone calls (Phone Link or ntfy) announced on their own |
 | `pc.py` | Apps, folders, media keys, find/read/open files |
 | `music.py` | Find and open songs, albums and artists on Apple Music |
+| `nowplaying.py` | Reads the current song from Windows for the now-playing card |
 | `computer.py` | Mouse and keyboard for Claude's computer toolset |
 | `tts.py` | ElevenLabs text-to-speech |
 | `config.py` | Settings from the environment |

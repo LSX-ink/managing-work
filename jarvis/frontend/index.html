@@ -35,6 +35,19 @@
         #alerts-list .at { flex: none; font-size: 12px; color: var(--muted); }
         #alerts-list button { flex: none; border: 0; background: none; color: var(--muted); font-size: 16px; line-height: 1; padding: 2px 6px; cursor: pointer; }
         #alerts-list button:hover, #alerts-list button:focus-visible { color: #ff7a7a; }
+
+        /* Now playing: a card that slides in at the top when a new song starts, then slides away. */
+        #np-popup { position: fixed; top: 16px; right: 16px; z-index: 20; width: min(340px, calc(100vw - 32px));
+                    display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid #1f2b3d;
+                    border-radius: 12px; background: #0c121c; transition: transform 0.5s ease, opacity 0.5s ease; }
+        #np-popup[hidden] { display: flex; transform: translateY(-140%); opacity: 0; pointer-events: none; }
+        #np-art { width: 56px; height: 56px; flex: none; object-fit: cover; border-radius: 6px; background: #1f2b3d; }
+        #np-art[hidden] { display: none; }
+        #np-text { min-width: 0; }
+        #np-label { font-size: 11px; letter-spacing: 0.2em; color: var(--accent); }
+        #np-title { color: var(--text); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #np-artist { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        @media (prefers-reduced-motion: reduce) { #np-popup { transition: none; } }
     </style>
 </head>
 <body>
@@ -91,6 +104,14 @@
             <p id="hud-weather">—</p>
         </section>
     </main>
+    <aside id="np-popup" class="hud-panel" hidden aria-live="polite">
+        <img id="np-art" alt="" hidden>
+        <div id="np-text">
+            <div id="np-label">NOW PLAYING</div>
+            <div id="np-title"></div>
+            <div id="np-artist"></div>
+        </div>
+    </aside>
     <script src="/static/main.js"></script>
     <script src="/static/hud.js"></script>
 </body>

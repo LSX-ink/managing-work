@@ -34,6 +34,7 @@ const STRINGS = {
         email: 'EMAIL',
         call: 'CALL',
         phone: 'PHONE',
+        nowPlaying: 'NOW PLAYING',
     },
     af: {
         wake: 'Klik op die bol om {name} wakker te maak.',
@@ -56,6 +57,7 @@ const STRINGS = {
         email: 'E-POS',
         call: 'OPROEP',
         phone: 'FOON',
+        nowPlaying: 'SPEEL NOU',
     },
 };
 
@@ -122,6 +124,8 @@ function connect(onOpen) {
             addAlert(msg);
         } else if (msg.type === 'dismissed') {
             removeAlert(msg.id);
+        } else if (msg.type === 'nowplaying') {
+            showNowPlaying(msg);
         } else if (msg.type === 'note') {
             addLine('jarvis', msg.text);  // shown, not spoken
         } else if (msg.type === 'confirm') {
@@ -202,6 +206,24 @@ setInterval(() => {
     alertsList.scrollTop += 1;   // about 20 pixels a second
     if (alertsList.scrollTop >= max - 1) alertHold = ALERT_HOLD_TICKS;
 }, 50);
+
+// ---- Now playing pop-up ------------------------------------------------------
+
+const NOW_PLAYING_MS = 8000;   // how long the card stays before sliding away
+let nowPlayingTimer = null;
+
+function showNowPlaying(song) {
+    const box = document.getElementById('np-popup');
+    const art = document.getElementById('np-art');
+    document.getElementById('np-label').textContent = t('nowPlaying');
+    document.getElementById('np-title').textContent = song.title;
+    document.getElementById('np-artist').textContent = [song.artist, song.album].filter(Boolean).join(' · ');
+    art.hidden = !song.art;
+    if (song.art) art.src = song.art;
+    box.hidden = false;
+    clearTimeout(nowPlayingTimer);
+    nowPlayingTimer = setTimeout(() => { box.hidden = true; }, NOW_PLAYING_MS);
+}
 
 // ---- Approving mouse/keyboard actions ---------------------------------------
 

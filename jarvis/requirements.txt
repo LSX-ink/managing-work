@@ -12,3 +12,6 @@ winrt-Windows.Foundation.Collections>=3.0; sys_platform == "win32"
 winrt-Windows.ApplicationModel>=3.0; sys_platform == "win32"
 winrt-Windows.UI.Notifications>=3.0; sys_platform == "win32"
 winrt-Windows.UI.Notifications.Management>=3.0; sys_platform == "win32"
+# Now-playing card (JARVIS_NOW_PLAYING): read the current song from Windows
+winrt-Windows.Media.Control>=3.0; sys_platform == "win32"
+winrt-Windows.Storage.Streams>=3.0; sys_platform == "win32"
