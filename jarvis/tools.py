@@ -188,6 +188,12 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return get_tasks(settings)
     if name == "open_url":
         return await open_url(args["url"])
+    if name == "download_file":
+        try:
+            path = await memory.download(settings, http, args["folder"], args["url"], args.get("filename") or "")
+        except httpx.HTTPError as e:
+            raise ValueError(f"The download failed: {e}") from None
+        return f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
     if name in ("save_to_memory", "read_memory"):
         return await asyncio.to_thread(memory.run_tool, name, args, settings)
     if name == "check_deliveries" and settings.email_enabled:

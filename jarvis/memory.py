@@ -3,14 +3,23 @@
 folders.json keeps the folder names in brain order (front of the brain first), so renaming one keeps its place.
 """
 
+import asyncio
+import ipaddress
 import json
 import re
+import socket
+from email.message import Message
 from pathlib import Path
+from urllib.parse import unquote, urljoin, urlparse
+
+import httpx
 
 from config import Settings
 
 DEFAULT_FOLDERS = ["Ideas", "Work", "Music", "Personal", "Shopping", "Reminders"]
 MAX_FILE_BYTES = 20 * 1024 * 1024
+MAX_DOWNLOAD_BYTES = 200 * 1024 * 1024
+MAX_REDIRECTS = 5
 READ_LIMIT = 6000  # characters of notes Alfred reads back from one folder
 TEXT_TYPES = {".txt", ".md"}
 
@@ -105,6 +114,72 @@ def save_file(settings: Settings, which: int | str, filename: str, data: bytes) 
     return path
 
 
+# ---- downloads ---------------------------------------------------------------------
+
+async def check_public(url: str) -> None:
+    """ValueError unless url is http(s) on a public internet address.
+
+    Alfred reads web pages, and a page could try to steer him into fetching things from this PC or the home
+    network (the router, other devices), so only public addresses are allowed.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("I can only download http or https links.")
+    try:
+        infos = await asyncio.get_running_loop().getaddrinfo(parsed.hostname, parsed.port or 80, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        raise ValueError(f"I couldn't find {parsed.hostname}.") from None
+    for info in infos:
+        if not ipaddress.ip_address(info[4][0].split("%")[0]).is_global:
+            raise ValueError("That link points at this PC or your home network, so I won't download it.")
+
+
+def download_name(url: str, response: httpx.Response) -> str:
+    """The file name the server suggests, else the last part of the link."""
+    header = response.headers.get("content-disposition", "")
+    if header:
+        msg = Message()
+        msg["content-disposition"] = header
+        if name := msg.get_filename():
+            return name
+    return unquote(urlparse(url).path.rstrip("/").rsplit("/", 1)[-1]) or "download"
+
+
+async def download(settings: Settings, http: httpx.AsyncClient, which: int | str, url: str, filename: str = "") -> Path:
+    """Download a link into a memory folder, up to MAX_DOWNLOAD_BYTES. Returns where it was saved."""
+    target = folder(settings, which)
+    for _ in range(MAX_REDIRECTS + 1):
+        await check_public(url)  # again after every redirect
+        async with http.stream("GET", url, follow_redirects=False, timeout=60) as response:
+            if response.is_redirect:
+                url = urljoin(url, response.headers["location"])
+                continue
+            if response.status_code != 200:
+                raise ValueError(f"The download failed: the site answered {response.status_code}.")
+            length = response.headers.get("content-length", "")
+            if length.isdigit() and int(length) > MAX_DOWNLOAD_BYTES:
+                raise ValueError("That file is too big; the limit is 200 MB.")
+            name = filename.strip() or download_name(url, response)
+            if "." not in name and "." in download_name(url, response):
+                name += "." + download_name(url, response).rsplit(".", 1)[-1]
+            name = safe_name(name[-60:], "file name")
+            path = unique_path(target / name)
+            part = path.with_name(path.name + ".part")
+            size = 0
+            try:
+                with part.open("wb") as out:
+                    async for chunk in response.aiter_bytes():
+                        size += len(chunk)
+                        if size > MAX_DOWNLOAD_BYTES:
+                            raise ValueError("That file is too big; the limit is 200 MB.")
+                        out.write(chunk)
+                part.replace(path)
+            finally:
+                part.unlink(missing_ok=True)
+            return path
+    raise ValueError("That link redirected too many times.")
+
+
 def file_path(settings: Settings, which: int | str, filename: str) -> Path:
     path = folder(settings, which) / safe_name(filename, "file name")
     if not path.is_file():
@@ -162,6 +237,24 @@ def tool_definitions() -> list[dict]:
             "input_schema": {
                 "type": "object",
                 "properties": {"folder": {"type": "string", "description": "Folder name. Leave out to list them all."}},
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "download_file",
+            "description": "Download a file from a web link and store it in one of the user's memory folders "
+                           "(PDFs, pictures, music, documents; up to 200 MB). Use it when they ask you to download, "
+                           "grab or save a file from the internet. Call read_memory first if you don't know the "
+                           "folder names.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "Full http(s) link to the file."},
+                    "folder": {"type": "string", "description": "Folder name to store it in, e.g. 'Work'."},
+                    "filename": {"type": "string", "description": "Optional name to save it as. Leave out to "
+                                                                  "keep the file's own name."},
+                },
+                "required": ["url", "folder"],
                 "additionalProperties": False,
             },
         },

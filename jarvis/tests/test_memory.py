@@ -83,3 +83,73 @@ def test_memory_endpoints(monkeypatch, tmp_path):
         assert client.delete("/memory/0/files/pic.png", headers=ours).json() == {"ok": True}
         assert [i["name"] for i in client.get("/memory").json()["folders"][0]["items"]] == ["Plan.txt"]
         assert client.get("/memory/0/files/pic.png").status_code == 400
+
+
+# ---- downloads ----------------------------------------------------------------------
+
+def run(coro):
+    import asyncio
+    return asyncio.run(coro)
+
+
+def fake_web(pages):
+    """An httpx client that answers from a dict of url -> (status, headers, body)."""
+    import httpx
+
+    def handler(request):
+        status, headers, body = pages[str(request.url)]
+        return httpx.Response(status, headers=headers, content=body)
+    return httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+
+@pytest.fixture
+def public(monkeypatch):
+    async def ok(url):
+        if not url.startswith(("http://", "https://")):
+            raise ValueError("I can only download http or https links.")
+    monkeypatch.setattr(memory, "check_public", ok)
+
+
+def test_download_saves_into_folder(settings, public):
+    web = fake_web({"https://example.com/files/report%20v2.pdf": (200, {}, b"%PDF-1.7 hello")})
+    path = run(memory.download(settings, web, "work", "https://example.com/files/report%20v2.pdf"))
+    assert path.name == "report v2.pdf" and path.parent.name == "Work"
+    assert path.read_bytes() == b"%PDF-1.7 hello"
+    assert not list(path.parent.glob("*.part"))
+
+
+def test_download_uses_server_name_redirects_and_own_name(settings, public):
+    web = fake_web({
+        "https://example.com/get?id=1": (302, {"location": "/real"}, b""),
+        "https://example.com/real": (200, {"content-disposition": 'attachment; filename="song.mp3"'}, b"ID3"),
+    })
+    assert run(memory.download(settings, web, "Music", "https://example.com/get?id=1")).name == "song.mp3"
+    assert run(memory.download(settings, web, "Music", "https://example.com/get?id=1", "Theme")).name == "Theme.mp3"
+
+
+def test_download_refuses_errors_and_big_files(settings, public, monkeypatch):
+    web = fake_web({
+        "https://example.com/missing": (404, {}, b""),
+        "https://example.com/big": (200, {}, b"x" * 50),
+        "https://example.com/loop": (302, {"location": "/loop"}, b""),
+    })
+    with pytest.raises(ValueError, match="404"):
+        run(memory.download(settings, web, "Work", "https://example.com/missing"))
+    with pytest.raises(ValueError, match="redirected"):
+        run(memory.download(settings, web, "Work", "https://example.com/loop"))
+    with pytest.raises(ValueError, match="http"):
+        run(memory.download(settings, web, "Work", "file:///C:/Windows/win.ini"))
+    monkeypatch.setattr(memory, "MAX_DOWNLOAD_BYTES", 10)
+    with pytest.raises(ValueError, match="too big"):
+        run(memory.download(settings, web, "Work", "https://example.com/big"))
+    assert memory.listing(settings)[1]["items"] == []
+
+
+@pytest.mark.parametrize("url", ["http://127.0.0.1:8340/memory", "http://192.168.1.1/", "http://[::1]/", "http://10.0.0.5/x"])
+def test_download_refuses_this_pc_and_home_network(url):
+    with pytest.raises(ValueError, match="home network"):
+        run(memory.check_public(url))
+
+
+def test_public_address_is_allowed():
+    run(memory.check_public("http://93.184.215.14/file.pdf"))
