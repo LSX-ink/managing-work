@@ -47,6 +47,7 @@ class Settings:
     email_check_seconds: int = int(os.getenv("JARVIS_EMAIL_CHECK_SECONDS", "60"))
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
     # Calls over the internet: your phone posts to a private ntfy topic that Jarvis makes up himself
+    music_country: str = os.getenv("JARVIS_MUSIC_COUNTRY", "").strip()  # Apple Music store, e.g. gb, za, us
     phone_relay: bool = _bool("JARVIS_CALL_ALERTS", True)
     ntfy_topic: str = os.getenv("JARVIS_NTFY_TOPIC", "").strip()  # empty: made up and kept in .phone-topic
     ntfy_server: str = os.getenv("JARVIS_NTFY_SERVER", "https://ntfy.sh").strip()

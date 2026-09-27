@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import httpx
 
 import alerts
+import music
 import pc
 from config import Settings
 
@@ -72,6 +73,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
         })
     if settings.enable_pc:
         tools += pc.tool_definitions()
+        tools.append(music.tool_definition())
     if settings.enable_screen and not settings.enable_computer:  # the computer toolset has its own screenshot
         tools.append({
             "name": "look_at_screen",
@@ -189,6 +191,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return await asyncio.to_thread(alerts.recent_deliveries, settings, days)
     if name == "look_at_screen" and settings.enable_screen:
         return await look_at_screen()
+    if name == "apple_music" and settings.enable_pc:
+        return await music.apple_music(http, settings, args["query"], args.get("kind") or "song")
     if name in pc.NAMES and settings.enable_pc:
         return await asyncio.to_thread(pc.run, name, args)
     raise ValueError(f"Unknown tool: {name}")
