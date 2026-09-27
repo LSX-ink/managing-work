@@ -16,11 +16,13 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+import tools
 import tts
 from brain import Brain, computer_enabled, persona
 from config import ROOT, settings
 
 FRONTEND = ROOT / "frontend"
+WEATHER_TTL = 600  # seconds the HUD weather panel reuses a reading
 CONFIRM_TIMEOUT = 120  # seconds to approve mouse/keyboard actions before they are declined
 
 
@@ -50,7 +52,28 @@ async def client_config():
         "name": persona(settings)["name"],
         "serverVoice": bool(settings.elevenlabs_api_key),
         "computer": computer_enabled(settings),
+        "theme": settings.theme,
+        "model": settings.model,
+        "city": settings.city,
     }
+
+
+_weather: dict = {"at": 0.0, "text": ""}
+
+
+@app.get("/weather")
+async def weather():
+    """Current weather line for the HUD, cached so page refreshes don't hit the weather service."""
+    if not settings.city:
+        return {"text": ""}
+    now = asyncio.get_running_loop().time()
+    if not _weather["text"] or now - _weather["at"] > WEATHER_TTL:
+        try:
+            _weather["text"] = await tools.get_weather(app.state.http, settings.city)
+            _weather["at"] = now
+        except Exception as exc:
+            return {"text": "", "error": str(exc)}
+    return {"text": _weather["text"]}
 
 
 def same_origin(ws: WebSocket) -> bool:
