@@ -105,3 +105,31 @@ def test_config_reports_theme_and_weather_endpoint(monkeypatch):
     with TestClient(server.app) as client:
         assert client.get("/config").json()["theme"] == "hud-gold"
         assert client.get("/weather").json() == {"text": "Johannesburg: 18°C"}
+
+
+def test_password_locks_page_config_and_websocket(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    from dataclasses import replace
+
+    import server
+
+    monkeypatch.setattr(server, "settings", replace(server.settings, password="open sesame"))
+    with TestClient(server.app) as client:
+        page = client.get("/")
+        assert page.status_code == 200 and 'name="password"' in page.text
+        assert client.get("/config").status_code == 401
+        assert client.get("/static/main.js").status_code == 401
+        with pytest.raises(WebSocketDisconnect):
+            with client.websocket_connect("/ws") as ws:
+                ws.receive_json()
+
+        wrong = client.post("/login", data={"password": "nope"})
+        assert wrong.status_code == 401 and "Wrong password" in wrong.text
+        assert server.SESSION_COOKIE not in client.cookies
+
+        ok = client.post("/login", data={"password": "open sesame"}, follow_redirects=False)
+        assert ok.status_code == 303
+        assert client.get("/config").status_code == 200
+        assert 'name="password"' not in client.get("/").text
+        with client.websocket_connect("/ws"):
+            pass

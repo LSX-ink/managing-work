@@ -39,6 +39,7 @@ class Settings:
     enable_computer: bool = _bool("JARVIS_ENABLE_COMPUTER", False)  # mouse + keyboard, each action confirmed
     host: str = os.getenv("JARVIS_HOST", "127.0.0.1")
     port: int = int(os.getenv("JARVIS_PORT", "8340"))
+    password: str = os.getenv("JARVIS_PASSWORD", "")  # empty: no login page
 
 
     @property

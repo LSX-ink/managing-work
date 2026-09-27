@@ -6,14 +6,16 @@ speaks (ElevenLabs, or the browser's own voice as a fallback).
 
 import asyncio
 import base64
+import hashlib
+import hmac
 import itertools
 from contextlib import asynccontextmanager
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import anthropic
 import httpx
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import tools
@@ -24,6 +26,8 @@ from config import ROOT, settings
 FRONTEND = ROOT / "frontend"
 WEATHER_TTL = 600  # seconds the HUD weather panel reuses a reading
 CONFIRM_TIMEOUT = 120  # seconds to approve mouse/keyboard actions before they are declined
+SESSION_COOKIE = "jarvis_session"
+SESSION_DAYS = 30
 
 
 @asynccontextmanager
@@ -37,6 +41,59 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
+
+
+# ---- password (JARVIS_PASSWORD) ----------------------------------------------
+
+def session_token() -> str:
+    """Cookie value for a logged-in browser. Changing the password logs every browser out."""
+    return hmac.new(settings.password.encode(), b"jarvis-session", hashlib.sha256).hexdigest()
+
+
+def logged_in(cookies) -> bool:
+    return not settings.password or hmac.compare_digest(cookies.get(SESSION_COOKIE, ""), session_token())
+
+
+LOGIN_PAGE = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S.</title><link rel="icon" href="data:,">
+<style>
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #07090f; color: #d8e1ee;
+       font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+form { display: flex; flex-direction: column; gap: 12px; width: min(320px, 90vw); }
+input, button { padding: 12px 14px; border-radius: 8px; border: 1px solid #2a3547; background: #0c121c; color: inherit; font-size: 16px; }
+button { background: #16202e; cursor: pointer; }
+p { margin: 0; color: #ff7a7a; min-height: 1.2em; }
+</style></head>
+<body><form method="post" action="/login">
+<input type="password" name="password" placeholder="Password" autofocus required>
+<button type="submit">Unlock</button><p>ERROR</p>
+</form></body></html>"""
+
+
+def login_page(error: str = "", status: int = 200) -> HTMLResponse:
+    return HTMLResponse(LOGIN_PAGE.replace("ERROR", error), status_code=status)
+
+
+@app.middleware("http")
+async def require_password(request: Request, call_next):
+    if logged_in(request.cookies) or request.url.path == "/login":
+        return await call_next(request)
+    if request.url.path == "/":
+        return login_page()
+    return Response("Log in first.", status_code=401)
+
+
+@app.post("/login")
+async def login(request: Request):
+    password = parse_qs((await request.body()).decode()).get("password", [""])[0]
+    if not settings.password or not hmac.compare_digest(password.encode(), settings.password.encode()):
+        await asyncio.sleep(1)  # slows down guessing
+        return login_page("Wrong password.", status=401)
+    response = RedirectResponse("/", status_code=303)
+    response.set_cookie(SESSION_COOKIE, session_token(), max_age=SESSION_DAYS * 86400,
+                        httponly=True, samesite="strict")
+    return response
 
 
 @app.get("/")
@@ -84,7 +141,7 @@ def same_origin(ws: WebSocket) -> bool:
 
 @app.websocket("/ws")
 async def websocket(ws: WebSocket):
-    if not same_origin(ws):
+    if not same_origin(ws) or not logged_in(ws.cookies):
         await ws.close(code=1008)
         return
     await ws.accept()
