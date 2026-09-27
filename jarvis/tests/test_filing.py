@@ -130,3 +130,12 @@ def test_no_connection_is_explained(settings, monkeypatch):
 ])
 def test_imap_host_is_fixed_up(address, host, expected):
     assert Settings(email_address=address, email_imap_host=host).email_imap_host == expected
+
+
+def test_app_password_spaces_are_removed(monkeypatch):
+    import importlib
+    import config
+    monkeypatch.setenv("JARVIS_EMAIL_APP_PASSWORD", " abcd efgh ijkl mnop ")
+    assert importlib.reload(config).Settings().email_app_password == "abcdefghijklmnop"
+    monkeypatch.delenv("JARVIS_EMAIL_APP_PASSWORD")
+    importlib.reload(config)
