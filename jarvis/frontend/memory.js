@@ -1,4 +1,4 @@
-// HUD memory folders: the MEMORY button shows the wolf with its six parts labelled as folders.
+// HUD memory folders: the MEMORY button labels the wolf's six parts as folders.
 // Click a part to open that folder: rename it, read or delete what's in it, save a note or add files.
 // The folders are real folders on the PC (jarvis/memory), and Alfred can save notes into them too.
 window.HudMemory = (() => {

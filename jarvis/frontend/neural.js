@@ -1,5 +1,5 @@
 // HUD wolf: a wolf head made of dots, half solid and half wireframe, with glowing eyes.
-// While Alfred is thinking, streams of dots flow out of it and back. In memory mode its six parts are
+// It sits in the centre of the HUD; while Alfred is thinking, streams of dots flow out of it and back. In memory mode its six parts are
 // the memory folders (memory.js), each labelled with the folder's name.
 window.HudWolf = (() => {
     // seeded random so the wolf looks the same every time
