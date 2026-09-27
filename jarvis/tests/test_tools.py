@@ -157,3 +157,20 @@ def test_weather_forecast_for_coming_days():
             return await tools.get_weather(http, "Leeds", 2)
     text = asyncio.run(main())
     assert text.endswith("Monday: " + tools.WEATHER_CODES[61] + ", high 11°C, low 6°C, 80% chance of rain.")
+
+
+def test_inbox_text(monkeypatch):
+    from datetime import datetime, timedelta
+
+    import alerts
+    import tools
+    from config import Settings
+
+    now = datetime.now().astimezone()
+    mails = [alerts.Mail(1, "Old <o@x>", "Ancient", now - timedelta(hours=30)),
+             alerts.Mail(2, "VGC <p@vgc>", "Your payslip", now - timedelta(hours=2)),
+             alerts.Mail(3, "Mum <m@x>", "", now - timedelta(minutes=5))]
+    monkeypatch.setattr(alerts, "fetch_mail", lambda settings, days, limit: mails)
+    text = tools.inbox_text(Settings(), 24)
+    assert text.startswith("2 emails in the last 24 hours")
+    assert text.index("Mum") < text.index("VGC") and "(no subject)" in text and "Ancient" not in text

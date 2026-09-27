@@ -63,6 +63,7 @@ class Settings:
     phone_relay: bool = _bool("JARVIS_CALL_ALERTS", True)
     ntfy_topic: str = os.getenv("JARVIS_NTFY_TOPIC", "").strip()  # empty: made up and kept in .phone-topic
     ntfy_server: str = os.getenv("JARVIS_NTFY_SERVER", "https://ntfy.sh").strip()
+    calendar_url: str = os.getenv("JARVIS_CALENDAR_URL", "").strip()  # private iCal (.ics) address, read-only
     # New abilities: requests Alfred can't handle go to Claude as GitHub issues on this repository
     github_repo: str = os.getenv("JARVIS_GITHUB_REPO", "LSX-ink/managing-work").strip()
     github_token: str = os.getenv("JARVIS_GITHUB_TOKEN", "").strip()  # empty: open the issue page to click Submit
