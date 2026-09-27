@@ -56,6 +56,15 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
 
 
+@app.middleware("http")
+async def always_fresh(request: Request, call_next):
+    """Make the browser check for newer page files every time, so an update shows without a hard refresh."""
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 async def announce(app: FastAPI, text: str, kind: str = "phone") -> None:
     """Add a heads-up (a delivery, a call) to the notifications and say it on every open page."""
     item = {"id": next(app.state.alert_ids), "kind": kind, "text": text, "at": time.strftime("%H:%M")}
