@@ -101,7 +101,7 @@ def deliveries_section(settings: Settings) -> str:
     parts = []
     if settings.email_enabled:
         parts.append("Use check_deliveries when the user asks about orders, parcels or deliveries.")
-    if settings.email_enabled or settings.phone_alerts:
+    if settings.email_enabled or settings.phone_alerts or settings.ntfy_topic:
         parts.append("You also announce deliveries and phone calls on your own; the user's next message "
                      "starts with what you announced.")
     return "".join(" " + p for p in parts)

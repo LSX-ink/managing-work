@@ -4,17 +4,22 @@
   order and delivery emails from Deliveroo, Just Eat, Uber Eats, Amazon and the couriers.
 - Phone: on Windows, reads the notifications Phone Link mirrors from your phone and
   announces incoming calls and delivery-app notifications.
+- Phone over the internet: an app on your phone (e.g. MacroDroid) posts calls to a private
+  ntfy.sh topic, and Jarvis listens to that topic. No cable or Bluetooth needed.
 """
 
 import asyncio
 import email.utils
 import imaplib
+import json
 import re
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from email.header import decode_header, make_header
 from typing import Awaitable, Callable
+
+import httpx
 
 from config import Settings
 
@@ -204,6 +209,42 @@ async def watch_phone(settings: Settings, announce: Announce, every: float = 2.0
         await asyncio.sleep(every)
 
 
+# ---- phone over the internet (ntfy) ------------------------------------------
+
+RELAY_MAX_CHARS = 200
+
+
+def relay_line(settings: Settings, event: dict) -> str | None:
+    """What to say for one message posted to the ntfy topic by the phone."""
+    if event.get("event") != "message":
+        return None  # "open" and "keepalive" events
+    title = str(event.get("title") or "").strip()
+    body = str(event.get("message") or "").strip()
+    text = ": ".join(t for t in (title, body) if t)[:RELAY_MAX_CHARS].rstrip(" .")
+    if not text:
+        return None
+    if re.match(r"(Incoming|Missed) ", text):  # "Sir, incoming call from Mum."
+        text = text[0].lower() + text[1:]
+    return f"{settings.user_address.capitalize()}, {text}."
+
+
+async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.0, transport=None) -> None:
+    """Listen to the private ntfy topic the phone posts calls to, reconnecting whenever it drops."""
+    url = f"{settings.ntfy_server.rstrip('/')}/{settings.ntfy_topic}/json"
+    async with httpx.AsyncClient(timeout=httpx.Timeout(10, read=None), transport=transport) as http:
+        while True:
+            try:
+                async with http.stream("GET", url) as response:
+                    response.raise_for_status()
+                    print("[jarvis] Listening for phone alerts over the internet.", flush=True)
+                    async for raw in response.aiter_lines():
+                        if raw.strip() and (text := relay_line(settings, json.loads(raw))):
+                            await announce(text)
+            except (httpx.HTTPError, ValueError) as exc:
+                print(f"[jarvis] Phone alert connection dropped ({exc}); retrying.", flush=True)
+            await asyncio.sleep(retry)
+
+
 def start(settings: Settings, announce: Announce) -> list[asyncio.Task]:
     """Start whichever watchers are configured."""
     tasks = []
@@ -211,4 +252,6 @@ def start(settings: Settings, announce: Announce) -> list[asyncio.Task]:
         tasks.append(asyncio.create_task(watch_email(settings, announce)))
     if settings.phone_alerts:
         tasks.append(asyncio.create_task(watch_phone(settings, announce)))
+    if settings.ntfy_topic:
+        tasks.append(asyncio.create_task(watch_relay(settings, announce)))
     return tasks

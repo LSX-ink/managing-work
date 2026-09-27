@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import pytest
 
@@ -155,3 +156,39 @@ def test_server_says_announcements_on_open_pages(monkeypatch):
             msg = ws.receive_json()
             assert msg["type"] == "say" and msg["text"] == "Sir, incoming call from Mum."
         assert server.app.state.pages == {}
+
+
+@pytest.mark.parametrize(
+    "event, said",
+    [
+        ({"event": "message", "message": "Incoming call from Mum"}, "Sir, incoming call from Mum."),
+        ({"event": "message", "title": "Deliveroo", "message": "Your rider is nearby."}, "Sir, Deliveroo: Your rider is nearby."),
+        ({"event": "keepalive"}, None),
+        ({"event": "message", "message": "  "}, None),
+    ],
+)
+def test_relay_line(event, said):
+    assert alerts.relay_line(SETTINGS, event) == said
+
+
+async def test_watch_relay_announces_posted_calls():
+    import httpx
+
+    settings = Settings(user_address="sir", ntfy_topic="jarvis-secret", ntfy_server="https://ntfy.example/")
+    seen_urls = []
+
+    def handler(request):
+        seen_urls.append(str(request.url))
+        lines = [{"event": "open"}, {"event": "message", "message": "Incoming call from +44 7700 900123"}]
+        return httpx.Response(200, text="\n".join(json.dumps(x) for x in lines) + "\n")
+
+    said = []
+
+    async def announce(t):
+        said.append(t)
+        raise asyncio.CancelledError
+
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(alerts.watch_relay(settings, announce, transport=httpx.MockTransport(handler)), 2)
+    assert seen_urls == ["https://ntfy.example/jarvis-secret/json"]
+    assert said == ["Sir, incoming call from +44 7700 900123."]

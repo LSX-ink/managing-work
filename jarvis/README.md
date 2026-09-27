@@ -82,6 +82,7 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `JARVIS_EMAIL_ADDRESS` / `JARVIS_EMAIL_APP_PASSWORD` | (empty) | Your email and an app password, for delivery alerts. See [Deliveries and calls](#deliveries-and-calls) |
 | `JARVIS_EMAIL_IMAP_HOST` / `JARVIS_EMAIL_CHECK_SECONDS` | `imap.gmail.com` / `60` | Mail server, and how often to look for new mail |
 | `JARVIS_PHONE_ALERTS` | `false` | Announce phone calls and delivery-app notifications that Phone Link shows (Windows) |
+| `JARVIS_NTFY_TOPIC` | (empty) | Secret topic name for call alerts over the internet. See [Calls over the internet](#calls-over-the-internet-android) |
 | `JARVIS_HOST` / `JARVIS_PORT` | `127.0.0.1` / `8340` | Where the server listens |
 
 On Opus 5 the server turns on the API's `fallbacks: "default"`. If a safety classifier declines a request, it is retried on a suitable model instead of failing.
@@ -181,7 +182,38 @@ pip install -r requirements.txt
 
 4. Start Jarvis. If Windows asks whether Python may read your notifications, allow it. If the console says Windows blocked it, open **Settings > Privacy & security > Notifications**, turn on notification access for apps, and restart Jarvis.
 
-Phone Link must be running. Jarvis says who is calling but can't answer or reject the call.
+Phone Link must be running, and calls only come through while the phone is connected over Bluetooth. Jarvis says who is calling but can't answer or reject the call.
+
+### Calls over the internet (Android)
+
+This works wherever your phone is, with no cable or Bluetooth. When a call comes in, a free app on your phone called MacroDroid posts it to [ntfy.sh](https://ntfy.sh), a free notification relay. Jarvis listens there and says "Sir, incoming call from Mum." Both the phone and the PC only need internet.
+
+1. Make a secret topic name. In PowerShell, run:
+
+```
+python -c "import secrets; print('jarvis-' + secrets.token_hex(8))"
+```
+
+2. Put what it prints in `.env`, for example `JARVIS_NTFY_TOPIC=jarvis-3f9a1c0b7d2e4a61`. Treat it like a password: anyone who knows it can read your call alerts or make Jarvis speak.
+3. Restart Jarvis. The console says `Listening for phone alerts over the internet.`
+4. Test it from a second PowerShell window, with your topic in place of the example:
+
+```
+curl.exe -d "Incoming call from Test" https://ntfy.sh/jarvis-3f9a1c0b7d2e4a61
+```
+
+   Jarvis should say "Sir, incoming call from Test."
+
+5. On your Android phone, install **MacroDroid** from the Play Store and add a macro:
+   - **Trigger:** Phone > **Call Incoming**, any number.
+   - **Action:** Connectivity > **HTTP Request**. Method `POST`. URL `https://ntfy.sh/` followed by your topic. For the body, type `Incoming call from ` and then add the caller's name with the magic text button (it shows as `[call_name]`).
+   - Save it, and allow the phone and contacts permissions MacroDroid asks for.
+
+Call yourself from another phone to try it. You can make more macros the same way, for example a **Notification Received** trigger for Deliveroo, Just Eat or Uber Eats that posts the notification text.
+
+iPhone can't do this: iOS doesn't let apps or Shortcuts react to incoming calls. On an iPhone, use Phone Link above.
+
+Your caller's name passes through ntfy.sh on its way to Jarvis. If you'd rather not, [run your own ntfy server](https://docs.ntfy.sh/install/) and set `JARVIS_NTFY_SERVER`.
 
 ### Double-clap to wake (optional)
 
@@ -221,7 +253,7 @@ The tests stand in a fake Claude client, so they need no API key or network.
 | `server.py` | FastAPI app: page, `/config`, `/ws` WebSocket |
 | `brain.py` | System prompt, model-specific options, tool loop, history trimming |
 | `tools.py` | Weather, tasks, open URL, screenshot, deliveries |
-| `alerts.py` | Delivery emails (IMAP) and phone calls (Phone Link) announced on their own |
+| `alerts.py` | Delivery emails (IMAP) and phone calls (Phone Link or ntfy) announced on their own |
 | `pc.py` | Apps, folders, media keys, find/read/open files |
 | `computer.py` | Mouse and keyboard for Claude's computer toolset |
 | `tts.py` | ElevenLabs text-to-speech |
