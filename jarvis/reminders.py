@@ -106,6 +106,13 @@ def listing(settings: Settings, now: dt.datetime | None = None) -> str:
     return "Reminders: " + "; ".join(parts) + "."
 
 
+def later_today(settings: Settings, now: dt.datetime | None = None) -> str:
+    """'19:00 call Mum; 21:00 tablets', or '' when nothing else is due today."""
+    now = now or dt.datetime.now()
+    todays = [r for r in load(settings) if parse_when(r["at"]).date() == now.date()]
+    return "; ".join(f"{r['at'][11:]} {r['text']}" for r in todays)
+
+
 def cancel(settings: Settings, words: str) -> str:
     wanted = re.findall(r"\w+", str(words or "").lower())
     found = load(settings)
