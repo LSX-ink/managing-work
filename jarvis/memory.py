@@ -4,6 +4,7 @@ folders.json keeps the folder names in brain order (front of the brain first), s
 """
 
 import asyncio
+import base64
 import ipaddress
 import json
 import re
@@ -248,6 +249,29 @@ def file_path(settings: Settings, which: int | str, filename: str) -> Path:
     return path
 
 
+MAX_DOCUMENT_BYTES = 20 * 1024 * 1024
+IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp"}
+
+
+def document_content(settings: Settings, which: int | str, filename: str) -> list[dict] | str:
+    """A file from memory for Alfred to read: a PDF or picture as he sees it, text as text."""
+    path = file_path(settings, which, filename)
+    suffix = path.suffix.lower()
+    if path.stat().st_size > MAX_DOCUMENT_BYTES:
+        raise ValueError("That file is too big to read (over 20 MB).")
+    if suffix in TEXT_TYPES or suffix in {".csv", ".json", ".log"}:
+        return path.read_text(encoding="utf-8", errors="replace")[:100_000]
+    data = base64.standard_b64encode(path.read_bytes()).decode()
+    if suffix == ".pdf":
+        block = {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": data},
+                 "title": path.name}
+    elif suffix in IMAGE_TYPES:
+        block = {"type": "image", "source": {"type": "base64", "media_type": IMAGE_TYPES[suffix], "data": data}}
+    else:
+        raise ValueError(f"I can read PDFs, pictures and text files, not {suffix or 'that kind of'} files.")
+    return [block, {"type": "text", "text": f"{path.name}, from the {path.parent.name} folder."}]
+
+
 def delete_file(settings: Settings, which: int | str, filename: str) -> None:
     file_path(settings, which, filename).unlink()
 
@@ -323,6 +347,21 @@ def tool_definitions() -> list[dict]:
             },
         },
         {
+            "name": "read_document",
+            "description": "Open a PDF, picture or text file from a memory folder and read it, to answer questions "
+                           "about it: a payslip's tax or hours, a letter, a receipt. Call read_memory first to see "
+                           "the file names. For questions across several files (e.g. four payslips), read each.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "folder": {"type": "string", "description": "Folder name, e.g. 'HS2' or 'Work/Invoices'."},
+                    "filename": {"type": "string", "description": "The file's name exactly as listed."},
+                },
+                "required": ["folder", "filename"],
+                "additionalProperties": False,
+            },
+        },
+        {
             "name": "delete_memory_folder",
             "description": "Delete an empty folder that you or the user made (e.g. 'Fitness' or 'Work/Payslips'). "
                            "Always ask the user to confirm first, naming the folder, and only call this with "
@@ -377,6 +416,8 @@ def run_tool(name: str, args: dict, settings: Settings) -> str:
     if name == "create_memory_folder":
         path = create_folder(settings, args.get("parent") or "", args["name"])
         return f"Created the folder {path.relative_to(root(settings)).as_posix()}."
+    if name == "read_document":
+        return document_content(settings, args["folder"], args["filename"])
     if name == "delete_memory_folder":
         if args.get("confirmed") is not True:
             return "Not deleted. Ask the user to confirm first, then call again with confirmed true."

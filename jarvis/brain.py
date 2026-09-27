@@ -23,6 +23,7 @@ Confirm = Callable[[list[str]], Awaitable[str]]
 
 MAX_TOOL_ROUNDS = 30
 MAX_IMAGES_KEPT = 12
+MAX_DOCUMENTS_KEPT = 6
 MAX_TURNS_KEPT = 20
 CARRY_OVER_TURNS = 10  # exchanges remembered across restarts and page reloads
 
@@ -186,19 +187,21 @@ def time_of_day(hour: int | None = None) -> str:
     return "evening"
 
 
-def prune_images(messages: list[dict], keep: int = MAX_IMAGES_KEPT) -> None:
-    """Replace all but the newest `keep` screenshots in tool results with a note (in place)."""
-    slots = []
+def prune_images(messages: list[dict], keep: int = MAX_IMAGES_KEPT, keep_documents: int = MAX_DOCUMENTS_KEPT) -> None:
+    """Replace all but the newest screenshots and documents in tool results with a note (in place)."""
+    slots: dict[str, list] = {"image": [], "document": []}
     for m in messages:
         if m["role"] != "user" or not isinstance(m["content"], list):
             continue
         for block in m["content"]:
             if isinstance(block, dict) and isinstance(block.get("content"), list):
                 for i, part in enumerate(block["content"]):
-                    if isinstance(part, dict) and part.get("type") == "image":
-                        slots.append((block["content"], i))
-    for container, i in slots[: max(0, len(slots) - keep)]:
-        container[i] = {"type": "text", "text": "(older screenshot removed)"}
+                    if isinstance(part, dict) and part.get("type") in slots:
+                        slots[part["type"]].append((block["content"], i))
+    for kind, limit, note in (("image", keep, "(older screenshot removed)"),
+                              ("document", keep_documents, "(older document removed; read it again if needed)")):
+        for container, i in slots[kind][: max(0, len(slots[kind]) - limit)]:
+            container[i] = {"type": "text", "text": note}
 
 
 def spoken_text(content) -> str:

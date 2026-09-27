@@ -198,6 +198,14 @@ Alfred can read your calendar: "what's on today?", "am I free Friday?", "what's 
 - **Outlook.com**: Settings, Calendar, Shared calendars, *Publish a calendar*, then copy the ICS link.
 - **iCloud** (iPhone calendar): in the Calendar app, tap the calendar's ⓘ, turn on *Public Calendar* and share the link. Anyone with the link can see it, so keep it private.
 
+### Reading your documents
+
+Alfred can open the PDFs, pictures and text files in his memory folders and answer questions about them: "how much tax did I pay on my last payslip?", "add up my net pay from the payslips in HS2", "what does that letter in Personal say?".
+
+### PC health and setup check
+
+"Why is my PC slow?" or "how much space have I got?" gets CPU, memory, disk and battery, plus which apps use the most memory. "What's set up?" or "is my email working?" lists which features are on and what's missing from `.env`. It never reads out passwords or keys.
+
 ### Inbox and shopping list
 
 With email set up, "Alfred, anything important in my email today?" gets a summary that skips the adverts. "Add milk and eggs to the shopping list", "what's on my shopping list?", "tick off milk" and "clear the list" keep a list in `memory\Shopping\list.md`.
