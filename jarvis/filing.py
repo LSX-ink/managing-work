@@ -153,6 +153,19 @@ def run_once(settings: Settings, days: int = 2) -> list[Path]:
     return saved
 
 
+def explain(settings: Settings, exc: Exception) -> str:
+    """A plain reason for an email failure, for Alfred to read out and for the console."""
+    print(f"[jarvis] Email filing failed: {exc!r}", flush=True)
+    text = str(exc)
+    if isinstance(exc, imaplib.IMAP4.error) and ("AUTHENTICATIONFAILED" in text or "credentials" in text.lower()
+                                                 or "LOGIN" in text.upper()):
+        return (f"Gmail refused the login for {settings.email_address}: check JARVIS_EMAIL_ADDRESS, and that "
+                f"JARVIS_EMAIL_APP_PASSWORD is a 16-letter app password, not the normal password. ({text})")
+    if isinstance(exc, OSError):
+        return f"couldn't connect to {settings.email_imap_host} ({text}). Check the internet and JARVIS_EMAIL_IMAP_HOST."
+    return f"{type(exc).__name__}: {text}"
+
+
 async def watch(settings: Settings, announce) -> None:
     """Check the rules every few minutes and say when something is filed."""
     while True:
@@ -163,7 +176,7 @@ async def watch(settings: Settings, announce) -> None:
                 await announce(f"{settings.user_address.capitalize()}, I've filed {len(saved)} "
                                f"new item{'s' if len(saved) != 1 else ''} into {', '.join(folders)}.", "email")
         except Exception as exc:  # bad password, no network: say so in the console and keep trying
-            print(f"[jarvis] Email filing failed: {exc}", flush=True)
+            explain(settings, exc)
         await asyncio.sleep(max(settings.email_check_seconds, 120))
 
 
@@ -213,9 +226,12 @@ async def run_tool(name: str, args: dict, settings: Settings) -> str:
     if name == "add_email_rule":
         rule = await asyncio.to_thread(add_rule, settings, args["sender"], args.get("subject_words") or "",
                                        args["folder"], args["name"])
-        saved = await asyncio.to_thread(run_once, settings, CATCH_UP_DAYS)
-        return (f"Rule saved: emails from {rule['from']} go into {rule['folder']} as '{rule['name']} <date>'. "
-                f"Filed {len(saved)} item{'s' if len(saved) != 1 else ''} from the last {CATCH_UP_DAYS} days now.")
+        done = f"Rule saved: emails from {rule['from']} go into {rule['folder']} as '{rule['name']} <date>'. "
+        try:
+            saved = await asyncio.to_thread(run_once, settings, CATCH_UP_DAYS)
+        except Exception as exc:
+            return done + "But filing the older emails failed: " + explain(settings, exc)
+        return done + f"Filed {len(saved)} item{'s' if len(saved) != 1 else ''} from the last {CATCH_UP_DAYS} days now."
     if name == "list_email_rules":
         found = rules(settings)
         if not found:
