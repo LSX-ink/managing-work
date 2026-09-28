@@ -52,6 +52,10 @@ import shopping
 import showme
 import timers
 import todo
+import webview_food
+import webview_listen
+import webview_look
+import webview_places
 import wishes
 import words
 from config import Settings
@@ -81,6 +85,7 @@ ABILITIES = [todo, habits, money, notesearch, screen]
 # so hundreds of abilities don't slow down every reply.
 ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
+ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
