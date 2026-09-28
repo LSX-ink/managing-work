@@ -15,6 +15,8 @@ import agenda
 import alerts
 import dates
 import dates_saved
+import feeds
+import feeds_outdoors
 import filing
 import habits
 import health
@@ -53,6 +55,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 # run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
 ABILITIES = [todo, habits, money, notesearch]
 ABILITIES += [dates, dates_saved]  # time-and-dates
+ABILITIES += [feeds, feeds_outdoors]  # live-info
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
