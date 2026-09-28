@@ -32,6 +32,10 @@ import homediary
 import homehouse
 import homekitchen
 import homewellbeing
+import household_chores
+import household_family
+import household_meters
+import household_stuff
 import health
 import memory
 import money
@@ -78,6 +82,7 @@ ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+ABILITIES += [household_chores, household_stuff, household_meters, household_family]  # household-plus
 
 
 def defer(tool: dict) -> dict:
