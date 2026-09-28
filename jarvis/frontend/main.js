@@ -189,6 +189,8 @@ function connect(onOpen) {
             placeChat(msg.corner);
         } else if (msg.type === 'memory') {
             document.dispatchEvent(new CustomEvent('jarvis:memory', { detail: msg }));  // memory.js opens the folder
+        } else if (msg.type === 'popup') {
+            document.dispatchEvent(new CustomEvent('jarvis:popup', { detail: msg.card }));  // popup.js draws it
         } else if (msg.type === 'confirm') {
             showConfirm(msg);
         } else if (msg.type === 'done') {
@@ -460,6 +462,17 @@ orb.addEventListener('click', () => {
         maybeListen();
     }
 });
+
+// Pop-up buttons and list items send their line to Alfred as if typed.
+window.jarvisAsk = (text) => {
+    if (!started) {
+        started = true;
+        connect(() => { addLine('user', text); send({ text }); });
+        return;
+    }
+    addLine('user', text);
+    send({ text });
+};
 
 typeForm.addEventListener('submit', (event) => {
     event.preventDefault();

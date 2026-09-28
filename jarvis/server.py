@@ -23,6 +23,7 @@ import alerts
 import memory
 import nowplaying
 import pc
+import screen
 import reminders
 import timers
 import tools
@@ -289,6 +290,25 @@ async def memory_open(index: int, filename: str):
     # sandboxed so an uploaded web page can't run scripts as the Jarvis page
     headers = {"Content-Security-Policy": "sandbox", "X-Content-Type-Options": "nosniff"}
     return result if isinstance(result, Response) else FileResponse(result, headers=headers)
+
+
+@app.get("/screen/file")
+async def screen_file(path: str):
+    """A memory-folder file for a pop-up window. Anything that isn't a picture, PDF, sound, video or plain text
+    is sent as a download, and nothing can run scripts as the Jarvis page."""
+    try:
+        found = await asyncio.to_thread(screen.memory_path, settings, path)
+    except ValueError as e:
+        return Response(str(e), status_code=404)
+    mime = screen.inline_type(found)
+    headers = {"Content-Security-Policy": "sandbox", "X-Content-Type-Options": "nosniff"}
+    if mime == "application/pdf":
+        headers = {"X-Content-Type-Options": "nosniff"}  # the browser's PDF viewer won't run in a sandbox
+    if mime is None:
+        return FileResponse(found, headers=headers, filename=found.name, media_type="application/octet-stream")
+    if mime.startswith("text/") or mime == "application/json":
+        mime = "text/plain; charset=utf-8"
+    return FileResponse(found, headers=headers, media_type=mime)
 
 
 @app.delete("/memory/{index}/files/{filename}")

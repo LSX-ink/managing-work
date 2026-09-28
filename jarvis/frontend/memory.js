@@ -62,6 +62,14 @@ window.HudMemory = (() => {
             link.target = '_blank';
             link.rel = 'noopener';
             link.textContent = item.name;
+            // Opens in a pop-up window on the Alfred screen rather than a browser tab.
+            link.addEventListener('click', (e) => {
+                if (!window.jarvisPopup) return;
+                e.preventDefault();
+                const rel = `${folder.name}/${item.name}`;
+                window.jarvisPopup({ kind: 'file', id: `file-${rel}`, title: item.name, name: item.name,
+                    src: `/screen/file?path=${encodeURIComponent(rel)}`, mime: mimeOf(item.name), buttons: [] });
+            });
             const size = document.createElement('span');
             size.className = 'size';
             size.textContent = kb(item.size);

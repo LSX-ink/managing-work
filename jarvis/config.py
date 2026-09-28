@@ -47,6 +47,7 @@ class Settings:
     elevenlabs_model: str = os.getenv("ELEVENLABS_MODEL", "")  # empty: picked from speech_lang
     enable_screen: bool = _bool("JARVIS_ENABLE_SCREEN", True)
     enable_web: bool = _bool("JARVIS_ENABLE_WEB", True)
+    tool_search: bool = _bool("JARVIS_TOOL_SEARCH", True)  # load most abilities only when needed
     enable_pc: bool = _bool("JARVIS_ENABLE_PC", True)  # open apps/folders/files, media keys, read files
     enable_computer: bool = _bool("JARVIS_ENABLE_COMPUTER", False)  # mouse + keyboard, each action confirmed
     host: str = os.getenv("JARVIS_HOST", "127.0.0.1")

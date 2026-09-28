@@ -52,6 +52,7 @@ def line(settings: Settings, key: str) -> str:
 _NEW_WEB_TOOLS = ("claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6",
                   "claude-sonnet-5", "claude-sonnet-4-6")
 _NO_EFFORT = ("claude-haiku-4-5", "claude-sonnet-4-5")
+_NO_TOOL_SEARCH = ("claude-haiku", "claude-3")
 _SERVER_FALLBACK = ("claude-opus-5", "claude-fable-5")
 _COMPUTER_TOOLSET = ("claude-opus-5", "claude-fable-5")
 
@@ -105,7 +106,11 @@ Timers and reminders: use set_timer for "set a timer…" or "in 10 minutes", che
 
 Listening: the user can say "stop" or "quiet" while you speak to cut you off. If they ask you to only listen when they say your name (or to answer everything again), use listen_for_name.
 
-New abilities: if the user asks for something none of your tools can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
+More abilities: besides the tools you can see, you have many more that load on demand (games and quizzes, words and definitions, calculators and conversions, dates, birthdays and countdowns, news, air quality and other live info, home trackers such as meals, recipes, pantry, bins, bills, plants and diary, wellbeing logs, goals, workouts, flashcards, reading lists, and PC controls such as brightness, clipboard, Wi-Fi and windows). When no visible tool fits, search for one with tool_search_tool_bm25 using a few plain key words before saying you can't.
+
+Showing things: when the user asks to see or show something, or it's easier to read than hear (a list, a table, numbers over time, a file, a web page, a picture), pop it up on the Alfred screen with show_on_screen and just say a short line about it. Never open the web browser for this.
+
+New abilities: if the user asks for something none of your tools (including ones found by search) can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
 {pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}"""
 
@@ -143,13 +148,26 @@ def pc_section(settings: Settings) -> str:
     return "Computer: " + " ".join(parts) + "\n\n"
 
 
+def tool_search_enabled(settings: Settings) -> bool:
+    """Tool search lets Alfred keep hundreds of abilities without reading them all every turn."""
+    return settings.tool_search and not settings.model.startswith(_NO_TOOL_SEARCH)
+
+
 def request_options(settings: Settings) -> dict:
     """Model-dependent request parameters."""
     model = settings.model
     new_web = model.startswith(_NEW_WEB_TOOLS)
-    tool_list: list[dict] = list(tools.client_tool_definitions(settings))
-    # The tool list is long and the same every turn, so cache it: faster and cheaper replies.
-    tool_list[-1] = {**tool_list[-1], "cache_control": {"type": "ephemeral"}}
+    every = list(tools.client_tool_definitions(settings))
+    loaded = [t for t in every if not t.get("defer_loading")]
+    deferred = [t for t in every if t.get("defer_loading")]
+    if not tool_search_enabled(settings):
+        loaded, deferred = every, []
+        loaded = [{k: v for k, v in t.items() if k != "defer_loading"} for t in loaded]
+    # The loaded tools are the same every turn, so cache them: faster and cheaper replies.
+    loaded[-1] = {**loaded[-1], "cache_control": {"type": "ephemeral"}}
+    tool_list: list[dict] = loaded
+    if deferred:
+        tool_list += [{"type": "tool_search_tool_bm25_20251119", "name": "tool_search_tool_bm25"}, *deferred]
     if settings.enable_web:
         tool_list += [
             {"type": "web_search_20260209" if new_web else "web_search_20250305", "name": "web_search", "max_uses": 3},

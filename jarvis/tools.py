@@ -40,6 +40,7 @@ import notesearch
 import pc
 import pctools
 import reminders
+import screen
 import shopping
 import timers
 import todo
@@ -67,13 +68,20 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 
 # Ability modules. Each has tool_definitions() -> list, NAMES (a set of tool names) and
 # run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
-ABILITIES = [todo, habits, money, notesearch]
+ABILITIES = [todo, habits, money, notesearch, screen]
+# Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
+# so hundreds of abilities don't slow down every reply.
+ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
 ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+
+
+def defer(tool: dict) -> dict:
+    return {**tool, "defer_loading": True}
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
@@ -140,7 +148,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     tools += health.tool_definitions()
     tools += shopping.tool_definitions()
     for module in ABILITIES:
-        tools += module.tool_definitions()
+        tools += [defer(t) for t in module.tool_definitions()] if module not in ALWAYS_LOADED else module.tool_definitions()
     if settings.email_enabled:
         tools.append({
             "name": "check_inbox",
@@ -166,7 +174,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
         tools += filing.tool_definitions()
     if settings.enable_pc:
         tools += pc.tool_definitions()
-        tools += pctools.tool_definitions()  # pc-control
+        tools += [defer(t) for t in pctools.tool_definitions()]  # pc-control
         tools.append(music.tool_definition())
     if settings.enable_screen and not settings.enable_computer:  # the computer toolset has its own screenshot
         tools.append({
@@ -285,7 +293,21 @@ async def look_at_screen() -> list[dict]:
 
 
 async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient, page=None) -> str | list[dict]:
-    """Execute one client tool. Raises on failure; the caller reports it as an error result."""
+    """Execute one client tool. Raises on failure; the caller reports it as an error result.
+
+    A result that is a screen.Shown also pops its card up on the Alfred screen.
+    """
+    result = await _run_tool(name, args, settings, http, page)
+    if isinstance(result, screen.Shown):
+        if page:
+            await page({"type": "popup", "card": result.card})
+        elif result.card.get("kind") != "close":
+            return f"{result} (The Alfred page isn't open, so nothing popped up.)"
+        return str(result)
+    return result
+
+
+async def _run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient, page=None) -> str | list[dict]:
     if name == "get_weather":
         days = min(max(int(args.get("days") or 1), 1), 7)
         return await get_weather(http, args.get("city") or settings.city, days)
@@ -337,7 +359,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
             path = await memory.download(settings, http, args["folder"], args["url"], args.get("filename") or "")
         except httpx.HTTPError as e:
             raise ValueError(f"The download failed: {e}") from None
-        return f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
+        said = f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
+        return screen.Shown(said + " It's on the screen.", screen.file_card(settings, path))
     if name == "open_memory_folder":
         path = (await asyncio.to_thread(memory.folder, settings, args["folder"])).resolve()
         six = {n.lower() for n in memory.names(settings)}
