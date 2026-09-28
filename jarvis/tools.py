@@ -13,6 +13,10 @@ import httpx
 import aboutyou
 import agenda
 import alerts
+import arcade
+import arcade_board
+import arcade_cards
+import arcade_words
 import calcmaths
 import calcmoney
 import calcrandom
@@ -122,6 +126,7 @@ ABILITIES += [widgets]  # widgets
 ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_reminders]  # health-plus
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
+ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
 
 
 def defer(tool: dict) -> dict:
