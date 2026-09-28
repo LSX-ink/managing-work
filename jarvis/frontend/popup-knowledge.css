@@ -1,0 +1,51 @@
+/* Knowledge base pop-ups (popup-knowledge.js): notes, the note graph and mind maps. Colours follow popup.css. */
+.popup[data-kind="knowledge-note"] { width: min(520px, calc(100vw - 24px)); }
+.popup[data-kind="knowledge-graph"], .popup[data-kind="knowledge-mindmap"] {
+    width: min(640px, calc(100vw - 24px)); max-height: min(640px, calc(100vh - 90px));
+}
+.kn-doc { display: grid; gap: 4px; }
+.kn-h { margin: 10px 0 2px; color: var(--hud-bright, #9fd8ff); font-weight: 600; line-height: 1.3; }
+.kn-doc > .kn-h:first-child { margin-top: 0; }
+h3.kn-h { font-size: 18px; } h4.kn-h { font-size: 15px; } h5.kn-h, h6.kn-h { font-size: 13px; }
+.kn-p { margin: 2px 0; }
+.kn-li { display: flex; gap: 8px; }
+.kn-bullet { color: var(--hud-mid, #9fb3c8); min-width: 1em; }
+.kn-quote {
+    margin: 4px 0; padding: 4px 10px; border-left: 2px solid var(--hud, #3fa9ff); color: var(--hud-mid, #9fb3c8);
+    font-style: italic;
+}
+.kn-pre {
+    margin: 4px 0; padding: 8px; overflow: auto; border-radius: 6px; font-size: 12px;
+    background: var(--hud-faint, rgba(63, 169, 255, 0.08));
+}
+.kn-doc code { padding: 0 3px; border-radius: 3px; background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.kn-link, .kn-tag {
+    all: unset; cursor: pointer; color: var(--hud-bright, #9fd8ff);
+    border-bottom: 1px dotted var(--hud, #3fa9ff);
+}
+.kn-link.missing { color: var(--hud-mid, #9fb3c8); border-bottom-style: dashed; opacity: 0.8; }
+.kn-tag { border-bottom: none; color: var(--hud, #3fa9ff); }
+.kn-link:hover, .kn-link:focus-visible, .kn-tag:hover, .kn-tag:focus-visible { color: var(--text, #fff); }
+.kn-url { color: var(--hud-bright, #9fd8ff); }
+.kn-backlinks {
+    display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 14px; padding-top: 8px; font-size: 13px;
+    border-top: 1px solid var(--hud-dim, #2a3547);
+}
+.kn-label { width: 100%; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.kn-graph, .kn-mind { width: 100%; height: auto; min-height: 320px; display: block; }
+.kn-edge { stroke: var(--hud-dim, #2a3547); stroke-width: 1; }
+.kn-node { cursor: pointer; outline: none; }
+.kn-node circle { fill: var(--hud, #3fa9ff); stroke: var(--hud-panel, #000); stroke-width: 1.5; }
+.kn-node.alone circle { fill: var(--hud-mid, #9fb3c8); }
+.kn-node.focus circle, .kn-node:hover circle, .kn-node:focus-visible circle { fill: var(--hud-bright, #fff); }
+.kn-node text { fill: var(--text, #e8eef7); font-size: 10px; pointer-events: none; }
+.kn-node:hover text, .kn-node:focus-visible text { fill: var(--hud-bright, #fff); font-weight: 600; }
+.kn-hint { margin-top: 6px; font-size: 12px; opacity: 0.65; }
+.kn-branch { fill: none; stroke: var(--hud-dim, #2a3547); stroke-width: 1.5; }
+.kn-branch.d1 { stroke: var(--hud, #3fa9ff); stroke-width: 2.5; }
+.kn-mnode circle { fill: var(--hud-mid, #9fb3c8); }
+.kn-mnode.d0 circle, .kn-mnode.d1 circle { fill: var(--hud, #3fa9ff); }
+.kn-mnode text { fill: var(--text, #e8eef7); font-size: 12px; }
+.kn-mnode.d0 text { fill: var(--hud-bright, #9fd8ff); font-size: 18px; font-weight: 700; }
+.kn-mnode.d1 text { font-size: 14px; font-weight: 600; }
+.kn-mnode.d3 text { font-size: 11px; opacity: 0.85; }
