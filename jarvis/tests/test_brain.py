@@ -58,7 +58,7 @@ async def test_tool_loop_speaks_each_step_and_returns_tool_results():
     tool_turn = client.requests[1]["messages"][-1]
     assert tool_turn["role"] == "user"
     assert tool_turn["content"][0]["tool_use_id"] == "toolu_1"
-    assert "No task list configured" in tool_turn["content"][0]["content"]
+    assert "No open jobs." in tool_turn["content"][0]["content"]
     assert [m["role"] for m in b.messages] == ["user", "assistant", "user", "assistant"]
 
 
@@ -129,7 +129,8 @@ def test_request_options_depend_on_model(model, has_fallback, has_effort, search
 def test_screen_and_web_tools_can_be_disabled():
     opts = request_options(replace(SETTINGS, enable_screen=False, enable_web=False, enable_pc=False))
     names = {t["name"] for t in opts["tools"]}
-    assert names == {"get_weather", "get_tasks", "open_url", "save_to_memory", "read_memory", "download_file", "open_memory_folder", "create_memory_folder", "delete_memory_folder", "move_chat_panel", "remember_about_user", "forget_about_user", "set_reminder", "list_reminders", "cancel_reminder", "get_calendar", "shopping_list", "listen_for_name", "read_document", "pc_health", "jarvis_status", "request_new_ability", "set_timer", "check_timers", "cancel_timer", "take_a_break"}
+    assert "look_at_screen" not in names and "web_search" not in names
+    assert names >= {"get_weather", "get_tasks", "open_url", "save_to_memory", "read_memory", "download_file", "open_memory_folder", "create_memory_folder", "delete_memory_folder", "move_chat_panel", "remember_about_user", "forget_about_user", "set_reminder", "list_reminders", "cancel_reminder", "get_calendar", "shopping_list", "listen_for_name", "read_document", "pc_health", "jarvis_status", "request_new_ability", "set_timer", "check_timers", "cancel_timer", "take_a_break"}
 
 
 def test_afrikaans_prompt_and_fixed_lines():

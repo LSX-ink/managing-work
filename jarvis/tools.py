@@ -14,13 +14,17 @@ import aboutyou
 import agenda
 import alerts
 import filing
+import habits
 import health
 import memory
+import money
 import music
+import notesearch
 import pc
 import reminders
 import shopping
 import timers
+import todo
 import wishes
 from config import Settings
 
@@ -41,6 +45,10 @@ WEATHER_CODES = {
 # Longest edge of a screenshot sent to Claude; larger images are downscaled anyway.
 SCREEN_MAX_EDGE = 1568
 CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
+
+# Ability modules. Each has tool_definitions() -> list, NAMES (a set of tool names) and
+# run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
+ABILITIES = [todo, habits, money, notesearch]
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
@@ -106,6 +114,8 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     tools += agenda.tool_definitions()
     tools += health.tool_definitions()
     tools += shopping.tool_definitions()
+    for module in ABILITIES:
+        tools += module.tool_definitions()
     if settings.email_enabled:
         tools.append({
             "name": "check_inbox",
@@ -212,12 +222,7 @@ def read_open_tasks(tasks_file: str) -> list[str]:
 
 
 def get_tasks(settings: Settings) -> str:
-    if not settings.tasks_file:
-        return "No task list configured (set JARVIS_TASKS_FILE)."
-    tasks = read_open_tasks(settings.tasks_file)
-    if not tasks:
-        return "No open tasks."
-    return f"{len(tasks)} open tasks:\n" + "\n".join(f"- {t}" for t in tasks)
+    return todo.text(settings)
 
 
 def is_safe_url(url: str) -> bool:
@@ -274,6 +279,11 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
     if name in agenda.NAMES:
         days = min(max(int(args.get("days") or 1), 1), 31)
         return await agenda.upcoming(http, settings, days)
+    for module in ABILITIES:
+        if name in module.NAMES:
+            if asyncio.iscoroutinefunction(module.run_tool):
+                return await module.run_tool(name, args, settings, http)
+            return await asyncio.to_thread(module.run_tool, name, args, settings, http)
     if name in shopping.NAMES:
         return await asyncio.to_thread(shopping.run_tool, args, settings)
     if name in reminders.NAMES:
