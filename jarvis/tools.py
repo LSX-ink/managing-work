@@ -33,6 +33,10 @@ import homehouse
 import homekitchen
 import homewellbeing
 import hudplus
+import household_chores
+import household_family
+import household_meters
+import household_stuff
 import health
 import media_files
 import media_find
@@ -96,6 +100,7 @@ ABILITIES += [fun, words]  # fun and words
 ABILITIES += [showme]  # show-me
 ABILITIES += [routines, routines_brief, routines_life]  # routines
 ABILITIES += [hudplus]  # hud-secrets
+ABILITIES += [household_chores, household_stuff, household_meters, household_family]  # household-plus
 
 
 def defer(tool: dict) -> dict:
