@@ -96,3 +96,14 @@ def test_most_abilities_load_on_demand():
     off = request_options(replace(Settings(), tool_search=False))
     assert not any(t.get("defer_loading") for t in off["tools"])
     assert "tool_search_tool_bm25" not in {t.get("name") for t in off["tools"]}
+
+
+def test_extra_kinds_carry_data():
+    screen.EXTRA_KINDS.add("test-board")
+    try:
+        c = screen.card("test-board", "Board", data={"cells": [1, 2, 3]}, checks=True)
+        assert c["data"] == {"cells": [1, 2, 3]} and c["checks"] is True
+        with pytest.raises(ValueError):
+            screen.card("test-board", "Board", data={"x": "y" * 300_000})
+    finally:
+        screen.EXTRA_KINDS.discard("test-board")

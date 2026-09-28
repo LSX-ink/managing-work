@@ -51,9 +51,18 @@
         win.remove();
     }
 
+    // Other files add kinds here: window.jarvisPopupKinds.name = (card, body, helpers) => { ... }.
+    window.jarvisPopupKinds = window.jarvisPopupKinds || {};
+
     function render(card, body) {
         body.replaceChildren();
         const kind = card.kind;
+        const custom = window.jarvisPopupKinds[kind];
+        if (custom) {
+            if (card.text) body.append(el('div', 'pop-text', card.text));
+            custom(card, body, { el, ask, table, chart, image });
+            return;
+        }
         if (card.text && kind !== 'reader') body.append(el('div', 'pop-text', card.text));
         if (kind === 'list') renderList(card, body);
         else if (kind === 'table') body.append(table(card.columns || [], card.rows || []));

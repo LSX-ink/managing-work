@@ -1,7 +1,7 @@
 """Pop-up windows on the Alfred screen: files, web pages read inside Alfred, pictures, lists, tables, charts.
 
 Any ability can return Shown(text, card): Alfred hears the text and the page pops the card up (see tools.run_tool).
-A card is plain JSON drawn by frontend/popup.js. Kinds:
+A card is plain JSON drawn by frontend/popup.js. A list card with checks=True shows tick boxes. Kinds:
   text    {text}
   list    {items: [{label, done?, say?}]}          ticking or clicking an item with say sends it to Alfred
   table   {columns: [..], rows: [[..], ..]}
@@ -11,11 +11,14 @@ A card is plain JSON drawn by frontend/popup.js. Kinds:
   image   {src}                                   a picture from the web (https) or the memory folders
   video   {src}                                   a YouTube video (privacy-enhanced embed only)
   timer   {ends_at | started_at}                  a live countdown or count-up (epoch milliseconds)
+Other modules can add kinds: screen.EXTRA_KINDS.add("gallery") plus a renderer in a frontend file,
+window.jarvisPopupKinds.gallery = (card, body, {el, ask}) => {...}; their card holds its own plain JSON in "data".
 Every card has an id (showing the same id again updates that window), a title, and optional buttons
 [{label, say}] that send say to Alfred as if the user had said it.
 """
 
 import html
+import json
 import mimetypes
 import re
 from pathlib import Path
@@ -31,6 +34,10 @@ MAX_ITEMS = 200
 MAX_ROWS = 200
 MAX_READ_BYTES = 3 * 1024 * 1024
 KINDS = {"text", "list", "table", "chart", "file", "reader", "image", "video", "timer"}
+# Kinds that other modules add, each drawn by its own renderer in frontend (window.jarvisPopupKinds[kind]).
+# Their card carries a free-form "data" field of plain JSON.
+EXTRA_KINDS: set[str] = set()
+MAX_DATA = 200_000
 # Files the page may show inline, by suffix; anything else is offered to open on the PC instead.
 INLINE = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp",
@@ -64,7 +71,7 @@ def _buttons(buttons) -> list[dict]:
 
 def card(kind: str, title: str, card_id: str = "", buttons=None, **fields) -> dict:
     """A checked card: known kind, sizes capped, only plain data."""
-    if kind not in KINDS:
+    if kind not in KINDS | EXTRA_KINDS:
         raise ValueError(f"Unknown pop-up kind {kind}.")
     out = {"kind": kind, "title": _clip(title, 80) or kind.title(), "id": _clip(card_id, 60) or _auto_id(kind, title),
            "buttons": _buttons(buttons)}
@@ -90,6 +97,12 @@ def card(kind: str, title: str, card_id: str = "", buttons=None, **fields) -> di
     for key in ("src", "mime", "name", "url", "image", "site"):
         if fields.get(key):
             out[key] = _clip(fields[key], 2000)
+    if "data" in fields:
+        if len(json.dumps(fields["data"])) > MAX_DATA:
+            raise ValueError("That's too much to show in one window.")
+        out["data"] = fields["data"]
+    if fields.get("checks"):
+        out["checks"] = True
     for key in ("ends_at", "started_at"):
         if fields.get(key) is not None:
             out[key] = int(fields[key])
