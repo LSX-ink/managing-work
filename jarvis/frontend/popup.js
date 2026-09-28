@@ -28,6 +28,11 @@
         const x = gap + col * ((innerWidth - W - 2 * gap) / Math.max(1, cols - 1 || 1));
         win.style.left = `${Math.round(cols === 1 ? gap / 2 + 4 : x)}px`;
         win.style.top = `${Math.round(Math.min(innerHeight - 160, 84 + row * (innerHeight * 0.42) + Math.floor(n / (cols * 2)) * 28))}px`;
+        // Wider windows (periodic table, games) are pulled back so they don't run off the right edge.
+        requestAnimationFrame(() => {
+            const over = win.offsetLeft + win.offsetWidth - (innerWidth - 8);
+            if (over > 0) win.style.left = `${Math.max(8, win.offsetLeft - over)}px`;
+        });
     }
 
     function drag(win, handle) {
@@ -113,7 +118,10 @@
 
     function chart({ type, labels = [], values = [], unit = '' }) {
         const NS = 'http://www.w3.org/2000/svg';
-        const W = 440, H = 220, L = 44, B = 36, T = 14, R = 10;
+        const fmt = (v) => `${Math.abs(v) >= 1000 ? Math.round(v).toLocaleString() : +v.toFixed(2)}${unit}`;
+        const lo = Math.min(0, ...values), hi = Math.max(0, ...values);
+        const widest = Math.max(...[lo, (lo + hi) / 2, hi].map((v) => fmt(v).length));
+        const W = 440, H = 220, L = Math.max(44, 12 + widest * 7), B = 36, T = 14, R = 10;
         const svg = document.createElementNS(NS, 'svg');
         svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
         svg.setAttribute('class', 'pop-chart');
@@ -128,7 +136,6 @@
         const span = max - min || 1;
         const y = (v) => T + (H - T - B) * (1 - (v - min) / span);
         const step = (W - L - R) / Math.max(1, values.length);
-        const fmt = (v) => `${Math.abs(v) >= 1000 ? Math.round(v).toLocaleString() : +v.toFixed(2)}${unit}`;
         [min, (min + max) / 2, max].forEach((v) => {
             add('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'grid' });
             add('text', { x: L - 6, y: y(v) + 4, 'text-anchor': 'end', class: 'axis' }, fmt(v));
