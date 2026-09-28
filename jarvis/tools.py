@@ -18,6 +18,10 @@ import dates_saved
 import feeds
 import feeds_outdoors
 import filing
+import growth_goals
+import growth_media
+import growth_reflect
+import growth_study
 import habits
 import homediary
 import homehouse
@@ -61,6 +65,7 @@ ABILITIES = [todo, habits, money, notesearch]
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
+ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
