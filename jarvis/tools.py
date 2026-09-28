@@ -62,6 +62,10 @@ import webview_food
 import webview_listen
 import webview_look
 import webview_places
+import wellness_fitness
+import wellness_logs
+import wellness_records
+import wellness_reminders
 import wishes
 import words
 from config import Settings
@@ -103,6 +107,7 @@ ABILITIES += [routines, routines_brief, routines_life]  # routines
 ABILITIES += [hudplus]  # hud-secrets
 ABILITIES += [household_chores, household_stuff, household_meters, household_family]  # household-plus
 ABILITIES += [widgets]  # widgets
+ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_reminders]  # health-plus
 
 
 def defer(tool: dict) -> dict:
