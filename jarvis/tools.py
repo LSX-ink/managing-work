@@ -70,6 +70,9 @@ import routines_life
 import screen
 import shopping
 import showme
+import studio_learn
+import studio_log
+import studio_play
 import timers
 import widgets
 import todo
@@ -127,6 +130,7 @@ ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_remind
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
 ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
+ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
 
 
 def defer(tool: dict) -> dict:
