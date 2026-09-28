@@ -23,6 +23,7 @@ import money
 import music
 import notesearch
 import pc
+import pctools
 import reminders
 import shopping
 import timers
@@ -144,6 +145,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
         tools += filing.tool_definitions()
     if settings.enable_pc:
         tools += pc.tool_definitions()
+        tools += pctools.tool_definitions()  # pc-control
         tools.append(music.tool_definition())
     if settings.enable_screen and not settings.enable_computer:  # the computer toolset has its own screenshot
         tools.append({
@@ -337,6 +339,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return await look_at_screen()
     if name == "apple_music" and settings.enable_pc:
         return await music.apple_music(http, settings, args["query"], args.get("kind") or "song")
+    if name in pctools.NAMES and settings.enable_pc:
+        return await asyncio.to_thread(pctools.run_tool, name, args, settings)
     if name in pc.NAMES and settings.enable_pc:
         return await asyncio.to_thread(pc.run, name, args)
     raise ValueError(f"Unknown tool: {name}")
