@@ -1,0 +1,33 @@
+/* Cooking pop-up kinds (popup-cooking.js): cook mode, kitchen timers, batch plan. HUD colours only. */
+.ck-steps { display: flex; flex-direction: column; gap: 12px; }
+.ck-count { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.ck-text { font-size: 26px; line-height: 1.35; font-weight: 500; color: var(--hud-bright, #9fd8ff); min-height: 3.5em; }
+.ck-dots { display: flex; flex-wrap: wrap; gap: 5px; }
+.ck-dot { width: 12px; height: 12px; padding: 0; border-radius: 50%; border: 1px solid var(--hud-dim, #2a3547); background: none; cursor: pointer; }
+.ck-dot.on { background: var(--hud-bright, #9fd8ff); border-color: var(--hud-bright, #9fd8ff); }
+.ck-controls { display: flex; flex-wrap: wrap; gap: 6px; }
+.ck-controls .pop-action { font-size: 15px; padding: 8px 14px; }
+.ck-controls .pop-action:disabled { opacity: 0.4; cursor: default; }
+.ck-controls .pop-action[hidden] { display: none; }
+.ck-ingredients { margin: 0; padding-left: 18px; font-size: 14px; }
+.ck-ingredients[hidden] { display: none; }
+.ck-timers { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.ck-timer { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 8px; text-align: center; }
+.ck-timer-name { font-size: 12px; letter-spacing: 0.06em; color: var(--hud-mid, #9fb3c8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ck-timer-face { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--hud-bright, #9fd8ff); padding: 4px 0; }
+.ck-timer.paused .ck-timer-face { opacity: 0.55; }
+.ck-timer.done { border-color: var(--hud-warn, #ffc24a); animation: ck-flash 1s steps(2) infinite; }
+.ck-timer.done .ck-timer-face { color: var(--hud-warn, #ffc24a); }
+@keyframes ck-flash { 50% { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); } }
+@media (prefers-reduced-motion: reduce) { .ck-timer.done { animation: none; } }
+.ck-bar { height: 3px; border-radius: 2px; background: var(--hud-faint, #1f2b3d); overflow: hidden; margin-bottom: 6px; }
+.ck-fill { height: 100%; width: 0; background: var(--hud, #3fa9ff); }
+.ck-timer-buttons { display: flex; justify-content: center; gap: 2px; flex-wrap: wrap; }
+.ck-small { width: auto; height: auto; padding: 2px 6px; font-size: 11px; border-color: var(--hud-dim, #2a3547); }
+.ck-add { display: flex; gap: 6px; flex-wrap: wrap; }
+.ck-add input {
+    flex: 1; min-width: 80px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547);
+    background: transparent; color: var(--text, #e8eef7); font: inherit;
+}
+.ck-heading { margin: 4px 0 6px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.ck-heading + .pop-table { margin-bottom: 12px; }

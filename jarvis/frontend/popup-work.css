@@ -1,0 +1,39 @@
+/* Work pop-ups (popup-work.js): kanban board, action items, summaries. Colours follow popup.css's HUD variables. */
+.wk { display: grid; gap: 10px; }
+.wk-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(130px, 1fr); gap: 8px; overflow-x: auto; }
+.wk-col { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 6px; min-height: 120px; display: flex; flex-direction: column; gap: 6px; }
+.wk-col.over { border-color: var(--hud, #3fa9ff); background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.wk-col-title { margin: 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.wk-list { display: grid; gap: 6px; align-content: start; flex: 1; }
+.wk-card {
+    display: grid; gap: 2px; text-align: left; padding: 6px 8px; border-radius: 6px; cursor: grab; font: inherit; font-size: 13px;
+    border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-panel, rgba(6, 18, 40, 0.92)); color: var(--text, #e8eef7);
+}
+.wk-card:hover, .wk-card:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.wk-card.dragging { opacity: 0.5; }
+.wk-card-title { overflow-wrap: anywhere; }
+.wk-due, .wk-muted { font-size: 11px; color: var(--hud-mid, #9fb3c8); }
+.wk-has-notes { font-size: 11px; color: var(--hud-bright, #9fd8ff); }
+.wk-detail { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 8px; display: grid; gap: 6px; }
+.wk-detail-title { font-weight: 600; color: var(--hud-bright, #9fd8ff); }
+.wk-notes { white-space: pre-wrap; font-size: 13px; }
+.wk-add { display: flex; gap: 6px; }
+.wk-input, .wk-btn {
+    padding: 6px 10px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547); background: transparent;
+    color: var(--hud-bright, #9fd8ff); font: inherit; font-size: 13px;
+}
+.wk-input { flex: 1; min-width: 0; }
+.wk-btn { cursor: pointer; justify-self: start; }
+.wk-btn:hover, .wk-btn:focus-visible, .wk-input:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.wk-small { padding: 3px 8px; font-size: 12px; }
+.wk-actions { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.wk-actions li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 5px 4px; border-bottom: 1px solid var(--hud-faint, #1f2b3d); }
+.wk-actions li.done .wk-action-text > span:first-child { text-decoration: line-through; opacity: 0.6; }
+.wk-actions input { accent-color: var(--hud, #3fa9ff); width: 16px; height: 16px; }
+.wk-action-text { display: grid; }
+.wk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 6px; }
+.wk-stat { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 6px; text-align: center; }
+.wk-stat-value { font-size: 20px; font-weight: 600; color: var(--hud-bright, #9fd8ff); font-variant-numeric: tabular-nums; }
+.wk-stat-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.wk-heading { margin: 12px 0 4px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.wk-section { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 2px; }

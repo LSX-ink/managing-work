@@ -21,6 +21,9 @@ import calcmaths
 import calcmoney
 import calcrandom
 import calcunits
+import cooking
+import cooking_guide
+import cooking_leftovers
 import dates
 import dates_saved
 import docs_tools
@@ -53,15 +56,26 @@ import household_family
 import household_meters
 import household_stuff
 import health
+import knowledge
+import knowledge_explore
+import knowledge_mindmap
 import media_files
 import media_find
 import media_pictures
 import media_show
 import memory
+import modes
+import modes_debate
+import modes_learning
+import modes_practice
 import money
 import music
 import notesearch
 import pc
+import people_book
+import people_lists
+import people_occasions
+import people_touch
 import pctools
 import reminders
 import routines
@@ -71,8 +85,14 @@ import screen
 import shopping
 import showme
 import timers
+import trackers
+import trackers_life
+import trackers_views
 import widgets
 import todo
+import travel_guide
+import travel_papers
+import travel_trips
 import webview_food
 import webview_listen
 import webview_look
@@ -83,6 +103,10 @@ import wellness_records
 import wellness_reminders
 import wishes
 import words
+import worktools_board
+import worktools_meetings
+import worktools_projects
+import worktools_time
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -109,6 +133,9 @@ ABILITIES = [todo, habits, money, notesearch, screen]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
 ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
+ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
+ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
+ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
@@ -127,6 +154,10 @@ ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_remind
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
 ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
+ABILITIES += [knowledge, knowledge_explore, knowledge_mindmap]  # knowledge
+ABILITIES += [trackers, trackers_views, trackers_life]  # trackers
+ABILITIES += [cooking, cooking_guide, cooking_leftovers]  # cooking
+ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # people
 
 
 def defer(tool: dict) -> dict:

@@ -1,0 +1,13 @@
+/* People pop-up kind (popup-people.js): the family tree. HUD colours only. */
+.pt-tree { position: relative; display: grid; gap: 34px; padding: 6px 4px 10px; min-width: max-content; }
+.pt-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.pt-lines .pt-child { fill: none; stroke: var(--hud-dim, #2a3547); stroke-width: 1.5; }
+.pt-lines .pt-partner { stroke: var(--hud-mid, #9fb3c8); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.pt-row { position: relative; display: flex; justify-content: center; gap: 22px; }
+.pt-node {
+    position: relative; padding: 6px 12px; border-radius: 8px; cursor: pointer; font: inherit; font-size: 13px;
+    color: var(--text, #e8eef7); background: var(--hud-panel, rgba(6, 18, 40, 0.92));
+    border: 1px solid var(--hud-dim, #2a3547); white-space: nowrap;
+}
+.pt-node:hover, .pt-node:focus-visible { border-color: var(--hud, #3fa9ff); color: var(--hud-bright, #9fd8ff); outline: none; }
+.pt-node.focus { border-color: var(--hud-bright, #9fd8ff); box-shadow: 0 0 10px var(--hud-glow, rgba(20, 70, 160, 0.35)); }
