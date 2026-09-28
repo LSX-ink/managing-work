@@ -13,6 +13,10 @@ import httpx
 import aboutyou
 import agenda
 import alerts
+import arcade
+import arcade_board
+import arcade_cards
+import arcade_words
 import calcmaths
 import calcmoney
 import calcrandom
@@ -78,6 +82,7 @@ ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
 
 
 def defer(tool: dict) -> dict:
