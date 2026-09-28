@@ -76,16 +76,23 @@ function t(key) {
 // male voice since both butlers are men, then an exact language match (en-GB before other English).
 const MALE_VOICE = /\b(male|daniel|george|arthur|ryan|oliver|thomas|guy|brian|william|liam|andrew|christopher|eric|roger|steffan)\b/i;
 const NATURAL_VOICE = /natural|neural|online|premium|enhanced/i;
+// Deep, serious British men's voices, best first: Edge's Ryan and Thomas, Windows' George, Chrome's UK male.
+const SOLDIER_VOICE = /\b(ryan|thomas|george|arthur|daniel|uk english male)\b/i;
+// Unless changed in the voice picker, Alfred speaks a touch slower and lower: calm and serious.
+const VOICE_STYLE = { rate: 0.92, pitch: 0.8 };
 
 function voicePrefs() {
-    try { return JSON.parse(localStorage.getItem('alfred-voice') || '{}') || {}; } catch { return {}; }
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('alfred-voice') || '{}') || {}; } catch { /* private window */ }
+    return { ...VOICE_STYLE, ...saved };
 }
 
 function rankVoices(voices, lang) {
     const want = lang.toLowerCase().replace('_', '-');
     const norm = (v) => v.lang.toLowerCase().replace('_', '-');
     const score = (v) => (NATURAL_VOICE.test(v.name) ? 100 : 0) + (/google/i.test(v.name) ? 50 : 0)
-        + (MALE_VOICE.test(v.name) && !/female/i.test(v.name) ? 10 : 0) + (norm(v) === want ? 5 : 0);
+        + (MALE_VOICE.test(v.name) && !/female/i.test(v.name) ? 10 : 0) + (norm(v) === want ? 5 : 0)
+        + (norm(v) === 'en-gb' ? 20 : 0) + (norm(v) === 'en-gb' && SOLDIER_VOICE.test(v.name) ? 15 : 0);
     return voices.filter((v) => norm(v).split('-')[0] === want.split('-')[0])
         .map((v) => ({ v, s: score(v) })).sort((a, b) => b.s - a.s).map((x) => x.v);
 }

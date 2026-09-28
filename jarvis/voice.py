@@ -12,14 +12,15 @@ KIND = "voice-picker"
 screen.EXTRA_KINDS.add(KIND)
 
 NAMES = {"change_voice"}
-ACTIONS = ("choose", "faster", "slower", "deeper", "higher", "reset")
+ACTIONS = ("choose", "soldier", "faster", "slower", "deeper", "higher", "reset")
 SPOKEN = {
     "choose": "Here are the voices I can use. Press Try to hear one and Use to pick it.",
     "faster": "I'll speak a little faster.",
     "slower": "I'll speak a little slower.",
     "deeper": "I'll speak a little deeper.",
     "higher": "I'll speak a little higher.",
-    "reset": "My voice is back to its normal speed and pitch.",
+    "soldier": "Understood. Deep, steady and British, as ordered.",
+    "reset": "My voice is back to its usual calm speed and pitch.",
 }
 
 
@@ -28,7 +29,8 @@ def tool_definitions() -> list[dict]:
         "name": "change_voice",
         "description": "Change Alfred's own speaking voice when the user says he sounds robotic or asks for a "
                        "different voice, accent, speed or pitch. 'choose' pops up the list of voices on this "
-                       "computer to try and pick (the most natural ones are marked); 'faster', 'slower', "
+                       "computer to try and pick (the most natural ones are marked); 'soldier' goes back to his default deep, "
+                       "serious British man's voice; 'faster', 'slower', "
                        "'deeper', 'higher' adjust the current voice; 'reset' puts speed and pitch back.",
         "input_schema": {
             "type": "object",
