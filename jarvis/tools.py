@@ -59,6 +59,10 @@ import household_chores
 import household_family
 import household_meters
 import household_stuff
+import kids_day
+import kids_fun
+import kids_logs
+import kids_rewards
 import health
 import knowledge
 import knowledge_explore
@@ -170,6 +174,7 @@ ABILITIES += [trackers, trackers_views, trackers_life]  # trackers
 ABILITIES += [cooking, cooking_guide, cooking_leftovers]  # cooking
 ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # people
 ABILITIES += [voice]  # voice
+ABILITIES += [kids_rewards, kids_logs, kids_day, kids_fun]  # kids
 
 
 def defer(tool: dict) -> dict:
