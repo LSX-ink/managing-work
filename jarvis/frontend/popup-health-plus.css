@@ -1,0 +1,26 @@
+/* Health-plus pop-up kinds (popup-health-plus.js): trend charts and the interval timer. HUD colours only. */
+.wl-trend .wl-line { fill: none; stroke-width: 2; }
+.wl-trend .wl-s0 { stroke: var(--hud-bright, #9fd8ff); fill: var(--hud-bright, #9fd8ff); }
+.wl-trend .wl-s1 { stroke: var(--hud, #3fa9ff); fill: var(--hud, #3fa9ff); }
+.wl-trend .wl-s2 { stroke: var(--hud-warn, #ffc24a); fill: var(--hud-warn, #ffc24a); }
+.wl-trend polyline.wl-line { fill: none; }
+.wl-trend .wl-guide { stroke: var(--hud-dim, #2a3547); stroke-dasharray: 4 4; }
+.wl-trend .wl-guide-label { fill: var(--hud-mid, #9fb3c8); font-size: 10px; }
+.wl-key { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--hud-mid, #9fb3c8); margin-top: 4px; }
+.wl-key-item { display: inline-flex; align-items: center; gap: 6px; }
+.wl-swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; background: currentColor; }
+.wl-swatch.dots { width: 7px; height: 7px; border-radius: 50%; }
+.wl-key-item.wl-s0 { color: var(--hud-bright, #9fd8ff); }
+.wl-key-item.wl-s1 { color: var(--hud, #3fa9ff); }
+.wl-key-item.wl-s2 { color: var(--hud-warn, #ffc24a); }
+.wl-timer { text-align: center; }
+.wl-phase { font-size: 15px; font-weight: 600; letter-spacing: 0.06em; color: var(--hud-bright, #9fd8ff); }
+.wl-timer .pop-timer { padding: 10px 0 4px; font-size: 56px; }
+.wl-timer[data-type="rest"] .pop-timer { color: var(--hud, #3fa9ff); }
+.wl-timer[data-type="work"] .pop-timer { color: var(--hud-bright, #9fd8ff); }
+.wl-timer[data-type="done"] .pop-timer { color: var(--hud-warn, #ffc24a); }
+.wl-next { font-size: 13px; color: var(--hud-mid, #9fb3c8); margin-bottom: 10px; }
+.wl-bar { height: 6px; border-radius: 3px; background: var(--hud-faint, #1f2b3d); overflow: hidden; }
+.wl-fill { height: 100%; width: 0; background: var(--hud, #3fa9ff); transition: width 0.2s linear; }
+.wl-controls { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .wl-fill { transition: none; } }

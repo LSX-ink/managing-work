@@ -44,6 +44,10 @@ import screen
 import shopping
 import timers
 import todo
+import wellness_fitness
+import wellness_logs
+import wellness_records
+import wellness_reminders
 import wishes
 import words
 from config import Settings
@@ -78,6 +82,7 @@ ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_reminders]  # health-plus
 
 
 def defer(tool: dict) -> dict:
