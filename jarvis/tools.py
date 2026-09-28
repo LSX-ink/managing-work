@@ -13,6 +13,10 @@ import httpx
 import aboutyou
 import agenda
 import alerts
+import calcmaths
+import calcmoney
+import calcrandom
+import calcunits
 import dates
 import dates_saved
 import feeds
@@ -64,6 +68,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 # Ability modules. Each has tool_definitions() -> list, NAMES (a set of tool names) and
 # run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
 ABILITIES = [todo, habits, money, notesearch]
+ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
