@@ -248,6 +248,12 @@ body.hud #confirm { border-color: var(--hud-warn); border-radius: 0; background:
     body.hud #hud-sphere { width: min(420px, 90vw); height: min(420px, 90vw); margin: 0; }
     body.hud #orb { width: min(250px, 55vw); height: min(250px, 55vw); }
 }
+@media (max-width: 600px) {   /* phones: the top bar wraps instead of pushing the page wider than the screen */
+    body.hud { padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)); padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+    body.hud .hud-bar { flex-wrap: wrap; gap: 8px 12px; }
+    body.hud .hud-chips { flex-wrap: wrap; gap: 6px; min-width: 0; }
+    body.hud #np-popup { left: 12px; right: 12px; width: auto; }
+}
 
 /* Folder stars (stars.js): each folder made inside a memory folder is a star you can click to open it. */
 #folder-stars { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
