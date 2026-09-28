@@ -229,3 +229,9 @@ def test_runs_through_tools(s):
 
     out = asyncio.run(go())
     assert out.startswith("Made the note Via tools.")
+
+
+def test_plain_indented_lines_become_branches():
+    import knowledge_mindmap
+    _, items = knowledge_mindmap.parse_outline("Places\n  Rome\n  Oslo\nBudget")
+    assert items == [(1, "Places"), (2, "Rome"), (2, "Oslo"), (1, "Budget")]

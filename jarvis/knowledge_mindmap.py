@@ -94,6 +94,10 @@ def parse_outline(text: str) -> tuple[str, list[tuple[int, str]]]:
             items.append((head, words))
         elif m := LIST_ITEM.match(line):
             items.append((head + 1 + len(m.group(1)) // 2, m.group(2)))
+        elif line.strip():
+            # A plain line with no dash still counts as a branch, nested by its indent.
+            indent = len(line) - len(line.lstrip())
+            items.append((head + 1 + indent // 2, line.strip()))
     return topic, items
 
 
