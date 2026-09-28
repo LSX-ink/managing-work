@@ -96,6 +96,10 @@ import showme
 import studio_learn
 import studio_log
 import studio_play
+import sports_games
+import sports_live
+import sports_scoring
+import sports_teams
 import timers
 import trackers
 import trackers_life
@@ -154,6 +158,7 @@ ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
 ABILITIES += [artstudio_colours, artstudio_photos, artstudio_create, artstudio_qr]  # art-studio
 ABILITIES += [writing_projects, writing_goals, writing_bible, writing_helpers]  # writing
+ABILITIES += [sports_live, sports_teams, sports_scoring, sports_games]  # sports
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
