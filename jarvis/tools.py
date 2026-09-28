@@ -93,6 +93,9 @@ import screen
 import voice
 import shopping
 import showme
+import studio_learn
+import studio_log
+import studio_play
 import timers
 import trackers
 import trackers_life
@@ -175,6 +178,7 @@ ABILITIES += [cooking, cooking_guide, cooking_leftovers]  # cooking
 ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # people
 ABILITIES += [voice]  # voice
 ABILITIES += [kids_rewards, kids_logs, kids_day, kids_fun]  # kids
+ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
 
 
 def defer(tool: dict) -> dict:
