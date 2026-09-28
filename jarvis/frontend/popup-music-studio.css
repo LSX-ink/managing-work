@@ -1,0 +1,102 @@
+/* Music-studio pop-ups (popup-music-studio.js). Colours follow the theme's HUD variables, like popup.css. */
+.st { display: grid; gap: 10px; }
+.st:focus-visible { outline: 1px solid var(--hud, #3fa9ff); outline-offset: 4px; border-radius: 6px; }
+.st-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.st-field { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.st-range { accent-color: var(--hud, #3fa9ff); width: 90px; }
+.st-val { min-width: 2.6em; font-variant-numeric: tabular-nums; }
+.st-btn, .st-input {
+    padding: 6px 10px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547); background: transparent;
+    color: var(--hud-bright, #9fd8ff); font: inherit; font-size: 14px;
+}
+.st-input option, .st-input optgroup { background: var(--hud-bg, #030a1a); color: var(--hud-bright, #9fd8ff); }
+.st-name { flex: 1; min-width: 120px; }
+.st-btn { cursor: pointer; min-height: 34px; }
+.st-btn:hover, .st-btn:focus-visible, .st-input:focus-visible {
+    border-color: var(--hud, #3fa9ff); outline: none; box-shadow: 0 0 0 1px var(--hud, #3fa9ff);
+}
+.st-btn[aria-pressed="true"] { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); border-color: var(--hud, #3fa9ff); }
+.st-btn:disabled { opacity: 0.45; cursor: default; }
+.st-primary { border-color: var(--hud, #3fa9ff); font-weight: 600; }
+.st-big { font-size: 18px; font-weight: 600; color: var(--hud-bright, #9fd8ff); min-height: 1.4em; }
+.st-muted { font-size: 13px; color: var(--hud-mid, #9fb3c8); }
+.st-msg { font-size: 13px; min-height: 1.2em; color: var(--hud-mid, #9fb3c8); }
+
+/* keyboard */
+.st-keys-box { overflow-x: auto; }
+.st-keys { position: relative; display: flex; height: 120px; min-width: 360px; user-select: none; touch-action: none; }
+.st-key { box-sizing: border-box; cursor: pointer; border-radius: 0 0 4px 4px; }
+.st-key.white {
+    position: relative; height: 100%; background: #f4f4f4; border: 1px solid var(--hud-dim, #2a3547);
+    display: flex; align-items: flex-end; justify-content: center;
+}
+.st-key.black { position: absolute; top: 0; height: 62%; z-index: 1; background: #111; border: 1px solid #000; }
+.st-key.lit.white { background: var(--hud-bright, #9fd8ff); }
+.st-key.lit.black { background: var(--hud, #3fa9ff); }
+.st-key.down.white { background: var(--hud-mid, #9fb3c8); }
+.st-key.down.black { background: var(--hud-mid, #9fb3c8); }
+.st-key-label { font-size: 10px; color: #333; margin-bottom: 4px; pointer-events: none; }
+
+/* drum machine */
+.st-grid { display: grid; grid-template-columns: 64px repeat(16, minmax(14px, 1fr)); gap: 3px; align-items: center; }
+.st-track { padding: 4px 6px; min-height: 28px; font-size: 12px; }
+.st-step {
+    height: 26px; border-radius: 4px; border: 1px solid var(--hud-dim, #2a3547); background: transparent; cursor: pointer; padding: 0;
+}
+.st-step.beat { border-color: var(--hud-mid, #9fb3c8); }
+.st-step[aria-pressed="true"] { background: var(--hud-bright, #9fd8ff); }
+.st-step.now { box-shadow: 0 0 0 2px var(--hud, #3fa9ff); }
+.st-step:focus-visible { outline: 1px solid var(--hud, #3fa9ff); outline-offset: 1px; }
+
+/* guitar diagrams */
+.st-shapes { display: flex; flex-wrap: wrap; gap: 12px; }
+.st-shape { display: grid; justify-items: center; gap: 4px; }
+.st-fretboard { width: 132px; height: 170px; cursor: pointer; }
+.st-fb-line { stroke: var(--hud-mid, #9fb3c8); stroke-width: 1; }
+.st-fb-nut { stroke: var(--hud-bright, #9fd8ff); stroke-width: 4; }
+.st-fb-dot { fill: var(--hud-bright, #9fd8ff); }
+.st-fb-open { fill: none; stroke: var(--hud-bright, #9fd8ff); stroke-width: 1.5; }
+.st-fb-name { fill: var(--hud-bright, #9fd8ff); font-size: 14px; font-weight: 600; }
+.st-fb-small { fill: var(--hud-mid, #9fb3c8); font-size: 11px; }
+
+/* chords, progressions, strings */
+.st-chord-wall, .st-strings { display: flex; flex-wrap: wrap; gap: 6px; }
+.st-chord, .st-string {
+    display: grid; justify-items: center; gap: 2px; min-width: 64px; padding: 8px 10px; cursor: pointer;
+    border-radius: 8px; border: 1px solid var(--hud-dim, #2a3547); background: transparent; color: var(--hud-bright, #9fd8ff);
+    font: inherit;
+}
+.st-chord:hover, .st-chord:focus-visible, .st-string:hover, .st-string:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.st-chord.now, .st-string[aria-pressed="true"] { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); border-color: var(--hud, #3fa9ff); box-shadow: 0 0 0 1px var(--hud, #3fa9ff); }
+.st-numeral { font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.st-chord-name { font-size: 18px; font-weight: 600; }
+.st-chord-notes, .st-chord-was { font-size: 11px; color: var(--hud-mid, #9fb3c8); }
+
+/* circle of fifths */
+.st-circle-svg { width: 100%; max-width: 300px; justify-self: center; }
+.st-wedge path { fill: transparent; stroke: var(--hud-dim, #2a3547); }
+.st-wedge text { fill: var(--hud-bright, #9fd8ff); font-size: 15px; font-weight: 600; pointer-events: none; }
+.st-wedge text.st-small { font-size: 11px; font-weight: 400; }
+.st-wedge { cursor: pointer; outline: none; }
+.st-wedge:hover path, .st-wedge:focus-visible path { fill: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.st-wedge.sel path { fill: var(--hud-faint, rgba(63, 169, 255, 0.08)); stroke: var(--hud, #3fa9ff); stroke-width: 2; }
+.st-circle-mid { fill: var(--hud-bright, #9fd8ff); font-size: 22px; font-weight: 600; }
+
+/* tap tempo */
+.st-face { font-size: 48px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; color: var(--hud-bright, #9fd8ff); }
+.st-tap .st-muted { text-align: center; }
+.st-tap-btn { min-height: 90px; font-size: 24px; letter-spacing: 0.2em; }
+
+/* quizzes */
+.st-answers { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+.st-letters { grid-template-columns: repeat(7, 1fr); }
+.st-answer.right { border-color: var(--hud-bright, #9fd8ff); background: var(--hud-faint, rgba(63, 169, 255, 0.08)); font-weight: 600; }
+.st-answer.wrong { border-style: dashed; opacity: 0.6; }
+.st-staff-svg { width: 100%; max-width: 320px; justify-self: center; background: var(--hud-faint, rgba(63, 169, 255, 0.05)); border-radius: 8px; }
+.st-staff-line, .st-stem { stroke: var(--hud-bright, #9fd8ff); stroke-width: 1.2; }
+.st-notehead { fill: var(--hud-bright, #9fd8ff); }
+.st-clef { fill: var(--hud-bright, #9fd8ff); font-family: "Segoe UI Symbol", "Noto Music", "Bravura", serif; }
+.st-clef.treble { font-size: 62px; }
+.st-clef.bass { font-size: 40px; }
+
+@media (prefers-reduced-motion: reduce) { .st * { transition: none !important; } }

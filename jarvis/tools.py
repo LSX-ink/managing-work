@@ -59,6 +59,10 @@ import household_chores
 import household_family
 import household_meters
 import household_stuff
+import kids_day
+import kids_fun
+import kids_logs
+import kids_rewards
 import health
 import knowledge
 import knowledge_explore
@@ -89,6 +93,13 @@ import screen
 import voice
 import shopping
 import showme
+import studio_learn
+import studio_log
+import studio_play
+import sports_games
+import sports_live
+import sports_scoring
+import sports_teams
 import timers
 import trackers
 import trackers_life
@@ -112,6 +123,10 @@ import worktools_board
 import worktools_meetings
 import worktools_projects
 import worktools_time
+import writing_bible
+import writing_goals
+import writing_helpers
+import writing_projects
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -142,6 +157,8 @@ ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_mee
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
 ABILITIES += [artstudio_colours, artstudio_photos, artstudio_create, artstudio_qr]  # art-studio
+ABILITIES += [writing_projects, writing_goals, writing_bible, writing_helpers]  # writing
+ABILITIES += [sports_live, sports_teams, sports_scoring, sports_games]  # sports
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
@@ -165,6 +182,8 @@ ABILITIES += [trackers, trackers_views, trackers_life]  # trackers
 ABILITIES += [cooking, cooking_guide, cooking_leftovers]  # cooking
 ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # people
 ABILITIES += [voice]  # voice
+ABILITIES += [kids_rewards, kids_logs, kids_day, kids_fun]  # kids
+ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
 
 
 def defer(tool: dict) -> dict:

@@ -1,0 +1,29 @@
+/* The "writing-studio" pop-up kind (popup-writing.js). Colours follow the theme's HUD variables. */
+.wr-section { margin-bottom: 14px; }
+.wr-section:last-child { margin-bottom: 0; }
+.wr-title {
+    margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--hud-mid, #9fb3c8);
+}
+.wr-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.wr-stat { padding: 8px 10px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; }
+.wr-stat-value { font-size: 17px; font-weight: 600; color: var(--hud-bright, #9fd8ff); font-variant-numeric: tabular-nums; }
+.wr-stat-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.65; }
+.wr-meters { display: grid; gap: 8px; }
+.wr-meter-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 4px; }
+.wr-note { opacity: 0.7; font-size: 12px; font-variant-numeric: tabular-nums; }
+.wr-track {
+    height: 8px; border-radius: 4px; overflow: hidden;
+    background: var(--hud-faint, rgba(63, 169, 255, 0.08)); border: 1px solid var(--hud-dim, #2a3547);
+}
+.wr-fill { height: 100%; background: var(--hud, #3fa9ff); transition: width 0.4s ease-out; }
+.wr-meter.met .wr-fill { background: var(--hud-bright, #9fd8ff); }
+.wr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.wr-item { all: unset; display: flex; flex-direction: column; gap: 2px; padding: 5px 8px; border-radius: 6px; font-size: 13px; }
+button.wr-item { cursor: pointer; box-sizing: border-box; width: 100%; }
+button.wr-item:hover, button.wr-item:focus-visible { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); outline: none; }
+.wr-fields { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
+.wr-fields dt { opacity: 0.65; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; padding-top: 2px; }
+.wr-fields dd { margin: 0; }
+.wr-text { margin: 0; white-space: pre-wrap; font-size: 13px; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .wr-fill { transition: none; } }
