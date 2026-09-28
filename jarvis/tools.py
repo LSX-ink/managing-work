@@ -21,6 +21,9 @@ import calcmaths
 import calcmoney
 import calcrandom
 import calcunits
+import cooking
+import cooking_guide
+import cooking_leftovers
 import dates
 import dates_saved
 import docs_tools
@@ -127,6 +130,7 @@ ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_remind
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
 ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
+ABILITIES += [cooking, cooking_guide, cooking_leftovers]  # cooking
 
 
 def defer(tool: dict) -> dict:
