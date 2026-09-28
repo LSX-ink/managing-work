@@ -289,6 +289,13 @@ python scripts/clap_trigger.py
 
 Clap twice and it starts the server if it isn't running, then opens Jarvis in your browser. If it misses claps or fires on noise, adjust `THRESHOLD` in the script.
 
+## More abilities
+
+Each page below lists what to say to Alfred:
+
+- [Everyday lists, habits and money](docs/everyday.md)
+<!-- ability docs -->
+
 ## Things to try
 
 - "Jarvis, what's the weather like in Tokyo?"
