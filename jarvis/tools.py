@@ -68,6 +68,10 @@ import money
 import music
 import notesearch
 import pc
+import people_book
+import people_lists
+import people_occasions
+import people_touch
 import pctools
 import reminders
 import routines
@@ -148,6 +152,7 @@ ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
 ABILITIES += [knowledge, knowledge_explore, knowledge_mindmap]  # knowledge
 ABILITIES += [trackers, trackers_views, trackers_life]  # trackers
 ABILITIES += [cooking, cooking_guide, cooking_leftovers]  # cooking
+ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # people
 
 
 def defer(tool: dict) -> dict:
