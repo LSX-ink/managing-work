@@ -33,6 +33,10 @@ import homehouse
 import homekitchen
 import homewellbeing
 import health
+import media_files
+import media_find
+import media_pictures
+import media_show
 import memory
 import money
 import music
@@ -72,6 +76,7 @@ ABILITIES = [todo, habits, money, notesearch, screen]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
 ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
+ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
