@@ -19,6 +19,9 @@ import calcrandom
 import calcunits
 import dates
 import dates_saved
+import docs_tools
+import docs_tools_forms
+import docs_tools_sheets
 import feeds
 import feeds_outdoors
 import filing
@@ -78,6 +81,7 @@ ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 
 
 def defer(tool: dict) -> dict:
