@@ -62,6 +62,10 @@ import money
 import music
 import notesearch
 import pc
+import people_book
+import people_lists
+import people_occasions
+import people_touch
 import pctools
 import reminders
 import routines
@@ -127,6 +131,7 @@ ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_remind
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
 ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
+ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # people
 
 
 def defer(tool: dict) -> dict:
