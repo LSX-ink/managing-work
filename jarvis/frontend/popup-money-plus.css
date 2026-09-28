@@ -1,0 +1,26 @@
+/* The "finance" pop-up kind (popup-money-plus.js). Colours follow the theme's HUD variables. */
+.fin-section { margin-bottom: 14px; }
+.fin-section:last-child { margin-bottom: 0; }
+.fin-title {
+    margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--hud-mid, #9fb3c8);
+}
+.fin-meters { display: grid; gap: 8px; }
+.fin-meter { all: unset; display: block; padding: 4px 6px; border-radius: 6px; }
+button.fin-meter { cursor: pointer; }
+button.fin-meter:hover, button.fin-meter:focus-visible { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); outline: none; }
+.fin-meter-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 4px; }
+.fin-meter-label { text-transform: capitalize; }
+.fin-meter-note { opacity: 0.7; font-variant-numeric: tabular-nums; }
+.fin-track {
+    height: 8px; border-radius: 4px; overflow: hidden;
+    background: var(--hud-faint, rgba(63, 169, 255, 0.08)); border: 1px solid var(--hud-dim, #2a3547);
+}
+.fin-fill { height: 100%; background: var(--hud, #3fa9ff); transition: width 0.4s ease-out; }
+.fin-meter.over .fin-fill { background: var(--hud-warn, #ffc24a); }
+.fin-meter.over .fin-meter-note { color: var(--hud-warn, #ffc24a); opacity: 1; }
+.fin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.fin-stat { padding: 8px 10px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; }
+.fin-stat-value { font-size: 17px; font-weight: 600; color: var(--hud-bright, #9fd8ff); font-variant-numeric: tabular-nums; }
+.fin-stat-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.65; }
+@media (prefers-reduced-motion: reduce) { .fin-fill { transition: none; } }

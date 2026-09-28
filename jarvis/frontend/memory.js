@@ -6,6 +6,11 @@ window.HudMemory = (() => {
     const state = { open: false, hover: -1, folders: [], current: -1 };
 
     const kb = (n) => (n < 1024 ? `${n} B` : n < 1048576 ? `${Math.round(n / 1024)} KB` : `${(n / 1048576).toFixed(1)} MB`);
+    const MIMES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp',
+        svg: 'image/svg+xml', pdf: 'application/pdf', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav',
+        ogg: 'audio/ogg', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', txt: 'text/plain',
+        md: 'text/plain', csv: 'text/plain', json: 'text/plain' };
+    const mimeOf = (name) => MIMES[(name.split('.').pop() || '').toLowerCase()] || 'application/octet-stream';
     const say = (text) => { $('memory-msg').textContent = text; };
 
     async function load() {
@@ -62,6 +67,14 @@ window.HudMemory = (() => {
             link.target = '_blank';
             link.rel = 'noopener';
             link.textContent = item.name;
+            // Opens in a pop-up window on the Alfred screen rather than a browser tab.
+            link.addEventListener('click', (e) => {
+                if (!window.jarvisPopup) return;
+                e.preventDefault();
+                const rel = `${folder.name}/${item.name}`;
+                window.jarvisPopup({ kind: 'file', id: `file-${rel}`, title: item.name, name: item.name,
+                    src: `/screen/file?path=${encodeURIComponent(rel)}`, mime: mimeOf(item.name), buttons: [] });
+            });
             const size = document.createElement('span');
             size.className = 'size';
             size.textContent = kb(item.size);

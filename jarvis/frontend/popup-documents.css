@@ -1,0 +1,5 @@
+/* Pop-up kinds for documents and spreadsheets (popup-documents.js). Colours follow the theme's HUD variables. */
+.pop-docsum { display: grid; gap: 10px; }
+.pop-docsum .pop-table tbody tr:last-child td {
+    font-weight: 600; border-top: 1px solid var(--hud-dim, #2a3547); color: var(--hud-bright, #9fd8ff);
+}

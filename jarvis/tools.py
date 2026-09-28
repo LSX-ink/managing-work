@@ -13,15 +13,30 @@ import httpx
 import aboutyou
 import agenda
 import alerts
+import arcade
+import arcade_board
+import arcade_cards
+import arcade_words
 import calcmaths
 import calcmoney
 import calcrandom
 import calcunits
 import dates
 import dates_saved
+import docs_tools
+import docs_tools_forms
+import docs_tools_sheets
+import discover_codes
+import discover_games
+import discover_science
+import discover_study
 import feeds
 import feeds_outdoors
 import filing
+import finance_budget
+import finance_friends
+import finance_plan
+import finance_pots
 import growth_goals
 import growth_media
 import growth_reflect
@@ -32,7 +47,16 @@ import homediary
 import homehouse
 import homekitchen
 import homewellbeing
+import hudplus
+import household_chores
+import household_family
+import household_meters
+import household_stuff
 import health
+import media_files
+import media_find
+import media_pictures
+import media_show
 import memory
 import money
 import music
@@ -40,9 +64,23 @@ import notesearch
 import pc
 import pctools
 import reminders
+import routines
+import routines_brief
+import routines_life
+import screen
 import shopping
+import showme
 import timers
+import widgets
 import todo
+import webview_food
+import webview_listen
+import webview_look
+import webview_places
+import wellness_fitness
+import wellness_logs
+import wellness_records
+import wellness_reminders
 import wishes
 import words
 from config import Settings
@@ -67,13 +105,32 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 
 # Ability modules. Each has tool_definitions() -> list, NAMES (a set of tool names) and
 # run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
-ABILITIES = [todo, habits, money, notesearch]
+ABILITIES = [todo, habits, money, notesearch, screen]
+# Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
+# so hundreds of abilities don't slow down every reply.
+ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
+ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
+ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
+ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
 ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+ABILITIES += [showme]  # show-me
+ABILITIES += [routines, routines_brief, routines_life]  # routines
+ABILITIES += [hudplus]  # hud-secrets
+ABILITIES += [household_chores, household_stuff, household_meters, household_family]  # household-plus
+ABILITIES += [widgets]  # widgets
+ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_reminders]  # health-plus
+ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
+ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
+ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
+
+
+def defer(tool: dict) -> dict:
+    return {**tool, "defer_loading": True}
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
@@ -140,7 +197,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     tools += health.tool_definitions()
     tools += shopping.tool_definitions()
     for module in ABILITIES:
-        tools += module.tool_definitions()
+        tools += [defer(t) for t in module.tool_definitions()] if module not in ALWAYS_LOADED else module.tool_definitions()
     if settings.email_enabled:
         tools.append({
             "name": "check_inbox",
@@ -166,7 +223,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
         tools += filing.tool_definitions()
     if settings.enable_pc:
         tools += pc.tool_definitions()
-        tools += pctools.tool_definitions()  # pc-control
+        tools += [defer(t) for t in pctools.tool_definitions()]  # pc-control
         tools.append(music.tool_definition())
     if settings.enable_screen and not settings.enable_computer:  # the computer toolset has its own screenshot
         tools.append({
@@ -285,7 +342,21 @@ async def look_at_screen() -> list[dict]:
 
 
 async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient, page=None) -> str | list[dict]:
-    """Execute one client tool. Raises on failure; the caller reports it as an error result."""
+    """Execute one client tool. Raises on failure; the caller reports it as an error result.
+
+    A result that is a screen.Shown also pops its card up on the Alfred screen.
+    """
+    result = await _run_tool(name, args, settings, http, page)
+    if isinstance(result, screen.Shown):
+        if page:
+            await page({"type": "popup", "card": result.card})
+        elif result.card.get("kind") != "close":
+            return f"{result} (The Alfred page isn't open, so nothing popped up.)"
+        return str(result)
+    return result
+
+
+async def _run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncClient, page=None) -> str | list[dict]:
     if name == "get_weather":
         days = min(max(int(args.get("days") or 1), 1), 7)
         return await get_weather(http, args.get("city") or settings.city, days)
@@ -337,7 +408,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
             path = await memory.download(settings, http, args["folder"], args["url"], args.get("filename") or "")
         except httpx.HTTPError as e:
             raise ValueError(f"The download failed: {e}") from None
-        return f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
+        said = f"Downloaded {path.name} ({path.stat().st_size:,} bytes) into the {path.parent.name} folder."
+        return screen.Shown(said + " It's on the screen.", screen.file_card(settings, path))
     if name == "open_memory_folder":
         path = (await asyncio.to_thread(memory.folder, settings, args["folder"])).resolve()
         six = {n.lower() for n in memory.names(settings)}

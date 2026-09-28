@@ -1,0 +1,16 @@
+/* Files-and-media pop-ups (popup-files-and-media.js): gallery, slideshow, music player. */
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.media-thumb {
+    padding: 0; aspect-ratio: 1; overflow: hidden; cursor: pointer; background: var(--hud-faint, rgba(63, 169, 255, 0.08));
+    border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px;
+}
+.media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media-thumb:hover, .media-thumb:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.media-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 6px; }
+.media-controls .pop-action.on { border-color: var(--hud, #3fa9ff); background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.media-volume { flex: 1; min-width: 80px; accent-color: var(--hud, #3fa9ff); }
+.media-stage { display: flex; justify-content: center; align-items: center; min-height: 240px; }
+.media-stage .pop-image { max-height: 360px; margin: 0; }
+.media-caption { font-size: 12px; color: var(--hud-mid, #9fb3c8); margin: 6px 0; text-align: center; }
+.media-songs li.playing .pop-item { color: var(--hud-bright, #9fd8ff); font-weight: 600; }
+.popup[data-kind="gallery"], .popup[data-kind="slideshow"] { height: min(520px, calc(100vh - 110px)); }

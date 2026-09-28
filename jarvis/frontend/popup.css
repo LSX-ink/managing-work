@@ -1,0 +1,68 @@
+/* Pop-up windows Alfred opens on the screen (popup.js). Colours follow the theme's HUD variables. */
+#popups { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+.popup {
+    position: fixed; pointer-events: auto; display: flex; flex-direction: column;
+    width: min(460px, calc(100vw - 24px)); min-width: 220px; min-height: 90px;
+    max-width: calc(100vw - 12px); max-height: min(560px, calc(100vh - 100px)); resize: both; overflow: hidden;
+    background: var(--hud-panel, rgba(6, 18, 40, 0.92)); color: var(--text, #e8eef7);
+    border: 1px solid var(--hud-dim, #2a3547); border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 0 24px var(--hud-glow, rgba(20, 70, 160, 0.35));
+    backdrop-filter: blur(8px);
+}
+.popup.arrive { animation: pop-in 0.22s ease-out; }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96) translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .popup.arrive { animation: none; } }
+.popup.shrunk { height: auto !important; resize: none; }
+.popup.shrunk .pop-body, .popup.shrunk .pop-buttons { display: none; }
+.pop-bar {
+    display: flex; align-items: center; gap: 6px; padding: 7px 8px 7px 12px; cursor: move; user-select: none;
+    border-bottom: 1px solid var(--hud-dim, #2a3547); background: var(--hud-faint, rgba(63, 169, 255, 0.08));
+}
+.pop-title {
+    flex: 1; margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--hud-bright, #9fd8ff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pop-btn {
+    width: 24px; height: 24px; border-radius: 6px; border: 1px solid transparent; background: none;
+    color: var(--hud-mid, #9fb3c8); font-size: 16px; line-height: 1; cursor: pointer;
+}
+.pop-btn:hover, .pop-btn:focus-visible { border-color: var(--hud-dim, #2a3547); color: var(--hud-bright, #fff); outline: none; }
+.pop-body { flex: 1; overflow: auto; padding: 12px 14px; font-size: 14px; line-height: 1.5; }
+.pop-text { white-space: pre-wrap; margin-bottom: 8px; }
+.pop-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pop-list li { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; }
+.pop-list li:hover { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.pop-list li.done .pop-item { text-decoration: line-through; opacity: 0.55; }
+.pop-list input { accent-color: var(--hud, #3fa9ff); width: 16px; height: 16px; }
+button.pop-item { all: unset; cursor: pointer; flex: 1; }
+button.pop-item:focus-visible { outline: 1px solid var(--hud, #3fa9ff); }
+.pop-empty { opacity: 0.6; font-style: italic; }
+.pop-table { overflow: auto; }
+.pop-table table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.pop-table th, .pop-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--hud-faint, #1f2b3d); }
+.pop-table th { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.pop-chart { width: 100%; height: auto; }
+.pop-chart .grid { stroke: var(--hud-faint, #1f2b3d); }
+.pop-chart .axis { fill: var(--hud-mid, #9fb3c8); font-size: 11px; }
+.pop-chart .bar { fill: var(--hud, #3fa9ff); opacity: 0.85; }
+.pop-chart .bar:hover { opacity: 1; }
+.pop-chart .line { fill: none; stroke: var(--hud-bright, #9fd8ff); stroke-width: 2; }
+.pop-chart .dot { fill: var(--hud-bright, #9fd8ff); }
+.pop-image { display: block; max-width: 100%; margin: 0 auto 10px; border-radius: 6px; }
+.pop-frame { width: 100%; height: 100%; min-height: 260px; border: 0; border-radius: 6px; background: #fff; }
+.pop-frame.video { background: #000; aspect-ratio: 16 / 9; height: auto; }
+.pop-media { width: 100%; }
+.pop-pre { white-space: pre-wrap; font-size: 13px; margin: 0; }
+.pop-site { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.6; margin-bottom: 8px; }
+.pop-reader p { margin: 0 0 10px; max-width: 70ch; }
+.pop-timer { font-size: 44px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; padding: 18px 0; color: var(--hud-bright, #9fd8ff); }
+.pop-timer.over { color: var(--hud-warn, #ffc24a); }
+.pop-buttons { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 10px; border-top: 1px solid var(--hud-faint, #1f2b3d); }
+.pop-buttons[hidden] { display: none; }
+.pop-action {
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547); background: transparent;
+    color: var(--hud-bright, #9fd8ff); font-size: 13px; cursor: pointer;
+}
+.pop-action:hover, .pop-action:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+/* Pictures, PDFs, videos and web pages get a taller window to start with. */
+.popup[data-kind="file"], .popup[data-kind="reader"], .popup[data-kind="video"] { height: min(520px, calc(100vh - 110px)); }
