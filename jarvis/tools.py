@@ -14,6 +14,7 @@ import aboutyou
 import agenda
 import alerts
 import filing
+import fun
 import habits
 import health
 import memory
@@ -26,6 +27,7 @@ import shopping
 import timers
 import todo
 import wishes
+import words
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -49,6 +51,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 # Ability modules. Each has tool_definitions() -> list, NAMES (a set of tool names) and
 # run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
 ABILITIES = [todo, habits, money, notesearch]
+ABILITIES += [fun, words]  # fun and words
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
