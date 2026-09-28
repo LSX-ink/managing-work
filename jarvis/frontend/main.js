@@ -71,18 +71,45 @@ function t(key) {
     return text.replace('{name}', config.name);
 }
 
-// Best browser voice for the configured language: exact match (en-GB), then same language (en),
-// preferring a male voice within each since both butlers are men.
-const MALE_VOICE = /\b(male|daniel|george|arthur|ryan|oliver|thomas|guy)\b/i;
+// Best browser voice for the configured language. A voice the user picked (voice.js saves its name) wins;
+// otherwise natural-sounding voices come first (Edge's "Online (Natural)" voices, then Google's), then a
+// male voice since both butlers are men, then an exact language match (en-GB before other English).
+const MALE_VOICE = /\b(male|daniel|george|arthur|ryan|oliver|thomas|guy|brian|william|liam|andrew|christopher|eric|roger|steffan)\b/i;
+const NATURAL_VOICE = /natural|neural|online|premium|enhanced/i;
+
+function voicePrefs() {
+    try { return JSON.parse(localStorage.getItem('alfred-voice') || '{}') || {}; } catch { return {}; }
+}
+
+function rankVoices(voices, lang) {
+    const want = lang.toLowerCase().replace('_', '-');
+    const norm = (v) => v.lang.toLowerCase().replace('_', '-');
+    const score = (v) => (NATURAL_VOICE.test(v.name) ? 100 : 0) + (/google/i.test(v.name) ? 50 : 0)
+        + (MALE_VOICE.test(v.name) && !/female/i.test(v.name) ? 10 : 0) + (norm(v) === want ? 5 : 0);
+    return voices.filter((v) => norm(v).split('-')[0] === want.split('-')[0])
+        .map((v) => ({ v, s: score(v) })).sort((a, b) => b.s - a.s).map((x) => x.v);
+}
 
 function pickVoice() {
-    const want = config.speechLang.toLowerCase().replace('_', '-');
-    const norm = (v) => v.lang.toLowerCase().replace('_', '-');
     const voices = speechSynthesis.getVoices();
-    const exact = voices.filter((v) => norm(v) === want);
-    const sameLang = voices.filter((v) => norm(v).split('-')[0] === want.split('-')[0]);
-    const male = (list) => list.find((v) => MALE_VOICE.test(v.name) && !/female/i.test(v.name));
-    return male(exact) || exact[0] || male(sameLang) || sameLang[0] || null;
+    const chosen = voicePrefs().name;
+    return (chosen && voices.find((v) => v.name === chosen)) || rankVoices(voices, config.speechLang)[0] || null;
+}
+window.jarvisVoice = { rank: rankVoices, pick: pickVoice, prefs: voicePrefs, lang: () => config.speechLang,
+                       natural: (v) => NATURAL_VOICE.test(v.name) || /google/i.test(v.name) };
+
+// Long replies are spoken a few sentences at a time: some browser voices (Chrome's Google ones) stop
+// part-way through a long utterance.
+function speechChunks(text) {
+    const parts = String(text).match(/[^.!?\n]+[.!?]*[\s]*|[\n]+/g) || [String(text)];
+    const out = [];
+    let cur = '';
+    for (const p of parts) {
+        if (cur && (cur + p).length > 220) { out.push(cur.trim()); cur = ''; }
+        cur += p;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out.length ? out : [String(text)];
 }
 let ws = null;
 let started = false;   // first click wakes Jarvis (and unlocks audio playback)
@@ -337,16 +364,26 @@ function playNext() {
         audio.onended = audio.onerror = () => { URL.revokeObjectURL(url); finish(); };
         audio.play().catch(finish);
     } else if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(msg.text);
-        utterance.lang = config.speechLang;
         const voice = pickVoice();
-        if (voice) {
-            utterance.voice = voice;
-        } else if (speechSynthesis.getVoices().length) {
-            statusEl.textContent = t('noVoice');
-        }
-        utterance.onend = utterance.onerror = finish;
-        speechSynthesis.speak(utterance);
+        const prefs = voicePrefs();
+        if (!voice && speechSynthesis.getVoices().length) statusEl.textContent = t('noVoice');
+        const chunks = speechChunks(msg.text);
+        let done = false;
+        const once = () => { if (!done) { done = true; finish(); } };
+        chunks.forEach((part, i) => {
+            const utterance = new SpeechSynthesisUtterance(part);
+            utterance.lang = config.speechLang;
+            if (voice) utterance.voice = voice;
+            utterance.rate = Number(prefs.rate) || 1;
+            utterance.pitch = Number(prefs.pitch) || 1;
+            if (i === chunks.length - 1) utterance.onend = once;
+            utterance.onerror = (e) => {
+                if (e.error === 'interrupted' || e.error === 'canceled') return;  // "stop" handles its own state
+                speechSynthesis.cancel();
+                once();
+            };
+            speechSynthesis.speak(utterance);
+        });
     } else {
         finish();
     }

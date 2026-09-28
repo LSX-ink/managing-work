@@ -82,6 +82,7 @@ import routines
 import routines_brief
 import routines_life
 import screen
+import voice
 import shopping
 import showme
 import timers
@@ -158,6 +159,7 @@ ABILITIES += [knowledge, knowledge_explore, knowledge_mindmap]  # knowledge
 ABILITIES += [trackers, trackers_views, trackers_life]  # trackers
 ABILITIES += [cooking, cooking_guide, cooking_leftovers]  # cooking
 ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # people
+ABILITIES += [voice]  # voice
 
 
 def defer(tool: dict) -> dict:
