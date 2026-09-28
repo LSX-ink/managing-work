@@ -52,6 +52,10 @@ import household_chores
 import household_family
 import household_meters
 import household_stuff
+import kids_day
+import kids_fun
+import kids_logs
+import kids_rewards
 import health
 import media_files
 import media_find
@@ -127,6 +131,7 @@ ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_remind
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
 ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
+ABILITIES += [kids_rewards, kids_logs, kids_day, kids_fun]  # kids
 
 
 def defer(tool: dict) -> dict:
