@@ -64,6 +64,10 @@ import media_find
 import media_pictures
 import media_show
 import memory
+import modes
+import modes_debate
+import modes_learning
+import modes_practice
 import money
 import music
 import notesearch
@@ -131,6 +135,7 @@ ABILITIES = [todo, habits, money, notesearch, screen]
 ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
 ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
+ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
