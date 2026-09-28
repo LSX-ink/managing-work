@@ -294,7 +294,14 @@ Clap twice and it starts the server if it isn't running, then opens Jarvis in yo
 Each page below lists what to say to Alfred:
 
 - [Everyday lists, habits and money](docs/everyday.md)
-<!-- ability docs -->
+- [Time and dates](docs/time-and-dates.md)
+- [Calculators](docs/calculators.md)
+- [Home and life](docs/home-and-life.md)
+- [Games and fun](docs/fun.md)
+- [Words](docs/words.md)
+- [Live info](docs/live-info.md)
+- [PC control](docs/pc-control.md)
+- [Learning and goals](docs/learning-and-goals.md)
 
 ## Things to try
 

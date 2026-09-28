@@ -85,3 +85,9 @@ def test_abilities_registered():
     names = {t["name"] for t in tools.client_tool_definitions(Settings())}
     for module in tools.ABILITIES:
         assert module.NAMES <= names
+
+
+def test_tool_list_is_cached():
+    from brain import request_options
+    opts = request_options(Settings())
+    assert sum("cache_control" in t for t in opts["tools"]) == 1

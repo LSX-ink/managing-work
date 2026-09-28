@@ -148,6 +148,8 @@ def request_options(settings: Settings) -> dict:
     model = settings.model
     new_web = model.startswith(_NEW_WEB_TOOLS)
     tool_list: list[dict] = list(tools.client_tool_definitions(settings))
+    # The tool list is long and the same every turn, so cache it: faster and cheaper replies.
+    tool_list[-1] = {**tool_list[-1], "cache_control": {"type": "ephemeral"}}
     if settings.enable_web:
         tool_list += [
             {"type": "web_search_20260209" if new_web else "web_search_20250305", "name": "web_search", "max_uses": 3},

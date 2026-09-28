@@ -8,6 +8,8 @@ psutil>=5.9
 icalendar>=6.0
 recurring-ical-events>=3.0
 pyautogui>=0.9.54
+# Time zones for the world clock on Windows
+tzdata; sys_platform == "win32"
 # Phone alerts (JARVIS_PHONE_ALERTS): read Phone Link's notifications on Windows
 winrt-runtime>=3.0; sys_platform == "win32"
 winrt-Windows.Foundation>=3.0; sys_platform == "win32"
