@@ -2,7 +2,7 @@
 // plus speed and pitch sliders. The choice is saved in this browser; main.js reads it when Alfred speaks.
 (() => {
     window.jarvisPopupKinds = window.jarvisPopupKinds || {};
-    const SAMPLE = 'Good evening. This is how I sound with this voice.';
+    const SAMPLE = 'Good evening, sir. Standing by for orders.';
     const load = () => (window.jarvisVoice ? window.jarvisVoice.prefs() : {});
     const save = (prefs) => { try { localStorage.setItem('alfred-voice', JSON.stringify(prefs)); } catch { /* private window */ } };
     const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
@@ -25,6 +25,7 @@
         if (action === 'deeper') prefs.pitch = clamp(+(pitch - 0.1).toFixed(2), 0.5, 1.5);
         if (action === 'higher') prefs.pitch = clamp(+(pitch + 0.1).toFixed(2), 0.5, 1.5);
         if (action === 'reset') { delete prefs.rate; delete prefs.pitch; }
+        if (action === 'soldier') { delete prefs.name; delete prefs.rate; delete prefs.pitch; }  // back to the deep British default
         save(prefs);
     }
 

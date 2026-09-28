@@ -138,8 +138,24 @@ def login_page(error: str = "", status: int = 200) -> HTMLResponse:
     return HTMLResponse(LOGIN_PAGE.replace("ERROR", error), status_code=status)
 
 
+PHONE_NEEDS_PASSWORD = """<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alfred</title></head>
+<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#000;color:#eee;font:18px system-ui,sans-serif;padding:24px;box-sizing:border-box">
+<p style="max-width:28em">Alfred stays locked on your phone until he has a password.<br><br>
+On your PC, open the <b>.env</b> file in the jarvis folder, add a line <b>JARVIS_PASSWORD=</b> followed by a password you choose, save it, and restart Alfred.</p>
+</body></html>"""
+
+
+def via_phone_link(request) -> bool:
+    """True when a visit came through the phone link (Tailscale adds these headers), not from the PC itself."""
+    return bool(request.headers.get("x-forwarded-for") or request.headers.get("tailscale-user-login"))
+
+
 @app.middleware("http")
 async def require_password(request: Request, call_next):
+    if via_phone_link(request) and not settings.password:
+        return HTMLResponse(PHONE_NEEDS_PASSWORD, status_code=403)
     if logged_in(request.cookies) or request.url.path == "/login":
         return await call_next(request)
     if request.url.path == "/":
@@ -325,7 +341,7 @@ def same_origin(ws: WebSocket) -> bool:
 
 @app.websocket("/ws")
 async def websocket(ws: WebSocket):
-    if not same_origin(ws) or not logged_in(ws.cookies):
+    if not same_origin(ws) or not logged_in(ws.cookies) or (via_phone_link(ws) and not settings.password):
         await ws.close(code=1008)
         return
     await ws.accept()

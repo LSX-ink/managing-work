@@ -16,7 +16,7 @@ def test_choose_pops_up_the_voice_picker():
     assert "Try" in str(out)
 
 
-@pytest.mark.parametrize("action", ["faster", "slower", "deeper", "higher", "reset"])
+@pytest.mark.parametrize("action", ["soldier", "faster", "slower", "deeper", "higher", "reset"])
 def test_adjustments_reach_the_page(action):
     out = voice.run_tool("change_voice", {"action": action}, replace(settings, elevenlabs_api_key=""))
     assert out.card["data"]["action"] == action
