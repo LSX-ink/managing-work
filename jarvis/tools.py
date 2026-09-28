@@ -13,6 +13,10 @@ import httpx
 import aboutyou
 import agenda
 import alerts
+import artstudio_colours
+import artstudio_create
+import artstudio_photos
+import artstudio_qr
 import arcade
 import arcade_board
 import arcade_cards
@@ -137,6 +141,7 @@ ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
 ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
+ABILITIES += [artstudio_colours, artstudio_photos, artstudio_create, artstudio_qr]  # art-studio
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
