@@ -13,15 +13,38 @@ import httpx
 import aboutyou
 import agenda
 import alerts
+import calcmaths
+import calcmoney
+import calcrandom
+import calcunits
+import dates
+import dates_saved
+import feeds
+import feeds_outdoors
 import filing
+import growth_goals
+import growth_media
+import growth_reflect
+import growth_study
+import fun
+import habits
+import homediary
+import homehouse
+import homekitchen
+import homewellbeing
 import health
 import memory
+import money
 import music
+import notesearch
 import pc
+import pctools
 import reminders
 import shopping
 import timers
+import todo
 import wishes
+import words
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -41,6 +64,16 @@ WEATHER_CODES = {
 # Longest edge of a screenshot sent to Claude; larger images are downscaled anyway.
 SCREEN_MAX_EDGE = 1568
 CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
+
+# Ability modules. Each has tool_definitions() -> list, NAMES (a set of tool names) and
+# run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
+ABILITIES = [todo, habits, money, notesearch]
+ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
+ABILITIES += [dates, dates_saved]  # time-and-dates
+ABILITIES += [feeds, feeds_outdoors]  # live-info
+ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
+ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
+ABILITIES += [fun, words]  # fun and words
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
@@ -106,6 +139,8 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
     tools += agenda.tool_definitions()
     tools += health.tool_definitions()
     tools += shopping.tool_definitions()
+    for module in ABILITIES:
+        tools += module.tool_definitions()
     if settings.email_enabled:
         tools.append({
             "name": "check_inbox",
@@ -131,6 +166,7 @@ def client_tool_definitions(settings: Settings) -> list[dict]:
         tools += filing.tool_definitions()
     if settings.enable_pc:
         tools += pc.tool_definitions()
+        tools += pctools.tool_definitions()  # pc-control
         tools.append(music.tool_definition())
     if settings.enable_screen and not settings.enable_computer:  # the computer toolset has its own screenshot
         tools.append({
@@ -212,12 +248,7 @@ def read_open_tasks(tasks_file: str) -> list[str]:
 
 
 def get_tasks(settings: Settings) -> str:
-    if not settings.tasks_file:
-        return "No task list configured (set JARVIS_TASKS_FILE)."
-    tasks = read_open_tasks(settings.tasks_file)
-    if not tasks:
-        return "No open tasks."
-    return f"{len(tasks)} open tasks:\n" + "\n".join(f"- {t}" for t in tasks)
+    return todo.text(settings)
 
 
 def is_safe_url(url: str) -> bool:
@@ -274,6 +305,11 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
     if name in agenda.NAMES:
         days = min(max(int(args.get("days") or 1), 1), 31)
         return await agenda.upcoming(http, settings, days)
+    for module in ABILITIES:
+        if name in module.NAMES:
+            if asyncio.iscoroutinefunction(module.run_tool):
+                return await module.run_tool(name, args, settings, http)
+            return await asyncio.to_thread(module.run_tool, name, args, settings, http)
     if name in shopping.NAMES:
         return await asyncio.to_thread(shopping.run_tool, args, settings)
     if name in reminders.NAMES:
@@ -324,6 +360,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http: httpx.AsyncC
         return await look_at_screen()
     if name == "apple_music" and settings.enable_pc:
         return await music.apple_music(http, settings, args["query"], args.get("kind") or "song")
+    if name in pctools.NAMES and settings.enable_pc:
+        return await asyncio.to_thread(pctools.run_tool, name, args, settings)
     if name in pc.NAMES and settings.enable_pc:
         return await asyncio.to_thread(pc.run, name, args)
     raise ValueError(f"Unknown tool: {name}")

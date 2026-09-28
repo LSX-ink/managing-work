@@ -35,6 +35,7 @@ class Settings:
     user_address: str = os.getenv("JARVIS_USER_ADDRESS", "sir")
     city: str = os.getenv("JARVIS_CITY", "")
     tasks_file: str = os.getenv("JARVIS_TASKS_FILE", "")
+    currency: str = os.getenv("JARVIS_CURRENCY", "GBP").strip().upper() or "GBP"
     speech_lang: str = os.getenv("JARVIS_SPEECH_LANG", "en-GB")
     language: str = os.getenv("JARVIS_LANGUAGE", "English")
     persona: str = os.getenv("JARVIS_PERSONA", "jarvis").strip().lower()
