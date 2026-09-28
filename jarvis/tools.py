@@ -74,6 +74,9 @@ import screen
 import shopping
 import showme
 import timers
+import trackers
+import trackers_life
+import trackers_views
 import widgets
 import todo
 import webview_food
@@ -136,6 +139,7 @@ ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
 ABILITIES += [arcade, arcade_board, arcade_words, arcade_cards]  # screen-games
 ABILITIES += [knowledge, knowledge_explore, knowledge_mindmap]  # knowledge
+ABILITIES += [trackers, trackers_views, trackers_life]  # trackers
 
 
 def defer(tool: dict) -> dict:
