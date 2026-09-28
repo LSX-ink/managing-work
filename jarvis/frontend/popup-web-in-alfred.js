@@ -31,7 +31,7 @@
     };
 
     // Tiles with pictures (books, meals, drinks, podcasts); tapping one sends its line to Alfred.
-    kinds.gallery = (card, body, { el, ask }) => {
+    kinds.webgallery = (card, body, { el, ask }) => {
         const grid = el('div', 'wa-gallery');
         for (const t of (card.data || {}).tiles || []) {
             const tile = el(t.say ? 'button' : 'div', 'wa-tile');

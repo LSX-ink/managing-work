@@ -15,7 +15,7 @@ import screen
 import webview_common as web
 from config import Settings
 
-screen.EXTRA_KINDS.update({"webcard", "gallery"})
+screen.EXTRA_KINDS.update({"webcard", "webgallery"})
 
 OPEN_LIBRARY = "https://openlibrary.org/search.json"
 COVERS = "https://covers.openlibrary.org/b/id/{}-M.jpg"
@@ -76,7 +76,7 @@ async def books(http: httpx.AsyncClient, query: str) -> screen.Shown:
                       "say": f"Add the book {title}" + (f" by {author}" if author else "") + " to my reading list."})
     if not tiles:
         raise ValueError(f"Open Library found no books for {query}.")
-    card = screen.card("gallery", f"Books: {query}", "webview-books", data={"tiles": tiles},
+    card = screen.card("webgallery", f"Books: {query}", "webview-books", data={"tiles": tiles},
                        text="Tap a book to add it to your reading list.")
     top = tiles[0]
     return screen.Shown(f"I found {len(tiles)} books on the screen; the top one is {top['title']}"

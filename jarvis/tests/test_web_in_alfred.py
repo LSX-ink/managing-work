@@ -134,7 +134,7 @@ def test_registered_with_few_tools():
         assert module in tools.ABILITIES and module not in tools.ALWAYS_LOADED
         for t in module.tool_definitions():
             assert t["input_schema"]["additionalProperties"] is False
-    assert {"webcard", "gallery", "map", "radio", "recipe"} <= screen.EXTRA_KINDS
+    assert {"webcard", "webgallery", "map", "radio", "recipe"} <= screen.EXTRA_KINDS
 
 
 def test_news_list_reads_pages_on_screen():
@@ -161,7 +161,7 @@ def test_wikipedia_article_with_button():
 def test_books_gallery_adds_to_reading_list():
     out = call("web_on_screen", {"action": "books", "query": "dune"})
     tiles = out.card["data"]["tiles"]
-    assert out.card["kind"] == "gallery"
+    assert out.card["kind"] == "webgallery"
     assert tiles[0] == {"title": "Dune", "subtitle": "Frank Herbert · 1965",
                         "image": "https://covers.openlibrary.org/b/id/123-M.jpg",
                         "say": "Add the book Dune by Frank Herbert to my reading list."}
@@ -250,7 +250,7 @@ def test_radio_search_and_play_only_https():
 
 def test_podcast_search_and_episodes():
     found = call("radio_and_podcasts", {"action": "podcast_search", "query": "test"})
-    assert found.card["kind"] == "gallery" and len(found.card["data"]["tiles"]) == 1
+    assert found.card["kind"] == "webgallery" and len(found.card["data"]["tiles"]) == 1
     assert found.card["data"]["tiles"][0]["say"] == "Show the latest episodes of the podcast feed https://feeds.test/cast.xml"
     for args in ({"feed_url": "https://feeds.test/cast.xml"}, {"query": "test"}):
         eps = call("radio_and_podcasts", {"action": "podcast_episodes", **args})
@@ -261,7 +261,7 @@ def test_podcast_search_and_episodes():
 
 def test_meal_search_and_full_recipe():
     found = call("recipes_and_cocktails", {"action": "meal_search", "query": "teriyaki"})
-    assert found.card["kind"] == "gallery"
+    assert found.card["kind"] == "webgallery"
     assert found.card["data"]["tiles"][0]["say"] == "Show me the recipe mealdb:52772 on screen."
     with pytest.raises(ValueError):
         call("recipes_and_cocktails", {"action": "meal_search", "query": "nothing"})

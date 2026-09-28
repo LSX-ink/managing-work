@@ -10,7 +10,7 @@ import screen
 import webview_common as web
 from config import Settings
 
-screen.EXTRA_KINDS.update({"radio", "gallery"})
+screen.EXTRA_KINDS.update({"radio", "webgallery"})
 
 RADIO = "https://de1.api.radio-browser.info/json/stations/search"
 MAX_EPISODES = 15
@@ -60,7 +60,7 @@ async def podcast_search(http: httpx.AsyncClient, query: str) -> screen.Shown:
     tiles = [{"title": web.clean(s.get("collectionName"), 120), "subtitle": web.clean(s.get("artistName"), 80),
               "image": web.https(s.get("artworkUrl600") or s.get("artworkUrl100")),
               "say": f"Show the latest episodes of the podcast feed {s['feedUrl']}"} for s in shows]
-    card = screen.card("gallery", f"Podcasts: {web.clean(query, 40)}", "webview-podcasts", data={"tiles": tiles},
+    card = screen.card("webgallery", f"Podcasts: {web.clean(query, 40)}", "webview-podcasts", data={"tiles": tiles},
                        text="Tap a podcast to see its latest episodes.")
     return screen.Shown(f"I found {len(tiles)} podcasts; the top one is {tiles[0]['title']}. They're on the screen.", card)
 

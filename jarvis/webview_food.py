@@ -16,7 +16,7 @@ import shopping
 import webview_common as web
 from config import Settings
 
-screen.EXTRA_KINDS.update({"recipe", "gallery"})
+screen.EXTRA_KINDS.update({"recipe", "webgallery"})
 
 MEALDB = "https://www.themealdb.com/api/json/v1/1"
 COCKTAILDB = "https://www.thecocktaildb.com/api/json/v1/1"
@@ -66,7 +66,7 @@ async def search(http: httpx.AsyncClient, db: str, query: str, alcohol_free: boo
               "image": web.https(r.get(f"str{key}Thumb")),
               "say": f"Show me the recipe {db}:{r.get(f'id{key}')} on screen."} for r in rows]
     title = f"{what.title()}: {query}" if query else what.title()
-    card = screen.card("gallery", title, f"webview-{db}", data={"tiles": tiles}, text="Tap one for the full recipe.")
+    card = screen.card("webgallery", title, f"webview-{db}", data={"tiles": tiles}, text="Tap one for the full recipe.")
     return screen.Shown(f"I found {len(tiles)} {what}, with pictures on the screen; the first is {tiles[0]['title']}.", card)
 
 
