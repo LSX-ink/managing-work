@@ -83,6 +83,10 @@ import wellness_records
 import wellness_reminders
 import wishes
 import words
+import writing_bible
+import writing_goals
+import writing_helpers
+import writing_projects
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -109,6 +113,7 @@ ABILITIES = [todo, habits, money, notesearch, screen]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
 ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
+ABILITIES += [writing_projects, writing_goals, writing_bible, writing_helpers]  # writing
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
