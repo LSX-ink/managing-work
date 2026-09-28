@@ -1,0 +1,23 @@
+/* "Show me" windows (popup-showme.js). Colours follow popup.css and the theme's HUD variables. */
+.popup[data-kind="showme"] { height: min(540px, calc(100vh - 110px)); }
+.sm-section + .sm-section { margin-top: 14px; }
+.sm-heading {
+    margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--hud-mid, #9fb3c8);
+}
+.sm-list li { justify-content: space-between; }
+.sm-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.sm-note { font-size: 12px; opacity: 0.65; }
+.pop-action.sm-small { padding: 3px 9px; font-size: 12px; flex: none; }
+.pop-action.sm-small:disabled { opacity: 0.4; cursor: default; }
+.sm-bars { display: grid; gap: 10px; }
+.sm-bar-label { font-size: 13px; }
+.sm-track { height: 8px; margin: 4px 0 2px; border-radius: 4px; background: var(--hud-faint, #1f2b3d); overflow: hidden; }
+.sm-fill { height: 100%; border-radius: 4px; background: var(--hud, #3fa9ff); }
+.sm-timer-row { display: flex; align-items: center; gap: 10px; }
+.sm-timer-row .sm-bar-label { flex: 1; text-transform: capitalize; }
+.pop-timer.sm-timer { font-size: 26px; padding: 4px 0; }
+.sm-flash { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 10px 0; }
+.sm-front { font-size: 22px; font-weight: 600; color: var(--hud-bright, #9fd8ff); }
+.sm-back { font-size: 18px; padding-top: 10px; border-top: 1px solid var(--hud-dim, #2a3547); width: 100%; }
+.sm-back[hidden] { display: none; }
