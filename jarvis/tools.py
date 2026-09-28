@@ -40,6 +40,9 @@ import notesearch
 import pc
 import pctools
 import reminders
+import routines
+import routines_brief
+import routines_life
 import screen
 import shopping
 import timers
@@ -78,6 +81,7 @@ ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+ABILITIES += [routines, routines_brief, routines_life]  # routines
 
 
 def defer(tool: dict) -> dict:
