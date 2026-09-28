@@ -19,6 +19,10 @@ import feeds
 import feeds_outdoors
 import filing
 import habits
+import homediary
+import homehouse
+import homekitchen
+import homewellbeing
 import health
 import memory
 import money
@@ -56,6 +60,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 ABILITIES = [todo, habits, money, notesearch]
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
+ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
