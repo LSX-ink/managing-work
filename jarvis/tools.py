@@ -22,6 +22,10 @@ import dates_saved
 import docs_tools
 import docs_tools_forms
 import docs_tools_sheets
+import discover_codes
+import discover_games
+import discover_science
+import discover_study
 import feeds
 import feeds_outdoors
 import filing
@@ -117,6 +121,7 @@ ABILITIES += [household_chores, household_stuff, household_meters, household_fam
 ABILITIES += [widgets]  # widgets
 ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_reminders]  # health-plus
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
+ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
 
 
 def defer(tool: dict) -> dict:
