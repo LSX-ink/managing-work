@@ -258,4 +258,6 @@
     }
 
     document.addEventListener('jarvis:config', (e) => start(e.detail));
+    // hudplus.js switches the colour theme live: pick up the new colours.
+    document.addEventListener('jarvis:theme', () => { loadColors(); if (window.HudWolf) window.HudWolf.resetColors(); });
 })();

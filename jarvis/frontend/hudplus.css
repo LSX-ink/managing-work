@@ -1,0 +1,126 @@
+/* HUD secrets (hudplus.js): palette, shortcuts, sticky notes, pins, focus, screensaver and friends. */
+
+.hudplus-toast {
+    position: fixed; left: 50%; bottom: 28px; z-index: 70; transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+    padding: 6px 14px; border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-panel, rgba(6, 18, 40, 0.92));
+    color: var(--hud-bright, #e8eef7); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    transition: opacity 0.2s, transform 0.2s;
+}
+.hudplus-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---- overlays ------------------------------------------------------------------------------ */
+.hudplus-overlay {
+    position: fixed; inset: 0; z-index: 60; display: grid; place-items: start center; padding: 12vh 16px 16px;
+    background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(3px);
+}
+.hudplus-box {
+    width: min(560px, 100%); max-height: 72vh; display: flex; flex-direction: column; gap: 10px; padding: 16px;
+    background: var(--hud-bg, #070b12); color: var(--text, #e8eef7); border: 1px solid var(--hud, #3fa9ff);
+    box-shadow: 0 0 40px var(--hud-glow, rgba(20, 70, 160, 0.35));
+}
+.hudplus-title { margin: 0; font-size: 12px; font-weight: normal; letter-spacing: 0.25em; text-transform: uppercase; color: var(--hud, #3fa9ff); }
+.hudplus-input {
+    font: inherit; font-size: 16px; padding: 10px 12px; color: var(--hud-bright, #fff);
+    background: var(--hud-panel, #0c121c); border: 1px solid var(--hud-dim, #2a3547); outline: none;
+}
+.hudplus-input:focus { border-color: var(--hud, #3fa9ff); }
+.hudplus-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; scrollbar-width: thin; }
+.hudplus-group { margin: 10px 0 4px; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.hudplus-group:first-child { margin-top: 0; }
+.hudplus-item {
+    all: unset; box-sizing: border-box; display: block; width: 100%; padding: 5px 10px; cursor: pointer;
+    color: var(--hud-bright, #e8eef7); border-left: 2px solid transparent;
+}
+.hudplus-item:hover, .hudplus-item.picked { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); border-left-color: var(--hud, #3fa9ff); }
+.hudplus-empty, .hudplus-hint { color: var(--hud-mid, #9fb3c8); font-size: 12px; margin: 0; }
+.hudplus-keys { border-collapse: collapse; font-size: 14px; }
+.hudplus-keys th, .hudplus-keys td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--hud-dim, #2a3547); }
+.hudplus-keys th { color: var(--hud, #3fa9ff); font-weight: normal; white-space: nowrap; }
+.hudplus-folders { display: flex; flex-wrap: wrap; gap: 8px; }
+.hudplus-folder {
+    font: inherit; font-size: 13px; letter-spacing: 0.12em; padding: 8px 14px; cursor: pointer; text-transform: uppercase;
+    background: none; color: var(--hud-bright, #fff); border: 1px solid var(--hud-dim, #2a3547);
+}
+.hudplus-folder:hover, .hudplus-folder:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.hudplus-folder:disabled { opacity: 0.5; cursor: wait; }
+
+/* ---- dropping files ------------------------------------------------------------------------ */
+.hudplus-drop {
+    position: fixed; inset: 12px; z-index: 55; display: grid; place-items: center; pointer-events: none;
+    border: 2px dashed var(--hud, #3fa9ff); background: rgba(0, 0, 0, 0.5); color: var(--hud-bright, #fff);
+    font-size: 18px; letter-spacing: 0.25em; text-align: center;
+}
+
+/* ---- sticky notes -------------------------------------------------------------------------- */
+#hudplus-notes { position: fixed; inset: 0; z-index: 25; pointer-events: none; }
+.hudplus-note {
+    position: absolute; pointer-events: auto; width: 190px; display: flex; flex-direction: column;
+    background: #fff3a8; color: #1a1a1a; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); transform: rotate(-0.6deg);
+}
+.hudplus-note.pink { background: #ffc9de; }
+.hudplus-note.blue { background: #bfe3ff; }
+.hudplus-note.green { background: #c9f5c9; }
+.hudplus-note.white { background: #f4f5f7; }
+.hudplus-note-bar { display: flex; justify-content: flex-end; gap: 2px; padding: 2px 4px; cursor: move; background: rgba(0, 0, 0, 0.08); user-select: none; }
+.hudplus-note-btn { border: 0; background: none; color: rgba(0, 0, 0, 0.55); font-size: 14px; line-height: 1; padding: 2px 5px; cursor: pointer; }
+.hudplus-note-btn:hover, .hudplus-note-btn:focus-visible { color: #000; outline: none; }
+.hudplus-note-text {
+    border: 0; background: none; color: inherit; font: 15px/1.35 'Segoe Print', 'Comic Sans MS', system-ui, sans-serif;
+    min-height: 110px; padding: 6px 10px 10px; resize: vertical; outline: none; letter-spacing: 0;
+}
+
+/* ---- pop-up windows: pins, maximise, flash -------------------------------------------------- */
+.popup.pinned { z-index: 9000 !important; border-color: var(--hud, #3fa9ff); }
+.hudplus-pin[aria-pressed="true"] { color: var(--hud-bright, #fff); }
+.popup.hudplus-max { resize: none; }
+.popup.hudplus-flash { animation: hudplus-flash 0.6s ease-out; }
+@keyframes hudplus-flash { 30% { box-shadow: 0 0 0 2px var(--hud, #3fa9ff), 0 0 30px var(--hud, #3fa9ff); } }
+
+/* ---- focus mode, clean screen, zoom ---------------------------------------------------------- */
+:is(.hud-bar, .hud-left, .hud-right, .hud-bottom, #orb-wrap, #status, #alerts, #folder-stars, #hudplus-notes) {
+    transition: opacity 0.35s ease, visibility 0.35s;
+}
+body.hudplus-focus :is(.hud-bar, .hud-left, .hud-right, .hud-bottom, #orb-wrap, #status, #alerts, #folder-stars, #hudplus-notes) { opacity: 0.1; }
+body.hud.hudplus-focus::before, body.hud.hudplus-focus::after { animation: none; opacity: 0.12; }
+body.hudplus-clean :is(.hud-left, .hud-right, .hud-bottom, #folder-stars) { opacity: 0; visibility: hidden; pointer-events: none; }
+:is(.hud-bar, .hud-left, .hud-right, .hud-bottom, #chat, #status, #alerts) { zoom: var(--hudplus-zoom, 1); }
+
+/* ---- screensaver ------------------------------------------------------------------------------ */
+.hudplus-saver { position: fixed; inset: 0; z-index: 100; background: var(--hud-bg, #000); cursor: none; }
+.hudplus-saver canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hudplus-saver-clock, .hudplus-saver-date { position: absolute; left: 0; right: 0; text-align: center; color: var(--hud-bright, #fff); }
+.hudplus-saver-clock { bottom: 16vh; font-size: clamp(64px, 14vw, 180px); letter-spacing: 0.08em; text-shadow: 0 0 30px var(--hud-glow, rgba(200, 210, 230, 0.3)); font-variant-numeric: tabular-nums; }
+.hudplus-saver-date { bottom: 11vh; font-size: 18px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+
+/* ---- space facts, spotlight, howl ----------------------------------------------------------- */
+.hudplus-fact {
+    position: fixed; z-index: 40; max-width: 280px; padding: 8px 12px; font-size: 13px; line-height: 1.45;
+    color: var(--hud-bright, #fff); background: var(--hud-panel, rgba(0, 0, 0, 0.8)); border: 1px solid var(--hud-dim, #555);
+    animation: hudplus-fade 0.3s ease-out;
+}
+.hudplus-ring, .hudplus-spot {
+    position: fixed; z-index: 41; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%);
+    border: 2px solid var(--hud-bright, #fff);
+}
+.hudplus-ring { width: 10px; height: 10px; animation: hudplus-ring 1.1s ease-out forwards; }
+.hudplus-spot { width: 60px; height: 60px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35); animation: hudplus-spot 1.2s ease-out forwards; }
+@keyframes hudplus-fade { from { opacity: 0; } }
+@keyframes hudplus-ring { to { width: 60px; height: 60px; opacity: 0; } }
+@keyframes hudplus-spot { from { width: 260px; height: 260px; } 70% { opacity: 1; } to { width: 50px; height: 50px; opacity: 0; } }
+body.hudplus-howl #orb-wrap { animation: hudplus-howl 0.5s ease-in-out 6 alternate; }
+@keyframes hudplus-howl { to { transform: translateY(-10px) scale(1.04); filter: drop-shadow(0 0 24px var(--hud-bright, #fff)); } }
+.hudplus-awoo {
+    position: fixed; left: 50%; top: 18vh; z-index: 45; transform: translateX(-50%); pointer-events: none;
+    font-size: clamp(28px, 6vw, 72px); letter-spacing: 0.3em; color: var(--hud-bright, #fff); text-shadow: 0 0 20px var(--hud, #fff);
+    animation: hudplus-awoo 3.2s ease-out forwards;
+}
+@keyframes hudplus-awoo { from { opacity: 0; letter-spacing: 0.05em; } 20% { opacity: 1; } to { opacity: 0; letter-spacing: 0.5em; } }
+.hudplus-cliprow { display: flex; gap: 6px; margin-bottom: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .hudplus-toast, :is(.hud-bar, .hud-left, .hud-right, .hud-bottom, #orb-wrap, #status, #alerts, #folder-stars, #hudplus-notes) { transition: none; }
+    .hudplus-fact, .popup.hudplus-flash, body.hudplus-howl #orb-wrap { animation: none; }
+    .hudplus-ring { animation: none; width: 40px; height: 40px; }
+    .hudplus-spot { animation: hudplus-fade 0.2s reverse forwards 1s; }
+    .hudplus-awoo { animation: hudplus-fade 0.4s reverse forwards 2.8s; letter-spacing: 0.3em; }
+}
