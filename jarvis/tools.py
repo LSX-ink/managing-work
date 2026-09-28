@@ -56,6 +56,7 @@ import screen
 import shopping
 import showme
 import timers
+import widgets
 import todo
 import webview_food
 import webview_listen
@@ -101,6 +102,7 @@ ABILITIES += [showme]  # show-me
 ABILITIES += [routines, routines_brief, routines_life]  # routines
 ABILITIES += [hudplus]  # hud-secrets
 ABILITIES += [household_chores, household_stuff, household_meters, household_family]  # household-plus
+ABILITIES += [widgets]  # widgets
 
 
 def defer(tool: dict) -> dict:
