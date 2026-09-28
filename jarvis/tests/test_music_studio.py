@@ -211,7 +211,7 @@ def test_drum_patterns_save_list_delete(s):
     line = ('Save my drum pattern "Rock two" at 100 BPM: kick x.......x.x..... snare ....x.......x... '
             'hat x.x.x.x.x.x.x.x. clap ................')
     assert practice(s, action="pattern_save", name="Rock two", bpm=100, pattern=line) == \
-        "Saved drum pattern Rock two at 100 BPM, 15 hits."
+        "Saved drum pattern Rock two at 100 BPM, 13 hits."
     saved = log.patterns(s)["Rock two"]
     assert saved["snare"] == "....x.......x..." and saved["clap"] == "." * 16
     with pytest.raises(ValueError):
