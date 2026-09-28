@@ -22,6 +22,10 @@ import dates_saved
 import feeds
 import feeds_outdoors
 import filing
+import finance_budget
+import finance_friends
+import finance_plan
+import finance_pots
 import growth_goals
 import growth_media
 import growth_reflect
@@ -96,6 +100,7 @@ ABILITIES = [todo, habits, money, notesearch, screen]
 ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
+ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
 ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
