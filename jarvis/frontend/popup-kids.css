@@ -1,0 +1,116 @@
+/* Kids pop-ups (popup-kids.js): sticker chart & rewards, pocket money jars, reading certificate, a big visual
+   timer and a drawing pad. Colours follow the theme's HUD variables, like popup.css. */
+
+.popup[data-kind="kids-draw"] {
+    width: min(920px, calc(100vw - 24px)); height: min(760px, calc(100vh - 60px));
+    max-height: min(760px, calc(100vh - 60px));
+}
+.popup[data-kind="kids-timer"] { width: min(360px, calc(100vw - 24px)); }
+.popup[data-kind="kids-jars"] { width: min(520px, calc(100vw - 24px)); }
+
+.kd-head { text-align: center; margin-bottom: 10px; }
+.kd-big { font-size: 30px; font-weight: 700; color: var(--hud-bright, #9fd8ff); line-height: 1.15; }
+.kd-sub { font-size: 13px; color: var(--hud-mid, #9fb3c8); }
+.kd-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); text-align: center; }
+.kd-h { margin: 14px 0 6px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.kd-none { text-align: center; padding: 10px 0; }
+
+.kd-btn {
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547); background: transparent;
+    color: var(--hud-bright, #9fd8ff); font: inherit; font-size: 13px; cursor: pointer;
+}
+.kd-btn:hover, .kd-btn:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.kd-btn.kd-go { background: var(--hud, #3fa9ff); border-color: var(--hud, #3fa9ff); color: var(--hud-panel, #061228); font-weight: 600; }
+.kd-btn.kd-go:hover, .kd-btn.kd-go:focus-visible { filter: brightness(1.1); }
+.kd-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+
+/* ---- sticker chart and rewards --------------------------------------------------------------- */
+.kd-grid { display: grid; gap: 4px; align-items: center; }
+.kd-corner { }
+.kd-day { text-align: center; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); padding: 2px 0; }
+.kd-day.today { color: var(--hud-bright, #9fd8ff); font-weight: 700; }
+.kd-goal { font-size: 13px; padding: 6px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.kd-cell {
+    all: unset; box-sizing: border-box; display: grid; place-items: center; min-height: 34px; cursor: pointer;
+    border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-faint, rgba(63, 169, 255, 0.08));
+    color: #ffd54f; font-size: 13px; letter-spacing: -0.05em;
+}
+button.kd-cell:hover, button.kd-cell:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+button.kd-cell.today { border-color: var(--hud-bright, #9fd8ff); }
+button.kd-cell.on { background: rgba(255, 213, 79, 0.16); }
+
+.kd-rewards { display: grid; gap: 10px; margin-top: 4px; }
+.kd-reward { }
+.kd-reward-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.kd-reward-name { font-weight: 600; }
+.kd-reward-count { font-size: 12px; color: #ffd54f; font-variant-numeric: tabular-nums; }
+.kd-bar { height: 10px; border-radius: 5px; background: var(--hud-faint, #1f2b3d); overflow: hidden; margin-bottom: 6px; }
+.kd-bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--hud, #3fa9ff), #ffd54f); }
+
+/* ---- pocket money jars ------------------------------------------------------------------------ */
+.kd-kid + .kd-kid { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--hud-faint, #1f2b3d); }
+.kd-jars { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 6px 0; }
+.kd-jar { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 84px; }
+.kd-jar-amount { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--hud-bright, #9fd8ff); }
+.kd-jar-name { font-size: 11px; text-transform: capitalize; color: var(--hud-mid, #9fb3c8); }
+.kd-glass {
+    position: relative; width: 56px; height: 78px; border: 2px solid var(--hud-dim, #2a3547);
+    border-top-color: transparent; border-radius: 0 0 12px 12px; background: rgba(255, 255, 255, 0.03); overflow: hidden;
+}
+.kd-glass::before {
+    content: ""; position: absolute; inset: -2px -2px auto -2px; height: 6px; border: 2px solid var(--hud-dim, #2a3547);
+    border-bottom: none; border-radius: 6px 6px 0 0;
+}
+.kd-fill { position: absolute; left: 0; right: 0; bottom: 0; background: var(--hud, #3fa9ff); transition: height 0.3s ease; }
+.kd-jar.kd-spend .kd-fill { background: #ff8a5c; }
+.kd-jar.kd-save .kd-fill { background: #3dff8a; }
+.kd-jar.kd-give .kd-fill { background: #c77dff; }
+.kd-recent { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: var(--hud-mid, #9fb3c8); max-height: 100px; overflow: auto; }
+
+/* ---- reading certificate ----------------------------------------------------------------------- */
+.kd-cert {
+    text-align: center; padding: 22px 18px; border: 2px solid #ffd54f; border-radius: 10px;
+    background: radial-gradient(circle at 50% 0%, rgba(255, 213, 79, 0.12), transparent 70%);
+}
+.kd-cert-stars { color: #ffd54f; font-size: 20px; letter-spacing: 6px; margin-bottom: 6px; }
+.kd-cert-kicker { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.kd-cert-award { font-size: 26px; font-weight: 700; color: var(--hud-bright, #9fd8ff); margin: 6px 0; }
+.kd-cert-small { font-size: 13px; color: var(--hud-mid, #9fb3c8); }
+.kd-cert-name { font-size: 28px; font-weight: 700; margin: 4px 0; font-family: Georgia, "Times New Roman", serif; }
+.kd-cert-titles { font-size: 12px; color: var(--hud-mid, #9fb3c8); margin-top: 12px; font-style: italic; }
+.kd-cert-date { margin-top: 14px; font-size: 12px; letter-spacing: 0.06em; color: var(--hud-mid, #9fb3c8); }
+
+/* ---- visual timer -------------------------------------------------------------------------------- */
+.kd-turn { text-align: center; font-size: 15px; font-weight: 600; color: var(--hud-bright, #9fd8ff); min-height: 1.4em; }
+.kd-clock { display: block; width: min(220px, 60vw); margin: 6px auto 2px; }
+.kd-clock-back { fill: var(--hud-faint, rgba(63, 169, 255, 0.08)); stroke: var(--hud-dim, #2a3547); stroke-width: 2; }
+.kd-digits {
+    text-align: center; font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums;
+    color: var(--hud-bright, #9fd8ff);
+}
+
+/* ---- drawing pad ----------------------------------------------------------------------------------- */
+.kd-canvas {
+    display: block; width: 100%; max-width: 860px; aspect-ratio: 860 / 560; margin: 0 auto; cursor: crosshair;
+    touch-action: none; border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px; background: #fff;
+}
+.kd-paints { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px; }
+.kd-paint {
+    all: unset; width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+    box-shadow: 0 0 0 1px var(--hud-dim, #2a3547) inset;
+}
+.kd-paint[aria-pressed="true"] { border-color: var(--hud-bright, #fff); box-shadow: 0 0 0 2px var(--hud-bright, #fff); }
+.kd-tools, .kd-sizes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+.kd-tool {
+    all: unset; box-sizing: border-box; width: 36px; height: 36px; display: grid; place-items: center; font-size: 17px;
+    border-radius: 8px; border: 1px solid var(--hud-dim, #2a3547); background: transparent; color: var(--hud-bright, #9fd8ff);
+    cursor: pointer;
+}
+.kd-tool:hover, .kd-tool:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.kd-tool[aria-pressed="true"] { background: var(--hud-faint, rgba(63, 169, 255, 0.12)); border-color: var(--hud, #3fa9ff); }
+.kd-size {
+    padding: 6px 12px; border-radius: 8px; border: 1px solid var(--hud-dim, #2a3547); background: transparent;
+    color: var(--hud-bright, #9fd8ff); font: inherit; font-size: 12px; cursor: pointer;
+}
+.kd-size:hover, .kd-size:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.kd-size[aria-pressed="true"] { background: var(--hud-faint, rgba(63, 169, 255, 0.12)); border-color: var(--hud, #3fa9ff); }
