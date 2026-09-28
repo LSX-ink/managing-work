@@ -13,6 +13,8 @@ import httpx
 import aboutyou
 import agenda
 import alerts
+import feeds
+import feeds_outdoors
 import filing
 import habits
 import health
@@ -49,6 +51,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 # Ability modules. Each has tool_definitions() -> list, NAMES (a set of tool names) and
 # run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
 ABILITIES = [todo, habits, money, notesearch]
+ABILITIES += [feeds, feeds_outdoors]  # live-info
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
