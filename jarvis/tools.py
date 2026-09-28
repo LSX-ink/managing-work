@@ -22,6 +22,7 @@ import growth_goals
 import growth_media
 import growth_reflect
 import growth_study
+import fun
 import habits
 import homediary
 import homehouse
@@ -39,6 +40,7 @@ import shopping
 import timers
 import todo
 import wishes
+import words
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -66,6 +68,7 @@ ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
+ABILITIES += [fun, words]  # fun and words
 
 
 def client_tool_definitions(settings: Settings) -> list[dict]:
