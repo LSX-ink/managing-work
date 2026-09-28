@@ -19,6 +19,10 @@ import calcrandom
 import calcunits
 import dates
 import dates_saved
+import discover_codes
+import discover_games
+import discover_science
+import discover_study
 import feeds
 import feeds_outdoors
 import filing
@@ -78,6 +82,7 @@ ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
 
 
 def defer(tool: dict) -> dict:
