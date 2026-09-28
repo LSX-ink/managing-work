@@ -43,6 +43,7 @@ import reminders
 import screen
 import shopping
 import timers
+import widgets
 import todo
 import wishes
 import words
@@ -78,6 +79,7 @@ ABILITIES += [feeds, feeds_outdoors]  # live-info
 ABILITIES += [homekitchen, homehouse, homewellbeing, homediary]  # home-and-life
 ABILITIES += [growth_study, growth_goals, growth_media, growth_reflect]  # learning-and-goals
 ABILITIES += [fun, words]  # fun and words
+ABILITIES += [widgets]  # widgets
 
 
 def defer(tool: dict) -> dict:
