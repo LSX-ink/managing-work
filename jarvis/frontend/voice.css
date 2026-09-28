@@ -1,0 +1,18 @@
+/* Alfred's voice picker (voice.js). Colours follow popup.css. */
+.vp { display: grid; gap: 10px; }
+.vp-note { margin: 0; opacity: .75; font-size: 12px; }
+.vp-sliders { display: grid; gap: 6px; }
+.vp-slider { display: grid; grid-template-columns: 52px 1fr 40px; align-items: center; gap: 8px; font-size: 12px; }
+.vp-slider input { width: 100%; accent-color: currentColor; }
+.vp-val { font-variant-numeric: tabular-nums; text-align: right; }
+.vp-all { font-size: 12px; }
+.vp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 320px; overflow-y: auto; }
+.vp-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 6px 8px;
+          border: 1px solid rgba(255, 255, 255, .12); border-radius: 6px; }
+.vp-current { border-color: currentColor; }
+.vp-text { display: grid; min-width: 0; }
+.vp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vp-meta { font-size: 11px; opacity: .65; letter-spacing: .04em; }
+.vp-btn { font: inherit; font-size: 12px; padding: 3px 10px; background: transparent; color: inherit;
+          border: 1px solid rgba(255, 255, 255, .3); border-radius: 4px; cursor: pointer; }
+.vp-btn:hover, .vp-btn:focus-visible { border-color: currentColor; }
