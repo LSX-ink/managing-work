@@ -112,6 +112,10 @@ import worktools_board
 import worktools_meetings
 import worktools_projects
 import worktools_time
+import writing_bible
+import writing_goals
+import writing_helpers
+import writing_projects
 from config import Settings
 
 # Open-Meteo WMO weather codes -> words (https://open-meteo.com/en/docs)
@@ -142,6 +146,7 @@ ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_mee
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
 ABILITIES += [artstudio_colours, artstudio_photos, artstudio_create, artstudio_qr]  # art-studio
+ABILITIES += [writing_projects, writing_goals, writing_bible, writing_helpers]  # writing
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
