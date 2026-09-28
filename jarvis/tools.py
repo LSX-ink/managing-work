@@ -44,6 +44,10 @@ import screen
 import shopping
 import timers
 import todo
+import webview_food
+import webview_listen
+import webview_look
+import webview_places
 import wishes
 import words
 from config import Settings
@@ -72,6 +76,7 @@ ABILITIES = [todo, habits, money, notesearch, screen]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
 ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
+ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
 ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
 ABILITIES += [dates, dates_saved]  # time-and-dates
 ABILITIES += [feeds, feeds_outdoors]  # live-info
