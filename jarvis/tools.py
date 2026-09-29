@@ -81,6 +81,10 @@ import sellercalc_fees
 import sellercalc_guide
 import sellercalc_listing
 import sellercalc_stock
+import writingincome_blog
+import writingincome_book
+import writingincome_money
+import writingincome_newsletter
 import dates
 import events_extras
 import events_guests
@@ -320,6 +324,7 @@ ABILITIES += [sidehustle_ideas, sidehustle_plan, sidehustle_money, sidehustle_sa
 ABILITIES += [incomestreams_streams, incomestreams_insights, incomestreams_goals, incomestreams_tax]  # income streams
 ABILITIES += [sellercalc_fees, sellercalc_stock, sellercalc_listing, sellercalc_guide]  # seller calculators
 ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn_practice]  # investing basics
+ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
 
 
 def defer(tool: dict) -> dict:
