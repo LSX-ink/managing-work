@@ -1,0 +1,25 @@
+/* The "motoring-lights" and "motoring-quiz" pop-up kinds (popup-motoring.js). Colours follow the HUD variables. */
+.mo-lights { display: grid; gap: 4px; }
+.mo-light {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 6px 10px; border-radius: 6px;
+    border: 1px solid var(--hud-dim, #2a3547); background: transparent; color: var(--text, #e8eef7); font: inherit; cursor: pointer;
+}
+.mo-light:hover, .mo-light:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.mo-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; border: 2px solid currentColor; }
+.mo-light.red .mo-dot { background: currentColor; }
+.mo-light.amber .mo-dot { background: repeating-linear-gradient(45deg, currentColor 0 3px, transparent 3px 6px); }
+.mo-light.green .mo-dot { border-style: dashed; }
+.mo-light.blue .mo-dot { border-radius: 2px; }
+.mo-name { font-weight: 600; }
+.mo-more { padding: 6px 10px 8px 32px; font-size: 13px; color: var(--hud-mid, #9fb3c8); }
+.mo-feedback { margin-bottom: 8px; color: var(--hud-mid, #9fb3c8); }
+.mo-question { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: var(--hud-bright, #9fd8ff); }
+.mo-choices { display: grid; gap: 6px; }
+.mo-choice {
+    text-align: left; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547);
+    background: transparent; color: var(--text, #e8eef7); font: inherit; cursor: pointer;
+}
+.mo-choice:hover:not(:disabled), .mo-choice:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.mo-choice:disabled { opacity: 0.55; cursor: default; }
+.mo-choice.on { opacity: 1; border-color: var(--hud-bright, #9fd8ff); }
+.mo-score { margin-top: 10px; font-size: 12px; opacity: 0.65; }

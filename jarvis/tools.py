@@ -14,6 +14,10 @@ import access
 import aboutyou
 import agenda
 import alerts
+import assistant_day
+import assistant_inbox
+import assistant_life
+import assistant_track
 import artstudio_colours
 import artstudio_create
 import artstudio_photos
@@ -93,6 +97,10 @@ import modes_debate
 import modes_learning
 import modes_practice
 import money
+import motoring_car
+import motoring_costs
+import motoring_guide
+import motoring_theory
 import music
 import notesearch
 import pc
@@ -101,6 +109,10 @@ import people_lists
 import people_occasions
 import people_touch
 import partyhost_cards
+import petsgarden_garden
+import petsgarden_guide
+import petsgarden_pets
+import petsgarden_records
 import partyhost_draw
 import partyhost_quiz
 import partyhost_rules
@@ -230,6 +242,9 @@ ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
 ABILITIES += [webread_read, webread_explain, webread_page]  # webread
 ABILITIES += [access]  # access
+ABILITIES += [motoring_car, motoring_costs, motoring_guide, motoring_theory]  # motoring
+ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  # assistant
+ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_records]  # pets-and-garden
 
 
 def defer(tool: dict) -> dict:
