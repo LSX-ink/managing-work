@@ -53,6 +53,10 @@ import creatorstats_accounts
 import creatorstats_plan
 import creatorstats_reports
 import creatorstats_stats
+import creatorbiz_deals
+import creatorbiz_docs
+import creatorbiz_money
+import creatorbiz_work
 import dates
 import events_extras
 import events_guests
@@ -285,6 +289,7 @@ ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
 ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
 ABILITIES += [creator_ideas, creator_hooks, creator_scripts, creator_plan]  # creator ideas
 ABILITIES += [creatorstats_accounts, creatorstats_plan, creatorstats_stats, creatorstats_reports]  # creator stats
+ABILITIES += [creatorbiz_deals, creatorbiz_work, creatorbiz_money, creatorbiz_docs]  # creator business
 
 
 def defer(tool: dict) -> dict:
