@@ -1,0 +1,50 @@
+/* Sky and nature pop-ups (popup-skynature.js). Colours follow popup.css: black and white with stars in hud-stars. */
+.popup[data-kind="skynature-starmap"] { width: min(520px, calc(100vw - 24px)); }
+.popup[data-kind="skynature-daylight"] { width: min(560px, calc(100vw - 24px)); }
+.popup[data-kind="skynature-moon-cal"] { width: min(440px, calc(100vw - 24px)); }
+.sn-moon { display: block; width: 150px; height: 150px; margin: 0 auto 6px; }
+.sn-dark { fill: var(--hud-dim, #2a3547); stroke: var(--hud-mid, #9fb3c8); stroke-width: 0.6; }
+.sn-lit { fill: var(--text, #e8eef7); }
+.sn-name { text-align: center; font-size: 16px; font-weight: 600; color: var(--hud-bright, #9fd8ff); margin-bottom: 8px; }
+.sn-facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 0; font-size: 13px; }
+.sn-facts dt { color: var(--hud-mid, #9fb3c8); }
+.sn-facts dd { margin: 0; }
+.sn-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.sn-cal-head { text-align: center; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.sn-cal-day {
+    position: relative; display: flex; flex-direction: column; align-items: center; padding: 2px 0; min-width: 0;
+    border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text, #e8eef7); font: inherit; cursor: pointer;
+}
+.sn-cal-day:hover, .sn-cal-day:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.sn-cal-day.key { border-color: var(--hud-dim, #2a3547); background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.sn-mini { width: 100%; max-width: 34px; height: auto; }
+.sn-cal-num { font-size: 10px; opacity: 0.75; }
+.sn-cal-tag { font-size: 9px; color: var(--hud-bright, #9fd8ff); }
+.sn-map { display: block; width: 100%; height: auto; }
+.sn-sky { fill: #02040a; stroke: var(--hud-mid, #9fb3c8); stroke-width: 1.2; }
+.sn-sky.twilight { fill: #0d1a33; }
+.sn-ring { fill: none; stroke: var(--hud-faint, #1f2b3d); stroke-width: 0.8; stroke-dasharray: 3 4; }
+.sn-line { stroke: var(--hud-mid, #9fb3c8); stroke-width: 0.9; opacity: 0.6; }
+.sn-star { fill: #fff; }
+.sn-starname { fill: var(--text, #e8eef7); font-size: 9px; opacity: 0.9; }
+.sn-con { fill: var(--hud-bright, #9fd8ff); font-size: 9px; opacity: 0.75; letter-spacing: 0.05em; }
+.sn-planet { fill: none; stroke: var(--hud-warn, #ffc24a); stroke-width: 1.8; }
+.sn-planetname { fill: var(--hud-warn, #ffc24a); font-size: 10px; }
+.sn-compass { fill: var(--hud-mid, #9fb3c8); font-size: 12px; font-weight: 600; }
+.sn-hint { margin-top: 6px; font-size: 12px; opacity: 0.65; }
+.sn-day { display: block; width: 100%; height: auto; margin-bottom: 4px; }
+.sn-band.night { fill: #0b1226; }
+.sn-band.blue { fill: #2f5fa8; }
+.sn-band.golden { fill: #f2b544; }
+.sn-band.day { fill: #e8eef7; }
+.sn-swatch.night { background: #0b1226; }
+.sn-swatch.blue { background: #2f5fa8; }
+.sn-swatch.golden { background: #f2b544; }
+.sn-swatch.day { background: #e8eef7; }
+.sn-mark { stroke: var(--hud-warn, #ffc24a); stroke-width: 3; }
+.sn-tick { fill: var(--hud-mid, #9fb3c8); font-size: 22px; }
+.sn-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 8px; font-size: 12px; }
+.sn-chip { display: inline-flex; align-items: center; gap: 5px; }
+.sn-swatch { display: inline-block; width: 11px; height: 11px; border-radius: 2px; border: 1px solid var(--hud-dim, #2a3547); }
+.popup[data-kind="skynature-starmap"] { max-height: calc(100vh - 40px); }
+.popup[data-kind="skynature-starmap"] .sn-map { max-height: min(480px, calc(100vh - 200px)); }
