@@ -64,7 +64,7 @@ def stream_add(settings: Settings, args: dict):
            "started": hs.today().isoformat()}
     st.put(data["streams"], row)
     st.save(settings, data)
-    return (f"Added {name} as a {st.type_word(row['type'])} stream ({row['tax_kind']} for tax). "
+    return (f"Added {name} as {'an' if row['type'] == 'active' else 'a'} {st.type_word(row['type'])} stream ({row['tax_kind']} for tax). "
             "Tell me what you earn from it each month.")
 
 

@@ -213,7 +213,7 @@ def catalogue_show(settings: Settings, args: dict) -> screen.Shown:
                   "price": store.gbp(p["price"]) if p["price"] is not None else "",
                   "say": f"Show the product {p['name']}."} for p in data["products"] if p["status"] == st]
         columns.append({"status": st, "items": items})
-    counts = ", ".join(f"{len(c['items'])} {c['status']}" for c in columns)
+    counts = ", ".join(f"{c['status']} {len(c['items'])}" for c in columns)
     return screen.Shown(f"Your catalogue: {counts}." if data["products"] else "No products in your catalogue yet.",
                         screen.card("digitalproducts-catalogue", "Product catalogue", "digitalproducts-catalogue",
                                     data={"columns": columns}))
