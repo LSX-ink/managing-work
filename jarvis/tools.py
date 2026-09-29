@@ -13,6 +13,10 @@ import httpx
 import aboutyou
 import agenda
 import alerts
+import assistant_day
+import assistant_inbox
+import assistant_life
+import assistant_track
 import artstudio_colours
 import artstudio_create
 import artstudio_photos
@@ -224,6 +228,7 @@ ABILITIES += [calm_exercises, calm_mind, calm_log, calm_evening]  # calm
 ABILITIES += [partyhost_quiz, partyhost_cards, partyhost_draw, partyhost_rules]  # partyhost
 ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
+ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  # assistant
 
 
 def defer(tool: dict) -> dict:
