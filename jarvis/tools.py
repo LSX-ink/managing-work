@@ -63,6 +63,10 @@ import repurpose_subs
 import repurpose_tracker
 import digitalproducts_copy
 import incomestreams_goals
+import investlearn_calc
+import investlearn_learn
+import investlearn_plan
+import investlearn_practice
 import incomestreams_insights
 import incomestreams_streams
 import incomestreams_tax
@@ -315,6 +319,7 @@ ABILITIES += [digitalproducts_ideas, digitalproducts_make, digitalproducts_copy,
 ABILITIES += [sidehustle_ideas, sidehustle_plan, sidehustle_money, sidehustle_safety]  # side hustles
 ABILITIES += [incomestreams_streams, incomestreams_insights, incomestreams_goals, incomestreams_tax]  # income streams
 ABILITIES += [sellercalc_fees, sellercalc_stock, sellercalc_listing, sellercalc_guide]  # seller calculators
+ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn_practice]  # investing basics
 
 
 def defer(tool: dict) -> dict:
