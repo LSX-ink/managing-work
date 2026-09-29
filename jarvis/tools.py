@@ -29,6 +29,10 @@ import cooking
 import cooking_guide
 import cooking_leftovers
 import dates
+import diy_calc
+import diy_guide
+import diy_projects
+import diy_room
 import dates_saved
 import docs_tools
 import docs_tools_forms
@@ -184,6 +188,7 @@ ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # peop
 ABILITIES += [voice]  # voice
 ABILITIES += [kids_rewards, kids_logs, kids_day, kids_fun]  # kids
 ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
+ABILITIES += [diy_calc, diy_room, diy_guide, diy_projects]  # diy
 
 
 def defer(tool: dict) -> dict:
