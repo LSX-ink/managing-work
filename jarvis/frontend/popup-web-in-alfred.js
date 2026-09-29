@@ -113,8 +113,16 @@
         head.append(art, side);
         body.append(head, audio);
 
+        // A news bulletin shows its top stories as text too, for anyone who can't hear it.
+        if ((d.headlines || []).length) {
+            const news = el('ol', 'pop-list wa-headlines');
+            news.setAttribute('aria-label', 'Top stories');
+            d.headlines.forEach((h) => news.append(el('li', 'pop-item', h)));
+            body.append(news);
+        }
         const list = el('ul', 'pop-list wa-tracks');
         let current = -1;
+        let stopTimer = 0;
         const items = tracks.map((t, i) => {
             const li = el('li');
             const b = el('button', 'pop-item', t.title || `Track ${i + 1}`);
@@ -148,7 +156,27 @@
         toggle.addEventListener('click', () => (audio.paused ? play(current < 0 ? 0 : current) : stop()));
         ['play', 'pause', 'ended'].forEach((e) => audio.addEventListener(e, mark));
         audio.addEventListener('error', () => { if (audio.dataset.src) now.textContent = "That stream isn't working."; });
-        if (Number.isInteger(d.autoplay) && d.autoplay >= 0) play(d.autoplay);
+        // stop_after: pause once the opening headlines are done, the first time only; Play carries on from there.
+        const stopAfter = Number(d.stop_after) || 0;
+        if (stopAfter > 0) {
+            audio.addEventListener('timeupdate', () => {
+                if (stopTimer || audio.currentTime < stopAfter) return;
+                stopTimer = 1;
+                audio.pause();
+                now.textContent = 'That was the headlines. Press Play for the rest.';
+            });
+        }
+        if (Number.isInteger(d.autoplay) && d.autoplay >= 0) {
+            // wait_speech: let Alfred finish his sentence first, so the presenter isn't talked over.
+            // The pop-up usually appears before his reply is spoken, so wait for him to speak and finish (or 10s of quiet).
+            const started = Date.now();
+            const talking = () => typeof window.jarvisIsSpeaking === 'function' && window.jarvisIsSpeaking();
+            const spoke = () => typeof window.jarvisLastSpokeAt === 'function' && window.jarvisLastSpokeAt() > started;
+            const ready = () => !d.wait_speech || (!talking() && (spoke() || Date.now() - started > 10000))
+                || Date.now() - started > 40000;
+            const go = () => (ready() ? play(d.autoplay) : setTimeout(go, 300));
+            go();
+        }
     };
 
     // A recipe: picture, ingredients to tick off while cooking, numbered steps.

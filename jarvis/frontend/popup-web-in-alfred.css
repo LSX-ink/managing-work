@@ -45,3 +45,5 @@ button.wa-tile:hover, button.wa-tile:focus-visible { border-color: var(--hud-dim
 .wa-check input { accent-color: var(--hud, #3fa9ff); width: 16px; height: 16px; }
 .wa-steps { margin: 0; padding-left: 22px; }
 .wa-steps li { margin-bottom: 8px; max-width: 70ch; }
+.wa-headlines { margin: 0 0 8px; padding-left: 22px; list-style: decimal; }
+.wa-headlines li { display: list-item; padding: 2px 0; }
