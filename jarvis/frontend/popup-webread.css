@@ -1,0 +1,26 @@
+/* Reading-help pop-up (popup-webread.js). Buttons and rows follow the HUD variables used in popup.css. */
+.wr { display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 320px; }
+.wr-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.wr-btn, .wr-select {
+    padding: 6px 12px; border-radius: 6px; font-size: 14px; cursor: pointer;
+    border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-faint, rgba(63, 169, 255, 0.08)); color: var(--text, #e8eef7);
+}
+.wr-btn:hover, .wr-btn:focus-visible, .wr-select:focus-visible { border-color: var(--hud-bright, #9fd8ff); outline: none; }
+.wr-btn.primary { background: var(--hud, #3fa9ff); color: #04121f; font-weight: 600; border-color: transparent; }
+.wr-btn.on { border-color: var(--hud-bright, #9fd8ff); box-shadow: 0 0 0 2px var(--hud-glow, rgba(20, 70, 160, 0.5)); }
+.wr-btn:disabled, .wr-select:disabled { opacity: 0.4; cursor: default; }
+.wr-tint { width: 28px; height: 28px; padding: 0; border-radius: 50%; }
+.wr-select option { color: #111; }
+.wr-status { font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.wr-wrap {
+    position: relative; flex: 1; min-height: 220px; overflow: hidden; border-radius: 8px;
+    background: var(--wr-bg, #f6efdc); color: var(--wr-fg, #2b2416);
+}
+.wr-scroll { position: absolute; inset: 0; overflow: auto; padding: 14px 18px; font-family: "Atkinson Hyperlegible", Verdana, system-ui, sans-serif; outline: none; }
+.wr-para { margin: 0 0 0.9em; padding: 2px 6px; border-radius: 6px; cursor: pointer; border-left: 4px solid transparent; }
+.wr-head { font-weight: 700; font-size: 1.15em; margin-top: 1em; }
+.wr-cur { background: rgba(255, 200, 40, 0.35); border-left-color: #d98a00; }
+.wr-ruler {
+    display: none; position: absolute; left: 0; right: 0; top: 0; pointer-events: none;
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.42); border-top: 2px solid rgba(217, 138, 0, 0.8); border-bottom: 2px solid rgba(217, 138, 0, 0.8);
+}
