@@ -151,6 +151,10 @@ import showme
 import studio_learn
 import studio_log
 import studio_play
+import study_plan
+import study_progress
+import study_topics
+import study_write
 import sports_games
 import sports_live
 import sports_scoring
@@ -270,6 +274,7 @@ ABILITIES += [homeadmin_shop, homeadmin_papers, homeadmin_home, homeadmin_lists]
 ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # active
 ABILITIES += [support_day, support_people, support_care, support_see]  # support
 ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
+ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
 
 
 def defer(tool: dict) -> dict:
