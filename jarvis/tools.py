@@ -155,6 +155,8 @@ import study_plan
 import study_progress
 import study_topics
 import study_write
+import creator
+import money_research
 import sports_games
 import sports_live
 import sports_scoring
@@ -275,6 +277,7 @@ ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # activ
 ABILITIES += [support_day, support_people, support_care, support_see]  # support
 ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
 ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
+ABILITIES += [creator, money_research]  # content creation and making money
 
 
 def defer(tool: dict) -> dict:

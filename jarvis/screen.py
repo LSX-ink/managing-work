@@ -14,7 +14,8 @@ A card is plain JSON drawn by frontend/popup.js. A list card with checks=True sh
 Other modules can add kinds: screen.EXTRA_KINDS.add("gallery") plus a renderer in a frontend file,
 window.jarvisPopupKinds.gallery = (card, body, {el, ask}) => {...}; their card holds its own plain JSON in "data".
 Every card has an id (showing the same id again updates that window), a title, and optional buttons
-[{label, say}] that send say to Alfred as if the user had said it.
+[{label, say}] that send say to Alfred as if the user had said it, or [{label, download}] that download a
+memory-folder file (download is a /screen/file?path=... address).
 """
 
 import html
@@ -65,8 +66,16 @@ def _clip(value, limit: int = 300) -> str:
 
 
 def _buttons(buttons) -> list[dict]:
-    return [{"label": _clip(b.get("label"), 40), "say": _clip(b.get("say"), 300)}
-            for b in (buttons or [])[:6] if isinstance(b, dict) and b.get("label") and b.get("say")]
+    """[{label, say}] buttons that talk to Alfred, or [{label, download}] ones that download a file from this page."""
+    out = []
+    for b in (buttons or [])[:6]:
+        if not isinstance(b, dict) or not b.get("label"):
+            continue
+        if b.get("say"):
+            out.append({"label": _clip(b["label"], 40), "say": _clip(b["say"], 300)})
+        elif str(b.get("download", "")).startswith("/screen/file?"):
+            out.append({"label": _clip(b["label"], 40), "download": _clip(b["download"], 600)})
+    return out
 
 
 def card(kind: str, title: str, card_id: str = "", buttons=None, **fields) -> dict:

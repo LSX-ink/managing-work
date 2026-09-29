@@ -188,11 +188,12 @@ async def watch(settings: Settings) -> None:
 async def approve(settings: Settings, ref: str) -> str:
     data = cs.load(settings)
     v = cs.find_video(data, ref)
-    if v.get("status") not in ("ready", "approved", "failed_post"):
+    can_post = tiktok.configured(settings) and tiktok.connected(settings, v["account"])
+    if v.get("status") not in ("ready", "failed_post") and not (v.get("status") == "approved" and can_post):
         raise ValueError(f"'{v.get('title')}' is {v.get('status')}, so there's nothing to approve.")
     path = screen.memory_path(settings, v["file"])
     caption = f"{v.get('caption', '')}\n\n" + " ".join(f"#{t}" for t in v.get("hashtags", []))
-    if tiktok.configured(settings) and tiktok.connected(settings, v["account"]):
+    if can_post:
         try:
             sent = await tiktok.post(_ctx["http"] or httpx.AsyncClient(timeout=60), settings, v["account"], path, caption.strip())
         except ValueError as exc:
@@ -319,10 +320,25 @@ def name_ideas(args: dict) -> str:
             "aloud. Remind the user to check the name is free on TikTok.")
 
 
+async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -> screen.Shown:
+    """A profile picture made in the account's look, plus a bio for Alfred to write."""
+    account = cs.account(cs.load(settings), args.get("account"))
+    picture = await cv.fetch_picture(http, f"a striking, simple profile picture icon for a TikTok account about "
+                                           f"{account['theme']}", account["style"], 7, (1024, 1024))
+    if picture is None:
+        raise ValueError("I couldn't make the profile picture just now; try again in a minute.")
+    path = cs.work_folder(settings, "TikTok", account["name"]) / "Profile picture.png"
+    await asyncio.to_thread(picture.save, path)
+    said = (f"Profile picture for {account['name']} saved in its folder. INSTRUCTION for Alfred: also write a TikTok "
+            f"bio for {account['name']} ({account['theme']}): under 80 characters, one emoji, a reason to follow "
+            "and a line that invites comments. Show it with show_on_screen as text and read it aloud.")
+    return screen.Shown(said, screen.file_card(settings, path))
+
+
 # ---- the tool ---------------------------------------------------------------------------------------------
 
 ACTIONS = ["studio", "make_video", "approve", "skip", "set_views", "accounts", "add_account", "update_account",
-           "remove_account", "name_ideas", "connect", "setup"]
+           "remove_account", "name_ideas", "profile_kit", "connect", "setup"]
 
 
 def tool_definitions() -> list[dict]:
@@ -338,7 +354,7 @@ def tool_definitions() -> list[dict]:
                        "them. add_account (account name, theme, style noir/explainer/drama/cinematic, format "
                        "story/facts, series, per_day, voice e.g. en-GB-RyanNeural, accent colour). update_account "
                        "(account, new_name or any field). remove_account (account, confirmed). name_ideas (theme) for "
-                       "flashy Gen Z account names. connect (account) gives the TikTok login link. setup explains "
+                       "flashy Gen Z account names. profile_kit (account) makes a profile picture and a bio. connect (account) gives the TikTok login link. setup explains "
                        "what auto-posting needs.",
         "input_schema": {
             "type": "object",
@@ -405,6 +421,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
         return remove_account(settings, args)
     if action == "name_ideas":
         return name_ideas(args)
+    if action == "profile_kit":
+        return await profile_kit(settings, _ctx["http"] or http, args)
     if action == "connect":
         account = cs.account(cs.load(settings), args.get("account"))
         if not tiktok.configured(settings):

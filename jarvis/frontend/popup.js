@@ -276,6 +276,12 @@
         render(card, win.querySelector('.pop-body'));
         const foot = win.querySelector('.pop-buttons');
         foot.replaceChildren(...(card.buttons || []).map((b) => {
+            if (b.download) {
+                const link = el('a', 'pop-action', b.label);
+                link.href = `${b.download}&download=1`;
+                link.download = '';
+                return link;
+            }
             const btn = el('button', 'pop-action', b.label);
             btn.addEventListener('click', () => ask(b.say));
             return btn;

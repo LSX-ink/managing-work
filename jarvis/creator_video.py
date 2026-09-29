@@ -206,7 +206,7 @@ def cinematic_frame(picture: Image.Image, account: dict, script: dict, scene: di
 def drama_frame(picture: Image.Image, account: dict, script: dict, scene: dict) -> Image.Image:
     im = ImageOps.fit(picture, (W, H))
     draw = ImageDraw.Draw(im, "RGBA")
-    centred(draw, 900, account["name"], ac.font(44), (255, 255, 255, 70))  # faint watermark, like the page
+    centred(draw, 900, account["name"], ac.font(44), (255, 255, 255, 45))  # faint watermark, like the page
     font = ac.font(50)
     lines = wrap(draw, scene["text"], font, 860)
     tall = sum(draw.textbbox((0, 0), l, font=font)[3] + 12 for l in lines)
@@ -276,7 +276,8 @@ def fit_to_length(voiced: list[float], length: float = MIN_LENGTH, gap: float = 
     if spare > 0:
         base = [b + spare / len(base) for b in base]
     frames = [round(b * FPS) for b in base]
-    frames[-1] += max(0, round(length * FPS) - sum(frames))
+    if spare > 0:
+        frames[-1] += round(length * FPS) - sum(frames)
     return [f / FPS for f in frames]
 
 
