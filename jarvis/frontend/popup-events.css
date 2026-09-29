@@ -19,7 +19,7 @@
 .ev-next { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
 .ev-next li { display: flex; gap: 8px; }
 .ev-next li.late .ev-next-when { color: var(--text, #e8eef7); font-weight: 600; }
-.ev-next-when { min-width: 110px; color: var(--hud-mid, #9fb3c8); }
+.ev-next-when { flex: 0 0 140px; color: var(--hud-mid, #9fb3c8); }
 .ev-line { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 2px; }
 .ev-step { display: grid; grid-template-columns: 18px 96px 1fr; gap: 8px; align-items: start; padding: 5px 4px; border-radius: 6px; }
 .ev-step:hover { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
