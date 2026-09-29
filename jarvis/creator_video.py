@@ -30,6 +30,8 @@ from config import Settings
 
 W, H = 1080, 1920
 FPS = 30
+LENGTH = 60.0  # every video is exactly one minute
+MAX_SPEEDUP = 1.35  # narration that runs long is sped up this much at most, then the pictures hold to fit
 PICTURE_URL = "https://image.pollinations.ai/prompt/{prompt}?width={w}&height={h}&seed={seed}&nologo=true&model=flux"
 DEFAULT_VOICE = "en-GB-RyanNeural"
 LOOKS = {
@@ -47,12 +49,12 @@ Format: {format}
 Series this account runs: {series}
 Look: {look}
 
-Write ONE new video for today, 35 to 55 seconds long when read aloud. {idea}
+Write ONE new video for today. It must last exactly one minute: about 150 spoken words in total. {idea}
 Titles already used (never repeat or closely copy these): {recent}
 
 Rules:
 - Stop the scroll in the first line: the hook is a bold claim, a question or a cliffhanger.
-- 5 to 8 scenes. Each scene has one short on-screen line (under 12 words) and the narration Alfred reads
+- 8 to 10 scenes. Each scene has one short on-screen line (under 12 words) and the narration Alfred reads
   (one or two short sentences). The last scene lands the twist or the takeaway and invites a follow.
 - Everything must be original, kind, and safe for TikTok: no real people, no brands, no medical or money
   promises, nothing hateful or sexual. For psychology, say "some people" and "often", never diagnose.
@@ -267,13 +269,31 @@ def run(args: list[str]) -> None:
         raise RuntimeError(f"ffmpeg failed: {done.stderr[-400:]}")
 
 
-def render_scene(image: Path, audio: Path | None, seconds: float, out: Path) -> None:
+def fit_to_length(voiced: list[float], length: float = LENGTH, gap: float = 0.35) -> tuple[float, list[float]]:
+    """(narration speed, seconds per scene) so the scenes add up to exactly length.
+
+    Narration that is too long is sped up (at most MAX_SPEEDUP); any time left over is shared out so each
+    picture holds a little longer. Scenes with no voice (0) get a fair share of the reading time.
+    """
+    speed = max(1.0, min(MAX_SPEEDUP, sum(voiced) / max(1.0, length - gap * len(voiced))))
+    base = [v / speed + gap for v in voiced]
+    spare = length - sum(base)
+    if spare >= 0:
+        base = [b + spare / len(base) for b in base]
+    else:  # still too long at top speed: shorten each scene in proportion
+        base = [b * length / sum(base) for b in base]
+    frames = [round(b * FPS) for b in base]
+    frames[-1] += round(length * FPS) - sum(frames)
+    return speed, [f / FPS for f in frames]
+
+
+def render_scene(image: Path, audio: Path | None, seconds: float, out: Path, speed: float = 1.0) -> None:
     frames = max(1, round(seconds * FPS))
     zoom = (f"scale={int(W * 1.2)}:{int(H * 1.2)},zoompan=z='min(1+on*0.00045,1.08)':d=1:"
             f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={W}x{H}:fps={FPS},format=yuv420p")
     inputs = ["-loop", "1", "-framerate", str(FPS), "-i", str(image)]
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
-    run([*inputs, "-filter_complex", f"[0:v]{zoom}[v];[1:a]apad,aresample=44100[a]", "-map", "[v]", "-map", "[a]",
+    run([*inputs, "-filter_complex", f"[0:v]{zoom}[v];[1:a]" + (f"atempo={speed:.3f}," if audio and speed > 1.001 else "") + "apad,aresample=44100[a]", "-map", "[v]", "-map", "[a]",
          "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21",
          "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-ac", "2", str(out)])
 
@@ -293,16 +313,20 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     work.mkdir(parents=True, exist_ok=True)
     seed = random.randint(1, 10**6)
     pictures = await asyncio.gather(*(fetch_picture(http, s["picture"], account["style"], seed) for s in script["scenes"]))
-    parts = []
+    stills, voices = [], []
     for i, (scene, picture) in enumerate(zip(script["scenes"], pictures)):
         still = work / f"scene{i}.png"
         await asyncio.to_thread(lambda: frame(picture or blank_picture(), account, script, scene).save(still))
         voice = work / f"scene{i}.mp3"
         has_voice = await narrate(http, settings, scene["narration"], account.get("voice", ""), voice)
-        seconds = (await asyncio.to_thread(audio_seconds, voice)) + 0.35 if has_voice else 0
-        seconds = seconds if seconds > 0.5 else reading_seconds(scene["narration"])
+        seconds = await asyncio.to_thread(audio_seconds, voice) if has_voice else 0
+        stills.append(still)
+        voices.append((voice, seconds) if seconds > 0.3 else (None, reading_seconds(scene["narration"])))
+    speed, lengths = fit_to_length([v[1] for v in voices])
+    parts = []
+    for i, (still, (voice, _), seconds) in enumerate(zip(stills, voices, lengths)):
         part = work / f"scene{i}.mp4"
-        await asyncio.to_thread(render_scene, still, voice if has_voice else None, seconds, part)
+        await asyncio.to_thread(render_scene, still, voice, seconds, part, speed)
         parts.append(part)
     name = cs.slug(f"{script['title']}")
     video = folder / f"{name}.mp4"
