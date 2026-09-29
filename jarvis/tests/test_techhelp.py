@@ -193,23 +193,11 @@ def test_cable_guide(s):
 
 # ---- secure ----
 
-def test_password_check_weak_and_strong(s):
-    weak = sec(s, "password_check", password="Password123")
-    assert weak.card["kind"] == "techhelp-meter" and weak.card["data"]["label"] in ("very weak", "weak")
-    assert "Password123" not in weak and "Password123" not in str(weak.card)
-    strong = sec(s, "password_check", password="correct horse battery staple river")
-    assert strong.card["data"]["label"] in ("strong", "very strong")
-    mid = sec(s, "password_check", password="tRx9!vQp2#Lm")
-    assert mid.card["data"]["bits"] > weak.card["data"]["bits"]
-    with pytest.raises(ValueError):
-        sec(s, "password_check", password="")
-
-
-def test_password_never_stored(s, tmp_path):
-    sec(s, "password_check", password="Sup3rSecretValue!!")
-    for f in tmp_path.rglob("*"):
-        if f.is_file():
-            assert "Sup3rSecretValue" not in f.read_text(errors="ignore")
+def test_password_check_is_typed_into_the_popup_only(s):
+    shown = sec(s, "password_check")
+    assert shown.card["kind"] == "techhelp-meter" and "password" in shown.card["data"]["common"]
+    schema = techhelp_secure.tool_definitions()[0]["input_schema"]["properties"]
+    assert "password" not in schema  # Alfred can't be handed a password, it's measured in the browser
 
 
 def test_phish_check(s):

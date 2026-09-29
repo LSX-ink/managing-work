@@ -1,11 +1,10 @@
 """Tech helper, staying safe: a local password-strength checker, a phishing-sign spotter for pasted messages, and the
 two-factor and backup checklists.
 
-The password is only measured in memory: it is never saved, logged, printed back or sent anywhere. The phishing
+The password is typed into the pop-up and measured in the browser, so it never reaches Alfred or chat. The phishing
 check uses fixed rules on the text you paste and does not open any link or go online.
 """
 
-import math
 import re
 from urllib.parse import urlparse
 
@@ -22,17 +21,15 @@ COMMON = {"password", "passw0rd", "letmein", "welcome", "admin", "qwerty", "abc1
           "trustno1", "changeme", "liverpool", "arsenal", "chelsea", "manchester", "london", "summer", "winter",
           "freedom", "whatever", "hello", "michael", "charlie", "ashley", "jordan", "harry", "welcome1", "secret"}
 WALKS = ("qwerty", "asdfg", "zxcvb", "qazwsx", "1qaz", "poiuy", "lkjhg", "azerty")
-LEET = str.maketrans("01345@$!", "oleasasi")
 RATE = 1e10  # guesses a second for a fast attacker with a stolen, weakly protected password list
-ORDER = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 
 def tool_definitions() -> list[dict]:
     return [{
         "name": "techhelp_secure",
-        "description": "Stay safe online. password_check (password: the user's password or one like it; measured "
-                       "locally, never stored or repeated back; do not say the password aloud or put it in "
-                       "your reply) gives strength, an estimate of bits and crack time, and tips. phish_check (text: "
+        "description": "Stay safe online. password_check pops up a private strength meter: the user types the "
+                       "password into it and it is measured in the browser only; never ask for, repeat or accept "
+                       "a password in chat. phish_check (text: "
                        "the pasted email, text or link) lists scam signs with local rules only, no links opened. "
                        "checklist_show (list: 2fa or backup) pops up a clickable checklist, checklist_tick (step "
                        "number; leave out for the current step; done false unticks), checklist_reset.",
@@ -40,7 +37,6 @@ def tool_definitions() -> list[dict]:
             "type": "object",
             "properties": {
                 "action": {"type": "string", "enum": ACTIONS},
-                "password": {"type": "string"},
                 "text": {"type": "string", "description": "phish_check: the message or link to check."},
                 "list": {"type": "string", "enum": list(data.LISTS)},
                 "step": {"type": "integer"},
@@ -55,96 +51,14 @@ def tool_definitions() -> list[dict]:
 NAMES = {"techhelp_secure"}
 
 
-# ---- password strength ------------------------------------------------------------------------
-
-def _pool(pw: str) -> int:
-    pool = 0
-    pool += 26 if re.search(r"[a-z]", pw) else 0
-    pool += 26 if re.search(r"[A-Z]", pw) else 0
-    pool += 10 if re.search(r"\d", pw) else 0
-    pool += 33 if re.search(r"[ -/:-@\[-`{-~]", pw) else 0
-    pool += 100 if re.search(r"[^\x00-\x7f]", pw) else 0
-    return max(pool, 10)
-
-
-def _runs(pw: str) -> int:
-    low = pw.lower()
-    count = 0
-    for i in range(len(low) - 2):
-        chunk = low[i:i + 3]
-        if all(c in ORDER for c in chunk):
-            a = [ORDER.index(c) for c in chunk]
-            if a[1] - a[0] == a[2] - a[1] == 1 or a[1] - a[0] == a[2] - a[1] == -1:
-                count += 1
-    return count
-
-
-def strength(pw: str) -> dict:
-    """Bits of entropy, adjusted down for common words, repeats, runs, keyboard walks and years."""
-    bits = len(pw) * math.log2(_pool(pw))
-    low = pw.lower()
-    plain = low.translate(LEET)
-    stem = re.sub(r"[^a-z]+$", "", low) or plain
-    notes = []
-    if low in COMMON or plain in COMMON or stem in COMMON or stem.translate(LEET) in COMMON:
-        bits = min(bits, 10 + 3 * max(0, len(pw) - len(stem)))
-        notes.append("It's a very common password or a common word with tweaks. Attackers try these first.")
-    elif any(w in plain for w in COMMON if len(w) >= 5):
-        bits -= 12
-        notes.append("It contains a very common word.")
-    repeats = sum(1 for a, b in zip(pw, pw[1:]) if a == b)
-    if repeats:
-        bits -= 3 * repeats
-        notes.append("Repeated characters make it easier to guess.")
-    if _runs(pw):
-        bits -= 6 * _runs(pw)
-        notes.append("Runs like abc or 123 are guessed early.")
-    if any(w in low for w in WALKS):
-        bits -= 12
-        notes.append("Keyboard patterns such as qwerty are well known.")
-    years = re.findall(r"(?:19|20)\d\d", pw)
-    if years:
-        bits -= 5 * len(years)
-        notes.append("Years and birthdays are easy to guess.")
-    if len(set(pw)) <= 2 and len(pw) > 3:
-        bits = min(bits, 6)
-    return {"bits": max(bits, 0.0), "notes": notes}
-
-
-def _label(bits: float) -> str:
-    return ("very weak" if bits < 28 else "weak" if bits < 40 else "fair" if bits < 60
-            else "strong" if bits < 80 else "very strong")
-
-
-def _time(bits: float) -> str:
-    seconds = (2 ** min(bits, 200)) / 2 / RATE
-    for size, name in ((3.15e9, "centuries"), (3.15e7, "years"), (86400, "days"), (3600, "hours"), (60, "minutes")):
-        if seconds >= size:
-            n = seconds / size
-            return "more than a thousand centuries" if name == "centuries" and n > 1000 else f"about {n:,.0f} {name}"
-    return "less than a minute" if seconds < 1 else f"about {seconds:,.0f} seconds"
-
+# ---- password strength (measured in the pop-up, see popup-techhelp.js) -------------------------------
 
 def password_check(args: dict) -> screen.Shown:
-    pw = str(args.get("password") or "")
-    if not pw:
-        raise ValueError("Which password should I check? A similar one is fine; I never store or repeat it.")
-    if len(pw) > 200:
-        raise ValueError("That's longer than I can check; 200 characters is plenty.")
-    result = strength(pw)
-    bits, label = result["bits"], _label(result["bits"])
-    tips = list(result["notes"])
-    if len(pw) < 12:
-        tips.append("Make it at least 12 characters; three or four random words joined together works well.")
-    if len(pw) >= 12 and not tips and label in ("fair", "strong", "very strong"):
-        tips.append("Use it for one account only and turn on two-factor.")
-    tips.append("Use a different password for every account, ideally from a password manager.")
-    crack = _time(bits)
-    data_ = {"bits": round(bits), "label": label, "pct": min(100, round(bits / 80 * 100)), "length": len(pw),
-             "crack": crack, "tips": tips}
-    return screen.Shown(f"That password is {label}, about {round(bits)} bits. A fast attacker could crack it in {crack}. "
-                        f"{tips[0]}", screen.card("techhelp-meter", "Password strength", "techhelp-password", data=data_,
-                                                  buttons=[{"label": "2FA checklist", "say": "Show me the two-factor checklist."}]))
+    """Pop up the meter; the password is typed into the pop-up and measured there, so it never reaches chat."""
+    data_ = {"common": sorted(COMMON), "walks": list(WALKS), "rate": RATE}
+    return screen.Shown("Type the password into the box on screen. It's checked on this PC only and never sent to me.",
+                        screen.card("techhelp-meter", "Password strength", "techhelp-password", data=data_,
+                                    buttons=[{"label": "2FA checklist", "say": "Show me the two-factor checklist."}]))
 
 
 # ---- phishing signs -------------------------------------------------------------------------

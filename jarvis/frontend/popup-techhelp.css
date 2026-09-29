@@ -13,3 +13,5 @@
 .th-very-weak, .th-weak { background: var(--hud-warn, #ffc24a); }
 .th-fair { background: var(--hud-mid, #9fb3c8); }
 .th-strong, .th-very-strong { background: var(--hud-bright, #9fd8ff); }
+.th-pw { width: 100%; box-sizing: border-box; padding: 8px 10px; margin-bottom: 8px; font: inherit; color: var(--text, #e8eef7); background: transparent; border: 1px solid var(--hud-dim, #2a3547); }
+.th-meter { width: 100%; }

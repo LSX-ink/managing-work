@@ -38,9 +38,9 @@ household-plus and money-plus; the gadget list here adds model, serial and recei
 
 ## Staying safe
 
-22. **Password checker**: "How strong is this password: ..." Pops up a strength meter with bits, crack time and
-    tips. It is measured on your PC only and is never saved or repeated back. Because you say it out loud, test a
-    similar one rather than your real password.
+22. **Password checker**: "Check how strong a password is." Pops up a private box: type the password into it and
+    a meter shows the strength, an estimated crack time and tips as you type. It is measured in that window only,
+    never sent to Alfred or saved. Don't say a password out loud or type it in the chat.
 23. **Spot a scam**: "Is this message a scam? ..." then paste it. Pops up the warning signs found (urgency, secret
     details, fake links, look-alike sites) with what to do, such as forwarding texts to 7726. Rules only; no link is opened.
 24. **Two-factor checklist**: "Show me the two-factor checklist." A tick list that remembers where you are.
