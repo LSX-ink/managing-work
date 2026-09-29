@@ -63,6 +63,10 @@ def _words(book: dict) -> int:
     return sum(c["words"] for c in book["chapters"]) if book["chapters"] else sum(e["words"] for e in book["log"])
 
 
+def _days(n: int) -> str:
+    return f"{n} day{'s' * (n != 1)}"
+
+
 def _streak(book: dict) -> int:
     goal = book.get("daily_goal", 0) or 1
     by_day = {}
@@ -148,7 +152,7 @@ def log_words(settings: Settings, args: dict):
     today = sum(e["words"] for e in b["log"] if e["date"] == wi.today().isoformat())
     goal = b["daily_goal"]
     hit = f" That's {today:,} of {goal:,} today." if goal else ""
-    return f"Logged {words:,} words on {b['title']}.{hit} Streak: {_streak(b)} days."
+    return f"Logged {words:,} words on {b['title']}.{hit} Streak: {_days(_streak(b))}."
 
 
 def set_daily_goal(settings: Settings, args: dict):
@@ -168,7 +172,7 @@ def book_progress(settings: Settings, args: dict):
     rows += [(c["name"], f"{c['words']:,}", 100 * c["words"] / (c["target"] or top), f"of {c['target']:,}" if c["target"] else "")
              for c in b["chapters"][:20]]
     today = wi.today()
-    notes = [f"Streak: {_streak(b)} days" + (f" at {b['daily_goal']:,} words a day." if b["daily_goal"] else " (any words count).")]
+    notes = [f"Streak: {_days(_streak(b))}" + (f" at {b['daily_goal']:,} words a day." if b["daily_goal"] else " (any words count).")]
     left = max(t - w, 0) if t else 0
     recent = sum(n for _, n in _recent(b)) / 14
     if left and recent:

@@ -212,7 +212,7 @@ def experiment_list(settings: Settings, args: dict):
     names = {"waiting": "Waiting", "keep": "Keep going", "change": "Change it", "stop": "Stop"}
     cols = [(names[k], [(e["hypothesis"], f"Test: {e['test'] or '-'} | Success: {e['metric'] or '-'}" + (f" | Result: {e['result']}" if e["result"] else ""),
                          f"Update experiment {e['id']} for {row['name']}") for e in row["experiments"] if e["decision"] == k]) for k in DECISIONS]
-    return nr.board(f"{len(row['experiments'])} experiments for {row['name']}.", f"Experiments: {row['name']}", cols, "Tap one to record its result.")
+    return nr.board(f"{len(row['experiments'])} experiment{'s' * (len(row['experiments']) != 1)} for {row['name']}.", f"Experiments: {row['name']}", cols, "Tap one to record its result.")
 
 
 def experiment_template(settings: Settings, args: dict):

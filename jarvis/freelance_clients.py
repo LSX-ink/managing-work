@@ -34,6 +34,10 @@ ACTIONS = ["client_add", "client_note", "clients", "client_show", "client_remove
            "testimonials"]
 
 
+def _open_leads(n: int) -> str:
+    return f"{n} open lead{'s' * (n != 1)}"
+
+
 def _find_client(rows: list[dict], name) -> dict | None:
     key = st.find([c["name"] for c in rows], st.need(name, "client", 60))
     return next((c for c in rows if c["name"] == key), None)
@@ -197,7 +201,7 @@ def pipeline(settings: Settings, args: dict, prefix: str = "") -> screen.Shown:
                  for x in items[-12:]]
         cols.append({"stage": stage, "count": len(items), "value": st.gbp(sum(x["value"] for x in items)), "cards": cards})
     open_value = sum(x["value"] for x in rows if x["stage"] in ("enquiry", "proposal sent"))
-    return screen.Shown(f"{prefix} {sum(1 for x in rows if x['stage'] in ('enquiry', 'proposal sent'))} open leads worth {st.gbp(open_value)}, "
+    return screen.Shown(f"{prefix} {_open_leads(sum(1 for x in rows if x['stage'] in ('enquiry', 'proposal sent')))} worth {st.gbp(open_value)}, "
                         "which is hope rather than income.".strip(), screen.card(
         st.BOARD, "Freelance pipeline", "freelance-pipeline", data={"columns": cols, "note": "Values are what you hope to win, not promised income."},
         buttons=[{"label": "Win rate", "say": "What's my freelance win rate?"}]))

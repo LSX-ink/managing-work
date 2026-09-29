@@ -184,7 +184,7 @@ def test_book_tracker_and_progress(s):
     assert "Chapter 1" in book(s, "log_chapter", chapter="1", words=3000, target_words=4000)
     assert "Prologue" in book(s, "log_chapter", chapter="Prologue", words=800)
     assert "3,000" in book(s, "log_chapter", chapter="1", words=3000)
-    assert "Streak: 1 days" in book(s, "log_words", words=600)
+    assert "Streak: 1 day." in book(s, "log_words", words=600)
     yesterday = (wi.today() - timedelta(days=1)).isoformat()
     book(s, "log_words", words=700, date=yesterday)
     assert "Streak: 2 days" in book(s, "log_words", words=100)

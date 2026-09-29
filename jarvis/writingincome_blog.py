@@ -119,7 +119,7 @@ def pipeline(settings: Settings, args: dict):
                                                       p.get("due", "")) if x), f"Show the SEO checklist for {p['title']}")
                  for p in d["posts"] if p["status"] == status]
         cols.append((f"{status.title()} ({len(cards)})", cards))
-    return wi.board(f"{len(d['posts'])} posts in your pipeline.", "Blog pipeline", cols, "Tap a post to see its SEO checklist.")
+    return wi.board(f"{len(d['posts'])} post{'s' * (len(d['posts']) != 1)} in your pipeline.", "Blog pipeline", cols, "Tap a post to see its SEO checklist.")
 
 
 def seo_checklist(settings: Settings, args: dict):
@@ -215,6 +215,10 @@ def heading_structure(settings: Settings, args: dict):
                     items + [(o, "ok", "") for o in outline[0][1]], "Headings help readers and screen readers skim the post.")
 
 
+def _grade(grade: float) -> str:
+    return "a young reader could follow it" if grade < 1 else f"about grade {grade}"
+
+
 def readability(settings: Settings, args: dict):
     r = wi.reading_ease(args.get("text"))
     rows = [("Words", str(r["words"])), ("Sentences", str(r["sentences"])), ("Average sentence", f"{r['avg_sentence']} words"),
@@ -226,7 +230,7 @@ def readability(settings: Settings, args: dict):
              "Try: shorter sentences, everyday words, one idea per paragraph."]
     if r["long"]:
         notes.insert(0, "A long one: " + r["long"][0][:120] + "...")
-    return wi.result(f"Reading ease {r['ease']}, {r['band']}, about grade {r['grade']}.", "Readability", str(r["ease"]), r["band"], rows, notes)
+    return wi.result(f"Reading ease {r['ease']}, {r['band']}, {_grade(r['grade'])}.", "Readability", str(r["ease"]), r["band"], rows, notes)
 
 
 def word_targets(settings: Settings, args: dict):
