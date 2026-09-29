@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 import pytest
 
 import habits
+import homestore
 import homewellbeing
 import money
 import reminders
@@ -22,6 +23,7 @@ DAY = date(2026, 9, 28)  # a Monday
 @pytest.fixture
 def s(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "today", lambda: DAY)
+    monkeypatch.setattr(homestore, "now", lambda: datetime.combine(DAY, datetime.min.time()).replace(hour=12))  # water log
     return Settings(memory_dir=str(tmp_path), currency="GBP")
 
 

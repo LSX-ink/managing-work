@@ -25,10 +25,18 @@ import calcmaths
 import calcmoney
 import calcrandom
 import calcunits
+import career_docs
+import career_interview
+import career_jobs
+import career_plan
 import cooking
 import cooking_guide
 import cooking_leftovers
 import dates
+import diy_calc
+import diy_guide
+import diy_projects
+import diy_room
 import dates_saved
 import docs_tools
 import docs_tools_forms
@@ -63,6 +71,9 @@ import kids_day
 import kids_fun
 import kids_logs
 import kids_rewards
+import languages_practice
+import languages_progress
+import languages_study
 import health
 import knowledge
 import knowledge_explore
@@ -100,6 +111,10 @@ import sports_games
 import sports_live
 import sports_scoring
 import sports_teams
+import techhelp_calc
+import techhelp_fix
+import techhelp_gadgets
+import techhelp_secure
 import timers
 import trackers
 import trackers_life
@@ -173,6 +188,7 @@ ABILITIES += [routines, routines_brief, routines_life]  # routines
 ABILITIES += [hudplus]  # hud-secrets
 ABILITIES += [household_chores, household_stuff, household_meters, household_family]  # household-plus
 ABILITIES += [widgets]  # widgets
+ABILITIES += [techhelp_gadgets, techhelp_fix, techhelp_secure, techhelp_calc]  # techhelp
 ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_reminders]  # health-plus
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
@@ -184,6 +200,9 @@ ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # peop
 ABILITIES += [voice]  # voice
 ABILITIES += [kids_rewards, kids_logs, kids_day, kids_fun]  # kids
 ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
+ABILITIES += [career_jobs, career_interview, career_docs, career_plan]  # career
+ABILITIES += [diy_calc, diy_room, diy_guide, diy_projects]  # diy
+ABILITIES += [languages_study, languages_practice, languages_progress]  # languages
 
 
 def defer(tool: dict) -> dict:
