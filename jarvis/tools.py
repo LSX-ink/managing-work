@@ -12,6 +12,10 @@ import httpx
 
 import access
 import aboutyou
+import active_calc
+import active_log
+import active_outdoors
+import active_workout
 import agenda
 import alerts
 import assistant_day
@@ -255,6 +259,7 @@ ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  
 ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_records]  # pets-and-garden
 ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_social]  # watchlist
 ABILITIES += [homeadmin_shop, homeadmin_papers, homeadmin_home, homeadmin_lists]  # homeadmin
+ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # active
 
 
 def defer(tool: dict) -> dict:
