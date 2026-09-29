@@ -1,0 +1,17 @@
+/* Digital products pop-ups (popup-digitalproducts.js). Colours follow popup.css. */
+.popup[data-kind="digitalproducts-catalogue"] { width: min(720px, calc(100vw - 24px)); max-height: min(620px, calc(100vh - 90px)); }
+.popup[data-kind="digitalproducts-tiers"] { width: min(560px, calc(100vw - 24px)); }
+.dp-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.dp-col { border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px; padding: 6px; display: grid; gap: 4px; align-content: start; }
+.dp-head { font-size: 11px; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.dp-item { font: inherit; text-align: left; cursor: pointer; color: inherit; background: var(--hud-faint, rgba(63, 169, 255, 0.08));
+    border: 1px solid var(--hud-dim, #2a3547); border-radius: 5px; padding: 5px 6px; display: grid; gap: 1px; }
+.dp-item:hover, .dp-item:focus-visible { border-color: var(--hud-bright, #9fd8ff); outline: none; }
+.dp-name { font-size: 13px; overflow-wrap: anywhere; }
+.dp-meta { font-size: 11px; color: var(--hud-mid, #9fb3c8); margin-top: 4px; }
+.dp-item .dp-meta { margin-top: 0; }
+.dp-listed .dp-head { color: var(--hud-bright, #9fd8ff); }
+.dp-retired { opacity: 0.6; }
+.dp-tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.dp-tier { border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px; padding: 8px; text-align: center; }
+.dp-price { font-size: 24px; margin: 4px 0; }
