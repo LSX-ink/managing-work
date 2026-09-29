@@ -1,0 +1,28 @@
+/* Active pop-ups (popup-active.js): workout timer, stretch step cards, challenge calendar. Colours follow popup.css's HUD variables. */
+.ac-wrap { display: grid; gap: 8px; justify-items: center; padding: 6px 0; text-align: center; }
+.ac-muted { font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.ac-phase { font-size: 13px; letter-spacing: 0.2em; color: var(--hud-mid, #9fb3c8); }
+.ac-clock { font-size: 64px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; color: var(--hud-bright, #9fd8ff); }
+.ac-clock.small { font-size: 34px; min-height: 36px; }
+.ac-name { font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.ac-next { font-size: 14px; color: var(--hud-mid, #9fb3c8); }
+.ac-step { font-size: 15px; line-height: 1.5; min-height: 66px; padding: 4px 8px; overflow-wrap: anywhere; }
+.ac-wrap.work .ac-clock { color: var(--hud-bright, #9fd8ff); text-shadow: 0 0 18px var(--hud-glow, rgba(20, 70, 160, 0.5)); }
+.ac-wrap.rest .ac-clock, .ac-wrap.prep .ac-clock { color: var(--hud-mid, #9fb3c8); }
+.ac-bar { width: 100%; height: 4px; border-radius: 2px; background: var(--hud-dim, #2a3547); overflow: hidden; }
+.ac-bar span { display: block; height: 100%; width: 0; background: var(--hud-bright, #9fd8ff); transition: width 0.25s linear; }
+.ac-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.ac-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; width: 100%; }
+.ac-day {
+    font: inherit; display: grid; gap: 1px; justify-items: center; padding: 4px 0; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--hud-dim, #2a3547); background: transparent; color: var(--hud-mid, #9fb3c8);
+}
+.ac-day-n { font-size: 13px; }
+.ac-day-t { font-size: 10px; opacity: 0.8; }
+.ac-day.done { background: var(--hud-bright, #9fd8ff); color: #000; border-color: var(--hud-bright, #9fd8ff); }
+.ac-day.rest { border-style: dashed; }
+.ac-day.today { border-color: var(--hud-bright, #9fd8ff); color: var(--hud-bright, #9fd8ff); border-width: 2px; }
+.ac-day.missed { opacity: 0.4; }
+.ac-day:hover, .ac-day:focus-visible { outline: none; border-color: var(--hud, #3fa9ff); }
+.ac-detail { font-size: 13px; min-height: 18px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .ac-bar span { transition: none; } }

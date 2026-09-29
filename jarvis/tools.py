@@ -12,6 +12,10 @@ import httpx
 
 import access
 import aboutyou
+import active_calc
+import active_log
+import active_outdoors
+import active_workout
 import agenda
 import alerts
 import artstudio_colours
@@ -230,6 +234,7 @@ ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
 ABILITIES += [webread_read, webread_explain, webread_page]  # webread
 ABILITIES += [access]  # access
+ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # active
 
 
 def defer(tool: dict) -> dict:
