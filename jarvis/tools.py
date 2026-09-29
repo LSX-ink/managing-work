@@ -92,6 +92,10 @@ import modes_debate
 import modes_learning
 import modes_practice
 import money
+import motoring_car
+import motoring_costs
+import motoring_guide
+import motoring_theory
 import music
 import notesearch
 import pc
@@ -224,6 +228,7 @@ ABILITIES += [calm_exercises, calm_mind, calm_log, calm_evening]  # calm
 ABILITIES += [partyhost_quiz, partyhost_cards, partyhost_draw, partyhost_rules]  # partyhost
 ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
+ABILITIES += [motoring_car, motoring_costs, motoring_guide, motoring_theory]  # motoring
 
 
 def defer(tool: dict) -> dict:
