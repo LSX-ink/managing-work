@@ -46,6 +46,10 @@ import calm_log
 import calm_mind
 import cooking_leftovers
 import dates
+import events_extras
+import events_guests
+import events_money
+import events_plan
 import diy_calc
 import diy_guide
 import diy_projects
@@ -265,6 +269,7 @@ ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_socia
 ABILITIES += [homeadmin_shop, homeadmin_papers, homeadmin_home, homeadmin_lists]  # homeadmin
 ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # active
 ABILITIES += [support_day, support_people, support_care, support_see]  # support
+ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
 
 
 def defer(tool: dict) -> dict:
