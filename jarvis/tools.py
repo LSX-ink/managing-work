@@ -42,6 +42,10 @@ import calm_log
 import calm_mind
 import cooking_leftovers
 import dates
+import events_extras
+import events_guests
+import events_money
+import events_plan
 import diy_calc
 import diy_guide
 import diy_projects
@@ -245,6 +249,7 @@ ABILITIES += [access]  # access
 ABILITIES += [motoring_car, motoring_costs, motoring_guide, motoring_theory]  # motoring
 ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  # assistant
 ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_records]  # pets-and-garden
+ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
 
 
 def defer(tool: dict) -> dict:
