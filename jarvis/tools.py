@@ -46,6 +46,10 @@ import calm_log
 import calm_mind
 import cooking_leftovers
 import dates
+import events_extras
+import events_guests
+import events_money
+import events_plan
 import diy_calc
 import diy_guide
 import diy_projects
@@ -121,6 +125,10 @@ import petsgarden_garden
 import petsgarden_guide
 import petsgarden_pets
 import petsgarden_records
+import support_care
+import support_day
+import support_people
+import support_see
 import partyhost_draw
 import partyhost_quiz
 import partyhost_rules
@@ -143,6 +151,10 @@ import showme
 import studio_learn
 import studio_log
 import studio_play
+import study_plan
+import study_progress
+import study_topics
+import study_write
 import sports_games
 import sports_live
 import sports_scoring
@@ -260,6 +272,9 @@ ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_r
 ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_social]  # watchlist
 ABILITIES += [homeadmin_shop, homeadmin_papers, homeadmin_home, homeadmin_lists]  # homeadmin
 ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # active
+ABILITIES += [support_day, support_people, support_care, support_see]  # support
+ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
+ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
 
 
 def defer(tool: dict) -> dict:
