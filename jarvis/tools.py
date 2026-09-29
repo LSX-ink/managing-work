@@ -121,6 +121,10 @@ import petsgarden_garden
 import petsgarden_guide
 import petsgarden_pets
 import petsgarden_records
+import support_care
+import support_day
+import support_people
+import support_see
 import partyhost_draw
 import partyhost_quiz
 import partyhost_rules
@@ -260,6 +264,7 @@ ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_r
 ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_social]  # watchlist
 ABILITIES += [homeadmin_shop, homeadmin_papers, homeadmin_home, homeadmin_lists]  # homeadmin
 ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # active
+ABILITIES += [support_day, support_people, support_care, support_see]  # support
 
 
 def defer(tool: dict) -> dict:
