@@ -67,6 +67,7 @@ def version_log(settings: Settings, args: dict, today: date) -> str:
             row[key] = hs.clean(args[key], 200)
     store.save(settings, saved)
     return f"Noted: {video} on {platform} is {status} ({day}). {_versions(len(_mine(saved, video)))} of it now."
+    return f"Noted: {video} on {platform} is {status} ({day}). {len(_mine(saved, video))} versions of it now."
 
 
 def _by_id(saved: dict, args: dict) -> dict:

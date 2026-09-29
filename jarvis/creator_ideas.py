@@ -204,6 +204,7 @@ def board(settings: Settings, args: dict) -> screen.Shown | str:
         return "The board is empty. Add some ideas first."
     columns = [_board_column(n, ideas) for n in COLUMNS]
     counts = ", ".join(f"{c['name']} {len(c['items'])}" for c in columns)
+    counts = ", ".join(f"{len(c['items'])} {c['name']}" for c in columns)
     return screen.Shown(f"Your board: {counts}.",
                         screen.card("creator-board", "Content board", "creator-board", data={"columns": columns}))
 

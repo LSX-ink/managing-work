@@ -206,6 +206,7 @@ def invoices(settings: Settings, args: dict) -> screen.Shown | str:
         raise ValueError("Invoice status is paid, unpaid or overdue.")
     card = _invoice_card(rows, status)
     return screen.Shown(f"{len(card['data']['invoices'])} invoice{'s' * (len(card['data']['invoices']) != 1)}, {card['data']['owed']} still owed in total.", card)
+    return screen.Shown(f"{len(card['data']['invoices'])} invoices, {card['data']['owed']} still owed in total.", card)
 
 
 def invoice_show(settings: Settings, args: dict) -> screen.Shown:

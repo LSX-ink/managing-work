@@ -1,0 +1,25 @@
+/* Seller calculator pop-ups (popup-sellercalc.js): result, compare, fee table, bars, guide. */
+.sx-wrap { display: grid; gap: 8px; }
+.sx-big { font-size: 26px; font-weight: 600; color: var(--hud-bright, #9fd8ff); }
+.sx-muted { font-size: 12px; color: var(--hud-mid, #9fb3c8); overflow-wrap: anywhere; }
+.sx-note { font-size: 12px; color: var(--hud-mid, #9fb3c8); border-top: 1px solid var(--hud-dim, #2a3547); padding-top: 6px; }
+.sx-line { font-size: 13px; overflow-wrap: anywhere; }
+.sx-head { margin: 6px 0 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.sx-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sx-table th, .sx-table td { padding: 6px; border-bottom: 1px solid var(--hud-dim, #2a3547); text-align: left; vertical-align: top; }
+.sx-rowhead { color: var(--hud-mid, #9fb3c8); font-weight: 400; }
+.sx-val { font-weight: 600; text-align: right; }
+.sx-plat { display: grid; gap: 4px; width: 100%; font: inherit; text-align: left; color: var(--text, #e8eef7); background: none; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 8px; cursor: pointer; }
+.sx-plat.best { border-color: var(--hud-bright, #9fd8ff); }
+.sx-plat:hover, .sx-plat:focus-visible { outline: none; border-color: var(--hud-bright, #9fd8ff); }
+.sx-phead { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.sx-pname { font-weight: 600; }
+.sx-pnet { font-weight: 600; color: var(--hud-bright, #9fd8ff); white-space: nowrap; }
+.sx-track { height: 8px; border-radius: 4px; background: var(--hud-dim, #2a3547); overflow: hidden; }
+.sx-fill { height: 100%; background: var(--hud-bright, #9fd8ff); }
+.sx-fill.loss { background: var(--text, #e8eef7); opacity: 0.5; }
+.sx-bar { display: grid; gap: 3px; }
+.sx-fee { display: grid; gap: 2px; padding: 8px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; }
+.sx-fee .sx-val { text-align: left; }
+.sx-name { font: inherit; font-weight: 600; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: var(--hud-bright, #9fd8ff); }
+.sx-name:hover, .sx-name:focus-visible { text-decoration: underline; outline: none; }
