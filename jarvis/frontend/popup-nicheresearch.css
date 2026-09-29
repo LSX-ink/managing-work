@@ -1,0 +1,35 @@
+/* Niche research pop-ups (popup-nicheresearch.js): sheet, radar, swot, check, board. */
+.nr-wrap { display: grid; gap: 8px; }
+.nr-big { font-size: 22px; font-weight: 600; color: var(--hud-bright, #9fd8ff); overflow-wrap: anywhere; }
+.nr-muted { font-size: 12px; color: var(--hud-mid, #9fb3c8); overflow-wrap: anywhere; }
+.nr-note { font-size: 12px; color: var(--hud-mid, #9fb3c8); border-top: 1px solid var(--hud-dim, #2a3547); padding-top: 6px; }
+.nr-line { font-size: 13px; overflow-wrap: anywhere; white-space: pre-wrap; padding: 2px 0; }
+.nr-head { margin: 6px 0 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.nr-tap { cursor: pointer; border-radius: 6px; }
+.nr-tap:hover, .nr-tap:focus-visible { outline: none; background: var(--hud-dim, #2a3547); }
+.nr-radar { width: 100%; max-width: 320px; margin: 0 auto; }
+.nr-ring { fill: none; stroke: var(--hud-dim, #2a3547); stroke-width: 1; }
+.nr-axis { font-size: 9px; fill: var(--hud-mid, #9fb3c8); }
+.nr-shape { fill-opacity: 0.18; stroke-width: 2; }
+.nr-s0 { fill: var(--hud-bright, #9fd8ff); stroke: var(--hud-bright, #9fd8ff); }
+.nr-s1 { fill: var(--text, #e8eef7); stroke: var(--text, #e8eef7); stroke-dasharray: 5 3; }
+.nr-s2 { fill: var(--hud-mid, #9fb3c8); stroke: var(--hud-mid, #9fb3c8); stroke-dasharray: 2 3; }
+.nr-s3 { fill: var(--hud-dim, #2a3547); stroke: var(--text, #e8eef7); stroke-dasharray: 8 2 2 2; }
+.nr-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; justify-content: center; }
+.nr-key { font-size: 12px; color: var(--text, #e8eef7); }
+.nr-key::before { content: '▬ '; }
+.nr-k0::before { color: var(--hud-bright, #9fd8ff); }
+.nr-k1::before { content: '╌ '; }
+.nr-k2::before { content: '┄ '; }
+.nr-k3::before { content: '╍ '; }
+.nr-swot { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+.nr-cell { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 8px; min-height: 80px; }
+.nr-check { display: flex; gap: 8px; align-items: flex-start; padding: 4px; }
+.nr-mark { width: 18px; flex: none; text-align: center; font-weight: 700; color: var(--hud-bright, #9fd8ff); }
+.nr-check.fail .nr-mark, .nr-check.warn .nr-mark { color: var(--text, #e8eef7); }
+.nr-check.todo .nr-mark { color: var(--hud-mid, #9fb3c8); }
+.nr-label { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.nr-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.nr-col { display: grid; gap: 6px; align-content: start; }
+.nr-card { display: grid; gap: 2px; width: 100%; font: inherit; text-align: left; color: var(--text, #e8eef7); background: none; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 8px; cursor: pointer; }
+.nr-card:hover, .nr-card:focus-visible { outline: none; border-color: var(--hud-bright, #9fd8ff); }

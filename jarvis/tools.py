@@ -158,6 +158,10 @@ import motoring_costs
 import motoring_guide
 import motoring_theory
 import music
+import nicheresearch_audience
+import nicheresearch_market
+import nicheresearch_plan
+import nicheresearch_score
 import notesearch
 import pc
 import people_book
@@ -330,6 +334,7 @@ ABILITIES += [freelance_clients, freelance_work, freelance_money, freelance_docs
 ABILITIES += [sellercalc_fees, sellercalc_stock, sellercalc_listing, sellercalc_guide]  # seller calculators
 ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn_practice]  # investing basics
 ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
+ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 
 
 def defer(tool: dict) -> dict:
