@@ -57,7 +57,7 @@ Your nature journal is saved in `skynature-journal.json` in your memory folder.
     over, always with a safety row.
 28. **Foraging safety**: "Give me the foraging safety rules." Never eat anything unless you are 100 percent sure of it.
 29. **Bird of the day**: "Give me a bird to learn about today."
-    "What birds do you know?" / "What trees do you know?" lists them all.
+30. **Species list**: "What birds do you know?" or "What trees do you know?" lists every bird or tree Alfred can name.
 
 The ID hints match your words against a built-in table; they point you in the right direction but are not a certain
 identification, and foraging is always at your own risk.
