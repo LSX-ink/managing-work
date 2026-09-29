@@ -57,6 +57,10 @@ import creatorbiz_deals
 import creatorbiz_docs
 import creatorbiz_money
 import creatorbiz_work
+import repurpose_formats
+import repurpose_plan
+import repurpose_subs
+import repurpose_tracker
 import dates
 import events_extras
 import events_guests
@@ -290,6 +294,7 @@ ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
 ABILITIES += [creator_ideas, creator_hooks, creator_scripts, creator_plan]  # creator ideas
 ABILITIES += [creatorstats_accounts, creatorstats_plan, creatorstats_stats, creatorstats_reports]  # creator stats
 ABILITIES += [creatorbiz_deals, creatorbiz_work, creatorbiz_money, creatorbiz_docs]  # creator business
+ABILITIES += [repurpose_subs, repurpose_formats, repurpose_plan, repurpose_tracker]  # repurpose content
 
 
 def defer(tool: dict) -> dict:
