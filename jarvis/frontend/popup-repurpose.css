@@ -1,0 +1,17 @@
+/* Repurpose pop-ups (popup-repurpose.js). Colours follow popup.css. */
+.popup[data-kind="repurpose-timeline"] { width: min(520px, calc(100vw - 24px)); max-height: min(620px, calc(100vh - 90px)); }
+.popup[data-kind="repurpose-matrix"] { width: min(700px, calc(100vw - 24px)); max-height: min(620px, calc(100vh - 90px)); }
+.rp-timeline { display: grid; gap: 6px; }
+.rp-cue { display: grid; grid-template-columns: 44px 1fr; gap: 2px 8px; font-size: 13px; }
+.rp-time, .rp-note { font-size: 11px; color: var(--hud-mid, #9fb3c8); }
+.rp-text { overflow-wrap: anywhere; }
+.rp-bar { grid-column: 2; height: 4px; border-radius: 2px; background: var(--hud-bright, #9fd8ff); }
+.rp-note { margin-top: 6px; }
+.rp-grid { display: grid; gap: 3px; align-items: center; }
+.rp-head { font-size: 10px; text-transform: uppercase; text-align: center; color: var(--hud-mid, #9fb3c8); overflow-wrap: anywhere; }
+.rp-video { font-size: 13px; overflow-wrap: anywhere; }
+.rp-cell { font: inherit; font-size: 12px; padding: 4px 0; cursor: pointer; color: inherit; border-radius: 5px;
+    background: transparent; border: 1px dashed var(--hud-dim, #2a3547); }
+.rp-cell:hover, .rp-cell:focus-visible { border-color: var(--hud-bright, #9fd8ff); outline: none; }
+.rp-planned, .rp-draft, .rp-scheduled { border-style: solid; background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.rp-posted { border-style: solid; background: var(--hud-bright, #9fd8ff); color: #000; font-weight: 700; }
