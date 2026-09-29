@@ -5,7 +5,7 @@
     flex: 1; min-width: 100px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547);
     background: transparent; color: var(--text, #e8eef7); font: inherit;
 }
-.pg-grid { display: grid; gap: 4px; }
+.pg-grid { display: grid; gap: 4px; overflow-x: auto; }
 .pg-cell {
     aspect-ratio: 1; min-height: 44px; padding: 2px; border-radius: 6px; cursor: pointer; font-size: 11px; line-height: 1.1;
     overflow: hidden; word-break: break-word; border: 1px solid var(--hud-dim, #2a3547); background: transparent;

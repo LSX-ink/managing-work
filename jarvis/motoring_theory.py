@@ -39,7 +39,7 @@ def tool_definitions() -> list[dict]:
 NAMES = {"motoring_theory"}
 
 
-def run_tool(name: str, args: dict, settings: Settings):
+def run_tool(name: str, args: dict, settings: Settings, http=None):
     action = args.get("action")
     if action not in ACTIONS:
         raise ValueError(f"Unknown action {action}.")

@@ -205,3 +205,11 @@ def test_unknown_action(s):
     for fn in (car, costs, guide, theory):
         with pytest.raises(ValueError):
             fn(s, action="nope")
+
+
+def test_tools_dispatch_reaches_motoring():
+    import asyncio
+    import tools
+    from config import Settings
+    out = asyncio.run(tools._run_tool("motoring_guide", {"action": "speed_limits"}, Settings(), None))
+    assert out.card

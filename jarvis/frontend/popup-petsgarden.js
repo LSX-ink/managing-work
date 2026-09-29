@@ -16,7 +16,7 @@
         plants.forEach((p) => { const o = el('option'); o.value = p; options.append(o); });
         tools.append(input, options);
         const cells = el('div', 'pg-grid');
-        cells.style.gridTemplateColumns = `repeat(${grid[0].length}, 1fr)`;
+        cells.style.gridTemplateColumns = `repeat(${grid[0].length}, minmax(44px, 72px))`;
         grid.forEach((row, r) => row.forEach((name, c) => {
             const cell = el('button', name ? 'pg-cell full' : 'pg-cell', name);
             cell.title = `Row ${r + 1}, column ${c + 1}`;
