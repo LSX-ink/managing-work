@@ -35,6 +35,10 @@ def _status(value, default: str = "posted") -> str:
     return text
 
 
+def _versions(n: int) -> str:
+    return f"{n} version{'s' * (n != 1)}"
+
+
 def _mine(saved: dict, video: str) -> list[dict]:
     return [v for v in saved["versions"] if v["video"].lower() == video.lower()]
 
@@ -62,7 +66,7 @@ def version_log(settings: Settings, args: dict, today: date) -> str:
         if args.get(key):
             row[key] = hs.clean(args[key], 200)
     store.save(settings, saved)
-    return f"Noted: {video} on {platform} is {status} ({day}). {len(_mine(saved, video))} versions of it now."
+    return f"Noted: {video} on {platform} is {status} ({day}). {_versions(len(_mine(saved, video)))} of it now."
 
 
 def _by_id(saved: dict, args: dict) -> dict:

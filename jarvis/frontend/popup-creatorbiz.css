@@ -1,5 +1,5 @@
 /* Creator business pop-ups (popup-creatorbiz.js): deal pipeline, rate card, invoices, contract checklist. */
-.cb-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(120px, 1fr); gap: 8px; overflow-x: auto; }
+.cb-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
 .cb-col { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 6px; min-height: 80px; display: grid; gap: 6px; align-content: start; }
 .cb-col-title { margin: 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
 .cb-card { display: grid; gap: 3px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-panel, rgba(6, 18, 40, 0.92)); font-size: 13px; }
