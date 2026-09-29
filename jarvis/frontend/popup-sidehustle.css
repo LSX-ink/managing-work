@@ -1,0 +1,35 @@
+/* Side hustle pop-ups (popup-sidehustle.js): ideas, compare, calculator, plan, goal, hours, review, red flags. */
+.sh-wrap { display: grid; gap: 8px; }
+.sh-scroll { overflow-x: auto; }
+.sh-idea, .sh-flag { display: grid; gap: 3px; padding: 8px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; font-size: 13px; }
+.sh-name { font: inherit; font-weight: 600; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: var(--hud-bright, #9fd8ff); }
+.sh-name:hover, .sh-name:focus-visible { text-decoration: underline; outline: none; }
+.sh-muted { font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.sh-risk { font-size: 12px; color: var(--text, #e8eef7); }
+.sh-fit { font-size: 12px; color: var(--hud-bright, #9fd8ff); }
+.sh-note { font-size: 12px; color: var(--hud-mid, #9fb3c8); border-top: 1px solid var(--hud-dim, #2a3547); padding-top: 6px; }
+.sh-line { font-size: 13px; }
+.sh-big { font-size: 26px; font-weight: 600; color: var(--hud-bright, #9fd8ff); }
+.sh-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sh-table th, .sh-table td { padding: 6px; border-bottom: 1px solid var(--hud-dim, #2a3547); text-align: left; vertical-align: top; }
+.sh-rowhead { color: var(--hud-mid, #9fb3c8); font-weight: 400; }
+.sh-val { text-align: right; font-weight: 600; }
+.sh-track { height: 8px; border-radius: 4px; background: var(--hud-dim, #2a3547); overflow: hidden; flex: 1; }
+.sh-fill { height: 100%; background: var(--hud-bright, #9fd8ff); }
+.sh-fill.warn { background: var(--text, #e8eef7); }
+.sh-week { margin: 6px 0 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.sh-task { display: flex; gap: 8px; align-items: flex-start; width: 100%; font: inherit; font-size: 13px; text-align: left; color: var(--text, #e8eef7); background: none; border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px; padding: 6px 8px; cursor: pointer; }
+.sh-task.done { opacity: 0.6; }
+.sh-task.done .sh-ttext { text-decoration: line-through; }
+.sh-task.late .sh-due { color: var(--hud-bright, #9fd8ff); }
+.sh-ttext { flex: 1; overflow-wrap: anywhere; }
+.sh-due { font-size: 11px; white-space: nowrap; color: var(--hud-mid, #9fb3c8); }
+.sh-hname { font-weight: 600; font-size: 13px; }
+.sh-hrow { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.sh-hlabel { width: 74px; color: var(--hud-mid, #9fb3c8); }
+.sh-hval { width: 42px; text-align: right; }
+.sh-verdict { font-size: 14px; font-weight: 600; padding: 8px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; }
+.sh-verdict.stop { border-style: dashed; color: var(--hud-bright, #9fd8ff); }
+.sh-verdict.keep { border-color: var(--hud-bright, #9fd8ff); }
+.sh-quote { font-size: 12px; font-style: italic; color: var(--hud-mid, #9fb3c8); overflow-wrap: anywhere; }
+.sh-fname { font-weight: 600; }

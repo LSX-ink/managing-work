@@ -57,6 +57,10 @@ import creatorbiz_deals
 import creatorbiz_docs
 import creatorbiz_money
 import creatorbiz_work
+import sidehustle_ideas
+import sidehustle_money
+import sidehustle_plan
+import sidehustle_safety
 import dates
 import events_extras
 import events_guests
@@ -290,6 +294,7 @@ ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
 ABILITIES += [creator_ideas, creator_hooks, creator_scripts, creator_plan]  # creator ideas
 ABILITIES += [creatorstats_accounts, creatorstats_plan, creatorstats_stats, creatorstats_reports]  # creator stats
 ABILITIES += [creatorbiz_deals, creatorbiz_work, creatorbiz_money, creatorbiz_docs]  # creator business
+ABILITIES += [sidehustle_ideas, sidehustle_plan, sidehustle_money, sidehustle_safety]  # side hustles
 
 
 def defer(tool: dict) -> dict:
