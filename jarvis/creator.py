@@ -96,8 +96,11 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
     cs.save(settings, data)
     recent = [v["title"] for v in data["videos"] if v.get("account") == account["name"] and v.get("status") != "making"]
     try:
+        await ensure_trends(settings, account["name"])
+        account = cs.account(cs.load(settings), account["name"])
         folder = cs.work_folder(settings, "TikTok", account["name"])
-        result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent)
+        result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
+                               best=best_titles(data, account["name"]))
         update = {"status": "ready", "title": result["title"], "caption": result["caption"],
                   "hashtags": result["hashtags"], "keyword": result["keyword"],
                   "file": cs.relative(settings, result["path"]),
@@ -112,6 +115,33 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
             vid = v
     cs.save(settings, data)
     return vid
+
+
+def best_titles(data: dict, account: str, n: int = 5) -> list[str]:
+    """This account's most-viewed videos, e.g. 'The Last Voicemail (82,000 views)'."""
+    seen = sorted((v for v in data["videos"] if v.get("account") == account and v.get("views")),
+                  key=lambda v: v["views"], reverse=True)[:n]
+    return [f"{v['title']} ({v['views']:,} views)" for v in seen]
+
+
+async def ensure_trends(settings: Settings, account_name: str, force: bool = False) -> dict:
+    """Check this week's TikTok trends for the account once a day (before its first video); keep the brief."""
+    data = cs.load(settings)
+    account = cs.account(data, account_name)
+    trends = account.get("trends") or {}
+    if not force and trends.get("day") == date.today().isoformat():
+        return trends
+    try:
+        brief = await cv.research_trends(_ctx["client"], settings, account)
+    except Exception as exc:  # no web search today: the videos still get made from what works
+        print(f"[jarvis] Trends for {account_name}: {exc}", flush=True)
+        return trends
+    if brief:
+        data = cs.load(settings)
+        account = cs.account(data, account_name)
+        account["trends"] = trends = {"day": date.today().isoformat(), "brief": brief}
+        cs.save(settings, data)
+    return trends
 
 
 async def make_in_background(settings: Settings, jobs: list[tuple[str, str, dict | None]]) -> None:
@@ -338,7 +368,7 @@ async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -
 # ---- the tool ---------------------------------------------------------------------------------------------
 
 ACTIONS = ["studio", "make_video", "approve", "skip", "set_views", "accounts", "add_account", "update_account",
-           "remove_account", "name_ideas", "profile_kit", "connect", "setup"]
+           "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup"]
 
 
 def tool_definitions() -> list[dict]:
@@ -354,7 +384,9 @@ def tool_definitions() -> list[dict]:
                        "them. add_account (account name, theme, style noir/explainer/drama/cinematic, format "
                        "story/facts, series, per_day, voice e.g. en-GB-RyanNeural, accent colour). update_account "
                        "(account, new_name or any field). remove_account (account, confirmed). name_ideas (theme) for "
-                       "flashy Gen Z account names. profile_kit (account) makes a profile picture and a bio. connect (account) gives the TikTok login link. setup explains "
+                       "flashy Gen Z account names. profile_kit (account) makes a profile picture and a bio. trends (account, refresh) shows this "
+                       "week's TikTok trends for its niche (checked daily before the first video and used in every "
+                       "script, with the account's best-performing videos) so you can plan what to post next. connect (account) gives the TikTok login link. setup explains "
                        "what auto-posting needs.",
         "input_schema": {
             "type": "object",
@@ -373,6 +405,7 @@ def tool_definitions() -> list[dict]:
                 "voice": {"type": "string", "description": "A Microsoft neural voice, e.g. en-US-AndrewNeural."},
                 "accent": {"type": "string", "description": "Keyword colour for the explainer look, e.g. #ff4d6d."},
                 "confirmed": {"type": "boolean"},
+                "refresh": {"type": "boolean", "description": "trends: check again now."},
             },
             "required": ["action"],
             "additionalProperties": False,
@@ -421,6 +454,19 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
         return remove_account(settings, args)
     if action == "name_ideas":
         return name_ideas(args)
+    if action == "trends":
+        if _ctx["client"] is None:
+            raise ValueError("The studio isn't running; restart Alfred.")
+        account = cs.account(cs.load(settings), args.get("account"))
+        trends = await ensure_trends(settings, account["name"], force=bool(args.get("refresh")))
+        best = best_titles(cs.load(settings), account["name"])
+        text = (trends.get("brief") or "I couldn't check the trends just now.") + (
+            "\n\nBest so far: " + "; ".join(best) if best else "")
+        return screen.Shown(f"This week's trends for {account['name']}. INSTRUCTION for Alfred: sum them up in two "
+                            "sentences and suggest the next three video ideas.",
+                            screen.card("text", f"Trends: @{account['name']}", f"creator-trends-{account['name']}",
+                                        text=text, buttons=[{"label": "Make one from this",
+                                                             "say": f"Make a TikTok video now for {account['name']} using this week's trends."}]))
     if action == "profile_kit":
         return await profile_kit(settings, _ctx["http"] or http, args)
     if action == "connect":

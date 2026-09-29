@@ -132,7 +132,7 @@ def test_a_missing_picture_or_voice_still_makes_a_video(s, tmp_path, monkeypatch
 def test_studio_makes_a_video_and_queues_it(s, monkeypatch):
     announced = []
 
-    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None):
+    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None):
         path = folder / "Clip.mp4"
         path.write_bytes(b"mp4")
         return {**cv.parse_script(SCRIPT), "path": path, "missing_pictures": 0}
@@ -345,3 +345,31 @@ def test_studio_endpoints(monkeypatch, tmp_path):
         got = client.get(f"/screen/file?path={v['file']}&download=1")
         assert "attachment" in got.headers["content-disposition"]
         assert "TIKTOK_CLIENT_KEY" in client.get("/tiktok/connect?account=lowkey.lore").text
+
+
+class FakeClient:
+    def __init__(self, replies):
+        self.replies, self.calls = list(replies), []
+        self.messages = self
+
+    async def create(self, **kw):
+        self.calls.append(kw)
+        text, stop = self.replies.pop(0)
+        block = type("B", (), {"type": "text", "text": text})()
+        return type("R", (), {"content": [block], "stop_reason": stop})()
+
+
+def test_trends_are_checked_daily_and_fed_into_the_script(s):
+    client = FakeClient([("", "pause_turn"), ("Trending: POV hooks, #storytime, part series.", "end_turn"),
+                         (SCRIPT, "end_turn")])
+    creator._ctx["client"] = client
+    shown = studio(s, action="trends", account="lowkey.lore")
+    assert "POV hooks" in shown.card["text"] and client.calls[0]["tools"][0]["name"] == "web_search"
+    assert len(client.calls) == 2  # carried on after the pause
+    studio(s, action="trends", account="lowkey.lore")
+    assert len(client.calls) == 2  # once a day
+    add_video(s, status="posted", views=82000)
+    account = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.write_script(client, s, account, recent=["Old one"], best=creator.best_titles(cs.load(s), "lowkey.lore")))
+    prompt = client.calls[-1]["messages"][0]["content"]
+    assert "POV hooks" in prompt and "The Last Voicemail (82,000 views)" in prompt and "Old one" in prompt

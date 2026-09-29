@@ -50,6 +50,8 @@ Look: {look}
 
 Write ONE new video for today. It must last at least one minute, ideally 65 to 90 seconds: 170 to 220 spoken words in total. {idea}
 Titles already used (never repeat or closely copy these): {recent}
+What did best on this account so far (do more of what works): {best}
+What's trending on TikTok for this niche right now (ride these where they fit, never copy anyone): {trends}
 
 Rules:
 - Stop the scroll in the first line: the hook is a bold claim, a question or a cliffhanger.
@@ -65,6 +67,27 @@ Rules:
 Reply with ONLY this JSON:
 {{"title": "...", "keyword": "...", "series": "...", "hook": "...", "caption": "...", "hashtags": ["..."],
   "scenes": [{{"text": "...", "narration": "...", "picture": "..."}}]}}"""
+
+
+TRENDS_PROMPT = """Search the web for what is trending on TikTok THIS WEEK for an account about: {theme}.
+Find: 5 trending topics or story angles, 5 hashtags that are growing, video formats and hooks getting high
+engagement (first-line styles, series, lengths, posting times), and 3 trending sounds that fit. Then reply with a
+short plain-text brief (under 1200 characters) Alfred can use to plan the next videos. No links, no preamble."""
+
+
+async def research_trends(client, settings: Settings, account: dict) -> str:
+    """A short brief of this week's TikTok trends in the account's niche, found with Claude's web search."""
+    import brain
+    new_web = settings.model.startswith(brain._NEW_WEB_TOOLS)
+    tool = {"type": "web_search_20260209" if new_web else "web_search_20250305", "name": "web_search", "max_uses": 5}
+    messages = [{"role": "user", "content": TRENDS_PROMPT.format(theme=account["theme"])}]
+    for _ in range(3):  # a long search can pause; carry on where it stopped
+        reply = await client.messages.create(model=settings.model, max_tokens=3000, messages=messages, tools=[tool])
+        if reply.stop_reason != "pause_turn":
+            break
+        messages = [*messages, {"role": "assistant", "content": reply.content}]
+    text = "".join(getattr(b, "text", "") for b in reply.content if getattr(b, "type", "") == "text")
+    return cs.clean(text, 1500)
 
 
 # ---- 1. script ---------------------------------------------------------------------------------------------
@@ -92,11 +115,14 @@ def parse_script(text: str) -> dict:
     }
 
 
-async def write_script(client, settings: Settings, account: dict, idea: str = "", recent: list[str] | None = None) -> dict:
+async def write_script(client, settings: Settings, account: dict, idea: str = "", recent: list[str] | None = None,
+                       best: list[str] | None = None) -> dict:
     prompt = SCRIPT_PROMPT.format(
         name=account["name"], theme=account["theme"], format=cs.FORMATS[account["format"]],
         series=", ".join(account.get("series") or []) or "none yet; pick a catchy repeatable one",
         look=cs.STYLES[account["style"]], recent="; ".join((recent or [])[-30:]) or "none yet",
+        best="; ".join(best or []) or "no view counts yet",
+        trends=(account.get("trends") or {}).get("brief") or "not checked yet; use what you know works",
         idea=f"Today's idea from the user: {idea}" if idea else "Pick today's idea yourself.")
     reply = await client.messages.create(model=settings.model, max_tokens=4000,
                                          messages=[{"role": "user", "content": prompt}])
@@ -300,9 +326,10 @@ def join(parts: list[Path], out: Path) -> None:
 
 
 async def make(client, http: httpx.AsyncClient, settings: Settings, account: dict, folder: Path,
-               idea: str = "", recent: list[str] | None = None, script: dict | None = None) -> dict:
+               idea: str = "", recent: list[str] | None = None, script: dict | None = None,
+               best: list[str] | None = None) -> dict:
     """Write, picture, voice and render one video into folder. Returns the script plus the MP4 path."""
-    script = script or await write_script(client, settings, account, idea, recent)
+    script = script or await write_script(client, settings, account, idea, recent, best)
     work = folder / f".{cs.new_id()}"
     work.mkdir(parents=True, exist_ok=True)
     seed = random.randint(1, 10**6)

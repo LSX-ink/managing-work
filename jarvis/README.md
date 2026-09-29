@@ -304,6 +304,9 @@ press **Approve** or **Skip**. Nothing is posted until you approve it.
   beside each account once. Approved videos then go to your TikTok inbox to post, or post straight away with
   `JARVIS_TIKTOK_MODE=direct`.
 - Without one, approved videos stay in the folder with their caption, ready to upload by hand.
+- Trends: before each account's first video of the day Alfred checks this week's TikTok trends for its niche
+  (topics, hashtags, hooks, sounds) and writes with them, along with what did best on that account. Ask "what's
+  trending for mindglitch.fyi?" to plan what to post next.
 - Sequels: at 50k views Alfred makes part 2, then a new part every 100k more views, up to part 5, which ends on a
   shocking cliffhanger. He reads views from TikTok, or tell him: "that story has 80k views".
 
