@@ -48,6 +48,8 @@
     <link rel="stylesheet" href="/static/popup-skynature.css">
     <link rel="stylesheet" href="/static/popup-webread.css">
     <link rel="stylesheet" href="/static/custom.css">   <!-- your own colours, never overwritten by updates -->
+    <link rel="stylesheet" href="/static/access.css">   <!-- accessibility settings: keep last so they win -->
+    <script src="/static/access.js"></script>   <!-- in the head so saved settings apply before the first paint -->
     <style>
         /* Approval panel for mouse/keyboard actions (kept here so style.css stays yours to customise). */
         #confirm { width: 100%; padding: 14px 16px; border: 1px solid var(--think-a); border-radius: 12px; background: #121016; }
@@ -105,7 +107,7 @@
     <header class="hud-only hud-bar">
         <span id="hud-title">J.A.R.V.I.S.</span>
         <span class="hud-sub">PERSONAL ASSISTANT // LOCAL NODE</span>
-        <span class="hud-chips"><button id="hud-memory" type="button" aria-pressed="false" title="Show the memory folders">MEMORY</button><span id="hud-link">LINK · STANDBY</span><span id="hud-mic">MIC · OFF</span></span>
+        <span class="hud-chips"><button id="hud-access" type="button" aria-haspopup="dialog" aria-label="Accessibility settings" title="Accessibility settings (Alt+A)">ACCESS</button><button id="hud-memory" type="button" aria-pressed="false" aria-label="Show the memory folders" title="Show the memory folders">MEMORY</button><span id="hud-link" role="status">LINK · STANDBY</span><span id="hud-mic" role="status">MIC · OFF</span></span>
     </header>
     <aside class="hud-only hud-panel hud-left" aria-label="System status">
         <h2>SYSTEM</h2>
@@ -130,7 +132,7 @@
     <main id="app">
         <div id="orb-wrap">
             <canvas id="hud-sphere" class="hud-only" width="420" height="420"></canvas>
-            <button id="orb" class="idle" aria-label="Start or pause listening"></button>
+            <button id="orb" class="idle" aria-label="Start or pause listening" title="Start or pause listening (Alt+M)"></button>
         </div>
         <p id="status" aria-live="polite">Click the orb to wake Jarvis.</p>
         <section id="alerts" hidden aria-label="Notifications">
@@ -138,7 +140,7 @@
             <ul id="alerts-list"></ul>
         </section>
         <div id="chat">
-            <div id="transcript" aria-live="polite"></div>
+            <div id="transcript" role="log" aria-label="Conversation" aria-live="off"></div>
             <section id="confirm" hidden aria-live="assertive">
                 <p id="confirm-title"></p>
                 <ol id="confirm-steps"></ol>
@@ -173,7 +175,7 @@
         </div>
         <p id="memory-msg" class="mem-msg" aria-live="polite"></p>
     </aside>
-    <aside id="np-popup" class="hud-panel" hidden aria-live="polite">
+    <aside id="np-popup" class="hud-panel" hidden aria-live="polite" aria-label="Now playing">
         <img id="np-art" alt="" hidden>
         <div id="np-text">
             <div id="np-label">NOW PLAYING</div>

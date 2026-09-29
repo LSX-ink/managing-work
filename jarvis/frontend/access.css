@@ -1,0 +1,145 @@
+/* Accessibility (access.js): classes on <html> switch these on. Linked last so they win in every theme.
+   a11y-big / a11y-xl = text size, a11y-contrast, a11y-motion (reduced), a11y-captions, a11y-dyslexia, a11y-cb (colour-blind). */
+
+/* ---- always on: a clear focus ring for keyboard users, in every theme ---- */
+:focus-visible {
+    outline: 3px solid #fff !important; outline-offset: 2px !important;
+    box-shadow: 0 0 0 2px #000 !important;
+}
+.popup:focus { outline: none; }
+.popup:focus-visible { outline: 3px solid #fff !important; outline-offset: -3px !important; box-shadow: none !important; }
+body.hud #orb:focus-visible { outline: 3px solid #fff !important; outline-offset: 8px !important; box-shadow: none !important; }
+
+.ax-sr {   /* read by screen readers, never seen */
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---- the ACCESS button: in the HUD's top bar, or floating on plain screens ---- */
+#access-fab {
+    position: fixed; top: 10px; right: 10px; z-index: 35; padding: 4px 10px; cursor: pointer;
+    font: 12px/1.4 system-ui, sans-serif; letter-spacing: 0.12em; color: var(--text, #d8e1ee);
+    background: var(--bg, #07090f); border: 1px solid var(--muted, #6b7a90); border-radius: 6px;
+}
+#access-fab[hidden] { display: none; }
+
+/* ---- settings window ---- */
+.ax { display: grid; gap: 10px; }
+.ax-row, .ax-choice, .ax-speed { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.ax input[type="checkbox"], .ax input[type="radio"] { width: 20px; height: 20px; flex: none; margin-top: 1px; accent-color: var(--hud, #fff); }
+.ax-note { display: block; opacity: 0.75; font-size: 0.85em; }
+.ax-size { display: flex; flex-wrap: wrap; gap: 6px 16px; border: 1px solid var(--hud-dim, #2a3547); padding: 6px 10px 8px; margin: 0; }
+.ax-size legend { padding: 0 6px; font-size: 0.85em; letter-spacing: 0.1em; text-transform: uppercase; }
+.ax-choice { align-items: center; }
+.ax-speed { align-items: center; flex-wrap: wrap; }
+.ax-speed input { flex: 1 1 120px; min-width: 100px; accent-color: var(--hud, #fff); }
+.ax-val { min-width: 3.5em; text-align: right; font-variant-numeric: tabular-nums; }
+.ax-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ---- captions ---- */
+#a11y-captions {
+    display: none; position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    z-index: 60; width: min(900px, calc(100vw - 24px)); padding: 10px 16px; text-align: center;
+    background: rgba(0, 0, 0, 0.92); color: #fff; border: 1px solid #fff; border-radius: 8px;
+    font: 20px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif; letter-spacing: 0; pointer-events: none;
+}
+html.a11y-captions #a11y-captions.on { display: block; }
+#a11y-captions .cap-user { color: #ccc; font-size: 0.8em; }
+#a11y-captions .cap-user:empty, #a11y-captions .cap-alfred:empty { display: none; }
+#a11y-captions .cap-alfred { max-height: 30vh; overflow-y: auto; }
+html.a11y-big #a11y-captions { font-size: 25px; }
+html.a11y-xl #a11y-captions { font-size: 30px; }
+
+/* ---- big text: the HUD panels, chat and pop-up contents scale; layout boxes stay put ---- */
+html.a11y-big { --ax-z: 1.25; --ax-side: 1.2; }
+html.a11y-xl { --ax-z: 1.5; --ax-side: 1.35; }
+html.a11y-big :is(.hud-bar, .hud-bottom, #status, #alerts), html.a11y-xl :is(.hud-bar, .hud-bottom, #status, #alerts) { zoom: calc(var(--ax-z) * var(--hudplus-zoom, 1)); }
+html.a11y-big :is(#transcript, #confirm, #type-form, #np-popup, #access-fab), html.a11y-xl :is(#transcript, #confirm, #type-form, #np-popup, #access-fab) { zoom: var(--ax-z); }
+html.a11y-big :is(.hud-left, .hud-right), html.a11y-xl :is(.hud-left, .hud-right) { zoom: calc(var(--ax-side) * var(--hudplus-zoom, 1)); }
+html.a11y-big .popup > *, html.a11y-xl .popup > * { zoom: var(--ax-z); }
+html.a11y-big .popup, html.a11y-xl .popup { width: min(calc(460px * var(--ax-side)), calc(100vw - 24px)); }
+html.a11y-big #memory-panel, html.a11y-xl #memory-panel { font-size: calc(16px * var(--ax-z)); }
+html.a11y-big #memory-panel :is(button, label, li), html.a11y-xl #memory-panel :is(button, label, li) { font-size: calc(13px * var(--ax-z)); }
+html.a11y-big body:not(.hud) #app, html.a11y-xl body:not(.hud) #app { max-width: 760px; }
+@media (min-width: 1001px) {
+    html.a11y-big body.hud { grid-template-columns: calc(250px * var(--ax-side)) minmax(0, 1fr) calc(270px * var(--ax-side)); }
+    html.a11y-xl body.hud { grid-template-columns: calc(250px * var(--ax-side)) minmax(0, 1fr) calc(270px * var(--ax-side)); }
+}
+html.a11y-big body.hud .hud-bar, html.a11y-xl body.hud .hud-bar { flex-wrap: wrap; }
+
+/* ---- reduce motion: no twinkle, no animation, no transitions (the radar and wolf stop in hud.js) ---- */
+html.a11y-motion *, html.a11y-motion *::before, html.a11y-motion *::after {
+    animation: none !important; transition: none !important; scroll-behavior: auto !important;
+}
+html.a11y-motion body.hud.hud-stars::before, html.a11y-motion body.hud.hud-stars::after { opacity: 0.7; }
+html.a11y-motion .popup.arrive { animation: none !important; }
+
+/* ---- dyslexia-friendly: a plain wide system font (nothing is downloaded), more space between letters, words, lines ---- */
+html.a11y-dyslexia body, html.a11y-dyslexia body *:not(svg):not(svg *):not(canvas):not(pre):not(code):not(input[type="range"]) {
+    font-family: Verdana, Tahoma, 'Trebuchet MS', Geneva, sans-serif !important;
+    letter-spacing: 0.06em !important; word-spacing: 0.16em !important; font-style: normal !important;
+}
+html.a11y-dyslexia :is(p, li, td, th, .pop-body, .pop-text, #transcript div, #hud-weather, .ax-note, label) { line-height: 1.7 !important; }
+html.a11y-dyslexia :is(.pop-reader p, .pop-text) { text-align: left; max-width: 62ch; }
+
+/* ---- colour-blind safe: blue and orange instead of red and green ---- */
+html.a11y-cb { --ax-good: #4aa3ff; --ax-bad: #ff9f1c; --hud-warn: #ff9f1c; }
+html.a11y-cb .hud-chips .on, html.a11y-cb body.hud.hud-stars .hud-chips .on { color: var(--ax-good); border-color: var(--ax-good); }
+html.a11y-cb #confirm-deny, html.a11y-cb .confirm-buttons button[data-answer="deny"] { border-color: var(--ax-bad); }
+html.a11y-cb #alerts-list button:hover, html.a11y-cb #alerts-list button:focus-visible { color: var(--ax-bad); }
+html.a11y-cb .lg-bad, html.a11y-cb .ph-clock.low, html.a11y-cb .ph-bad, html.a11y-cb .ph-stop.stopped .ph-banner { color: var(--ax-bad); }
+html.a11y-cb .ph-bad, html.a11y-cb .ph-statement.lie, html.a11y-cb .lg-options .lg-btn.wrong { border-color: var(--ax-bad); }
+html.a11y-cb .lg-options .lg-btn.right { border-color: var(--ax-good); box-shadow: 0 0 0 1px var(--ax-good); }
+html.a11y-cb .pop-chart .bar { fill: var(--ax-good); }
+html.a11y-cb .pop-chart .bar.neg { fill: var(--ax-bad); }
+html.a11y-cb .pop-chart .line, html.a11y-cb .pop-chart .dot { stroke: var(--ax-good); }
+html.a11y-cb .pop-chart .dot { fill: var(--ax-good); }
+html.a11y-cb body.hud.hud-green {
+    --hud: #4aa3ff; --hud-bright: #cfe6ff; --hud-dim: rgba(74, 163, 255, 0.3); --hud-faint: rgba(74, 163, 255, 0.06);
+    --hud-idle: #4aa3ff; --hud-listen: #8cc4ff; --hud-think: #ff9f1c; --hud-speak: #cfe6ff; --hud-glow: rgba(20, 90, 200, 0.3);
+}
+html.a11y-cb body.hud.hud-red {
+    --hud: #ff9f1c; --hud-bright: #ffe2b0; --hud-dim: rgba(255, 159, 28, 0.3); --hud-faint: rgba(255, 159, 28, 0.06);
+    --hud-idle: #ff9f1c; --hud-listen: #ffc266; --hud-think: #4aa3ff; --hud-speak: #ffe2b0; --hud-glow: rgba(160, 90, 10, 0.3);
+}
+
+/* ---- high contrast: pure black and white, thick borders, no faint text; stars and wolf dimmed ---- */
+html.a11y-contrast body:not(#_), html.a11y-contrast body.hud:not(#_) {
+    --bg: #000; --text: #fff; --muted: #fff; --accent: #fff;
+    --hud: #ffffff; --hud-bright: #ffffff; --hud-mid: #ffffff; --hud-dim: #ffffff; --hud-faint: #333333; --hud-panel: #000000; --hud-bg: #000000;
+    --hud-glow: transparent; --hud-warn: #ffffff; --hud-idle: #ffffff; --hud-listen: #ffffff; --hud-think: #ffffff; --hud-speak: #ffffff;
+    background: #000 !important; color: #fff;
+}
+html.a11y-contrast body :is(*:not(svg):not(svg *):not(canvas):not(img):not(video):not(iframe):not(.hudplus-note):not(.hudplus-note *)) {
+    color: #fff !important; text-shadow: none !important;
+}
+html.a11y-contrast :is(.hudplus-box, .hudplus-toast, .hud-bar, .hud-panel, #transcript, #alerts, #np-popup, #confirm, #memory-panel, #type-input, .popup,
+                       .hud-chips span, .hud-chips button, .pop-action, .pop-btn, #access-fab, .ax-size) {
+    background: #000 !important; border: 2px solid #fff !important; box-shadow: none !important; backdrop-filter: none !important;
+}
+html.a11y-contrast .popup { border-width: 3px !important; }
+html.a11y-contrast :is(.pop-bar, .pop-buttons) { background: #000 !important; border-color: #fff !important; }
+html.a11y-contrast .pop-bar { border-bottom-width: 2px !important; }
+html.a11y-contrast .pop-buttons { border-top-width: 2px !important; }
+html.a11y-contrast .popup :is(button, input, select, textarea, table, th, td, li, .pop-body):not([style*="background"]) { background-color: #000; }
+html.a11y-contrast .popup :is(button, input, select, textarea):not(.pop-btn):not(.pop-action) { border: 2px solid #fff; }
+html.a11y-contrast .pop-table :is(th, td) { border-bottom: 2px solid #fff; }
+html.a11y-contrast :is(.pop-empty, .pop-site, .ax-note) { opacity: 1; }
+html.a11y-contrast .pop-list li.done .pop-item { opacity: 1; }
+html.a11y-contrast body.hud .hud-panel::before, html.a11y-contrast body.hud .hud-panel::after { border-color: #fff; }
+html.a11y-contrast body.hud .hud-panel h2 { border-bottom: 2px solid #fff; }
+html.a11y-contrast body.hud .hud-chips button[aria-pressed="true"] { text-decoration: underline; }
+html.a11y-contrast .pop-chart .grid { stroke: #fff; stroke-dasharray: 2 4; }
+html.a11y-contrast .pop-chart .axis { fill: #fff; }
+html.a11y-contrast .pop-chart .bar, html.a11y-contrast .pop-chart .bar.neg { fill: #fff; opacity: 1; }
+html.a11y-contrast .pop-chart .bar.neg { fill: none; stroke: #fff; stroke-width: 2; }
+html.a11y-contrast .pop-chart .line { stroke: #fff; stroke-width: 3; }
+html.a11y-contrast .pop-chart .dot { fill: #fff; }
+html.a11y-contrast .hudplus-note { background: #fff !important; color: #000 !important; border: 2px solid #000; }
+html.a11y-contrast .hudplus-note * { color: #000 !important; }
+html.a11y-contrast body.hud.hud-stars::before, html.a11y-contrast body.hud.hud-stars::after { opacity: 0.2 !important; }
+html.a11y-contrast body.hud #hud-sphere { opacity: 0.4; }
+html.a11y-contrast #folder-stars { opacity: 0.8; }
+html.a11y-contrast :focus-visible { outline-color: #fff !important; box-shadow: 0 0 0 2px #000 !important; }
+html.a11y-contrast #a11y-captions { background: #000; border-width: 3px; }
+html.a11y-contrast #a11y-captions .cap-user { color: #fff !important; }

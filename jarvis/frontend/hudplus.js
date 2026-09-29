@@ -3,6 +3,7 @@
 // paste pop-ups and a little easter egg. Alfred drives them by voice with "hud" cards (hudplus.py).
 (() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const noDrift = () => (window.jarvisAccess ? document.documentElement.classList.contains('a11y-motion') : reduceMotion);
     const $ = (id) => document.getElementById(id);
     const el = (tag, cls, text) => {
         const e = document.createElement(tag);
@@ -121,6 +122,11 @@
     const SHORTCUTS = [
         ['Ctrl + K', 'Command palette (or double-click the wolf)'],
         ['?', 'This list of shortcuts'],
+        ['Tab  /  Shift + Tab', 'Move between buttons and pop-up controls (a white ring shows where you are)'],
+        ['Alt + M  or  Ctrl + /', 'Microphone on or off'],
+        ['Alt + T', 'Jump to the typing box'],
+        ['Alt + W', 'Jump into the top pop-up window'],
+        ['Alt + A', 'Accessibility settings'],
         ['F', 'Focus mode on or off'],
         ['H', 'Hide or show the side panels'],
         ['N', 'New sticky note'],
@@ -436,7 +442,7 @@
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.clearRect(0, 0, w, h);
             if (!window.HudWolf) return;
-            const drift = reduceMotion ? 0 : 1;   // wanders slowly so nothing burns in
+            const drift = noDrift() ? 0 : 1;   // wanders slowly so nothing burns in
             ctx.translate(Math.sin(t / 23000) * w * 0.12 * drift, Math.cos(t / 31000) * h * 0.08 * drift);
             window.HudWolf.draw(ctx, w, h * 0.8, t * 0.4, 0.55, colour, true, { stream: 0 });
         };
