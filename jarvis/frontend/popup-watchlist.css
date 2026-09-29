@@ -1,0 +1,54 @@
+/* The "watchlist" pop-up kind (popup-watchlist.js): poster tiles, progress bars, a goal ring, numbers, charts, tables. */
+.wl-section { margin-bottom: 14px; }
+.wl-section:last-child { margin-bottom: 0; }
+.wl-title {
+    margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--hud-mid, #9fb3c8);
+}
+.wl-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.wl-tile { all: unset; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box; min-width: 0; }
+button.wl-tile { cursor: pointer; }
+button.wl-tile:hover .wl-poster, button.wl-tile:focus-visible .wl-poster { border-color: var(--hud-bright, #9fd8ff); }
+.wl-poster {
+    position: relative; width: 100%; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 6px; box-sizing: border-box;
+    border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-faint, rgba(63, 169, 255, 0.08));
+    display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px;
+    font-size: 15px; font-weight: 600; line-height: 1.2; color: var(--hud-bright, #9fd8ff);
+}
+.wl-poster.tone1 { background: rgba(255, 255, 255, 0.06); }
+.wl-poster.tone2 { background: rgba(255, 255, 255, 0.12); }
+.wl-poster.tone3 { background: repeating-linear-gradient(45deg, transparent 0 8px, rgba(255, 255, 255, 0.07) 8px 9px); }
+.wl-poster.tone4 { background: linear-gradient(160deg, rgba(255, 255, 255, 0.14), transparent 70%); }
+.wl-poster.tone5 { background: linear-gradient(20deg, rgba(255, 255, 255, 0.1), transparent 60%); }
+.wl-poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.wl-badge {
+    position: absolute; top: 4px; right: 4px; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 600;
+    background: var(--hud, #3fa9ff); color: #04121f;
+}
+.wl-tile-title { font-size: 13px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wl-tile-sub { font-size: 11px; color: var(--hud-mid, #9fb3c8); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-stars { font-size: 12px; letter-spacing: 1px; color: var(--hud-bright, #9fd8ff); }
+.wl-meters { display: grid; gap: 8px; }
+.wl-meter { all: unset; display: block; padding: 4px 6px; border-radius: 6px; }
+button.wl-meter { cursor: pointer; }
+button.wl-meter:hover, button.wl-meter:focus-visible { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); outline: none; }
+.wl-meter-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; margin-bottom: 4px; }
+.wl-meter-note { opacity: 0.7; font-variant-numeric: tabular-nums; }
+.wl-track {
+    height: 8px; border-radius: 4px; overflow: hidden;
+    background: var(--hud-faint, rgba(63, 169, 255, 0.08)); border: 1px solid var(--hud-dim, #2a3547);
+}
+.wl-fill { height: 100%; background: var(--hud, #3fa9ff); transition: width 0.4s ease-out; }
+.wl-ring { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wl-ring svg { width: 150px; height: 150px; }
+.wl-ring .track { fill: none; stroke: var(--hud-dim, #2a3547); stroke-width: 10; }
+.wl-ring .fill { fill: none; stroke: var(--hud, #3fa9ff); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease-out; }
+.wl-ring text { fill: var(--hud-bright, #9fd8ff); font-size: 22px; font-weight: 600; text-anchor: middle; }
+.wl-ring-label { font-size: 13px; }
+.wl-ring-note { font-size: 12px; opacity: 0.7; }
+.wl-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.wl-stat { padding: 8px 10px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; }
+.wl-stat-value { font-size: 17px; font-weight: 600; color: var(--hud-bright, #9fd8ff); font-variant-numeric: tabular-nums; }
+.wl-stat-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.65; }
+.wl-text { margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap; }
+@media (prefers-reduced-motion: reduce) { .wl-fill, .wl-ring .fill { transition: none; } }

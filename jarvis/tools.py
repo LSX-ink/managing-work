@@ -12,6 +12,10 @@ import httpx
 
 import access
 import aboutyou
+import active_calc
+import active_log
+import active_outdoors
+import active_workout
 import agenda
 import alerts
 import assistant_day
@@ -71,6 +75,10 @@ import homediary
 import homehouse
 import homekitchen
 import homewellbeing
+import homeadmin_home
+import homeadmin_lists
+import homeadmin_papers
+import homeadmin_shop
 import hudplus
 import household_chores
 import household_family
@@ -164,6 +172,10 @@ import wellness_fitness
 import wellness_logs
 import wellness_records
 import wellness_reminders
+import watchlist_books
+import watchlist_films
+import watchlist_shows
+import watchlist_social
 import wishes
 import words
 import worktools_board
@@ -245,6 +257,9 @@ ABILITIES += [access]  # access
 ABILITIES += [motoring_car, motoring_costs, motoring_guide, motoring_theory]  # motoring
 ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  # assistant
 ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_records]  # pets-and-garden
+ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_social]  # watchlist
+ABILITIES += [homeadmin_shop, homeadmin_papers, homeadmin_home, homeadmin_lists]  # homeadmin
+ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # active
 
 
 def defer(tool: dict) -> dict:
