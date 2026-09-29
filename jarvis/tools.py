@@ -38,6 +38,10 @@ import career_docs
 import career_interview
 import career_jobs
 import career_plan
+import creator_hooks
+import creator_ideas
+import creator_plan
+import creator_scripts
 import cooking
 import cooking_guide
 import calm_evening
@@ -45,6 +49,18 @@ import calm_exercises
 import calm_log
 import calm_mind
 import cooking_leftovers
+import creatorstats_accounts
+import creatorstats_plan
+import creatorstats_reports
+import creatorstats_stats
+import creatorbiz_deals
+import creatorbiz_docs
+import creatorbiz_money
+import creatorbiz_work
+import repurpose_formats
+import repurpose_plan
+import repurpose_subs
+import repurpose_tracker
 import dates
 import events_extras
 import events_guests
@@ -275,6 +291,10 @@ ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # activ
 ABILITIES += [support_day, support_people, support_care, support_see]  # support
 ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
 ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
+ABILITIES += [creator_ideas, creator_hooks, creator_scripts, creator_plan]  # creator ideas
+ABILITIES += [creatorstats_accounts, creatorstats_plan, creatorstats_stats, creatorstats_reports]  # creator stats
+ABILITIES += [creatorbiz_deals, creatorbiz_work, creatorbiz_money, creatorbiz_docs]  # creator business
+ABILITIES += [repurpose_subs, repurpose_formats, repurpose_plan, repurpose_tracker]  # repurpose content
 
 
 def defer(tool: dict) -> dict:

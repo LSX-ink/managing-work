@@ -1,0 +1,23 @@
+/* Creator business pop-ups (popup-creatorbiz.js): deal pipeline, rate card, invoices, contract checklist. */
+.cb-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.cb-col { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 6px; min-height: 80px; display: grid; gap: 6px; align-content: start; }
+.cb-col-title { margin: 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.cb-card { display: grid; gap: 3px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-panel, rgba(6, 18, 40, 0.92)); font-size: 13px; }
+.cb-name, .cb-move { font: inherit; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: var(--text, #e8eef7); overflow-wrap: anywhere; }
+.cb-name:hover, .cb-name:focus-visible { color: var(--hud-bright, #9fd8ff); outline: none; }
+.cb-move { font-size: 11px; color: var(--hud-bright, #9fd8ff); }
+.cb-muted { font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.cb-rate, .cb-inv, .cb-check { display: grid; gap: 8px; }
+.cb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cb-table td { padding: 6px; border-bottom: 1px solid var(--hud-dim, #2a3547); }
+.cb-price { text-align: right; font-weight: 600; color: var(--hud-bright, #9fd8ff); white-space: nowrap; }
+.cb-extras { margin: 0; padding-left: 18px; font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.cb-note { font-size: 12px; color: var(--hud-mid, #9fb3c8); border-top: 1px solid var(--hud-dim, #2a3547); padding-top: 6px; }
+.cb-owed { font-weight: 600; color: var(--hud-bright, #9fd8ff); }
+.cb-inv-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 6px 8px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px; font-size: 13px; }
+.cb-inv-row.overdue { border-style: dashed; }
+.cb-badge { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 1px 6px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 10px; }
+.cb-badge.overdue { color: var(--hud-bright, #9fd8ff); border-color: var(--hud-bright, #9fd8ff); }
+.cb-check-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px 8px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px; font-size: 13px; cursor: pointer; }
+.cb-check-row.ticked { opacity: 0.65; }
+.cb-check-text { display: grid; gap: 2px; }
