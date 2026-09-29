@@ -181,7 +181,11 @@ Once you've clicked the orb, Alfred keeps listening. Say **"stop"**, **"quiet"**
 
 ### Moving the chat
 
-Say "Alfred, move the chat to the bottom left" (or top left, top right, bottom right) to keep the centre free for the wolf. "Put the chat back in the middle" undoes it. Your browser remembers where you put it. On narrow windows it stays in the middle.
+The chat sits small in the bottom left, folded down to a **CHAT** tab that shows Alfred's last line. Click it (or
+press Alt+C) to open the conversation and the typing box, and click again to fold it away; it opens by itself when
+Alfred needs your OK. Say "Alfred, move the chat to the top right" (or any corner) or "put the chat back in the
+middle" to move it. Your browser remembers where you put it and whether it's open. On narrow windows it stays in
+the middle.
 
 ### Timers and breaks
 

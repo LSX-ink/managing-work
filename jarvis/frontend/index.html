@@ -86,11 +86,29 @@
         .confirm-buttons button[data-answer="deny"] { border-color: #c0504d; }
         .confirm-buttons button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        /* The chat (transcript, approvals, typing box): in the centre column, or in a corner Alfred moves it to. */
-        #chat { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+        /* The chat (transcript, approvals, typing box): docked small on the left (bottom-left) by default, minimised
+           to a CHAT tab that expands; Alfred can move it to another corner or back to the centre column. */
+        #chat { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        #chat-body { display: flex; flex-direction: column; gap: 12px; }
+        body[data-chat-min] #chat-body { display: none; }
+        #chat-toggle {
+            align-self: flex-start; display: flex; gap: 8px; align-items: baseline; max-width: 100%; padding: 6px 12px;
+            border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-panel, #0c121c); color: var(--hud-bright, var(--text));
+            font: inherit; font-size: 12px; letter-spacing: 0.12em; cursor: pointer;
+        }
+        #chat-toggle:focus-visible { outline: 2px solid var(--hud, var(--accent)); outline-offset: 2px; }
+        #chat-toggle-label::after { content: " \25BE"; }
+        body[data-chat-min] #chat-toggle-label::after { content: " \25B8"; }
+        #chat-preview { display: none; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+                        letter-spacing: 0; color: var(--hud-mid, var(--muted)); max-width: 240px; }
+        body[data-chat-min] #chat-preview:not(:empty) { display: inline; }
+        #chat-toggle.unread #chat-toggle-label { color: var(--hud-warn, #ffc24a); }
         @media (min-width: 1001px) {
-            body[data-chat] #chat { position: fixed; z-index: 15; width: min(420px, 30vw); }
-            body[data-chat] #transcript { background: var(--hud-bg, var(--bg, #000)); }  /* solid, over any panel */
+            body[data-chat] #chat { position: fixed; z-index: 15; width: min(360px, 26vw); }
+            body[data-chat^="bottom"] #chat { flex-direction: column-reverse; }  /* the tab stays at the bottom */
+            body[data-chat] #transcript, body[data-chat] #type-form, body[data-chat] #chat-toggle {
+                background: var(--hud-bg, var(--bg, #000));  /* solid, over any panel */
+            }
             body[data-chat$="left"] #chat { left: 24px; }
             body[data-chat$="right"] #chat { right: 24px; }
             body[data-chat^="top"] #chat { top: 84px; }
@@ -161,6 +179,10 @@
             <ul id="alerts-list"></ul>
         </section>
         <div id="chat">
+            <button id="chat-toggle" type="button" aria-expanded="true" aria-controls="chat-body" title="Show or hide the chat (Alt+C)">
+                <span id="chat-toggle-label">CHAT</span><span id="chat-preview"></span>
+            </button>
+            <div id="chat-body">
             <div id="transcript" role="log" aria-label="Conversation" aria-live="off"></div>
             <section id="confirm" hidden aria-live="assertive">
                 <p id="confirm-title"></p>
@@ -174,6 +196,7 @@
             <form id="type-form" autocomplete="off">
                 <input id="type-input" type="text" placeholder="…or type to Jarvis" aria-label="Message to Jarvis">
             </form>
+            </div>
         </div>
         <section class="hud-only hud-panel hud-bottom" aria-label="Weather">
             <h2 id="hud-city">ENVIRONMENT</h2>
