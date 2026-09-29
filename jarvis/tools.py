@@ -115,6 +115,9 @@ import routines_life
 import screen
 import voice
 import shopping
+import skynature_guide
+import skynature_journal
+import skynature_sky
 import showme
 import studio_learn
 import studio_log
@@ -218,6 +221,7 @@ ABILITIES += [languages_study, languages_practice, languages_progress]  # langua
 ABILITIES += [calm_exercises, calm_mind, calm_log, calm_evening]  # calm
 ABILITIES += [partyhost_quiz, partyhost_cards, partyhost_draw, partyhost_rules]  # partyhost
 ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
+ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
 
 
 def defer(tool: dict) -> dict:
