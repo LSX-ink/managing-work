@@ -38,6 +38,10 @@ import career_docs
 import career_interview
 import career_jobs
 import career_plan
+import creator_hooks
+import creator_ideas
+import creator_plan
+import creator_scripts
 import cooking
 import cooking_guide
 import calm_evening
@@ -275,6 +279,7 @@ ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # activ
 ABILITIES += [support_day, support_people, support_care, support_see]  # support
 ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
 ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
+ABILITIES += [creator_ideas, creator_hooks, creator_scripts, creator_plan]  # creator ideas
 
 
 def defer(tool: dict) -> dict:
