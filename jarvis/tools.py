@@ -104,6 +104,10 @@ import partyhost_draw
 import partyhost_quiz
 import partyhost_rules
 import pctools
+import photo_calc
+import photo_gear
+import photo_ideas
+import photo_shoots
 import reminders
 import routines
 import routines_brief
@@ -213,6 +217,7 @@ ABILITIES += [diy_calc, diy_room, diy_guide, diy_projects]  # diy
 ABILITIES += [languages_study, languages_practice, languages_progress]  # languages
 ABILITIES += [calm_exercises, calm_mind, calm_log, calm_evening]  # calm
 ABILITIES += [partyhost_quiz, partyhost_cards, partyhost_draw, partyhost_rules]  # partyhost
+ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 
 
 def defer(tool: dict) -> dict:

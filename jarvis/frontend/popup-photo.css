@@ -1,0 +1,55 @@
+/* Photography pop-ups (popup-photo.js): diagrams, shot list, project grid and composition examples.
+   Colours follow the theme's HUD variables, like popup.css. */
+
+.popup[data-kind^="photo-"] { width: min(480px, calc(100vw - 24px)); }
+
+.photo-svg { width: 100%; height: auto; display: block; max-height: 300px; }
+.photo-label { fill: var(--hud-mid, #9fb3c8); font-size: 11px; }
+.photo-strong { fill: var(--hud-bright, #9fd8ff); font-weight: 600; }
+.photo-big { font-size: 22px; fill: var(--hud-bright, #9fd8ff); }
+.photo-track { fill: var(--hud-faint, rgba(63, 169, 255, 0.08)); stroke: var(--hud-dim, #2a3547); }
+.photo-sharp { fill: var(--hud-glow, rgba(63, 169, 255, 0.35)); stroke: var(--hud, #3fa9ff); }
+.photo-camera { fill: var(--hud-mid, #9fb3c8); }
+.photo-focus { stroke: var(--hud-bright, #9fd8ff); stroke-width: 2; stroke-dasharray: 4 3; }
+.photo-arrow { fill: none; stroke: var(--hud-bright, #9fd8ff); stroke-width: 2; }
+.photo-wedge { fill: var(--hud-faint, rgba(63, 169, 255, 0.12)); stroke: var(--hud, #3fa9ff); stroke-width: 1.5; }
+.photo-full { fill: var(--hud-faint, rgba(63, 169, 255, 0.08)); stroke: var(--hud-mid, #9fb3c8); stroke-dasharray: 4 3; }
+.photo-keep { fill: var(--hud-glow, rgba(63, 169, 255, 0.3)); stroke: var(--hud-bright, #9fd8ff); stroke-width: 2; }
+
+.photo-facts { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 10px 0 0; font-size: 13px; }
+.photo-facts dt { color: var(--hud-mid, #9fb3c8); }
+.photo-facts dd { margin: 0; }
+
+.photo-bar { height: 6px; border-radius: 3px; background: var(--hud-dim, #2a3547); overflow: hidden; }
+.photo-bar-fill { height: 100%; width: 0; background: var(--hud, #3fa9ff); transition: width 0.2s; }
+.photo-count { font-size: 12px; color: var(--hud-mid, #9fb3c8); margin: 4px 0 8px; }
+.photo-shots { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.photo-shots li { display: flex; gap: 8px; align-items: flex-start; padding: 5px 6px; border-radius: 6px; }
+.photo-shots li:hover { background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.photo-shots input { accent-color: var(--hud, #3fa9ff); width: 16px; height: 16px; margin-top: 3px; flex: none; }
+.photo-shots label { cursor: pointer; }
+.photo-shots li.done label { text-decoration: line-through; opacity: 0.55; }
+
+.photo-pct { font-size: 36px; font-weight: 600; text-align: center; color: var(--hud-bright, #9fd8ff); margin-bottom: 8px; }
+.photo-cells { display: flex; flex-wrap: wrap; gap: 2px; }
+.photo-cell { width: 10px; height: 10px; border-radius: 2px; border: 1px solid var(--hud-dim, #2a3547); }
+.photo-cell.on { background: var(--hud, #3fa9ff); border-color: var(--hud, #3fa9ff); }
+.photo-note { font-size: 12px; color: var(--hud-mid, #9fb3c8); margin-top: 4px; }
+
+.photo-comp .photo-sky { fill: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.photo-comp .photo-ground { fill: var(--hud-dim, #2a3547); opacity: 0.6; }
+.photo-guide { stroke: var(--hud-bright, #9fd8ff); stroke-width: 1; stroke-dasharray: 5 4; }
+.photo-subject { fill: var(--hud, #3fa9ff); stroke: var(--hud-bright, #9fd8ff); stroke-width: 1.5; }
+.photo-mirror { fill: var(--hud-glow, rgba(63, 169, 255, 0.3)); stroke: var(--hud, #3fa9ff); }
+.photo-point { fill: var(--hud-bright, #9fd8ff); }
+.photo-road { fill: none; stroke: var(--hud-mid, #9fb3c8); stroke-width: 6; opacity: 0.5; }
+.photo-spiral { fill: none; stroke: var(--hud-bright, #9fd8ff); stroke-width: 2; }
+.photo-frame { fill: var(--hud-panel, #061228); opacity: 0.85; }
+.photo-space { fill: none; stroke: var(--hud-mid, #9fb3c8); stroke-dasharray: 3 3; }
+.photo-far { fill: var(--hud-dim, #2a3547); }
+.photo-mid { fill: var(--hud-glow, rgba(63, 169, 255, 0.3)); }
+.photo-border { fill: none; stroke: var(--hud-dim, #2a3547); }
+.photo-how { margin-top: 10px; }
+.photo-tip { margin-top: 6px; font-size: 13px; color: var(--hud-mid, #9fb3c8); font-style: italic; }
+
+@media (prefers-reduced-motion: reduce) { .photo-bar-fill { transition: none; } }
