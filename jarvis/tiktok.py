@@ -27,7 +27,7 @@ from config import Settings
 
 AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
 API = "https://open.tiktokapis.com/v2"
-SCOPES = "user.info.basic,video.upload,video.publish"
+SCOPES = "user.info.basic,video.upload,video.publish,video.list"
 TOKENS = ".tiktok-tokens.json"
 ONE_CHUNK = 64 * 1024 * 1024
 CHUNK = 10 * 1024 * 1024
@@ -59,7 +59,7 @@ def tokens(settings: Settings) -> dict:
         return {}
 
 
-def _save_tokens(settings: Settings, data: dict) -> None:
+def save_tokens(settings: Settings, data: dict) -> None:
     _path(settings).parent.mkdir(parents=True, exist_ok=True)
     _path(settings).write_text(json.dumps(data, indent=2), encoding="utf-8")
 
@@ -72,7 +72,7 @@ def connected(settings: Settings, account: str) -> bool:
 def disconnect(settings: Settings, account: str) -> None:
     data = tokens(settings)
     data.pop(account, None)
-    _save_tokens(settings, data)
+    save_tokens(settings, data)
 
 
 def login_url(settings: Settings, account: str) -> str:
@@ -101,7 +101,7 @@ def _store(settings: Settings, account: str, body: dict) -> None:
                      "open_id": body.get("open_id", ""), "scope": body.get("scope", ""),
                      "expires_at": now + int(body.get("expires_in", 86400)) - 120,
                      "refresh_expires_at": now + int(body.get("refresh_expires_in", 31536000))}
-    _save_tokens(settings, data)
+    save_tokens(settings, data)
 
 
 async def finish_login(http: httpx.AsyncClient, settings: Settings, state: str, code: str) -> str:
@@ -189,3 +189,37 @@ async def status(http: httpx.AsyncClient, settings: Settings, account: str, publ
                                   headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=UTF-8"}))
     return str(data.get("status") or "unknown")
 
+
+
+async def video_views(http: httpx.AsyncClient, settings: Settings, account: str) -> list[dict]:
+    """The account's latest public videos with their view counts (needs the video.list permission)."""
+    token = await access_token(http, settings, account)
+    auth = {"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=UTF-8"}
+    found, cursor = [], None
+    for _ in range(3):  # up to 60 videos
+        body = {"max_count": 20, **({"cursor": cursor} if cursor else {})}
+        data = _check(await http.post(f"{API}/video/list/?fields=id,title,video_description,view_count,create_time",
+                                      headers=auth, json=body))
+        found += data.get("videos") or []
+        if not data.get("has_more"):
+            break
+        cursor = data.get("cursor")
+    return found
+
+
+def _norm(text: str) -> str:
+    return " ".join(str(text or "").lower().split())[:60]
+
+
+def match_views(found: list[dict], video: dict) -> int | None:
+    """Views for one of our videos: by TikTok's post id when we have it, else by the start of its caption."""
+    for item in found:
+        if video.get("post_id") and str(item.get("id")) == str(video["post_id"]):
+            return int(item.get("view_count") or 0)
+    start = _norm(video.get("caption"))[:40]
+    for item in found:
+        text = _norm(item.get("video_description") or item.get("title"))
+        if start and text.startswith(start):
+            video["post_id"] = str(item.get("id"))
+            return int(item.get("view_count") or 0)
+    return None
