@@ -1,0 +1,26 @@
+/* Calm pop-ups (popup-calm.js): breathing circle, meditation timer, guided script. Colours follow popup.css's HUD variables. */
+.cm-wrap { display: grid; gap: 10px; justify-items: center; padding: 6px 0; text-align: center; }
+.cm-blurb, .cm-muted { font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.cm-circle {
+    width: 150px; height: 150px; border-radius: 50%; margin: 10px 0;
+    border: 2px solid var(--hud-bright, #9fd8ff); background: var(--hud-faint, rgba(63, 169, 255, 0.08));
+    box-shadow: 0 0 24px var(--hud-glow, rgba(20, 70, 160, 0.35));
+    transform: scale(0.55); transition: transform 4s ease-in-out;
+}
+.cm-circle.big { transform: scale(1); }
+.cm-word { font-size: 18px; letter-spacing: 0.06em; color: var(--hud-bright, #9fd8ff); min-height: 24px; }
+.cm-count { font-size: 28px; font-variant-numeric: tabular-nums; min-height: 34px; }
+.cm-clock { font-size: 44px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 12px 0; color: var(--hud-bright, #9fd8ff); }
+.cm-step { font-size: 16px; line-height: 1.5; min-height: 72px; padding: 6px 8px; overflow-wrap: anywhere; }
+.cm-bar { width: 100%; height: 4px; border-radius: 2px; background: var(--hud-dim, #2a3547); overflow: hidden; }
+.cm-bar span { display: block; height: 100%; width: 0; background: var(--hud-bright, #9fd8ff); transition: width 0.25s linear; }
+.cm-row { display: flex; gap: 6px; }
+.cm-check { font-size: 12px; color: var(--hud-mid, #9fb3c8); cursor: pointer; }
+.cm-check input { accent-color: var(--hud, #3fa9ff); }
+.cm-btn {
+    font: inherit; font-size: 13px; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--hud-dim, #2a3547); background: transparent; color: var(--hud-bright, #9fd8ff);
+}
+.cm-btn:hover, .cm-btn:focus-visible { border-color: var(--hud, #3fa9ff); outline: none; }
+.cm-btn.primary { border-color: var(--hud, #3fa9ff); }
+@media (prefers-reduced-motion: reduce) { .cm-circle { transition: none; } .cm-bar span { transition: none; } }

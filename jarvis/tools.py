@@ -31,6 +31,10 @@ import career_jobs
 import career_plan
 import cooking
 import cooking_guide
+import calm_evening
+import calm_exercises
+import calm_log
+import calm_mind
 import cooking_leftovers
 import dates
 import diy_calc
@@ -203,6 +207,7 @@ ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
 ABILITIES += [career_jobs, career_interview, career_docs, career_plan]  # career
 ABILITIES += [diy_calc, diy_room, diy_guide, diy_projects]  # diy
 ABILITIES += [languages_study, languages_practice, languages_progress]  # languages
+ABILITIES += [calm_exercises, calm_mind, calm_log, calm_evening]  # calm
 
 
 def defer(tool: dict) -> dict:
