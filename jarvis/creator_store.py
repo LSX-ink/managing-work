@@ -36,7 +36,8 @@ STARTERS = [
                                         "about you, told kindly and simply",
      "style": "explainer", "format": "facts", "series": ["Letter Psychology", "Birth Months", "Signs You're"]},
     {"name": "karma.receipts", "theme": "dramatic family, relationship and workplace stories where karma lands: "
-                                        "betrayal, secrets, second chances and satisfying twists",
+                                        "betrayal, secrets, faith and protection, second chances and satisfying twists; end with a line "
+                                        "that invites a comment (like Type amen)",
      "style": "drama", "format": "story", "series": ["Karma Hit Different", "They Didn't Know", "Plot Twist"]},
 ]
 
