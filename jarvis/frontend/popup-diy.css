@@ -4,7 +4,7 @@
 .popup[data-kind="diy-plan"] { width: min(640px, calc(100vw - 24px)); }
 .popup[data-kind="diy-guide"] { width: min(480px, calc(100vw - 24px)); }
 
-.diy-plan { width: 100%; height: auto; display: block; }
+.diy-plan { width: 100%; height: auto; max-height: min(400px, 50vh); display: block; }
 .diy-floor { fill: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
 .diy-grid { stroke: var(--hud-dim, #2a3547); stroke-width: 0.5; stroke-dasharray: 2 4; }
 .diy-walls { fill: none; stroke: var(--hud-bright, #9fd8ff); stroke-width: 4; }
@@ -40,3 +40,4 @@
 .diy-pro { margin-top: 12px; font-size: 13px; color: var(--hud-mid, #9fb3c8); font-style: italic; }
 
 @media (prefers-reduced-motion: reduce) { .diy-bar-fill { transition: none; } }
+.popup[data-kind="diy-plan"] { max-height: calc(100vh - 40px); }
