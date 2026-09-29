@@ -103,6 +103,9 @@ import routines_life
 import screen
 import voice
 import shopping
+import skynature_guide
+import skynature_journal
+import skynature_sky
 import showme
 import studio_learn
 import studio_log
@@ -203,6 +206,7 @@ ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
 ABILITIES += [career_jobs, career_interview, career_docs, career_plan]  # career
 ABILITIES += [diy_calc, diy_room, diy_guide, diy_projects]  # diy
 ABILITIES += [languages_study, languages_practice, languages_progress]  # languages
+ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
 
 
 def defer(tool: dict) -> dict:
