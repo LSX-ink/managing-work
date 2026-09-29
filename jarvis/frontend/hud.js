@@ -10,7 +10,8 @@
         COLORS.speaking = pick('--hud-speak', COLORS.speaking);
     }
     const ENERGY = { idle: 0.25, listening: 0.6, thinking: 0.8, speaking: 1 };
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let reduceMotion = window.jarvisAccess ? document.documentElement.classList.contains('a11y-motion') : window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.addEventListener('jarvis:motion', () => { reduceMotion = document.documentElement.classList.contains('a11y-motion'); });   // access.js
     const orb = document.getElementById('orb');
     const $ = (id) => document.getElementById(id);
     let config = {};
@@ -56,7 +57,7 @@
         ctx.clearRect(0, 0, w, h);
         if (wolfMix > 0.01) {
             window.HudWolf.draw(ctx, w, h, t, wolfMix, COLORS.idle, reduceMotion, {
-                stream: streamMix, labels: memory ? window.HudMemory.labels() : null, hover: memory ? window.HudMemory.hover : -1,
+                stream: reduceMotion ? 0 : streamMix, labels: memory ? window.HudMemory.labels() : null, hover: memory ? window.HudMemory.hover : -1,
             });
         }
         if (fade < 0.01) return;
@@ -134,7 +135,7 @@
         ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy);
         ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r);
         ctx.stroke();
-        const a = (t / (reduceMotion ? 12000 : 3000)) % (Math.PI * 2);
+        const a = reduceMotion ? 0.8 : (t / 3000) % (Math.PI * 2);   // reduced motion: the sweep stands still
         for (let i = 0; i < 30; i++) {                     // fading sweep trail
             ctx.globalAlpha = 0.5 * (1 - i / 30);
             ctx.beginPath();

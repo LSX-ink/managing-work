@@ -8,6 +8,7 @@
     document.body.append(layer);
     const windows = new Map();  // card id -> element
     let top = 40;
+    let serial = 0;
 
     const el = (tag, cls, text) => {
         const e = document.createElement(tag);
@@ -51,9 +52,11 @@
     }
 
     function close(win) {
+        const back = win.contains(document.activeElement) ? win._opener : null;   // keyboard users land where they were
         windows.delete(win.dataset.id);
         win.querySelectorAll('audio, video').forEach((m) => m.pause());
         win.remove();
+        if (back && back.isConnected) back.focus();
     }
 
     // Other files add kinds here: window.jarvisPopupKinds.name = (card, body, helpers) => { ... }.
@@ -152,7 +155,7 @@
         } else {
             values.forEach((v, i) => {
                 const top = Math.min(y(v), y(0)), h = Math.abs(y(v) - y(0));
-                add('rect', { x: L + step * i + step * 0.15, y: top, width: step * 0.7, height: Math.max(1, h), class: 'bar' })
+                add('rect', { x: L + step * i + step * 0.15, y: top, width: step * 0.7, height: Math.max(1, h), class: v < 0 ? 'bar neg' : 'bar' })
                     .append(Object.assign(document.createElementNS(NS, 'title'), { textContent: `${labels[i]}: ${fmt(v)}` }));
             });
         }
@@ -244,11 +247,20 @@
             win.dataset.id = card.id;
             const bar = el('header', 'pop-bar');
             const title = el('h3', 'pop-title');
+            title.id = `pop-title-${++serial}`;
+            win.setAttribute('role', 'dialog');
+            win.setAttribute('aria-labelledby', title.id);
+            win.tabIndex = -1;
+            win._opener = document.activeElement;
             const min = el('button', 'pop-btn', '–');
+            min.type = 'button';
             min.title = 'Shrink';
+            min.setAttribute('aria-label', 'Shrink window');
             min.addEventListener('click', () => win.classList.toggle('shrunk'));
             const x = el('button', 'pop-btn', '×');
+            x.type = 'button';
             x.title = 'Close';
+            x.setAttribute('aria-label', 'Close window');
             x.addEventListener('click', () => close(win));
             bar.append(title, min, x);
             win.append(bar, el('div', 'pop-body'), el('footer', 'pop-buttons'));
@@ -278,7 +290,7 @@
 
     document.addEventListener('jarvis:popup', (e) => show(e.detail));
     addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !e.target.closest('input, textarea')) {
+        if (e.key === 'Escape' && !e.target.closest('input:not([type=checkbox], [type=radio], [type=range], [type=button]), textarea, select')) {
             const last = [...windows.values()].sort((a, b) => b.style.zIndex - a.style.zIndex)[0];
             if (last) close(last);
         }

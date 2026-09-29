@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+import access
 import aboutyou
 import agenda
 import alerts
@@ -224,6 +225,7 @@ ABILITIES += [calm_exercises, calm_mind, calm_log, calm_evening]  # calm
 ABILITIES += [partyhost_quiz, partyhost_cards, partyhost_draw, partyhost_rules]  # partyhost
 ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
+ABILITIES += [access]  # access
 
 
 def defer(tool: dict) -> dict:
