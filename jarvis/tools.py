@@ -143,6 +143,10 @@ import showme
 import studio_learn
 import studio_log
 import studio_play
+import study_plan
+import study_progress
+import study_topics
+import study_write
 import sports_games
 import sports_live
 import sports_scoring
@@ -260,6 +264,7 @@ ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_r
 ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_social]  # watchlist
 ABILITIES += [homeadmin_shop, homeadmin_papers, homeadmin_home, homeadmin_lists]  # homeadmin
 ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # active
+ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
 
 
 def defer(tool: dict) -> dict:
