@@ -164,6 +164,10 @@ import wellness_fitness
 import wellness_logs
 import wellness_records
 import wellness_reminders
+import watchlist_books
+import watchlist_films
+import watchlist_shows
+import watchlist_social
 import wishes
 import words
 import worktools_board
@@ -245,6 +249,7 @@ ABILITIES += [access]  # access
 ABILITIES += [motoring_car, motoring_costs, motoring_guide, motoring_theory]  # motoring
 ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  # assistant
 ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_records]  # pets-and-garden
+ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_social]  # watchlist
 
 
 def defer(tool: dict) -> dict:
