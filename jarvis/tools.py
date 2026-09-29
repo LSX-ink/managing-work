@@ -71,6 +71,10 @@ import homediary
 import homehouse
 import homekitchen
 import homewellbeing
+import homeadmin_home
+import homeadmin_lists
+import homeadmin_papers
+import homeadmin_shop
 import hudplus
 import household_chores
 import household_family
@@ -250,6 +254,7 @@ ABILITIES += [motoring_car, motoring_costs, motoring_guide, motoring_theory]  # 
 ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  # assistant
 ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_records]  # pets-and-garden
 ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_social]  # watchlist
+ABILITIES += [homeadmin_shop, homeadmin_papers, homeadmin_home, homeadmin_lists]  # homeadmin
 
 
 def defer(tool: dict) -> dict:
