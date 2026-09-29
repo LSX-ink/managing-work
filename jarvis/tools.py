@@ -14,6 +14,10 @@ import access
 import aboutyou
 import agenda
 import alerts
+import assistant_day
+import assistant_inbox
+import assistant_life
+import assistant_track
 import artstudio_colours
 import artstudio_create
 import artstudio_photos
@@ -235,6 +239,7 @@ ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-natu
 ABILITIES += [webread_read, webread_explain, webread_page]  # webread
 ABILITIES += [access]  # access
 ABILITIES += [motoring_car, motoring_costs, motoring_guide, motoring_theory]  # motoring
+ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  # assistant
 
 
 def defer(tool: dict) -> dict:
