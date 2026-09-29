@@ -45,6 +45,10 @@ import calm_exercises
 import calm_log
 import calm_mind
 import cooking_leftovers
+import creatorbiz_deals
+import creatorbiz_docs
+import creatorbiz_money
+import creatorbiz_work
 import dates
 import events_extras
 import events_guests
@@ -275,6 +279,7 @@ ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # activ
 ABILITIES += [support_day, support_people, support_care, support_see]  # support
 ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
 ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
+ABILITIES += [creatorbiz_deals, creatorbiz_work, creatorbiz_money, creatorbiz_docs]  # creator business
 
 
 def defer(tool: dict) -> dict:
