@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+import access
 import aboutyou
 import agenda
 import alerts
@@ -144,6 +145,9 @@ import webview_listen
 import news_bulletin
 import webview_look
 import webview_places
+import webread_explain
+import webread_page
+import webread_read
 import wellness_fitness
 import wellness_logs
 import wellness_records
@@ -224,6 +228,8 @@ ABILITIES += [calm_exercises, calm_mind, calm_log, calm_evening]  # calm
 ABILITIES += [partyhost_quiz, partyhost_cards, partyhost_draw, partyhost_rules]  # partyhost
 ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
+ABILITIES += [webread_read, webread_explain, webread_page]  # webread
+ABILITIES += [access]  # access
 
 
 def defer(tool: dict) -> dict:

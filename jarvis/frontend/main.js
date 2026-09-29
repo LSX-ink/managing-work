@@ -158,6 +158,7 @@ function addLine(who, text) {
     div.textContent = `${who === 'user' ? t('you') : config.name}: ${text}`;
     transcript.appendChild(div);
     transcript.scrollTop = transcript.scrollHeight;
+    document.dispatchEvent(new CustomEvent('jarvis:line', { detail: { who, text } }));  // access.js: captions, screen reader
 }
 
 // Where the chat sits: a corner ("bottom-left" etc.) or the centre column. Remembered in this browser.
@@ -351,6 +352,8 @@ confirmBox.addEventListener('click', (event) => {
 // ---- Speech output ----------------------------------------------------------
 
 // The news bulletin player waits for this before it starts.
+// The speed multiplier from the accessibility settings (access.js); 1 when unset.
+const speechRate = () => (window.jarvisAccess ? window.jarvisAccess.speechRate() : 1);
 window.jarvisIsSpeaking = () => speaking || queue.length > 0;
 window.jarvisLastSpokeAt = () => lastSpokeAt;
 
@@ -362,6 +365,7 @@ function playNext() {
         return;
     }
     speaking = true;
+    document.dispatchEvent(new CustomEvent('jarvis:speak', { detail: { text: msg.text || '' } }));  // access.js: captions
     stopListening();
     setState('speaking');
     startStopper();
@@ -371,6 +375,7 @@ function playNext() {
         const bytes = Uint8Array.from(atob(msg.audio), (c) => c.charCodeAt(0));
         const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
         const audio = new Audio(url);
+        audio.playbackRate = speechRate();
         currentAudio = audio;
         audio.onended = audio.onerror = () => { URL.revokeObjectURL(url); finish(); };
         audio.play().catch(finish);
@@ -385,7 +390,7 @@ function playNext() {
             const utterance = new SpeechSynthesisUtterance(part);
             utterance.lang = config.speechLang;
             if (voice) utterance.voice = voice;
-            utterance.rate = Number(prefs.rate) || 1;
+            utterance.rate = Math.min(2, Math.max(0.3, (Number(prefs.rate) || 1) * speechRate()));
             utterance.pitch = Number(prefs.pitch) || 1;
             if (i === chunks.length - 1) utterance.onend = once;
             utterance.onerror = (e) => {
