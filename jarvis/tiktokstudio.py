@@ -16,10 +16,12 @@ from datetime import date, datetime
 
 import httpx
 
+import tiktokstudio_clips as clips
 import tiktokstudio_store as cs
 import tiktokstudio_video as cv
 import screen
 import tiktok
+import twitch
 from config import Settings
 
 CHECK_SECONDS = 300
@@ -53,13 +55,18 @@ def series_views(data: dict, first_id: str) -> int:
     return max([v.get("views", 0) for v in data["videos"] if v.get("series_of", v["id"]) == first_id] or [0])
 
 
+def _is_clips(data: dict, video: dict) -> bool:
+    account = cs.find_account(data, video.get("account"))
+    return bool(account and account.get("format") == "clips")
+
+
 def sequels_due(data: dict) -> list[dict]:
     """The latest part of each story whose views have earned the next part (and which isn't made yet)."""
     due = []
     for v in data["videos"]:
         first = v.get("series_of", v["id"])
         part = v.get("part", 1)
-        if v.get("status") not in ("posted", "approved") or part >= LAST_PART:
+        if v.get("status") not in ("posted", "approved") or part >= LAST_PART or _is_clips(data, v):
             continue
         later = [w for w in data["videos"] if w.get("series_of") == first and w.get("part", 1) > part]
         if later:
@@ -96,9 +103,11 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
     cs.save(settings, data)
     recent = [v["title"] for v in data["videos"] if v.get("account") == account["name"] and v.get("status") != "making"]
     try:
+        folder = cs.work_folder(settings, "TikTok", account["name"])
+        if account["format"] == "clips":
+            return await _finish(settings, vid["id"], await make_clips(settings, data, account, folder))
         await ensure_trends(settings, account["name"])
         account = cs.account(cs.load(settings), account["name"])
-        folder = cs.work_folder(settings, "TikTok", account["name"])
         result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
                                best=best_titles(data, account["name"]))
         update = {"status": "ready", "title": result["title"], "caption": result["caption"],
@@ -108,13 +117,34 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
     except Exception as exc:  # the network, the API or ffmpeg let us down; say so and carry on
         print(f"[jarvis] Studio video failed: {exc}", flush=True)
         update = {"status": "failed", "error": str(exc)[:300]}
+    return await _finish(settings, vid["id"], update)
+
+
+async def _finish(settings: Settings, video_id: str, update: dict) -> dict:
     data = cs.load(settings)
+    vid = {}
     for v in data["videos"]:
-        if v["id"] == vid["id"]:
+        if v["id"] == video_id:
             v.update(update)
             vid = v
     cs.save(settings, data)
     return vid
+
+
+async def make_clips(settings: Settings, data: dict, account: dict, folder) -> dict:
+    """A clip video: new viral clips and old viral ones take turns through the day."""
+    era = "new" if cs.made_today(data, account["name"]) % 2 else "old"
+    try:
+        result = await clips.make(_ctx["http"], settings, account, folder, era)
+    except Exception as exc:
+        print(f"[jarvis] Clip video failed: {exc}", flush=True)
+        return {"status": "failed", "error": str(exc)[:300]}
+    fresh = cs.load(settings)
+    a = cs.account(fresh, account["name"])
+    a["used_clips"] = (a.get("used_clips") or [])[-clips.MAX_USED:] + result["clip_ids"]
+    cs.save(settings, fresh)
+    return {"status": "ready", "title": result["title"], "caption": result["caption"], "hashtags": result["hashtags"],
+            "keyword": era, "file": cs.relative(settings, result["path"]), "story": ""}
 
 
 def best_titles(data: dict, account: str, n: int = 5) -> list[str]:
@@ -168,6 +198,8 @@ def todays_jobs(settings: Settings, data: dict, today: date) -> list[tuple[str, 
         fails = sum(1 for v in data["videos"] if v.get("account") == a["name"] and v.get("day") == today.isoformat()
                     and v.get("status") == "failed")
         missing = a.get("per_day", 3) - cs.made_today(data, a["name"], today)
+        if a.get("format") == "clips" and not twitch.configured(settings):
+            continue  # nothing to find clips with yet; the studio card says what's needed
         if fails < FAILS_PER_DAY:
             jobs += [(a["name"], "", None)] * max(0, missing)
     return jobs
@@ -283,7 +315,8 @@ def studio_card(settings: Settings, data: dict, focus: str = "") -> dict:
     return screen.card("creator-studio", "TikTok studio", "creator-studio",
                        buttons=[{"label": "Make one now", "say": "Make a TikTok video now."}],
                        data={"accounts": accounts, "videos": videos, "configured": tiktok.configured(settings),
-                             "setup": tiktok.setup_line(), "focus": focus, "making": _ctx["making"]})
+                             "setup": tiktok.setup_line() + ("" if twitch.configured(settings) or not any(
+                                 a["format"] == "clips" for a in data["accounts"]) else " " + twitch.setup_line()), "focus": focus, "making": _ctx["making"]})
 
 
 def studio(settings: Settings) -> screen.Shown:
@@ -296,7 +329,7 @@ def studio(settings: Settings) -> screen.Shown:
 
 # ---- accounts ----------------------------------------------------------------------------------------------
 
-FIELDS = ("theme", "style", "format", "series", "per_day", "voice", "accent")
+FIELDS = ("theme", "style", "format", "series", "per_day", "voice", "accent", "streamers", "category")
 
 
 def add_account(settings: Settings, args: dict) -> str:
@@ -315,7 +348,8 @@ def add_account(settings: Settings, args: dict) -> str:
 def update_account(settings: Settings, args: dict) -> str:
     data = cs.load(settings)
     a = cs.account(data, args.get("account"))
-    fresh = cs.new_account(cs.clean(args.get("new_name")) or a["name"], **{k: args.get(k) if args.get(k) is not None else a.get(k) for k in FIELDS})
+    fresh = cs.new_account(cs.clean(args.get("new_name")) or a["name"], used_clips=a.get("used_clips"),
+                           **{k: args.get(k) if args.get(k) is not None else a.get(k) for k in FIELDS})
     old = a["name"]
     a.update(fresh)
     if old != a["name"]:
@@ -382,7 +416,9 @@ def tool_definitions() -> list[dict]:
                        "or 'latest'). set_views (video, views e.g. 80k) records views: 50k earns part 2, then every "
                        "100k more another part up to part 5, which ends on a shocking cliffhanger. accounts lists "
                        "them. add_account (account name, theme, style noir/explainer/drama/cinematic, format "
-                       "story/facts, series, per_day, voice e.g. en-GB-RyanNeural, accent colour). update_account "
+                       "story/facts/clips, series, per_day, voice e.g. en-GB-RyanNeural, accent colour; clip accounts: "
+                       "streamers, category). Clip accounts like Clipzz post viral Twitch clips, old and new, filling "
+                       "the phone screen, a minute or more, the streamer credited. update_account "
                        "(account, new_name or any field). remove_account (account, confirmed). name_ideas (theme) for "
                        "flashy Gen Z account names. profile_kit (account) makes a profile picture and a bio. trends (account, refresh) shows this "
                        "week's TikTok trends for its niche (checked daily before the first video and used in every "
@@ -404,6 +440,9 @@ def tool_definitions() -> list[dict]:
                 "per_day": {"type": "integer", "description": "Videos a day for this account, 0 to 6."},
                 "voice": {"type": "string", "description": "A Microsoft neural voice, e.g. en-US-AndrewNeural."},
                 "accent": {"type": "string", "description": "Keyword colour for the explainer look, e.g. #ff4d6d."},
+                "streamers": {"type": "array", "items": {"type": "string"},
+                              "description": "Clip accounts: Twitch streamers to take clips from (best: ones who allow clipping). Empty: the category's top clips."},
+                "category": {"type": "string", "description": "Clip accounts: Twitch category, e.g. Just Chatting."},
                 "confirmed": {"type": "boolean"},
                 "refresh": {"type": "boolean", "description": "trends: check again now."},
             },

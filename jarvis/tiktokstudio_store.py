@@ -22,10 +22,12 @@ STYLES = {
     "explainer": "black explainer: a coloured keyword at the top, a simple drawn figure in the middle, dark background",
     "drama": "realistic full-screen scenes with a bold headline in a white box, like viral AI drama stories",
     "cinematic": "full-screen colour film stills with captions at the bottom",
+    "clips": "viral Twitch clips filling the whole phone, a hook line on top and the streamer credited",
 }
 FORMATS = {
     "story": "a short original story with a twist, told in scenes",
     "facts": "a punchy explainer series: one idea per video, told in short lines",
+    "clips": "viral streamer clips from Twitch, old and new, joined to a minute or more",
 }
 STATUSES = ("making", "ready", "approved", "posted", "skipped", "failed")
 # Two accounts to start from, in the looks of the pages the user liked. Rename or change them freely.
@@ -39,7 +41,11 @@ STARTERS = [
                                         "betrayal, secrets, faith and protection, second chances and satisfying twists; end with a line "
                                         "that invites a comment (like Type amen)",
      "style": "drama", "format": "story", "series": ["Karma Hit Different", "They Didn't Know", "Plot Twist"]},
+    {"name": "Clipzz", "theme": "the most viral Twitch streamer moments, from old classics to this week's",
+     "style": "clips", "format": "clips", "per_day": 5, "category": "Just Chatting"},
 ]
+# Starters added after someone's studio already existed get added once, by name.
+LATER_STARTERS = {"Clipzz"}
 
 
 def clean(value, limit: int = 200) -> str:
@@ -56,11 +62,17 @@ def new_account(name: str, **fields) -> dict:
     if not name:
         raise ValueError("The account needs a name.")
     style = fields.get("style") if fields.get("style") in STYLES else "noir"
-    kind = fields.get("format") if fields.get("format") in FORMATS else ("facts" if style == "explainer" else "story")
+    kind = fields.get("format") if fields.get("format") in FORMATS else (
+        "facts" if style == "explainer" else "clips" if style == "clips" else "story")
+    if kind == "clips":
+        style = "clips"
     return {"name": name, "theme": clean(fields.get("theme"), 300) or "short original stories",
             "style": style, "format": kind, "series": [clean(s, 60) for s in fields.get("series") or [] if clean(s, 60)][:10],
             "per_day": max(0, min(int(fields.get("per_day") if fields.get("per_day") is not None else 3), 6)),
-            "voice": clean(fields.get("voice"), 60), "accent": clean(fields.get("accent"), 20) or "#e8c547"}
+            "voice": clean(fields.get("voice"), 60), "accent": clean(fields.get("accent"), 20) or "#e8c547",
+            "streamers": [clean(s, 40).lstrip("@") for s in fields.get("streamers") or [] if clean(s, 40)][:30],
+            "category": clean(fields.get("category"), 60) or "Just Chatting",
+            "used_clips": list(fields.get("used_clips") or [])[-3000:]}
 
 
 def load(settings: Settings) -> dict:
@@ -73,6 +85,13 @@ def load(settings: Settings) -> dict:
     for key in ("accounts", "videos"):
         if not isinstance(data.get(key), list):
             data[key] = []
+    added = set(data.get("starters_added") or [])
+    for starter in STARTERS:
+        if starter["name"] in LATER_STARTERS - added:
+            if not any(a["name"].lower() == starter["name"].lower() for a in data["accounts"]):
+                data["accounts"].append(new_account(**starter))
+            added.add(starter["name"])
+    data["starters_added"] = sorted(added)
     return data
 
 
