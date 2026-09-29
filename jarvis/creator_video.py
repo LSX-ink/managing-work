@@ -31,7 +31,7 @@ from config import Settings
 W, H = 1080, 1920
 FPS = 30
 LENGTH = 60.0  # every video is exactly one minute
-MAX_SPEEDUP = 1.35  # narration that runs long is sped up this much at most, then the pictures hold to fit
+MAX_SPEEDUP = 1.5  # narration that runs long is sped up this much at most, then the pictures hold to fit
 PICTURE_URL = "https://image.pollinations.ai/prompt/{prompt}?width={w}&height={h}&seed={seed}&nologo=true&model=flux"
 DEFAULT_VOICE = "en-GB-RyanNeural"
 LOOKS = {
