@@ -1,0 +1,29 @@
+/* Freelance pop-ups (popup-freelance.js): board, calculator, timesheet, meters, checklist. */
+.fl-wrap { display: grid; gap: 8px; }
+.fl-scroll { overflow-x: auto; }
+.fl-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; align-items: start; }
+.fl-col { min-width: 132px; flex: 1; display: grid; gap: 6px; }
+.fl-colhead { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hud-bright, #9fd8ff); }
+.fl-lead { display: grid; gap: 2px; text-align: left; font: inherit; font-size: 12px; color: var(--text, #e8eef7); background: none; border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+.fl-lead:hover, .fl-lead:focus-visible { border-color: var(--hud-bright, #9fd8ff); outline: none; }
+.fl-name { font-weight: 600; font-size: 13px; overflow-wrap: anywhere; }
+.fl-link { font: inherit; font-weight: 600; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: var(--hud-bright, #9fd8ff); }
+.fl-link:hover, .fl-link:focus-visible { text-decoration: underline; outline: none; }
+.fl-muted { font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.fl-note { font-size: 12px; color: var(--hud-mid, #9fb3c8); border-top: 1px solid var(--hud-dim, #2a3547); padding-top: 6px; white-space: pre-wrap; }
+.fl-big { font-size: 26px; font-weight: 600; color: var(--hud-bright, #9fd8ff); }
+.fl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fl-table th, .fl-table td { padding: 6px; border-bottom: 1px solid var(--hud-dim, #2a3547); text-align: left; vertical-align: top; }
+.fl-rowhead { color: var(--hud-mid, #9fb3c8); font-weight: 400; }
+.fl-val { text-align: right; font-weight: 600; }
+.fl-num { text-align: right; white-space: nowrap; }
+.fl-sheet { font-size: 12px; }
+.fl-foot th, .fl-foot td { border-top: 1px solid var(--hud-mid, #9fb3c8); font-weight: 600; }
+.fl-mrow { display: grid; gap: 3px; }
+.fl-track { height: 8px; border-radius: 4px; background: var(--hud-dim, #2a3547); overflow: hidden; }
+.fl-fill { height: 100%; background: var(--hud-bright, #9fd8ff); }
+.fl-fill.over { background: var(--text, #e8eef7); }
+.fl-task { display: flex; gap: 8px; align-items: flex-start; width: 100%; font: inherit; font-size: 13px; text-align: left; color: var(--text, #e8eef7); background: none; border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px; padding: 6px 8px; cursor: pointer; }
+.fl-task.done { opacity: 0.6; }
+.fl-task.done .fl-ttext { text-decoration: line-through; }
+.fl-ttext { flex: 1; overflow-wrap: anywhere; }

@@ -63,6 +63,10 @@ import repurpose_subs
 import repurpose_tracker
 import digitalproducts_copy
 import incomestreams_goals
+import investlearn_calc
+import investlearn_learn
+import investlearn_plan
+import investlearn_practice
 import incomestreams_insights
 import incomestreams_streams
 import incomestreams_tax
@@ -77,6 +81,10 @@ import sellercalc_fees
 import sellercalc_guide
 import sellercalc_listing
 import sellercalc_stock
+import writingincome_blog
+import writingincome_book
+import writingincome_money
+import writingincome_newsletter
 import dates
 import events_extras
 import events_guests
@@ -106,6 +114,10 @@ import growth_media
 import growth_reflect
 import growth_study
 import fun
+import freelance_clients
+import freelance_docs
+import freelance_money
+import freelance_work
 import habits
 import helpers
 import homediary
@@ -147,6 +159,10 @@ import motoring_costs
 import motoring_guide
 import motoring_theory
 import music
+import nicheresearch_audience
+import nicheresearch_market
+import nicheresearch_plan
+import nicheresearch_score
 import notesearch
 import pc
 import people_book
@@ -315,7 +331,11 @@ ABILITIES += [repurpose_subs, repurpose_formats, repurpose_plan, repurpose_track
 ABILITIES += [digitalproducts_ideas, digitalproducts_make, digitalproducts_copy, digitalproducts_sell]  # digital products
 ABILITIES += [sidehustle_ideas, sidehustle_plan, sidehustle_money, sidehustle_safety]  # side hustles
 ABILITIES += [incomestreams_streams, incomestreams_insights, incomestreams_goals, incomestreams_tax]  # income streams
+ABILITIES += [freelance_clients, freelance_work, freelance_money, freelance_docs]  # freelancing
 ABILITIES += [sellercalc_fees, sellercalc_stock, sellercalc_listing, sellercalc_guide]  # seller calculators
+ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn_practice]  # investing basics
+ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
+ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 
 
 def defer(tool: dict) -> dict:
