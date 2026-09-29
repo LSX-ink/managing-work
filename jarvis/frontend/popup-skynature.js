@@ -105,7 +105,7 @@
 
     kinds['skynature-daylight'] = (card, body, { el }) => {
         const data = card.data || {};
-        const svg = svgEl(null, 'svg', { viewBox: '0 0 1440 84', class: 'sn-day', role: 'img', 'aria-label': 'Light through the day' });
+        const svg = svgEl(null, 'svg', { viewBox: '0 -20 1440 104', class: 'sn-day', role: 'img', 'aria-label': 'Light through the day' });
         for (const [from, to, kind] of data.bands || []) svgEl(svg, 'rect', { x: from, y: 14, width: to - from, height: 34, class: `sn-band ${kind}` });
         for (let h = 0; h <= 24; h += 3) {
             svgEl(svg, 'text', { x: h * 60, y: 72, 'text-anchor': h === 0 ? 'start' : h === 24 ? 'end' : 'middle', class: 'sn-tick' }, String(h).padStart(2, '0'));
