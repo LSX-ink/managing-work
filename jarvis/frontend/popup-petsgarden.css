@@ -1,0 +1,16 @@
+/* Pets and garden pop-ups (popup-petsgarden.js): the raised bed planner. HUD colours only. */
+.popup[data-kind="petsgarden-bed"] { width: min(460px, calc(100vw - 24px)); }
+.pg-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.pg-tools input {
+    flex: 1; min-width: 100px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547);
+    background: transparent; color: var(--text, #e8eef7); font: inherit;
+}
+.pg-grid { display: grid; gap: 4px; }
+.pg-cell {
+    aspect-ratio: 1; min-height: 44px; padding: 2px; border-radius: 6px; cursor: pointer; font-size: 11px; line-height: 1.1;
+    overflow: hidden; word-break: break-word; border: 1px solid var(--hud-dim, #2a3547); background: transparent;
+    color: var(--text, #e8eef7);
+}
+.pg-cell:hover, .pg-cell:focus-visible { border-color: var(--hud-bright, #9fd8ff); outline: none; }
+.pg-cell.full { background: var(--hud-faint, #1f2b3d); color: var(--hud-bright, #9fd8ff); font-weight: 600; }
+.pg-hint { margin-top: 6px; font-size: 12px; color: var(--hud-mid, #9fb3c8); }

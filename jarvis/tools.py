@@ -100,6 +100,10 @@ import people_lists
 import people_occasions
 import people_touch
 import partyhost_cards
+import petsgarden_garden
+import petsgarden_guide
+import petsgarden_pets
+import petsgarden_records
 import partyhost_draw
 import partyhost_quiz
 import partyhost_rules
@@ -224,6 +228,7 @@ ABILITIES += [calm_exercises, calm_mind, calm_log, calm_evening]  # calm
 ABILITIES += [partyhost_quiz, partyhost_cards, partyhost_draw, partyhost_rules]  # partyhost
 ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
+ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_records]  # pets-and-garden
 
 
 def defer(tool: dict) -> dict:
