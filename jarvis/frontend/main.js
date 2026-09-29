@@ -164,18 +164,50 @@ function addLine(who, text) {
 }
 
 // Where the chat sits: a corner ("bottom-left" etc.) or the centre column. Remembered in this browser.
+// It starts docked small on the left, minimised to a CHAT tab that opens with a click (or Alt+C).
 const CHAT_CORNERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+const chatToggle = document.getElementById('chat-toggle');
+const chatPreview = document.getElementById('chat-preview');
 function placeChat(corner) {
     if (CHAT_CORNERS.includes(corner)) document.body.dataset.chat = corner;
     else delete document.body.dataset.chat;
-    try { localStorage.setItem('jarvis-chat', CHAT_CORNERS.includes(corner) ? corner : 'centre'); } catch (e) { /* private window */ }
+    try { localStorage.setItem('jarvis-chat-place', CHAT_CORNERS.includes(corner) ? corner : 'centre'); } catch (e) { /* private window */ }
     transcript.scrollTop = transcript.scrollHeight;
     window.dispatchEvent(new Event('resize'));  // the folder stars move out of its way
 }
-try {
-    const saved = localStorage.getItem('jarvis-chat');
-    if (CHAT_CORNERS.includes(saved)) document.body.dataset.chat = saved;
-} catch (e) { /* private window */ }
+function minimiseChat(min) {
+    if (min) document.body.dataset.chatMin = '';
+    else {
+        delete document.body.dataset.chatMin;
+        chatToggle.classList.remove('unread');
+        transcript.scrollTop = transcript.scrollHeight;
+    }
+    chatToggle.setAttribute('aria-expanded', String(!min));
+    try { localStorage.setItem('jarvis-chat-min', min ? '1' : '0'); } catch (e) { /* private window */ }
+    window.dispatchEvent(new Event('resize'));
+}
+chatToggle.addEventListener('click', () => {
+    const opening = 'chatMin' in document.body.dataset;
+    minimiseChat(!opening);
+    if (opening) typeInput.focus();
+});
+addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === 'c' || e.key === 'C')) { e.preventDefault(); chatToggle.click(); }
+});
+document.addEventListener('jarvis:line', (e) => {
+    chatPreview.textContent = e.detail.text.length > 60 ? `${e.detail.text.slice(0, 60)}…` : e.detail.text;
+    if ('chatMin' in document.body.dataset && e.detail.who !== 'user') chatToggle.classList.add('unread');
+});
+{
+    let place = 'bottom-left', min = true;
+    try {
+        place = localStorage.getItem('jarvis-chat-place') || 'bottom-left';
+        min = localStorage.getItem('jarvis-chat-min') !== '0';
+    } catch (e) { /* private window */ }
+    if (CHAT_CORNERS.includes(place)) document.body.dataset.chat = place;
+    if (min) document.body.dataset.chatMin = '';
+    chatToggle.setAttribute('aria-expanded', String(!min));
+}
 
 // ---- WebSocket --------------------------------------------------------------
 
@@ -340,6 +372,7 @@ function showConfirm(msg) {
     }));
     confirmBox.dataset.id = msg.id;
     confirmBox.hidden = false;
+    minimiseChat(false);  // an approval never hides in a closed chat
     setState('thinking', t('waitingOk'));
 }
 
