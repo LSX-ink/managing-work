@@ -96,6 +96,10 @@ import people_lists
 import people_occasions
 import people_touch
 import pctools
+import photo_calc
+import photo_gear
+import photo_ideas
+import photo_shoots
 import reminders
 import routines
 import routines_brief
@@ -203,6 +207,7 @@ ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
 ABILITIES += [career_jobs, career_interview, career_docs, career_plan]  # career
 ABILITIES += [diy_calc, diy_room, diy_guide, diy_projects]  # diy
 ABILITIES += [languages_study, languages_practice, languages_progress]  # languages
+ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 
 
 def defer(tool: dict) -> dict:
