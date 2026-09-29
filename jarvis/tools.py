@@ -109,6 +109,10 @@ import people_lists
 import people_occasions
 import people_touch
 import partyhost_cards
+import petsgarden_garden
+import petsgarden_guide
+import petsgarden_pets
+import petsgarden_records
 import partyhost_draw
 import partyhost_quiz
 import partyhost_rules
@@ -240,6 +244,7 @@ ABILITIES += [webread_read, webread_explain, webread_page]  # webread
 ABILITIES += [access]  # access
 ABILITIES += [motoring_car, motoring_costs, motoring_guide, motoring_theory]  # motoring
 ABILITIES += [assistant_day, assistant_inbox, assistant_life, assistant_track]  # assistant
+ABILITIES += [petsgarden_pets, petsgarden_guide, petsgarden_garden, petsgarden_records]  # pets-and-garden
 
 
 def defer(tool: dict) -> dict:
