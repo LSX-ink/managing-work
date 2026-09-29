@@ -73,6 +73,10 @@ import sidehustle_ideas
 import sidehustle_money
 import sidehustle_plan
 import sidehustle_safety
+import sellercalc_fees
+import sellercalc_guide
+import sellercalc_listing
+import sellercalc_stock
 import dates
 import events_extras
 import events_guests
@@ -310,6 +314,7 @@ ABILITIES += [repurpose_subs, repurpose_formats, repurpose_plan, repurpose_track
 ABILITIES += [digitalproducts_ideas, digitalproducts_make, digitalproducts_copy, digitalproducts_sell]  # digital products
 ABILITIES += [sidehustle_ideas, sidehustle_plan, sidehustle_money, sidehustle_safety]  # side hustles
 ABILITIES += [incomestreams_streams, incomestreams_insights, incomestreams_goals, incomestreams_tax]  # income streams
+ABILITIES += [sellercalc_fees, sellercalc_stock, sellercalc_listing, sellercalc_guide]  # seller calculators
 
 
 def defer(tool: dict) -> dict:
