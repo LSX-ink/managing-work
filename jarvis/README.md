@@ -187,6 +187,10 @@ Say "Alfred, move the chat to the bottom left" (or top left, top right, bottom r
 
 "Alfred, set a timer for 10 minutes" (or "a pasta timer for 8 minutes"). When it ends he chimes and tells you, and it goes in the notifications. Ask "how long is left?" or "cancel the pasta timer". Say "Alfred, take a break" and he goes quiet, ignoring everything including his own announcements (they still appear in the notifications) until you say "Alfred" again or click the orb.
 
+### Background helper
+
+Give Alfred a bigger job and he hands it to his helper, so you can keep talking: "Alfred, get the helper to compare the three cheapest flights to Cape Town next month", "plan my meals for the week", "go through my notes and pull out every idea about the shop". The helper is a second Claude that works on its own with the same abilities as Alfred: web search, memory folders, trackers and the rest. It never gets the mouse and keyboard, or anything that deletes or cancels. When it's done, Alfred tells you the result in a sentence and it goes in the notifications. Ask "what did the helper find?" for the full report, "how's the helper getting on?", or "stop the helper". Up to 3 jobs run at once, each for at most 15 minutes. If a job needs something Alfred can't do yet, the helper sends it to Claude as a new-ability request (see below).
+
 ### Start with Windows
 
 In PowerShell, in the jarvis folder, run `.\scripts\autostart.ps1` once. From then on Jarvis starts minimised when you log in, and the HUD opens in your browser. `.\scripts\autostart.ps1 -Remove` turns it off. You can also double-click `scripts\start-jarvis.cmd` to start him by hand. (If you changed `JARVIS_PORT`, change 8340 in that file too.)

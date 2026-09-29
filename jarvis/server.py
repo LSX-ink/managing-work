@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 
 import alerts
+import helpers
 import memory
 import nowplaying
 import pc
@@ -49,6 +50,7 @@ async def lifespan(app: FastAPI):
     app.state.alert_ids = itertools.count(1)
     watchers = alerts.start(settings, lambda text, kind: announce(app, text, kind))
     timers.set_announcer(lambda text, kind: announce(app, text, kind))
+    helpers.set_context(app.state.client, lambda text, kind: announce(app, text, kind))
     watchers.append(asyncio.create_task(reminders.watch(settings, lambda text, kind: announce(app, text, kind),
                                                         lambda: bool(app.state.pages))))
     if settings.now_playing:
