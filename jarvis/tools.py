@@ -114,6 +114,10 @@ import growth_media
 import growth_reflect
 import growth_study
 import fun
+import freelance_clients
+import freelance_docs
+import freelance_money
+import freelance_work
 import habits
 import homediary
 import homehouse
@@ -322,6 +326,7 @@ ABILITIES += [repurpose_subs, repurpose_formats, repurpose_plan, repurpose_track
 ABILITIES += [digitalproducts_ideas, digitalproducts_make, digitalproducts_copy, digitalproducts_sell]  # digital products
 ABILITIES += [sidehustle_ideas, sidehustle_plan, sidehustle_money, sidehustle_safety]  # side hustles
 ABILITIES += [incomestreams_streams, incomestreams_insights, incomestreams_goals, incomestreams_tax]  # income streams
+ABILITIES += [freelance_clients, freelance_work, freelance_money, freelance_docs]  # freelancing
 ABILITIES += [sellercalc_fees, sellercalc_stock, sellercalc_listing, sellercalc_guide]  # seller calculators
 ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn_practice]  # investing basics
 ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
