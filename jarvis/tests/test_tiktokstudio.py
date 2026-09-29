@@ -55,11 +55,21 @@ def add_video(s, **fields):
 
 # ---- accounts ------------------------------------------------------------------------------------------
 
-def test_starts_with_three_flashy_accounts_in_the_three_looks(s):
+def test_starts_with_flashy_accounts_in_the_looks_the_user_liked(s):
     data = cs.load(s)
-    assert [a["name"] for a in data["accounts"]] == ["lowkey.lore", "mindglitch.fyi", "karma.receipts"]
-    assert [a["style"] for a in data["accounts"]] == ["noir", "explainer", "drama"]
-    assert all(a["per_day"] == 3 for a in data["accounts"])
+    assert [a["name"] for a in data["accounts"]] == ["lowkey.lore", "mindglitch.fyi", "karma.receipts", "Clipzz"]
+    assert [a["style"] for a in data["accounts"]] == ["noir", "explainer", "drama", "clips"]
+    assert [a["per_day"] for a in data["accounts"]] == [3, 3, 3, 5]
+
+
+def test_clipzz_joins_a_studio_made_before_it(s):
+    old = {"accounts": [cs.new_account(**cs.STARTERS[0])], "videos": []}
+    (Path(s.memory_dir) / cs.FILE).write_text(json.dumps(old), encoding="utf-8")
+    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore", "Clipzz"]
+    data = cs.load(s)
+    data["accounts"].pop()  # removed on purpose: it stays removed
+    cs.save(s, data)
+    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore"]
 
 
 def test_add_rename_and_remove_accounts(s):
@@ -373,3 +383,81 @@ def test_trends_are_checked_daily_and_fed_into_the_script(s):
     asyncio.run(cv.write_script(client, s, account, recent=["Old one"], best=creator.best_titles(cs.load(s), "lowkey.lore")))
     prompt = client.calls[-1]["messages"][0]["content"]
     assert "POV hooks" in prompt and "The Last Voicemail (82,000 views)" in prompt and "Old one" in prompt
+
+
+# ---- clip accounts (Clipzz) -------------------------------------------------------------------------------
+
+import tiktokstudio_clips as clips  # noqa: E402
+import twitch  # noqa: E402
+
+
+def clip(i, name="kai", seconds=30.0, views=1000):
+    return {"id": f"c{i}", "broadcaster_name": name, "duration": seconds, "view_count": views,
+            "title": f"clip {i}", "url": f"https://clips.twitch.tv/c{i}"}
+
+
+def test_pick_fills_a_minute_from_the_top_streamer_first():
+    found = [clip(1, "kai", 30, 900), clip(2, "ish", 50, 800), clip(3, "kai", 20, 700), clip(4, "kai", 15, 600)]
+    chosen = clips.pick(found, set())
+    assert [c["id"] for c in chosen] == ["c1", "c3", "c4"] and sum(c["duration"] for c in chosen) >= 61
+    assert [c["id"] for c in clips.pick(found, {"c1", "c3"})] == ["c2", "c4"]  # topped up from another streamer
+    assert clips.pick([clip(1, seconds=20)], set()) == []  # can't reach a minute
+
+
+def test_twitch_top_clips_uses_the_official_api(s):
+    s = replace(s, twitch_client_id="id", twitch_client_secret="sec")
+    twitch._token.update(value="", until=0)
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        if request.url.host == "id.twitch.tv":
+            return httpx.Response(200, json={"access_token": "t", "expires_in": 3600})
+        if request.url.path.endswith("/games"):
+            return httpx.Response(200, json={"data": [{"id": "509658"}]})
+        return httpx.Response(200, json={"data": [clip(1, views=5), clip(2, views=50)]})
+    http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    found = asyncio.run(twitch.top_clips(http, s, "new"))
+    assert [c["id"] for c in found] == ["c2", "c1"]
+    last = seen[-1]
+    assert last.headers["client-id"] == "id" and last.headers["authorization"] == "Bearer t"
+    assert last.url.params["game_id"] == "509658" and "started_at" in last.url.params
+
+
+def test_old_viral_is_a_week_in_the_past():
+    start, end = twitch.window("old")
+    assert (end - start).days == 7 and (twitch.window("new")[1] - start).days >= 30
+
+
+def test_clipzz_makes_a_credited_portrait_video(s, monkeypatch):
+    s = replace(s, twitch_client_id="id", twitch_client_secret="sec")
+
+    async def fake_top(http, settings, era, streamers, category):
+        return [clip(1, "kai", 40, 900), clip(2, "kai", 30, 800)]
+    monkeypatch.setattr(twitch, "top_clips", fake_top)
+    monkeypatch.setattr(clips, "download", lambda url, target: (target.with_suffix(".mp4").write_bytes(b"c"), target.with_suffix(".mp4"))[1])
+    made = []
+    monkeypatch.setattr(clips, "portrait", lambda source, layer, out: (made.append(layer), out.write_bytes(b"p")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    creator._ctx.update(client=object())
+    asyncio.run(creator.make_in_background(s, [("Clipzz", "", None)]))
+    v = cs.load(s)["videos"][-1]
+    assert v["status"] == "ready" and "kai" in v["caption"] and "credit" in v["caption"] and "twitch" in v["hashtags"]
+    assert v["keyword"] == "new" and len(made) == 2
+    assert cs.account(cs.load(s), "Clipzz")["used_clips"] == ["c1", "c2"]
+    asyncio.run(creator.make_in_background(s, [("Clipzz", "", None)]))
+    assert cs.load(s)["videos"][-1]["status"] == "failed"  # the same clips are never used twice
+    assert creator.sequels_due(cs.load(s)) == []
+
+
+def test_clipzz_waits_for_twitch_keys(s):
+    jobs = creator.todays_jobs(s, cs.load(s), date.today())
+    assert "Clipzz" not in [j[0] for j in jobs]
+    assert "TWITCH_CLIENT_ID" in creator.studio_card(s, cs.load(s))["data"]["setup"]
+    s2 = replace(s, twitch_client_id="id", twitch_client_secret="sec")
+    assert [j[0] for j in creator.todays_jobs(s2, cs.load(s2), date.today())].count("Clipzz") == 5
+
+
+def test_overlay_is_a_see_through_phone_layer():
+    im = clips.overlay("He did NOT expect that", "twitch.tv/kai")
+    assert im.size == (cv.W, cv.H) and im.mode == "RGBA" and im.getpixel((540, 1000))[3] == 0

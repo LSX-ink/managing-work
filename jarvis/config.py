@@ -79,6 +79,9 @@ class Settings:
     tiktok_mode: str = os.getenv("JARVIS_TIKTOK_MODE", "draft").strip().lower()  # draft (your inbox) or direct
     tiktok_privacy: str = os.getenv("JARVIS_TIKTOK_PRIVACY", "PUBLIC_TO_EVERYONE").strip().upper()
     tiktok_redirect_uri: str = os.getenv("JARVIS_TIKTOK_REDIRECT_URI", "").strip()
+    # Clip accounts (Clipzz): Twitch's official API finds the most-viewed clips
+    twitch_client_id: str = os.getenv("TWITCH_CLIENT_ID", "").strip()
+    twitch_client_secret: str = os.getenv("TWITCH_CLIENT_SECRET", "").strip()
 
     def __post_init__(self) -> None:
         # A blank or mistyped host (an email address, a space) can't connect; pick it from the email address instead.

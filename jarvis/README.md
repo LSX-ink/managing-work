@@ -308,6 +308,11 @@ press **Approve** or **Skip**. Nothing is posted until you approve it.
   beside each account once. Approved videos then go to your TikTok inbox to post, or post straight away with
   `JARVIS_TIKTOK_MODE=direct`.
 - Without one, approved videos stay in the folder with their caption, ready to upload by hand.
+- **Clipzz** posts 5 viral Twitch streamer clips a day, old classics and this week's, cropped to fill the phone
+  and joined to a minute or more, with the streamer credited on screen and in the caption. It needs a free Twitch
+  app (`TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` from dev.twitch.tv/console). Say "take Clipzz clips from
+  these streamers: ..." to stick to streamers who allow clipping; reposting other people's clips can get an
+  account struck or left out of TikTok's rewards.
 - Trends: before each account's first video of the day Alfred checks this week's TikTok trends for its niche
   (topics, hashtags, hooks, sounds) and writes with them, along with what did best on that account. Ask "what's
   trending for mindglitch.fyi?" to plan what to post next.
