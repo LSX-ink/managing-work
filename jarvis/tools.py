@@ -71,6 +71,9 @@ import kids_day
 import kids_fun
 import kids_logs
 import kids_rewards
+import languages_practice
+import languages_progress
+import languages_study
 import health
 import knowledge
 import knowledge_explore
@@ -199,6 +202,7 @@ ABILITIES += [kids_rewards, kids_logs, kids_day, kids_fun]  # kids
 ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
 ABILITIES += [career_jobs, career_interview, career_docs, career_plan]  # career
 ABILITIES += [diy_calc, diy_room, diy_guide, diy_projects]  # diy
+ABILITIES += [languages_study, languages_practice, languages_progress]  # languages
 
 
 def defer(tool: dict) -> dict:
