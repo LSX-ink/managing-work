@@ -152,6 +152,10 @@ import wellness_fitness
 import wellness_logs
 import wellness_records
 import wellness_reminders
+import watchlist_books
+import watchlist_films
+import watchlist_shows
+import watchlist_social
 import wishes
 import words
 import worktools_board
@@ -230,6 +234,7 @@ ABILITIES += [photo_calc, photo_shoots, photo_gear, photo_ideas]  # photo
 ABILITIES += [skynature_sky, skynature_journal, skynature_guide]  # sky-and-nature
 ABILITIES += [webread_read, webread_explain, webread_page]  # webread
 ABILITIES += [access]  # access
+ABILITIES += [watchlist_films, watchlist_shows, watchlist_books, watchlist_social]  # watchlist
 
 
 def defer(tool: dict) -> dict:
