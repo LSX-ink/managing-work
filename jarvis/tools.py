@@ -95,6 +95,10 @@ import people_book
 import people_lists
 import people_occasions
 import people_touch
+import partyhost_cards
+import partyhost_draw
+import partyhost_quiz
+import partyhost_rules
 import pctools
 import reminders
 import routines
@@ -203,6 +207,7 @@ ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
 ABILITIES += [career_jobs, career_interview, career_docs, career_plan]  # career
 ABILITIES += [diy_calc, diy_room, diy_guide, diy_projects]  # diy
 ABILITIES += [languages_study, languages_practice, languages_progress]  # languages
+ABILITIES += [partyhost_quiz, partyhost_cards, partyhost_draw, partyhost_rules]  # partyhost
 
 
 def defer(tool: dict) -> dict:
