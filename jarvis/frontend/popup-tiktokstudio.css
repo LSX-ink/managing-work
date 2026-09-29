@@ -1,4 +1,4 @@
-/* TikTok studio pop-up (popup-creator.js). Colours follow popup.css. */
+/* TikTok studio pop-up (popup-tiktokstudio.js). Colours follow popup.css. */
 .popup[data-kind="creator-studio"] { width: min(460px, calc(100vw - 24px)); max-height: min(760px, calc(100vh - 90px)); }
 .cr-notice { margin-bottom: 8px; padding: 6px 8px; border-radius: 6px; background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
 .cr-accounts { display: grid; gap: 4px; margin-bottom: 8px; }

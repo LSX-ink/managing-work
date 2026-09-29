@@ -24,7 +24,7 @@ import httpx
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
 import artstudio_common as ac
-import creator_store as cs
+import tiktokstudio_store as cs
 import tts
 from config import Settings
 

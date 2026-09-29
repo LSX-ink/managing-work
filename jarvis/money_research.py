@@ -10,7 +10,7 @@ import json
 import re
 from datetime import date
 
-import creator_store as cs
+import tiktokstudio_store as cs
 import memory
 import screen
 from config import Settings

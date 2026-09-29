@@ -21,8 +21,9 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 
 import alerts
-import creator
-import creator_store
+import helpers
+import tiktokstudio
+import tiktokstudio_store
 import memory
 import nowplaying
 import pc
@@ -53,9 +54,10 @@ async def lifespan(app: FastAPI):
     app.state.alert_ids = itertools.count(1)
     watchers = alerts.start(settings, lambda text, kind: announce(app, text, kind))
     timers.set_announcer(lambda text, kind: announce(app, text, kind))
+    helpers.set_context(app.state.client, lambda text, kind: announce(app, text, kind))
     watchers.append(asyncio.create_task(reminders.watch(settings, lambda text, kind: announce(app, text, kind),
                                                         lambda: bool(app.state.pages))))
-    watchers.append(creator.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
+    watchers.append(tiktokstudio.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
     yield
@@ -322,21 +324,21 @@ async def creator_video_action(video_id: str, action: str, request: Request):
         return Response("Not from the Jarvis page.", status_code=403)
     try:
         if action == "approve":
-            said = await creator.approve(settings, video_id)
+            said = await tiktokstudio.approve(settings, video_id)
         elif action == "skip":
-            said = await asyncio.to_thread(creator.skip, settings, video_id)
+            said = await asyncio.to_thread(tiktokstudio.skip, settings, video_id)
         else:
             return Response("Unknown action.", status_code=404)
     except ValueError as exc:
         return Response(str(exc), status_code=400)
-    card = await asyncio.to_thread(lambda: creator.studio_card(settings, creator_store.load(settings)))
+    card = await asyncio.to_thread(lambda: tiktokstudio.studio_card(settings, tiktokstudio_store.load(settings)))
     return {"said": said, "card": card}
 
 
 @app.get("/tiktok/connect")
 async def tiktok_connect(account: str):
     try:
-        name = creator_store.account(await asyncio.to_thread(creator_store.load, settings), account)["name"]
+        name = tiktokstudio_store.account(await asyncio.to_thread(tiktokstudio_store.load, settings), account)["name"]
         return RedirectResponse(tiktok.login_url(settings, name))
     except ValueError as exc:
         return HTMLResponse(f"<p>{html.escape(str(exc))}</p>", status_code=400)

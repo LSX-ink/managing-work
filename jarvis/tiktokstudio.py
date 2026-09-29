@@ -16,8 +16,8 @@ from datetime import date, datetime
 
 import httpx
 
-import creator_store as cs
-import creator_video as cv
+import tiktokstudio_store as cs
+import tiktokstudio_video as cv
 import screen
 import tiktok
 from config import Settings

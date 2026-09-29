@@ -1,0 +1,24 @@
+/* Creator-ideas pop-ups (popup-creatorideas.js): idea board and safe-zone phone frame. Colours follow popup.css. */
+.popup[data-kind="creator-board"] { width: min(680px, calc(100vw - 24px)); max-height: min(620px, calc(100vh - 90px)); }
+.popup[data-kind="creator-safe"] { width: min(420px, calc(100vw - 24px)); max-height: min(700px, calc(100vh - 90px)); }
+.ci-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+.ci-col { display: grid; align-content: start; gap: 5px; padding: 6px; border-radius: 8px; border: 1px solid var(--hud-dim, #2a3547); }
+.ci-colname { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--hud-bright, #9fd8ff); }
+.ci-item {
+    display: grid; gap: 2px; padding: 6px; text-align: left; font: inherit; font-size: 13px; cursor: pointer;
+    color: inherit; background: var(--hud-faint, rgba(63, 169, 255, 0.08)); border: 1px solid var(--hud-dim, #2a3547); border-radius: 6px;
+}
+.ci-item:hover, .ci-item:focus-visible { border-color: var(--hud-bright, #9fd8ff); }
+.ci-num, .ci-tags, .ci-empty, .ci-hint { font-size: 11px; color: var(--hud-mid, #9fb3c8); }
+.ci-text { overflow-wrap: anywhere; }
+.ci-hint { margin-top: 6px; }
+.ci-phone { position: relative; width: 200px; aspect-ratio: 9 / 16; margin: 6px auto; border: 2px solid var(--hud-bright, #9fd8ff); border-radius: 14px; overflow: hidden; }
+.ci-zone { position: absolute; display: grid; place-items: center; font-size: 10px; text-align: center; color: var(--hud-mid, #9fb3c8);
+    background: repeating-linear-gradient(45deg, transparent 0 4px, var(--hud-dim, #2a3547) 4px 5px); }
+.ci-top { top: 0; left: 0; right: 0; }
+.ci-bottom { bottom: 0; left: 0; right: 0; }
+.ci-left { left: 0; top: 0; bottom: 0; }
+.ci-right { right: 0; top: 0; bottom: 0; }
+.ci-lines { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 4px; padding: 0 12%; }
+.ci-line { font-size: 12px; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
+.ci-issues { margin: 6px 0 0; padding-left: 18px; font-size: 12px; }

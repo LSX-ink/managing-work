@@ -10,9 +10,9 @@ import httpx
 import pytest
 from PIL import Image
 
-import creator
-import creator_store as cs
-import creator_video as cv
+import tiktokstudio as creator
+import tiktokstudio_store as cs
+import tiktokstudio_video as cv
 import money_research
 import screen
 import tiktok

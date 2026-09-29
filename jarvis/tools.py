@@ -38,6 +38,10 @@ import career_docs
 import career_interview
 import career_jobs
 import career_plan
+import creator_hooks
+import creator_ideas
+import creator_plan
+import creator_scripts
 import cooking
 import cooking_guide
 import calm_evening
@@ -45,6 +49,42 @@ import calm_exercises
 import calm_log
 import calm_mind
 import cooking_leftovers
+import creatorstats_accounts
+import creatorstats_plan
+import creatorstats_reports
+import creatorstats_stats
+import creatorbiz_deals
+import creatorbiz_docs
+import creatorbiz_money
+import creatorbiz_work
+import repurpose_formats
+import repurpose_plan
+import repurpose_subs
+import repurpose_tracker
+import digitalproducts_copy
+import incomestreams_goals
+import investlearn_calc
+import investlearn_learn
+import investlearn_plan
+import investlearn_practice
+import incomestreams_insights
+import incomestreams_streams
+import incomestreams_tax
+import digitalproducts_ideas
+import digitalproducts_make
+import digitalproducts_sell
+import sidehustle_ideas
+import sidehustle_money
+import sidehustle_plan
+import sidehustle_safety
+import sellercalc_fees
+import sellercalc_guide
+import sellercalc_listing
+import sellercalc_stock
+import writingincome_blog
+import writingincome_book
+import writingincome_money
+import writingincome_newsletter
 import dates
 import events_extras
 import events_guests
@@ -74,7 +114,12 @@ import growth_media
 import growth_reflect
 import growth_study
 import fun
+import freelance_clients
+import freelance_docs
+import freelance_money
+import freelance_work
 import habits
+import helpers
 import homediary
 import homehouse
 import homekitchen
@@ -114,6 +159,10 @@ import motoring_costs
 import motoring_guide
 import motoring_theory
 import music
+import nicheresearch_audience
+import nicheresearch_market
+import nicheresearch_plan
+import nicheresearch_score
 import notesearch
 import pc
 import people_book
@@ -155,7 +204,7 @@ import study_plan
 import study_progress
 import study_topics
 import study_write
-import creator
+import tiktokstudio
 import money_research
 import sports_games
 import sports_live
@@ -222,10 +271,10 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 
 # Ability modules. Each has tool_definitions() -> list, NAMES (a set of tool names) and
 # run_tool(name, args, settings, http) -> str | list, sync or async. Add new abilities here.
-ABILITIES = [todo, habits, money, notesearch, screen]
+ABILITIES = [todo, habits, money, notesearch, screen, helpers]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
-ALWAYS_LOADED = {todo, habits, money, notesearch, screen}
+ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers}
 ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
@@ -277,7 +326,19 @@ ABILITIES += [active_workout, active_log, active_calc, active_outdoors]  # activ
 ABILITIES += [support_day, support_people, support_care, support_see]  # support
 ABILITIES += [events_plan, events_guests, events_money, events_extras]  # events
 ABILITIES += [study_plan, study_topics, study_progress, study_write]  # study
-ABILITIES += [creator, money_research]  # content creation and making money
+ABILITIES += [creator_ideas, creator_hooks, creator_scripts, creator_plan]  # creator ideas
+ABILITIES += [creatorstats_accounts, creatorstats_plan, creatorstats_stats, creatorstats_reports]  # creator stats
+ABILITIES += [creatorbiz_deals, creatorbiz_work, creatorbiz_money, creatorbiz_docs]  # creator business
+ABILITIES += [repurpose_subs, repurpose_formats, repurpose_plan, repurpose_tracker]  # repurpose content
+ABILITIES += [digitalproducts_ideas, digitalproducts_make, digitalproducts_copy, digitalproducts_sell]  # digital products
+ABILITIES += [sidehustle_ideas, sidehustle_plan, sidehustle_money, sidehustle_safety]  # side hustles
+ABILITIES += [incomestreams_streams, incomestreams_insights, incomestreams_goals, incomestreams_tax]  # income streams
+ABILITIES += [freelance_clients, freelance_work, freelance_money, freelance_docs]  # freelancing
+ABILITIES += [sellercalc_fees, sellercalc_stock, sellercalc_listing, sellercalc_guide]  # seller calculators
+ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn_practice]  # investing basics
+ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
+ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
+ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 
 
 def defer(tool: dict) -> dict:
