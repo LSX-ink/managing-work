@@ -1,0 +1,18 @@
+/* TikTok studio pop-up (popup-tiktokstudio.js). Colours follow popup.css. */
+.popup[data-kind="creator-studio"] { width: min(460px, calc(100vw - 24px)); max-height: min(760px, calc(100vh - 90px)); }
+.cr-notice { margin-bottom: 8px; padding: 6px 8px; border-radius: 6px; background: var(--hud-faint, rgba(63, 169, 255, 0.08)); }
+.cr-accounts { display: grid; gap: 4px; margin-bottom: 8px; }
+.cr-account { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.cr-dim { font-size: 12px; color: var(--hud-mid, #9fb3c8); }
+.cr-ok { font-size: 12px; color: #7ee2a8; }
+.cr-link { color: var(--hud-bright, #9fd8ff); text-decoration: underline; cursor: pointer; }
+a.pop-action.cr-link { text-decoration: none; display: inline-block; }
+.cr-videos { display: grid; gap: 10px; }
+.cr-video { padding: 8px; border-radius: 8px; border: 1px solid var(--hud-dim, #2a3547); }
+.cr-video.cr-ready { border-color: var(--hud-bright, #9fd8ff); }
+.cr-head { display: grid; gap: 2px; margin-bottom: 6px; }
+.cr-player { display: block; width: 100%; max-height: 380px; background: #000; border-radius: 6px; }
+.cr-caption { margin-top: 6px; font-size: 12px; overflow-wrap: anywhere; }
+.cr-error { margin-top: 6px; font-size: 12px; color: #ffb4ab; }
+.cr-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.cr-approve { font-weight: 700; }

@@ -70,6 +70,15 @@ class Settings:
     # New abilities: requests Alfred can't handle go to Claude as GitHub issues on this repository
     github_repo: str = os.getenv("JARVIS_GITHUB_REPO", "LSX-ink/managing-work").strip()
     github_token: str = os.getenv("JARVIS_GITHUB_TOKEN", "").strip()  # empty: open the issue page to click Submit
+    # TikTok studio: Alfred makes each account's videos every day and posts only the ones you approve
+    creator_daily: bool = _bool("JARVIS_CREATOR_DAILY", True)
+    creator_hour: int = int(os.getenv("JARVIS_CREATOR_HOUR", "7"))  # start making the day's videos from this hour
+    creator_voice: str = os.getenv("JARVIS_CREATOR_VOICE", "en-GB-RyanNeural").strip()  # free Microsoft voice
+    tiktok_client_key: str = os.getenv("TIKTOK_CLIENT_KEY", "").strip()
+    tiktok_client_secret: str = os.getenv("TIKTOK_CLIENT_SECRET", "").strip()
+    tiktok_mode: str = os.getenv("JARVIS_TIKTOK_MODE", "draft").strip().lower()  # draft (your inbox) or direct
+    tiktok_privacy: str = os.getenv("JARVIS_TIKTOK_PRIVACY", "PUBLIC_TO_EVERYONE").strip().upper()
+    tiktok_redirect_uri: str = os.getenv("JARVIS_TIKTOK_REDIRECT_URI", "").strip()
 
     def __post_init__(self) -> None:
         # A blank or mistyped host (an email address, a space) can't connect; pick it from the email address instead.

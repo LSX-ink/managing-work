@@ -204,6 +204,8 @@ import study_plan
 import study_progress
 import study_topics
 import study_write
+import tiktokstudio
+import money_research
 import sports_games
 import sports_live
 import sports_scoring
@@ -336,6 +338,7 @@ ABILITIES += [sellercalc_fees, sellercalc_stock, sellercalc_listing, sellercalc_
 ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn_practice]  # investing basics
 ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
 ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
+ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 
 
 def defer(tool: dict) -> dict:

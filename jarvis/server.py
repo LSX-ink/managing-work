@@ -8,6 +8,7 @@ import asyncio
 import base64
 import hashlib
 import hmac
+import html
 import itertools
 import time
 from contextlib import asynccontextmanager
@@ -21,12 +22,15 @@ from fastapi.staticfiles import StaticFiles
 
 import alerts
 import helpers
+import tiktokstudio
+import tiktokstudio_store
 import memory
 import nowplaying
 import pc
 import screen
 import reminders
 import timers
+import tiktok
 import tools
 import tts
 from brain import Brain, computer_enabled, persona
@@ -53,6 +57,7 @@ async def lifespan(app: FastAPI):
     helpers.set_context(app.state.client, lambda text, kind: announce(app, text, kind))
     watchers.append(asyncio.create_task(reminders.watch(settings, lambda text, kind: announce(app, text, kind),
                                                         lambda: bool(app.state.pages))))
+    watchers.append(tiktokstudio.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
     yield
@@ -310,8 +315,49 @@ async def memory_open(index: int, filename: str):
     return result if isinstance(result, Response) else FileResponse(result, headers=headers)
 
 
+# ---- TikTok studio -----------------------------------------------------------------------------------
+
+@app.post("/creator/videos/{video_id}/{action}")
+async def creator_video_action(video_id: str, action: str, request: Request):
+    """One tap on the studio card: approve (and post) or skip a video."""
+    if not from_our_page(request):
+        return Response("Not from the Jarvis page.", status_code=403)
+    try:
+        if action == "approve":
+            said = await tiktokstudio.approve(settings, video_id)
+        elif action == "skip":
+            said = await asyncio.to_thread(tiktokstudio.skip, settings, video_id)
+        else:
+            return Response("Unknown action.", status_code=404)
+    except ValueError as exc:
+        return Response(str(exc), status_code=400)
+    card = await asyncio.to_thread(lambda: tiktokstudio.studio_card(settings, tiktokstudio_store.load(settings)))
+    return {"said": said, "card": card}
+
+
+@app.get("/tiktok/connect")
+async def tiktok_connect(account: str):
+    try:
+        name = tiktokstudio_store.account(await asyncio.to_thread(tiktokstudio_store.load, settings), account)["name"]
+        return RedirectResponse(tiktok.login_url(settings, name))
+    except ValueError as exc:
+        return HTMLResponse(f"<p>{html.escape(str(exc))}</p>", status_code=400)
+
+
+@app.get("/tiktok/callback")
+async def tiktok_callback(state: str = "", code: str = "", error: str = "", error_description: str = ""):
+    if error or not code:
+        return HTMLResponse(f"<p>TikTok didn't connect: {html.escape(error_description or error or 'no code')}.</p>")
+    try:
+        name = await tiktok.finish_login(app.state.http, settings, state, code)
+    except (ValueError, httpx.HTTPError) as exc:
+        return HTMLResponse(f"<p>{html.escape(str(exc))}</p>", status_code=400)
+    return HTMLResponse(f"<p style='font:18px sans-serif'>Connected {html.escape(name)} to TikTok. "
+                        "You can close this tab and go back to Alfred.</p>")
+
+
 @app.get("/screen/file")
-async def screen_file(path: str):
+async def screen_file(path: str, download: bool = False):
     """A memory-folder file for a pop-up window. Anything that isn't a picture, PDF, sound, video or plain text
     is sent as a download, and nothing can run scripts as the Jarvis page."""
     try:
@@ -322,7 +368,7 @@ async def screen_file(path: str):
     headers = {"Content-Security-Policy": "sandbox", "X-Content-Type-Options": "nosniff"}
     if mime == "application/pdf":
         headers = {"X-Content-Type-Options": "nosniff"}  # the browser's PDF viewer won't run in a sandbox
-    if mime is None:
+    if mime is None or download:
         return FileResponse(found, headers=headers, filename=found.name, media_type="application/octet-stream")
     if mime.startswith("text/") or mime == "application/json":
         mime = "text/plain; charset=utf-8"

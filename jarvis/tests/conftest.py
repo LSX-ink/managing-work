@@ -3,6 +3,8 @@ import tempfile
 
 # Tests must not reach ntfy.sh or write the phone address file.
 os.environ["JARVIS_CALL_ALERTS"] = "false"
+# Nor make TikTok videos in the background.
+os.environ["JARVIS_CREATOR_DAILY"] = "false"
 # Nor touch the real memory folder (saved conversation, facts, reminders).
 os.environ["JARVIS_MEMORY_DIR"] = tempfile.mkdtemp(prefix="jarvis-test-memory-")
 

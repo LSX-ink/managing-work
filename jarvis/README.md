@@ -293,6 +293,31 @@ python scripts/clap_trigger.py
 
 Clap twice and it starts the server if it isn't running, then opens Jarvis in your browser. If it misses claps or fires on noise, adjust `THRESHOLD` in the script.
 
+### TikTok studio and making money
+
+Alfred runs TikTok accounts for you as their author and director. He starts with three, each in a different look:
+**lowkey.lore** (moody black-and-white stories on a record-sleeve card), **mindglitch.fyi** (psychology
+explainers on black, with a coloured keyword) and **karma.receipts** (realistic drama stories with a bold headline
+box). Say "add a TikTok account", "rename lowkey.lore", or "give me Gen Z names for a horror account".
+
+Every morning from `JARVIS_CREATOR_HOUR` he writes, pictures, voices and cuts each account's videos (3 a day, each
+at least a minute long) and saves them in **Work/TikTok/<account>**. Say "show my TikTok studio" to watch them and
+press **Approve** or **Skip**. Nothing is posted until you approve it.
+
+- With a TikTok developer app (`TIKTOK_CLIENT_KEY` and `TIKTOK_CLIENT_SECRET` in `.env`), press **Connect**
+  beside each account once. Approved videos then go to your TikTok inbox to post, or post straight away with
+  `JARVIS_TIKTOK_MODE=direct`.
+- Without one, approved videos stay in the folder with their caption, ready to upload by hand.
+- Trends: before each account's first video of the day Alfred checks this week's TikTok trends for its niche
+  (topics, hashtags, hooks, sounds) and writes with them, along with what did best on that account. Ask "what's
+  trending for mindglitch.fyi?" to plan what to post next.
+- Sequels: at 50k views Alfred makes part 2, then a new part every 100k more views, up to part 5, which ends on a
+  shocking cliffhanger. He reads views from TikTok, or tell him: "that story has 80k views".
+
+Ask "research ways I could make money" and he searches the web and saves a report in **Work/Money Research** as a
+Markdown file and a web page, both with Download buttons. "Add faceless TikTok to my money ideas" and "log £12
+from faceless TikTok" keep a board of what you're trying and what it earns.
+
 ## More abilities
 
 Each page below lists what to say to Alfred:

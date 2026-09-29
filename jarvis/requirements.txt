@@ -8,6 +8,9 @@ psutil>=5.9
 icalendar>=6.0
 recurring-ical-events>=3.0
 pyautogui>=0.9.54
+# TikTok studio: the story narrator's free voices and ffmpeg for cutting the videos
+edge-tts>=7.0
+imageio-ffmpeg>=0.5
 # Time zones for the world clock on Windows
 tzdata; sys_platform == "win32"
 # Phone alerts (JARVIS_PHONE_ALERTS): read Phone Link's notifications on Windows
