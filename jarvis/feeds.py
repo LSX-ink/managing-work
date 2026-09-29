@@ -237,7 +237,8 @@ def tool_definitions() -> list[dict]:
         {
             "name": "news_headlines",
             "description": "Latest headlines. kind 'bbc' gives BBC News titles with a line each for a section; "
-                           "'hacker_news' gives the top Hacker News tech stories.",
+                           "'hacker_news' gives the top Hacker News tech stories. To PLAY the news out loud in the "
+                           "presenters' own voices ('play today's news'), use news_bulletin instead.",
             "input_schema": {
                 "type": "object",
                 "properties": {

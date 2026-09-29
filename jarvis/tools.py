@@ -141,6 +141,7 @@ import travel_papers
 import travel_trips
 import webview_food
 import webview_listen
+import news_bulletin
 import webview_look
 import webview_places
 import wellness_fitness
@@ -191,6 +192,7 @@ ABILITIES += [writing_projects, writing_goals, writing_bible, writing_helpers]  
 ABILITIES += [sports_live, sports_teams, sports_scoring, sports_games]  # sports
 ABILITIES += [media_show, media_find, media_files, media_pictures]  # files-and-media
 ABILITIES += [webview_look, webview_places, webview_listen, webview_food]  # web-in-alfred
+ABILITIES += [news_bulletin]  # news bulletin
 ABILITIES += [finance_budget, finance_pots, finance_plan, finance_friends]  # money-plus
 ABILITIES += [calcmaths, calcunits, calcmoney, calcrandom]  # calculators
 ABILITIES += [dates, dates_saved]  # time-and-dates

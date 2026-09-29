@@ -350,6 +350,10 @@ confirmBox.addEventListener('click', (event) => {
 
 // ---- Speech output ----------------------------------------------------------
 
+// The news bulletin player waits for this before it starts.
+window.jarvisIsSpeaking = () => speaking || queue.length > 0;
+window.jarvisLastSpokeAt = () => lastSpokeAt;
+
 function playNext() {
     if (speaking) return;
     const msg = queue.shift();
