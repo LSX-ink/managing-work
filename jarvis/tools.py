@@ -104,6 +104,10 @@ import sports_games
 import sports_live
 import sports_scoring
 import sports_teams
+import techhelp_calc
+import techhelp_fix
+import techhelp_gadgets
+import techhelp_secure
 import timers
 import trackers
 import trackers_life
@@ -177,6 +181,7 @@ ABILITIES += [routines, routines_brief, routines_life]  # routines
 ABILITIES += [hudplus]  # hud-secrets
 ABILITIES += [household_chores, household_stuff, household_meters, household_family]  # household-plus
 ABILITIES += [widgets]  # widgets
+ABILITIES += [techhelp_gadgets, techhelp_fix, techhelp_secure, techhelp_calc]  # techhelp
 ABILITIES += [wellness_logs, wellness_fitness, wellness_records, wellness_reminders]  # health-plus
 ABILITIES += [docs_tools, docs_tools_forms, docs_tools_sheets]  # documents
 ABILITIES += [discover_science, discover_games, discover_codes, discover_study]  # discover
