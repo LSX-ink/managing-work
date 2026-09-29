@@ -1,0 +1,23 @@
+/* Career pop-ups (popup-career.js): job board, STAR planner, offer comparison. Colours follow popup.css's HUD variables. */
+.cr-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(110px, 1fr); gap: 8px; overflow-x: auto; }
+.cr-col { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 6px; min-height: 100px; display: grid; gap: 6px; align-content: start; }
+.cr-col-title { margin: 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.cr-card { display: grid; gap: 3px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--hud-dim, #2a3547); background: var(--hud-panel, rgba(6, 18, 40, 0.92)); font-size: 13px; }
+.cr-name, .cr-move { font: inherit; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: var(--text, #e8eef7); overflow-wrap: anywhere; }
+.cr-name:hover, .cr-name:focus-visible { color: var(--hud-bright, #9fd8ff); outline: none; }
+.cr-move { font-size: 11px; color: var(--hud-bright, #9fd8ff); }
+.cr-muted { font-size: 11px; color: var(--hud-mid, #9fb3c8); }
+.cr-star { display: grid; gap: 8px; }
+.cr-question { font-weight: 600; color: var(--hud-bright, #9fd8ff); }
+.cr-part { border: 1px solid var(--hud-dim, #2a3547); border-radius: 8px; padding: 6px 8px; }
+.cr-part.empty { border-style: dashed; cursor: pointer; opacity: 0.7; }
+.cr-part-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.cr-part-text { font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cr-table th, .cr-table td { padding: 6px; border-bottom: 1px solid var(--hud-dim, #2a3547); text-align: left; vertical-align: top; }
+.cr-table th { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hud-mid, #9fb3c8); }
+.cr-crit { text-transform: capitalize; color: var(--hud-mid, #9fb3c8); }
+.cr-bar { height: 4px; margin-top: 3px; border-radius: 2px; background: var(--hud-dim, #2a3547); }
+.cr-bar span { display: block; height: 100%; border-radius: 2px; background: var(--hud-bright, #9fd8ff); }
+.cr-total td { font-weight: 600; }
+.cr-best { color: var(--hud-bright, #9fd8ff); }

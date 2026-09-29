@@ -25,6 +25,10 @@ import calcmaths
 import calcmoney
 import calcrandom
 import calcunits
+import career_docs
+import career_interview
+import career_jobs
+import career_plan
 import cooking
 import cooking_guide
 import cooking_leftovers
@@ -184,6 +188,7 @@ ABILITIES += [people_book, people_touch, people_occasions, people_lists]  # peop
 ABILITIES += [voice]  # voice
 ABILITIES += [kids_rewards, kids_logs, kids_day, kids_fun]  # kids
 ABILITIES += [studio_play, studio_learn, studio_log]  # music-studio
+ABILITIES += [career_jobs, career_interview, career_docs, career_plan]  # career
 
 
 def defer(tool: dict) -> dict:
