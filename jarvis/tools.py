@@ -62,6 +62,10 @@ import repurpose_plan
 import repurpose_subs
 import repurpose_tracker
 import digitalproducts_copy
+import incomestreams_goals
+import incomestreams_insights
+import incomestreams_streams
+import incomestreams_tax
 import digitalproducts_ideas
 import digitalproducts_make
 import digitalproducts_sell
@@ -305,6 +309,7 @@ ABILITIES += [creatorbiz_deals, creatorbiz_work, creatorbiz_money, creatorbiz_do
 ABILITIES += [repurpose_subs, repurpose_formats, repurpose_plan, repurpose_tracker]  # repurpose content
 ABILITIES += [digitalproducts_ideas, digitalproducts_make, digitalproducts_copy, digitalproducts_sell]  # digital products
 ABILITIES += [sidehustle_ideas, sidehustle_plan, sidehustle_money, sidehustle_safety]  # side hustles
+ABILITIES += [incomestreams_streams, incomestreams_insights, incomestreams_goals, incomestreams_tax]  # income streams
 
 
 def defer(tool: dict) -> dict:

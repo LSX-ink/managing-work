@@ -1,0 +1,24 @@
+/* Income streams pop-ups (popup-incomestreams.js). Colours follow popup.css. */
+.popup[data-kind="incomestreams-dashboard"] { width: min(680px, calc(100vw - 24px)); max-height: min(640px, calc(100vh - 90px)); }
+.popup[data-kind="incomestreams-bars"] { width: min(560px, calc(100vw - 24px)); }
+.is-stack { display: flex; align-items: flex-end; gap: 8px; height: 190px; padding-top: 6px; }
+.is-col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; }
+.is-total { font-size: 10px; text-align: center; color: var(--hud-mid, #9fb3c8); white-space: nowrap; }
+.is-bar { display: flex; flex-direction: column-reverse; width: 100%; min-height: 2px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 3px; overflow: hidden; }
+.is-seg { background: var(--hud-bright, #9fd8ff); min-height: 1px; border-top: 1px solid var(--hud-panel, #000); }
+.is-seg.is-passive, .is-dot.is-passive { background-image: repeating-linear-gradient(45deg, transparent 0 3px, rgba(0, 0, 0, 0.55) 3px 5px); }
+.is-month { font-size: 11px; text-align: center; color: var(--hud-mid, #9fb3c8); }
+.is-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 10px 0 6px; font-size: 12px; }
+.is-key { display: inline-flex; align-items: center; gap: 5px; }
+.is-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--hud-bright, #9fd8ff); display: inline-block; }
+.is-lines { display: grid; gap: 2px; font-size: 13px; }
+.is-note { font-size: 11px; color: var(--hud-mid, #9fb3c8); margin-top: 8px; }
+.is-bars { display: grid; gap: 8px; }
+.is-row { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-align: left; display: grid; gap: 3px; width: 100%; }
+button.is-row { cursor: pointer; }
+button.is-row:hover .is-track, button.is-row:focus-visible .is-track { border-color: var(--hud-bright, #9fd8ff); outline: none; }
+.is-label { font-size: 13px; overflow-wrap: anywhere; }
+.is-track { height: 10px; border: 1px solid var(--hud-dim, #2a3547); border-radius: 5px; overflow: hidden; }
+.is-fill { height: 100%; background: var(--hud-bright, #9fd8ff); }
+.is-fill.is-warn { background: var(--hud-warn, #ffc24a); }
+.is-text { font-size: 11px; color: var(--hud-mid, #9fb3c8); }
