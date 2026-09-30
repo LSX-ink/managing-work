@@ -85,6 +85,31 @@ def test_memory_endpoints(monkeypatch, tmp_path):
         assert client.get("/memory/0/files/pic.png").status_code == 400
 
 
+
+def test_big_uploads_stream_to_disk(monkeypatch, tmp_path):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    import server
+
+    monkeypatch.setattr(server, "settings", replace(server.settings, memory_dir=str(tmp_path / "m"), password=""))
+    monkeypatch.setattr(server, "UPLOAD_CHUNK", 1024 * 1024)
+    ours = {"origin": "http://testserver"}
+    big = bytes(range(256)) * (100 * 1024)  # 25 MB: over the old 20 MB limit
+    with TestClient(server.app) as client:
+        assert client.put("/memory/0/files/clip.mp4", content=big, headers=ours).json() == {"name": "clip.mp4"}
+        assert client.put("/memory/0/files/clip.mp4", content=b"x", headers=ours).json() == {"name": "clip (2).mp4"}
+        assert client.put("/memory/0/files/clip.mp4", content=b"x").status_code == 403
+        monkeypatch.setattr(memory, "MAX_UPLOAD_BYTES", 1000)
+        assert client.put("/memory/0/files/huge.mp4", content=b"x" * 5000, headers=ours).status_code == 413
+
+        def chunks():
+            yield b"x" * 800
+            yield b"x" * 800
+        assert client.put("/memory/0/files/sneaky.mp4", content=chunks(), headers=ours).status_code == 413  # no length given
+    folder = memory.folder(replace(server.settings, memory_dir=str(tmp_path / "m")), 0)
+    assert (folder / "clip.mp4").read_bytes() == big
+    assert sorted(p.name for p in folder.iterdir()) == ["clip (2).mp4", "clip.mp4"]  # nothing half-written left behind
+
+
 # ---- downloads ----------------------------------------------------------------------
 
 def run(coro):

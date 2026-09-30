@@ -19,6 +19,7 @@ from config import Settings
 
 DEFAULT_FOLDERS = ["Ideas", "Work", "Music", "Personal", "Shopping", "Reminders"]
 MAX_FILE_BYTES = 20 * 1024 * 1024
+MAX_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024  # files added to a memory folder: streamed to disk, so big videos are fine
 MAX_DOWNLOAD_BYTES = 200 * 1024 * 1024
 MAX_REDIRECTS = 5
 READ_LIMIT = 6000  # characters of notes Alfred reads back from one folder
@@ -166,6 +167,11 @@ def save_note(settings: Settings, which: int | str, title: str, text: str) -> Pa
     path = unique_path(folder(settings, which) / f"{safe_name(title, 'note title')}.txt")
     path.write_text(str(text), encoding="utf-8")
     return path
+
+
+def upload_target(settings: Settings, which: int | str, filename: str) -> Path:
+    """Where an uploaded file will go: a free name in the folder (the upload streams into it)."""
+    return unique_path(folder(settings, which) / safe_name(filename, "file name"))
 
 
 def save_file(settings: Settings, which: int | str, filename: str, data: bytes) -> Path:

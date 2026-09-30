@@ -61,12 +61,11 @@
             THREE = window.THREE;
             if (!canvas) buildDom();
             renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
             renderer.outputEncoding = THREE.sRGBEncoding;
             renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
             renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             camera = new THREE.PerspectiveCamera(38, 1, 0.1, 6000);
-            resize();
+            applyQuality();   // pixel ratio and shadows for this PC, then the size
             k = window.LSX.kit(THREE, renderer);
             space = await window.LSX.space(k, pause);
             document.body.classList.add('station-on');
@@ -123,8 +122,34 @@
         document.body.append(veil, ui, controls);
         canvas.hidden = veil.hidden = ui.hidden = controls.hidden = true;
     }
-    function resize() {
+    // ---- quality: follow how fast this PC draws the planets -------------------------------------------------------
+    // Level 0 is the sharpest; a PC that can't keep up steps down (fewer pixels, a lower frame rate when nothing moves,
+    // then no soft shadows) and a PC with room to spare steps back up. The level is remembered for the next visit.
+    const QUALITY = [
+        { ratio: 1.25, idleMs: 40, shadows: true },
+        { ratio: 1, idleMs: 45, shadows: true },
+        { ratio: 0.8, idleMs: 55, shadows: true },
+        { ratio: 0.65, idleMs: 70, shadows: false },
+    ];
+    let quality = clamp(Number(load('quality', 1)) || 0, 0, QUALITY.length - 1);
+    const perf = { sum: 0, n: 0 };
+    function applyQuality() {
         if (!renderer) return;
+        const q = QUALITY[quality];
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.ratio));
+        if (renderer.shadowMap.enabled !== q.shadows) { renderer.shadowMap.enabled = q.shadows; renderer.shadowMap.needsUpdate = true; }
+        if (camera) resize();
+    }
+    function measure(ms, busy) {   // time between two drawn frames; busy = drawing every frame (the target is 60 fps)
+        if (!busy || ms > 250) return;   // idle frames are spaced out on purpose; a long gap is the tab waking up
+        perf.sum += ms; perf.n += 1;
+        if (perf.n < 90) return;
+        const avg = perf.sum / perf.n; perf.sum = perf.n = 0;
+        const next = avg > 30 ? quality + 1 : avg < 18 ? quality - 1 : quality;   // under ~33 fps: step down; a steady 55+: step up
+        if (next !== quality && next >= 0 && next < QUALITY.length) { quality = next; save('quality', quality); applyQuality(); }
+    }
+    function resize() {
+        if (!renderer || !camera) return;
         const w = window.innerWidth, h = window.innerHeight;
         renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
     }
@@ -538,8 +563,10 @@
         raf = requestAnimationFrame(tick);
         const moving = Math.abs(view.target - view.zoom) > 0.002 || view.pending || drag || keys.size || Math.abs(alfredTo - alfred) > 0.01 || Math.abs(view.focus - view.fx) > 0.01;
         const calm = reduced();
-        const every = calm && !moving ? 250 : moving || view.zoom >= 0.5 || trip.mode === 'out' || trip.mode === 'back' ? 0 : 32;   // about 30 fps when nothing moves
+        const busy = moving || view.zoom >= 0.5 || trip.mode === 'out' || trip.mode === 'back';
+        const every = calm && !moving ? 250 : busy ? 0 : QUALITY[quality].idleMs;   // 15 to 25 fps when nothing moves
         if (now - lastDraw < every) return;
+        if (lastDraw) measure(now - lastDraw, busy && every === 0);
         lastDraw = now;
         const dt = last === null ? 0 : Math.min(0.1, (now - last) / 1000); last = now;
         if (!calm) C += dt;
