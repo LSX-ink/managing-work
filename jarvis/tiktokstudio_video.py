@@ -921,6 +921,7 @@ def normalise(video: Path, out: Path) -> None:
          "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(out)])
 
 
+VOICE_JOBS = 3  # scene voices fetched side by side (gentle on the voice service, much quicker than one by one)
 RENDER_JOBS = 2  # scenes rendered side by side: most PCs have the cores, and it cuts the wait for a video a lot
 
 
@@ -966,7 +967,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     pictures, closeups = fill_gaps(list(pictures), list(closeups))
     captions = captions_on(account)
     accent = ac.hex_colour(account.get("accent"), "#e8c547")
-    shots, voices = [], []
+    shots = []
     for i, (scene, picture, closeup) in enumerate(zip(scenes, pictures, closeups)):
         shown = {**scene, "captions": captions}
         opener = script.get("cover", "") if i == 0 else ""
@@ -981,13 +982,18 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             second = work / f"scene{i}b.png"
             await asyncio.to_thread(draw_still, closeup, second)
             mine.append(second)
+        shots.append(mine)
+    gate = asyncio.Semaphore(VOICE_JOBS)
+
+    async def voice_for(i, scene):  # every scene's voice is fetched at once (a few at a time), not one after another
         voice, words = work / f"scene{i}.mp3", []
         speaks = cast.get(scene.get("speaker", "")) or SPEAKERS.get(scene.get("speaker", ""), account.get("voice", ""))
-        has_voice = await narrate(http, settings, scene["narration"], speaks, voice, words,
-                                   scene.get("pace", "normal"))
+        async with gate:
+            has_voice = await narrate(http, settings, scene["narration"], speaks, voice, words,
+                                      scene.get("pace", "normal"))
         seconds = await asyncio.to_thread(audio_seconds, voice) if has_voice else 0
-        shots.append(mine)
-        voices.append((voice, seconds, words) if seconds > 0.3 else (None, reading_seconds(scene["narration"]), []))
+        return (voice, seconds, words) if seconds > 0.3 else (None, reading_seconds(scene["narration"]), [])
+    voices = list(await asyncio.gather(*(voice_for(i, scene) for i, scene in enumerate(scenes))))
     lengths = fit_to_length([v[1] for v in voices])
     parts, hits, jobs = [], 0, []
     for i, (mine, (voice, spoken, words), seconds) in enumerate(zip(shots, voices, lengths)):
