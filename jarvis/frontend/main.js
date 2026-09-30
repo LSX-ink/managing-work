@@ -465,7 +465,7 @@ if (Recognition) {
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
             paused = true;
             setState('idle', t('micBlocked'));
-            document.dispatchEvent(new Event('jarvis:mic-blocked'));   // mic-help.js says how to fix it
+            document.dispatchEvent(new CustomEvent('jarvis:mic-blocked', { detail: { error: event.error } }));   // mic-help.js says how to fix it
         }
     };
 }
@@ -550,6 +550,12 @@ orb.addEventListener('click', () => {
     } else {
         maybeListen();
     }
+});
+
+// mic-help.js "TRY AGAIN": listen again once the microphone has been fixed.
+document.addEventListener('jarvis:mic-retry', () => {
+    paused = false;
+    if (started) maybeListen();
 });
 
 // Pop-up buttons and list items send their line to Alfred as if typed.
