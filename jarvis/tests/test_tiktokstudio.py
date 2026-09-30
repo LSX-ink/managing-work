@@ -594,3 +594,16 @@ def test_lessons_from_view_counts_feed_the_writer(s):
         assert "view counts say works (follow these lessons): Open on a named person" in prompt
     finally:
         creator._ctx["client"] = None
+
+
+def test_hook_text_on_the_first_scene_and_cover():
+    from PIL import Image
+    plain = Image.new("RGB", (cv.W, cv.H), (40, 40, 40))
+    marked = cv.with_hook_text(plain, "She never called back", "#e8c547", "cinematic")
+    assert marked.getpixel((cv.W // 2, 900)) == plain.getpixel((cv.W // 2, 900))  # the middle is untouched
+    top = marked.crop((0, cv.HOOK_TEXT_Y, cv.W, cv.HOOK_TEXT_Y + 200)).getcolors(1 << 20)
+    assert any(c[:3] == (255, 255, 255) for _, c in top)  # big white words at the top
+    assert cv.with_hook_text(plain, "", "#e8c547") is plain
+    assert cv.with_hook_text(plain, "Words", "#e8c547", "explainer") is plain  # it has its own headline
+    parsed = cv.parse_script(json.dumps({**json.loads(SCRIPT), "cover": "She never called back"}))
+    assert parsed["cover"] == "She never called back"

@@ -99,13 +99,15 @@ Rules:
   is new or has grown. Use {{}} for nothing.
 - keyword: 1 to 3 words shown big at the top (e.g. ADHD, Letter "M", Unsent Letter #4).
 - caption: one or two lines for the post, ending with a question. hashtags: 4 to 6, lower case, without #.
+- cover: 2 to 5 punchy words shown big on screen over the first scene and on the cover (for example "SHE NEVER
+  CALLED BACK"); it teases the story without giving the twist away and is not the same as the first spoken line.
 - mood: 2 or 3 words for the backing music (for example "tense slow piano", "eerie ambient", "upbeat hype").
 - sound: one trending TikTok sound from the trends above that fits this story (name and artist), or a style of
   sound to search for if none fits. The user adds it in the TikTok app when posting.
 
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
-  "hook": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...",
+  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "..."}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "..."}}]}}"""
 
@@ -203,6 +205,7 @@ def parse_script(text: str) -> dict:
         "hashtags": [t for t in tags if t][:8],
         "character": cs.clean(data.get("character"), 300),
         "mood": cs.clean(data.get("mood"), 80),
+        "cover": cs.clean(data.get("cover"), 60),
         "sound": cs.clean(data.get("sound"), 200),
         "score": _score(data.get("score")),
         "bible": data.get("bible") if isinstance(data.get("bible"), dict) else {},
@@ -251,6 +254,8 @@ async def edit_script(client, settings: Settings, brief: str, draft: dict) -> di
         return draft  # the editor cut too much
     edited["character"] = edited["character"] or draft["character"]
     edited["bible"] = edited["bible"] or draft["bible"]
+    for key in ("cover", "mood", "sound"):
+        edited[key] = edited[key] or draft[key]
     return edited
 
 
@@ -392,6 +397,26 @@ def drama_frame(picture: Image.Image, account: dict, script: dict, scene: dict) 
     draw.rectangle((W - 90, top - 26, W - 70, top + tall + 20), fill=(250, 215, 0, 255))  # the yellow edge
     draw.rectangle((70, top + tall + 14, W - 70, top + tall + 20), fill=(250, 215, 0, 255))
     centred(draw, top, scene["text"], font, (10, 10, 10), width=860, gap=12)
+    return im
+
+
+HOOK_TEXT_Y = 190  # the top of the frame: clear of the captions, the drama box and TikTok's own buttons
+
+
+def with_hook_text(im: Image.Image, text: str, accent, style: str = "") -> Image.Image:
+    """Big on-screen hook text for the first scene and the cover: what makes a scroller stop before the voice
+    lands. Explainer frames already open on a big headline, so they're left alone."""
+    text = cs.clean(text, 60)
+    if not text or style == "explainer":
+        return im
+    im = im.copy()
+    draw = ImageDraw.Draw(im, "RGBA")
+    font = ac.font(84)
+    lines = wrap(draw, text.upper(), font, 900)[:3]
+    tall = sum(draw.textbbox((0, 0), l, font=font, stroke_width=5)[3] + 8 for l in lines)
+    draw.rectangle((0, HOOK_TEXT_Y - 50, W, HOOK_TEXT_Y + tall + 60), fill=(0, 0, 0, 90))
+    y = centred(draw, HOOK_TEXT_Y, " ".join(lines), font, (255, 255, 255), width=900, gap=8, stroke=5)
+    draw.rectangle((W // 2 - 90, y + 24, W // 2 + 90, y + 34), fill=accent)
     return im
 
 
@@ -659,12 +684,16 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     shots, voices = [], []
     for i, (scene, picture, closeup) in enumerate(zip(scenes, pictures, closeups)):
         shown = {**scene, "captions": captions}
+        opener = script.get("cover", "") if i == 0 else ""
+
+        def draw_still(pic, path):
+            with_hook_text(frame(pic, account, script, shown), opener, accent, account.get("style", "")).save(path)
         still = work / f"scene{i}.png"
-        await asyncio.to_thread(lambda: frame(picture or blank_picture(), account, script, shown).save(still))
+        await asyncio.to_thread(draw_still, picture or blank_picture(), still)
         mine = [still]
         if closeup is not None:
             second = work / f"scene{i}b.png"
-            await asyncio.to_thread(lambda: frame(closeup, account, script, shown).save(second))
+            await asyncio.to_thread(draw_still, closeup, second)
             mine.append(second)
         voice, words = work / f"scene{i}.mp3", []
         has_voice = await narrate(http, settings, scene["narration"], account.get("voice", ""), voice, words)
