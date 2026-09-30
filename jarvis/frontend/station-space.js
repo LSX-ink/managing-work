@@ -105,6 +105,13 @@ LSX.space = async (k, pause) => {
     const lsxT = planetTexture('lsx');
     const lsxP = new THREE.Mesh(new THREE.SphereGeometry(LSXR, 96, 48), new THREE.MeshStandardMaterial({ map: tex(lsxT), bumpMap: tex(lsxT.bump, 1, 1, false), bumpScale: 1.4, emissiveMap: tex(lsxT.lights), emissive: 0xffc070, emissiveIntensity: 0.55, roughnessMap: tex(lsxT.bump, 1, 1, false), roughness: 1, metalness: 0 }));
     lsxP.position.copy(LSXC); space.add(lsxP);
+    // city lights only show on the night side, fading in through the dusk line
+    const sunDirW = spaceSun.position.clone().normalize();
+    lsxP.material.onBeforeCompile = (sh) => {
+        sh.uniforms.sunDirW = { value: sunDirW };
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWN;').replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nvWN = normalize(mat3(modelMatrix) * objectNormal);');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWN; uniform vec3 sunDirW;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= 2.2 * smoothstep(0.08, -0.25, dot(normalize(vWN), sunDirW));');
+    };
     await pause();
     const clouds = new THREE.Mesh(new THREE.SphereGeometry(LSXR * 1.012, 96, 48), new THREE.MeshStandardMaterial({ map: tex(planetTexture('cloud')), transparent: true, depthWrite: false, roughness: 1 }));
     clouds.position.copy(LSXC); space.add(clouds);
@@ -203,6 +210,13 @@ LSX.space = async (k, pause) => {
     const ice = new THREE.Mesh(new THREE.SphereGeometry(ICER, 48, 24), new THREE.MeshStandardMaterial({ map: tex(iceT), bumpMap: tex(iceT.bump, 1, 1, false), bumpScale: 1, roughness: 0.7 }));
     ice.position.copy(onOrbit(R_ICE, behind(R_ICE) - 0.9, -40)); space.add(ice);
     const iceHalo = atmo(ICER * 1.1, '#bfe6ff', 0.8); iceHalo.position.copy(ice.position); space.add(iceHalo);
+    // the gas giant's moons: an icy one, a sulphur-yellow volcanic one, a dark cratered one and a tiny captured rock
+    const gMoons = [[14, 0xfff6ec, 310, 0.05], [11, 0xe8c060, 250, 0.07], [18, 0x8a8078, 400, 0.035], [6, 0xa09080, 480, 0.028]].map(([r, c, d, sp], q) => {
+        const t = planetTexture('moon', 256, 128);
+        const m = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 16), new THREE.MeshStandardMaterial({ map: tex(t), bumpMap: tex(t.bump, 1, 1, false), bumpScale: 0.8, color: c, roughness: 1 }));
+        space.add(m); return { m, d, sp, ph: q * 1.9 };
+    });
+    const gAx = V(1, 0, 0).applyEuler(giantRing.rotation), gAy = V(0, 1, 0).applyEuler(giantRing.rotation);   // the ring plane
     // the asteroid belt between LSX and the giant
     const BELT = 1400, R_BELT = 3350, beltI = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), rockM, BELT);
     { const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
@@ -279,6 +293,7 @@ LSX.space = async (k, pause) => {
         const a = C * 0.12 + 1; moon.position.copy(HOMEC).add(V(Math.cos(a) * 92, Math.sin(a) * 26, Math.sin(a) * -70)); moon.rotation.y = C * 0.05;
         station.rotation.set(0.5, C * 0.15, 0.3); stationLamp.visible = Math.floor(C * 1.5) % 2 === 0;
         rocks.forEach((r) => { r.rotation.set(C * r.userData.s.x * 0.5, C * r.userData.s.y * 0.5, 0); });
+        gMoons.forEach((g) => { const a = C * g.sp + g.ph; g.m.position.copy(giant.position).addScaledVector(gAx, Math.cos(a) * g.d).addScaledVector(gAy, Math.sin(a) * g.d); g.m.rotation.y = a; });
         giant.rotation.y = C * 0.02; ice.rotation.y = C * 0.01; belt.quaternion.setFromAxisAngle(nrm, C * 0.0015);
         sunGlow.forEach((s, q) => { s.material.rotation = C * 0.01 * (q + 1); });
         sunU.t.value = C; auroraU.t.value = C; corona.material.rotation = C * 0.004; inner.rotation.y = C * 0.004;
