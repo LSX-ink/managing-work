@@ -32,6 +32,7 @@ FORMATS = {
 STATUSES = ("making", "ready", "approved", "posted", "rejected", "skipped", "failed")
 PLATFORMS = ("twitch", "kick")
 MAX_TASTE = 20  # liked and rejected videos remembered per account
+MAX_CHARACTERS, MAX_THREADS = 12, 10  # the story bible: recurring characters and open story threads per account
 # N3on said yes to clipping (the user told Alfred so); he streams on Kick and sometimes Twitch.
 NEON = [{"name": "n3on", "platform": "kick", "allows_clipping": True},
         {"name": "n3on", "platform": "twitch", "allows_clipping": True}]
@@ -194,6 +195,44 @@ def taste_summary(account: dict, n: int = 6) -> str:
         return "No ticks or X's yet: be bold and try something fresh."
     return ("The user APPROVED: " + ("; ".join(liked) or "nothing yet") + ".\nThe user REJECTED: "
             + ("; ".join(rejected) or "nothing yet") + ".")
+
+
+# ---- the story bible: the account's recurring world, so series and characters stay consistent ----------------
+
+def update_bible(account: dict, update) -> None:
+    """Merge what the writer added: characters (by name: look and notes), threads opened and closed, the world."""
+    if not isinstance(update, dict):
+        return
+    bible = account.setdefault("bible", {"world": "", "characters": [], "threads": []})
+    world = clean(update.get("world"), 400)
+    if world:
+        bible["world"] = world
+    people = {c["name"].lower(): c for c in bible.get("characters") or []}
+    for c in update.get("characters") or []:
+        if not isinstance(c, dict) or not clean(c.get("name"), 40):
+            continue
+        name = clean(c.get("name"), 40)
+        row = people.pop(name.lower(), {"name": name, "look": "", "notes": ""})
+        row["look"] = clean(c.get("look"), 300) or row["look"]
+        row["notes"] = clean(c.get("notes"), 300) or row["notes"]
+        people[name.lower()] = row  # moved to the end: the most recently used last
+    bible["characters"] = list(people.values())[-MAX_CHARACTERS:]
+    closed = {clean(t, 200).lower() for t in update.get("threads_closed") or []}
+    threads = [t for t in bible.get("threads") or [] if t.lower() not in closed]
+    threads += [clean(t, 200) for t in update.get("threads_opened") or [] if clean(t, 200) and clean(t, 200) not in threads]
+    bible["threads"] = threads[-MAX_THREADS:]
+
+
+def bible_summary(account: dict) -> str:
+    bible = account.get("bible") or {}
+    parts = []
+    if bible.get("world"):
+        parts.append(f"World: {bible['world']}")
+    for c in bible.get("characters") or []:
+        parts.append(f"Character {c['name']}: {c.get('look') or 'look not set'}" + (f" ({c['notes']})" if c.get("notes") else ""))
+    if bible.get("threads"):
+        parts.append("Open threads to pay off or deepen: " + "; ".join(bible["threads"]))
+    return "\n".join(parts) or "Empty so far: this video can start the account's world."
 
 
 def new_id() -> str:
