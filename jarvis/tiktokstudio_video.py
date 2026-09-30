@@ -13,7 +13,8 @@
    still makes a captioned video.
 5. Captions: big word-by-word captions timed to the voice, the spoken word lit in the account's colour and the
    scene's key words ("punch") drawn bigger.
-6. Video: ffmpeg (bundled by imageio-ffmpeg) gives each shot its own camera move, a soft swish on each cut, matches the scene to its
+6. Video: ffmpeg (bundled by imageio-ffmpeg) gives each shot its own camera move, a soft swish on each cut (or
+   the scene's sound effect: boom, heartbeat, buzz, glitch, sting), matches the scene to its
    narration and joins the scenes into one 1080x1920 MP4. A backing track dropped into the TikTok/Music folder
    (or the account's own Music folder) plays quietly underneath, dipping when Alfred speaks.
 """
@@ -106,6 +107,9 @@ Rules:
   voicemail, a scream, a whisper), who says it. For a named character (from the story bible or this video) put
   their name, so they keep the same voice in every video; otherwise "woman", "man", "old man", "old woman" or
   "child". Use a character voice for 1 to 3 lines that hit hard; everything else is the narrator.
+- "hit" for each scene is a sound effect as it starts, only where the story earns it (at most 3 per video):
+  "boom" (a reveal or twist), "heartbeat" (dread, someone hiding), "buzz" (a phone vibrating, a message),
+  "glitch" (something wrong, a memory breaking), "sting" (a realisation, a clue), or "none".
 - "punch" for each scene is the 1 or 2 words of its narration that carry the scene (the number, the name, the
   twist word), copied exactly; the captions draw them bigger. Leave it empty for a scene with no stand-out word.
 - "bible": what this video adds to the story bible: characters it uses (name, look, notes, and voice_type:
@@ -128,7 +132,7 @@ Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
   "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "...", "voice_type": "woman"}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
-  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator", "punch": ["..."]}}]}}"""
+  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator", "punch": ["..."], "hit": "none"}}]}}"""
 
 EDITOR_PROMPT = """You are the toughest short-form story editor on TikTok. A writer was given this brief:
 
@@ -251,7 +255,9 @@ def parse_script(text: str) -> dict:
                     "closeup": cs.clean(s.get("closeup"), 300),
                     "pace": str(s.get("pace") or "").lower() if str(s.get("pace") or "").lower() in PACES else "normal",
                     "speaker": cs.clean(s.get("speaker"), 40).lower() or "narrator",
-                    "punch": punch_words(s.get("punch"))}
+                    "punch": punch_words(s.get("punch")),
+                    "hit": str(s.get("hit") or "").lower().strip() if str(s.get("hit") or "").lower().strip() in HITS
+                    else ""}
                    for s in scenes[:14]],
     }
 
@@ -708,6 +714,17 @@ MOTIONS = [  # a different camera move on each shot keeps the eye busy: push in,
 WHOOSH = ("anoisesrc=d=0.45:c=pink:a=0.6:r=44100,highpass=f=350,lowpass=f=4200,"
           "afade=t=in:d=0.18,afade=t=out:st=0.18:d=0.27,volume=0.9,aformat=channel_layouts=stereo")
 
+# Sound effects the script can cue on a scene's first beat, made by ffmpeg itself (no files needed). They replace
+# that cut's swish, and only the first MAX_HITS in a video play, so they stay special.
+HITS = {
+    "boom": "aevalsrc='0.9*sin(2*PI*(75-45*t)*t)*exp(-2.5*t)':d=1.4:s=44100",
+    "heartbeat": "aevalsrc='0.9*sin(2*PI*52*t)*(exp(-28*t)+0.8*exp(-28*(t-0.26))*gte(t,0.26))':d=0.9:s=44100",
+    "buzz": "aevalsrc='0.3*sin(2*PI*170*t)*lt(mod(t,0.45),0.28)':d=0.95:s=44100",
+    "glitch": "anoisesrc=d=0.35:c=white:a=0.5:r=44100,acrusher=bits=4:mode=log:aa=1,highpass=f=800,volume=0.6",
+    "sting": "aevalsrc='0.35*sin(2*PI*880*t)*exp(-4*t)+0.25*sin(2*PI*1320*t)*exp(-5*t)':d=1.2:s=44100",
+}
+MAX_HITS = 3
+
 
 # The loop: the last scene ends on a short, slow settle into the video's very first frame, so when TikTok replays
 # it the cut back to the start is seamless and the video feels like it never ended (rewatches push it out further).
@@ -716,10 +733,11 @@ LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # e
 
 
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
-                 whoosh: bool = False, loop_to: Path | None = None) -> None:
+                 whoosh: bool = False, loop_to: Path | None = None, hit: str = "") -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
-    the opening frame, so the video loops seamlessly."""
+    the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
+    in place of the swish."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)]
@@ -743,8 +761,9 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         chains.append(f"[{k + 1}:v]format=rgba,setpts=PTS-STARTPTS[cap];[vc][cap]overlay=0:{CAPTION_Y}:eof_action=pass[vo]")
         video = "[vo]"
     chains.append(f"{video}format=yuv420p[v]")
-    if whoosh:
-        inputs += ["-f", "lavfi", "-i", WHOOSH]
+    if hit in HITS or whoosh:
+        effect = f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH
+        inputs += ["-f", "lavfi", "-i", effect]
         chains.append(f"[{k}:a]aresample=44100,aformat=channel_layouts=stereo[vo1];"
                       f"[vo1][{k + 1 + bool(captions)}:a]amix=inputs=2:duration=first:normalize=0,apad[a]")
     else:
@@ -858,7 +877,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         shots.append(mine)
         voices.append((voice, seconds, words) if seconds > 0.3 else (None, reading_seconds(scene["narration"]), []))
     lengths = fit_to_length([v[1] for v in voices])
-    parts = []
+    parts, hits = [], 0
     for i, (mine, (voice, spoken, words), seconds) in enumerate(zip(shots, voices, lengths)):
         track = None
         if captions:
@@ -867,8 +886,10 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                                             scenes[i].get("punch", []))
         part = work / f"scene{i}.mp4"
         loop_to = shots[0][0] if i == len(shots) - 1 and i > 0 and account.get("loop", True) is not False else None
-        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i,
-                                i > 0 and account.get("sfx", True) is not False, loop_to)
+        sfx = account.get("sfx", True) is not False
+        hit = scenes[i].get("hit", "") if sfx and hits < MAX_HITS else ""
+        hits += bool(hit)
+        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit)
         parts.append(part)
     name = cs.slug(f"{script['title']}")
     video = folder / f"{name}.mp4"
