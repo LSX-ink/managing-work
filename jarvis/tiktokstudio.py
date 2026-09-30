@@ -104,7 +104,7 @@ def replace_idea(rejected: dict) -> str:
 
 
 async def make_one(settings: Settings, account_name: str, idea: str = "", sequel_of: dict | None = None,
-                   replaces: dict | None = None) -> dict:
+                   replaces: dict | None = None, script: dict | None = None) -> dict:
     data = cs.load(settings)
     account = cs.account(data, account_name)
     vid = {"id": cs.new_id(), "account": account["name"], "day": date.today().isoformat(), "status": "making",
@@ -128,7 +128,7 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         account = cs.account(cs.load(settings), account["name"])
         result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
                                best=best_titles(data, account["name"]), taste=cs.taste_summary(account),
-                               part=vid["part"], variety=variety_brief(data, account["name"]))
+                               part=vid["part"], variety=variety_brief(data, account["name"]), script=script)
         fresh = cs.load(settings)  # remember the characters and threads this video added to the account's world
         cs.update_bible(cs.account(fresh, account["name"]), result.get("bible"))
         cs.save(settings, fresh)
@@ -145,6 +145,61 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         print(f"[jarvis] Studio video failed: {exc}", flush=True)
         update = {"status": "failed", "error": str(exc)[:300]}
     return await _finish(settings, vid["id"], update)
+
+
+MAX_DRAFTS = 10
+
+
+async def draft_script(settings: Settings, account_name: str, idea: str = "") -> str:
+    """Write a script without filming it, so the user can read it first: filming (pictures, voices, ffmpeg) is the
+    slow part, and a weak story is cheaper to catch here. make_video with the draft films it exactly as written."""
+    data = cs.load(settings)
+    account = cs.account(data, account_name)
+    if account["format"] == "clips":
+        raise ValueError(f"{account['name']} posts stream clips, so there's no script to write.")
+    await ensure_trends(settings, account["name"])
+    await ensure_lessons(settings, account["name"])
+    data = cs.load(settings)
+    account = cs.account(data, account["name"])
+    recent = [v["title"] for v in data["videos"] if v.get("account") == account["name"] and v.get("status") != "making"]
+    script = await cv.write_script(_ctx["client"], settings, account, cs.clean(idea, 500), recent,
+                                   best_titles(data, account["name"]), cs.taste_summary(account),
+                                   variety_brief(data, account["name"]))
+    draft = {"id": cs.new_id(), "account": account["name"], "made_at": time.strftime("%Y-%m-%d %H:%M"), "script": script}
+    data["drafts"] = [*data.get("drafts", []), draft][-MAX_DRAFTS:]
+    cs.save(settings, data)
+    return preview(draft)
+
+
+def preview(draft: dict) -> str:
+    """A draft script as the user reads it: the scores, the opening, then each scene with how it's filmed."""
+    sc = draft["script"]
+    scores = ", ".join(f"{k} {sc[key]}/10" for k, key in (("editor", "score"), ("hook", "hook_score"),
+                                                           ("retention", "retention")) if sc.get(key))
+    lines = [f"Draft {draft['id']} for {draft['account']}: \"{sc['title']}\"" + (f" ({scores})" if scores else ""),
+             f"Cover: {sc.get('cover') or '-'}. Mood: {sc.get('mood') or '-'}."]
+    for i, scene in enumerate(sc["scenes"], 1):
+        how = [scene.get("pace", "normal")]
+        if scene.get("speaker", "narrator") != "narrator":
+            how.append(f"voice: {scene['speaker']}")
+        if scene.get("hit"):
+            how.append(f"sound: {scene['hit']}")
+        lines.append(f"{i}. [{', '.join(how)}] {scene['narration']}")
+    lines.append("Say 'film it' to make this video, or ask for another draft.")
+    return "\n".join(lines)
+
+
+def find_draft(data: dict, which: str) -> dict:
+    drafts = data.get("drafts", [])
+    if not drafts:
+        raise ValueError("There are no draft scripts; ask for one first.")
+    which = str(which or "latest").strip().lower()
+    if which in ("latest", "last", "it", "that"):
+        return drafts[-1]
+    for d in reversed(drafts):
+        if d["id"] == which or which in d["script"]["title"].lower() or which == d["account"].lower():
+            return d
+    raise ValueError(f"I can't find a draft called {which}.")
 
 
 def variety_brief(data: dict, name: str, count: int = 3) -> str:
@@ -549,7 +604,8 @@ async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -
 # ---- the tool ---------------------------------------------------------------------------------------------
 
 ACTIONS = ["studio", "make_video", "approve", "reject", "skip", "pause", "resume", "set_views", "accounts", "add_account", "update_account",
-           "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup", "bible", "lessons"]
+           "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup", "bible", "lessons",
+           "draft_script"]
 
 
 def tool_definitions() -> list[dict]:
@@ -589,7 +645,10 @@ def tool_definitions() -> list[dict]:
             "properties": {
                 "action": {"type": "string", "enum": ACTIONS},
                 "account": {"type": "string", "description": "Account name, e.g. lowkey.lore."},
-                "idea": {"type": "string", "description": "make_video: a story idea or topic to use."},
+                "idea": {"type": "string", "description": "make_video or draft_script: a story idea or topic to use."},
+                "draft": {"type": "string", "description": "make_video: film this draft script (its id, title, or "
+                          "'latest') instead of writing a new one. draft_script writes a script to read before "
+                          "filming, which saves the slow part when the story isn't right."},
                 "video": {"type": "string", "description": "Video id, part of its title, its account, or 'latest'."},
                 "reason": {"type": "string", "description": "reject: what the user didn't like, in their words."},
                 "views": {"type": "string", "description": "set_views: e.g. 80000 or 80k."},
@@ -628,6 +687,23 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
         _ctx["http"] = http
     if action == "studio":
         return studio(settings)
+    if action == "draft_script":
+        if _ctx["client"] is None:
+            raise ValueError("The studio isn't running; restart Alfred.")
+        return await draft_script(settings, args.get("account"), args.get("idea") or "")
+    if action == "make_video" and args.get("draft"):
+        if _ctx["client"] is None:
+            raise ValueError("The studio isn't running; restart Alfred.")
+        data = cs.load(settings)
+        draft = find_draft(data, args["draft"])
+        data["drafts"] = [d for d in data["drafts"] if d["id"] != draft["id"]]
+        cs.save(settings, data)
+        job = (draft["account"], "", None, None, draft["script"])
+        if _ctx["making"]:
+            _ctx["pending"].append(job)
+            return f"I'm making another video right now; \"{draft['script']['title']}\" is next in line."
+        asyncio.create_task(make_in_background(settings, [job]))
+        return f"Filming \"{draft['script']['title']}\" now, exactly as drafted. I'll tell you when it's ready to approve."
     if action == "make_video":
         if _ctx["client"] is None:
             raise ValueError("The studio isn't running; restart Alfred.")
