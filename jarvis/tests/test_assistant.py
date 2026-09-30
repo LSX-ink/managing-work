@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import httpx
 import pytest
@@ -260,8 +260,9 @@ def test_inbox_capture_show_sort(s):
     assert todo.open_items(s) == ["ring the dentist"]
     assert "Sorted notes" in inbox(s, action="inbox_sort", item="shed")
     assert "a shed for the garden" in open(f"{s.memory_dir}/Ideas/Sorted notes.md").read()
-    inbox(s, action="inbox_sort", item="1", to="reminder", when="2026-09-30 09:00")
-    assert reminders.load(s)[0]["at"] == "2026-09-30 09:00"
+    when = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d 09:00")
+    inbox(s, action="inbox_sort", item="1", to="reminder", when=when)
+    assert reminders.load(s)[0]["at"] == when
     assert inbox(s, action="inbox_show") == "The inbox is empty."
     with pytest.raises(ValueError):
         inbox(s, action="inbox_sort", item="nothing")
