@@ -161,6 +161,7 @@
             <dt>NETWORK</dt><dd id="hud-net">—</dd>
         </dl>
     </aside>
+    <div class="hud-only hud-rightcol">
     <aside class="hud-only hud-panel hud-right" aria-label="Clock and audio">
         <div id="hud-clock">00:00:00</div>
         <div id="hud-date">—</div>
@@ -169,6 +170,12 @@
         <h2>AUDIO</h2>
         <canvas id="hud-wave" width="240" height="70"></canvas>
     </aside>
+    <section id="hud-env" class="hud-only hud-panel hud-bottom" aria-label="Weather">
+        <h2><button id="hud-env-toggle" type="button" aria-expanded="true" aria-controls="hud-weather" title="Shrink or expand">
+            <span id="hud-city">ENVIRONMENT</span><span id="hud-env-sign" aria-hidden="true">−</span></button></h2>
+        <p id="hud-weather">—</p>
+    </section>
+    </div>
     <main id="app">
         <div id="orb-wrap">
             <canvas id="hud-sphere" class="hud-only" width="420" height="420"></canvas>
@@ -199,10 +206,6 @@
             </form>
             </div>
         </div>
-        <section class="hud-only hud-panel hud-bottom" aria-label="Weather">
-            <h2 id="hud-city">ENVIRONMENT</h2>
-            <p id="hud-weather">—</p>
-        </section>
     </main>
     <aside id="memory-panel" class="hud-only hud-panel" hidden aria-label="Memory folder">
         <div class="mem-head">

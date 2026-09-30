@@ -16,3 +16,5 @@ a.pop-action.cr-link { text-decoration: none; display: inline-block; }
 .cr-error { margin-top: 6px; font-size: 12px; color: #ffb4ab; }
 .cr-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .cr-approve { font-weight: 700; }
+.cr-facts { margin-top: 6px; font-size: 12px; color: var(--hud-accent, #e8c547); letter-spacing: .04em; }
+.cr-small { font-size: 11px; padding: 2px 8px; }

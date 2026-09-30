@@ -21,13 +21,31 @@
         }
     }
 
-    kinds['creator-studio'] = (card, body, { el }) => {
-        const { accounts = [], videos = [], configured, setup, notice, making } = card.data || {};
+    function copyButton(el, label, text) {
+        const b = el('button', 'pop-action', label);
+        b.addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; }
+            catch (e) { b.textContent = "Couldn't copy"; }
+            setTimeout(() => { b.textContent = label; }, 1500);
+        });
+        return b;
+    }
+
+    kinds['creator-studio'] = (card, body, { el, ask }) => {
+        const { accounts = [], videos = [], configured, setup, notice, making, paused } = card.data || {};
         if (notice) body.append(el('div', 'cr-notice', notice));
+        if (paused) body.append(el('div', 'cr-notice', 'Content making is paused. Say "resume content" to start again.'));
         const acc = el('div', 'cr-accounts');
         for (const a of accounts) {
             const row = el('div', 'cr-account');
             row.append(el('b', '', `@${a.name}`), el('span', 'cr-dim', `${a.style} · ${a.per_day} a day`));
+            if (a.format !== 'clips') {
+                const bible = el('button', 'pop-action cr-small', 'Story bible');
+                bible.addEventListener('click', () => ask(`Show the story bible for ${a.name}.`));
+                const works = el('button', 'pop-action cr-small', "What's working");
+                works.addEventListener('click', () => ask(`What's working on ${a.name}?`));
+                row.append(bible, works);
+            }
             if (a.connected) row.append(el('span', 'cr-ok', 'Connected'));
             else if (configured) {
                 const link = el('a', 'cr-link', 'Connect');
@@ -56,7 +74,12 @@
                 player.playsInline = true;
                 item.append(player);
             }
+            const facts = [v.score ? `Editor ${v.score}/10` : '', v.hook_score ? `Hook ${v.hook_score}/10` : '',
+                           v.mood ? `Mood: ${v.mood}` : ''].filter(Boolean);
+            if (facts.length) item.append(el('div', 'cr-facts', facts.join(' · ')));
             if (v.caption) item.append(el('div', 'cr-caption', `${v.caption} ${v.hashtags || ''}`));
+            if (v.sound) item.append(el('div', 'cr-dim', `Sound to add: ${v.sound}`));
+            if (v.pinned_comment) item.append(el('div', 'cr-dim', `Pin this comment: ${v.pinned_comment}`));
             if (v.error) item.append(el('div', 'cr-error', v.error));
             const note = el('div', 'cr-dim');
             const buttons = el('div', 'cr-buttons');
@@ -67,6 +90,8 @@
                 no.addEventListener('click', () => act(v.id, 'reject', note));
                 buttons.append(ok, no);
             }
+            if (v.caption) buttons.append(copyButton(el, 'Copy caption', `${v.caption} ${v.hashtags || ''}`.trim()));
+            if (v.pinned_comment) buttons.append(copyButton(el, 'Copy comment', v.pinned_comment));
             if (v.src) {
                 const get = el('a', 'pop-action cr-link', 'Download');
                 get.href = `${v.src}&download=1`;
