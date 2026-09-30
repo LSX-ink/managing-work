@@ -142,7 +142,7 @@ def test_a_missing_picture_or_voice_still_makes_a_video(s, tmp_path, monkeypatch
 def test_studio_makes_a_video_and_queues_it(s, monkeypatch):
     announced = []
 
-    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste=""):
+    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste="", part=1):
         path = folder / "Clip.mp4"
         path.write_bytes(b"mp4")
         return {**cv.parse_script(SCRIPT), "path": path, "missing_pictures": 0}
@@ -679,3 +679,27 @@ def test_a_character_line_is_spoken_in_the_characters_voice(s, tmp_path, monkeyp
     account = {**cs.load(s)["accounts"][0], "voice": "en-GB-RyanNeural"}
     asyncio.run(cv.make(None, None, s, account, tmp_path, script=script))
     assert voices == ["en-GB-RyanNeural", cv.SPEAKERS["old man"], "en-GB-RyanNeural"]
+
+
+def test_sequels_wear_a_part_badge_and_notes_carry_a_pinned_comment(s, tmp_path, monkeypatch):
+    from PIL import Image
+    plain = Image.new("RGB", (cv.W, cv.H), (40, 40, 40))
+    assert cv.with_part_badge(plain, 1, "#e8c547") is plain
+    badged = cv.with_part_badge(plain, 3, "#e8c547")
+    assert badged.getpixel((70, 70)) == (232, 197, 71) and badged.getpixel((cv.W // 2, 900)) == (40, 40, 40)
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "pinned_comment": "Who left the voicemail?"}))
+    out = asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script, part=2))
+    assert "Pin this comment: Who left the voicemail?" in out["path"].with_suffix(".md").read_text()
+    cover = Image.open(out["path"].with_suffix(".png"))
+    assert cover.getpixel((70, 70)) != cover.getpixel((cv.W - 70, 70))  # the badge sits top left
