@@ -529,3 +529,25 @@ def test_a_backing_track_is_picked_from_the_music_folders(tmp_path):
     (folder / "Music").mkdir()
     (folder / "Music" / "mine.m4a").write_bytes(b"x")
     assert cv.music_for(folder).name == "mine.m4a"  # the account's own music comes first
+
+
+def test_the_story_bible_keeps_the_world_consistent(s):
+    account = cs.new_account("lowkey.lore")
+    assert "start the account's world" in cs.bible_summary(account)
+    cs.update_bible(account, {"world": "A seaside town where old phones still ring.",
+                              "characters": [{"name": "Mara", "look": "30, red coat, short black hair"}],
+                              "threads_opened": ["Who left the voicemail?", "Why 3 a.m.?"]})
+    cs.update_bible(account, {"characters": [{"name": "mara", "notes": "hears her own voice"}, {"name": "Theo", "look": "old man"}],
+                              "threads_closed": ["why 3 a.m.?"], "threads_opened": ["Who left the voicemail?"]})
+    bible = account["bible"]
+    assert [c["name"] for c in bible["characters"]] == ["Mara", "Theo"]
+    assert bible["characters"][0] == {"name": "Mara", "look": "30, red coat, short black hair", "notes": "hears her own voice"}
+    assert bible["threads"] == ["Who left the voicemail?"]
+    summary = cs.bible_summary(account)
+    assert "seaside town" in summary and "Character Mara: 30, red coat" in summary and "Who left the voicemail?" in summary
+    cs.update_bible(account, "nonsense")  # a bad update changes nothing
+    assert account["bible"] == bible
+    client = FakeClient([(SCRIPT, "end_turn"), (SCRIPT, "end_turn")])
+    asyncio.run(cv.write_script(client, s, account))
+    assert "Character Mara: 30, red coat" in client.calls[0]["messages"][0]["content"]
+    assert "Story bible: @lowkey.lore" in str(studio(s, action="bible", account="lowkey.lore").card)

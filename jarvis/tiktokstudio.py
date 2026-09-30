@@ -127,6 +127,9 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         account = cs.account(cs.load(settings), account["name"])
         result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
                                best=best_titles(data, account["name"]), taste=cs.taste_summary(account))
+        fresh = cs.load(settings)  # remember the characters and threads this video added to the account's world
+        cs.update_bible(cs.account(fresh, account["name"]), result.get("bible"))
+        cs.save(settings, fresh)
         update = {"status": "ready", "title": result["title"], "caption": result["caption"],
                   "hashtags": result["hashtags"], "keyword": result["keyword"], "hook": result.get("hook", ""),
                   "notes": f"{account['style']} look" + (f", series {result['series']}" if result.get("series") else "")
@@ -494,7 +497,7 @@ async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -
 # ---- the tool ---------------------------------------------------------------------------------------------
 
 ACTIONS = ["studio", "make_video", "approve", "reject", "skip", "pause", "resume", "set_views", "accounts", "add_account", "update_account",
-           "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup"]
+           "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup", "bible"]
 
 
 def tool_definitions() -> list[dict]:
@@ -524,7 +527,9 @@ def tool_definitions() -> list[dict]:
                        "flashy Gen Z account names. profile_kit (account) makes a profile picture and a bio. trends (account, refresh) shows this "
                        "week's TikTok trends for its niche (checked daily before the first video and used in every "
                        "script, with the account's best-performing videos) so you can plan what to post next. connect (account) gives the TikTok login link. setup explains "
-                       "what auto-posting needs.",
+                       "what auto-posting needs. bible (account) shows the account's story bible: its recurring "
+                       "characters (with their fixed looks), world and open story threads, which every new video "
+                       "builds on so series stay consistent.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -617,6 +622,11 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
                             screen.card("text", f"Trends: @{account['name']}", f"creator-trends-{account['name']}",
                                         text=text, buttons=[{"label": "Make one from this",
                                                              "say": f"Make a TikTok video now for {account['name']} using this week's trends."}]))
+    if action == "bible":
+        account = cs.account(cs.load(settings), args.get("account"))
+        text = cs.bible_summary(account)
+        return screen.Shown(f"The story bible for {account['name']}. INSTRUCTION for Alfred: sum it up in two sentences.",
+                            screen.card("text", f"Story bible: @{account['name']}", f"creator-bible-{account['name']}", text=text))
     if action == "profile_kit":
         return await profile_kit(settings, _ctx["http"] or http, args)
     if action == "connect":

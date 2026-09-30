@@ -12,7 +12,7 @@
 4. Voice: ElevenLabs when its key is set, otherwise Microsoft's free neural voices (edge-tts). No voice at all
    still makes a captioned video.
 5. Captions: big word-by-word captions timed to the voice, the spoken word lit in the account's colour.
-6. Video: ffmpeg (bundled by imageio-ffmpeg) gives each shot its own camera move, matches the scene to its
+6. Video: ffmpeg (bundled by imageio-ffmpeg) gives each shot its own camera move, a soft swish on each cut, matches the scene to its
    narration and joins the scenes into one 1080x1920 MP4. A backing track dropped into the TikTok/Music folder
    (or the account's own Music folder) plays quietly underneath, dipping when Alfred speaks.
 """
@@ -58,6 +58,9 @@ Write ONE new video for today. It must last at least one minute, ideally 65 to 9
 Titles already used (never repeat or closely copy these): {recent}
 What did best on this account so far (do more of what works): {best}
 What's trending on TikTok for this niche right now (ride these where they fit, never copy anyone): {trends}
+Story bible for this account (its recurring world: bring characters back where they fit, keep their looks
+exactly the same, pay off or deepen open threads, and add new ones freely):
+{bible}
 What the user ticked and X-ed on this account (lean towards what they approved and away from what they rejected,
 but be creative: a fresh idea in the spirit of the approved ones, never a copy):
 {taste}
@@ -90,12 +93,16 @@ Rules:
   shows the same person. Leave it empty if there is no recurring person.
 - "picture" is the main shot of the scene and "closeup" a second, different shot of the same moment (a detail,
   hands, an object, the eyes, another angle), each 10 to 25 words, for an image generator. No text in pictures.
+- "bible": what this video adds to the story bible: characters it uses (name, look, notes), threads it opens
+  (open questions or mysteries to pay off in later videos), threads it closes, and the world in one line if it
+  is new or has grown. Use {{}} for nothing.
 - keyword: 1 to 3 words shown big at the top (e.g. ADHD, Letter "M", Unsent Letter #4).
 - caption: one or two lines for the post, ending with a question. hashtags: 4 to 6, lower case, without #.
 
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
   "hook": "...", "caption": "...", "hashtags": ["..."],
+  "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "..."}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "..."}}]}}"""
 
 EDITOR_PROMPT = """You are the toughest short-form story editor on TikTok. A writer was given this brief:
@@ -158,6 +165,7 @@ def parse_script(text: str) -> dict:
         "hashtags": [t for t in tags if t][:8],
         "character": cs.clean(data.get("character"), 300),
         "score": _score(data.get("score")),
+        "bible": data.get("bible") if isinstance(data.get("bible"), dict) else {},
         "scenes": [{"text": cs.clean(s.get("text") or s.get("narration"), 120),
                     "narration": cs.clean(s.get("narration") or s.get("text"), 400),
                     "picture": cs.clean(s.get("picture") or s.get("text"), 300),
@@ -175,7 +183,7 @@ def _score(value) -> int:
 async def write_script(client, settings: Settings, account: dict, idea: str = "", recent: list[str] | None = None,
                        best: list[str] | None = None, taste: str = "") -> dict:
     prompt = SCRIPT_PROMPT.format(
-        taste=taste or cs.taste_summary(account),
+        taste=taste or cs.taste_summary(account), bible=cs.bible_summary(account),
         name=account["name"], theme=account["theme"], format=cs.FORMATS[account["format"]],
         series=", ".join(account.get("series") or []) or "none yet; pick a catchy repeatable one",
         look=cs.STYLES[account["style"]], recent="; ".join((recent or [])[-30:]) or "none yet",
@@ -200,6 +208,7 @@ async def edit_script(client, settings: Settings, brief: str, draft: dict) -> di
     if len(edited["scenes"]) < max(2, len(draft["scenes"]) // 2):
         return draft  # the editor cut too much
     edited["character"] = edited["character"] or draft["character"]
+    edited["bible"] = edited["bible"] or draft["bible"]
     return edited
 
 
@@ -490,8 +499,14 @@ MOTIONS = [  # a different camera move on each shot keeps the eye busy: push in,
 ]
 
 
-def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0) -> None:
-    """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it."""
+WHOOSH = ("anoisesrc=d=0.45:c=pink:a=0.6:r=44100,highpass=f=350,lowpass=f=4200,"
+          "afade=t=in:d=0.18,afade=t=out:st=0.18:d=0.27,volume=0.9,aformat=channel_layouts=stereo")
+
+
+def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
+                 whoosh: bool = False) -> None:
+    """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
+    and (whoosh) a soft swish as it cuts in."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)]
@@ -509,7 +524,13 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         inputs += ["-f", "concat", "-safe", "0", "-i", str(captions)]
         chains.append(f"[{k + 1}:v]format=rgba,setpts=PTS-STARTPTS[cap];[vc][cap]overlay=0:{CAPTION_Y}:eof_action=pass[vo]")
         video = "[vo]"
-    chains.append(f"{video}format=yuv420p[v];[{k}:a]apad,aresample=44100[a]")
+    chains.append(f"{video}format=yuv420p[v]")
+    if whoosh:
+        inputs += ["-f", "lavfi", "-i", WHOOSH]
+        chains.append(f"[{k}:a]aresample=44100,aformat=channel_layouts=stereo[vo1];"
+                      f"[vo1][{k + 1 + bool(captions)}:a]amix=inputs=2:duration=first:normalize=0,apad[a]")
+    else:
+        chains.append(f"[{k}:a]apad,aresample=44100[a]")
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
          "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
          "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-ac", "2", str(out)])
@@ -583,7 +604,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             timed = words or estimate_words(scenes[i]["narration"], spoken)
             track = await asyncio.to_thread(caption_track, timed, seconds, accent, work, f"cap{i}")
         part = work / f"scene{i}.mp4"
-        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i)
+        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i, i > 0 and account.get("sfx", True) is not False)
         parts.append(part)
     name = cs.slug(f"{script['title']}")
     video = folder / f"{name}.mp4"
