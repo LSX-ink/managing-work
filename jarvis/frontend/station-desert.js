@@ -521,7 +521,7 @@ LSX.desert = (k) => {
     }
     function frame(T, C, idle, blend = 1) {
         const u = idle ? 0 : baseU(T);
-        desertExtras(C); bgFrame(C); baseFrame(C, u); truckFrame(C); factoryFrame(C);
+        desertExtras(C); bgFrame(C); baseFrame(C, u); truckFrame(C); factoryFrame(C); round3Frame(T, C, idle);
         {
             const HAB = V(-50.5, 0.4, -29.5), PADE = V(-27, 0.4, -15), w = (C / 26) % 1, f = w < 0.4 ? ease(w / 0.4) : w < 0.5 ? 1 : w < 0.9 ? 1 - ease((w - 0.5) / 0.4) : 0;
             shiftW.visible = w < 0.95; shiftW.position.copy(HAB).lerp(PADE, f); shiftW.userData.baseY = 0.4; const out = w < 0.4; face(shiftW, (PADE.x - HAB.x) * (out ? 1 : -1), (PADE.z - HAB.z) * (out ? 1 : -1));
@@ -593,6 +593,66 @@ LSX.desert = (k) => {
         ship.visible = lift < 0.97;
     }
 
+    // ---- round 3: the deep-space dishes that talk to the ship, wind turbines on the ridge, greenhouses by the habitat
+    // three dishes east of the tanks: they swing round and track LSX while the ship is away, and scan slowly otherwise
+    const dishM = new THREE.MeshStandardMaterial({ color: 0xe9e7e2, metalness: 0.35, roughness: 0.45, side: THREE.DoubleSide });
+    const dishes = [[50, 30, 1], [63, 22, 0.8], [60, 43, 0.9]].map(([x, z, s], q) => {
+        const y = hgt(x, z), base = new THREE.Group(); base.position.set(x, y - 0.3, z); base.scale.setScalar(s); desert.add(base);
+        add(base, new THREE.CylinderGeometry(2.4, 2.8, 1, 16), mat.dark, 0, 0.5, 0); add(base, new THREE.CylinderGeometry(0.9, 1.2, 6, 12), dishM, 0, 4, 0);
+        add(base, new THREE.BoxGeometry(0.9, 2, 0.12), new THREE.MeshBasicMaterial({ color: 0xfff0d0 }), 1.05, 1.9, 0).rotation.y = Math.PI / 2;
+        const az = new THREE.Group(); az.position.y = 7.2; base.add(az);
+        add(az, new THREE.BoxGeometry(2.4, 1.2, 2.4), mat.hullB, 0, 0, 0); for (const z2 of [-1.3, 1.3]) add(az, new THREE.BoxGeometry(0.5, 3, 0.4), mat.dark, 0, 1.4, z2);
+        const el = new THREE.Group(); el.position.y = 2.6; az.add(el);
+        const bowl = add(el, new THREE.SphereGeometry(6, 32, 10, 0, Math.PI * 2, 0, 0.85), dishM, 0, 6, 0); bowl.rotation.x = Math.PI;
+        for (let r = 0; r < 4; r++) { const a = r / 4 * Math.PI * 2 + 0.78; add(el, new THREE.CylinderGeometry(0.05, 0.05, 5.4, 5), mat.steel, Math.cos(a) * 2.2, 3.2, Math.sin(a) * 2.2).rotation.set(Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5); }
+        add(el, new THREE.CylinderGeometry(0.35, 0.45, 1, 10), mat.dark, 0, 5.4, 0);
+        const lamp = add(el, new THREE.SphereGeometry(0.2, 8, 6), new THREE.MeshBasicMaterial({ color: 0x401010 }), 0, 6.1, 0);
+        base.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+        return { az, el, lamp, q, yaw: q * 1.3, tilt: 0.6 };
+    });
+    // wind turbines on the rise to the south-west, turning with the breeze
+    const turbines = [[-150, 60], [-172, 92], [-140, 118], [-190, 40]].map(([x, z], q) => {
+        const g = new THREE.Group(); g.position.set(x, hgt(x, z) - 0.5, z); desert.add(g);
+        add(g, new THREE.CylinderGeometry(0.55, 1.1, 34, 12), dishM, 0, 17, 0);
+        const head = new THREE.Group(); head.position.y = 34.5; g.add(head);
+        add(head, rbox(4.6, 1.8, 1.8, 0.4), dishM, -1, 0, 0);
+        const rotor = new THREE.Group(); rotor.position.x = 1.5; head.add(rotor);
+        add(rotor, new THREE.SphereGeometry(0.75, 12, 8), dishM, 0.3, 0, 0);
+        for (let b = 0; b < 3; b++) { const bl = new THREE.Group(); bl.rotation.x = b / 3 * Math.PI * 2; rotor.add(bl); add(bl, new THREE.BoxGeometry(0.18, 15, 1), dishM, 0.2, 7.8, 0).rotation.y = 0.2; }
+        const lamp = add(head, new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: 0x401010 }), -2.8, 1.05, 0);
+        g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+        head.rotation.y = 2.4 + q * 0.05; return { rotor, lamp, sp: 1.1 + q * 0.12, ph: q * 1.7 };
+    });
+    // two greenhouse domes west of the containers, rows of crops inside, violet grow lights after dark
+    const domeGlass = new THREE.MeshStandardMaterial({ color: 0xd9ecff, transparent: true, opacity: 0.22, metalness: 0.1, roughness: 0.05, depthWrite: false, side: THREE.DoubleSide });
+    const domeRib = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, metalness: 0.6, roughness: 0.4, wireframe: true });
+    const cropM = new THREE.MeshStandardMaterial({ color: 0x4f8a34, roughness: 0.9, flatShading: true }), soilM = new THREE.MeshStandardMaterial({ color: 0x4a3322, roughness: 1 });
+    const growM = new THREE.MeshBasicMaterial({ color: 0x241830 }), growPools = [];
+    [[-62, 16, 7], [-76, 22, 5.5]].forEach(([x, z, r]) => {
+        const g = new THREE.Group(); g.position.set(x, hgt(x, z) - 0.1, z); desert.add(g);
+        add(g, new THREE.CylinderGeometry(r + 0.3, r + 0.4, 0.6, 32), mat.hullB, 0, 0.3, 0);
+        add(g, new THREE.SphereGeometry(r, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), domeGlass, 0, 0.6, 0);
+        add(g, new THREE.SphereGeometry(r + 0.02, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2), domeRib, 0, 0.6, 0);
+        for (let row = -2; row <= 2; row++) {
+            const len = Math.sqrt(Math.max(1, (r - 1) * (r - 1) - (row * 1.6) * (row * 1.6))) * 2 - 1;
+            add(g, new THREE.BoxGeometry(len, 0.35, 0.8), soilM, 0, 0.8, row * 1.6);
+            for (let q = 0; q < Math.floor(len / 0.8); q++) add(g, new THREE.IcosahedronGeometry(0.32 + rnd(q + row * 20 + x) * 0.15, 0), cropM, -len / 2 + 0.4 + q * 0.8, 1.2, row * 1.6);
+        }
+        for (const z2 of [-1.6, 1.6]) add(g, new THREE.BoxGeometry(r * 1.2, 0.08, 0.25), growM, 0, r * 0.62, z2);
+        add(g, new THREE.BoxGeometry(1.4, 2.2, 1.6), mat.hullB, r + 0.3, 1.1, 0);
+        const pool = new THREE.Mesh(new THREE.CircleGeometry(r * 2.2, 32), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xc07aff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+        pool.rotation.x = -Math.PI / 2; pool.position.y = 0.2; g.add(pool); growPools.push(pool);
+    });
+    function round3Frame(T, C, idle) {
+        const away = !idle && T >= 15.5 && T < 41;
+        dishes.forEach((d) => {
+            const yaw = away ? -0.55 : d.q * 1.3 + Math.sin(C * 0.05 + d.q * 2) * 1.2, tilt = away ? 0.9 : 0.5 + Math.sin(C * 0.07 + d.q) * 0.25;
+            d.yaw += (yaw - d.yaw) * 0.01; d.tilt += (tilt - d.tilt) * 0.01;
+            d.az.rotation.y = d.yaw; d.el.rotation.z = -d.tilt;
+            d.lamp.material.color.setRGB((C + d.q * 0.3) % 2 < 0.15 ? 1 : 0.25, 0.04, 0.04);
+        });
+        turbines.forEach((t) => { t.rotor.rotation.x = C * t.sp + t.ph; t.lamp.material.color.setRGB(Math.sin(C * 1.6) > 0.3 ? 1 : 0.25, 0.04, 0.04); });
+    }
     // ---- day and night ---------------------------------------------------------------------------------------------
     const lightPools = mastLights.map((p) => {
         const m = new THREE.Mesh(new THREE.CircleGeometry(16, 40), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xffd9a8, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -605,6 +665,7 @@ LSX.desert = (k) => {
         sun.intensity = lerp(2.2, 0.28, nf); sun.color.setRGB(lerp(1, 0.62, nf), lerp(0.88, 0.7, nf), lerp(0.72, 1, nf));
         hemi.intensity = lerp(0.5, 0.1, nf); desert.fog.color.setRGB(lerp(0.69, 0.035, nf), lerp(0.58, 0.04, nf), lerp(0.42, 0.055, nf));
         lightPools.forEach((m) => { m.material.opacity = nf * 0.5; m.visible = nf > 0.01; }); flood.intensity = lerp(1.5, 3, nf);
+        growPools.forEach((m) => { m.material.opacity = nf * 0.6; m.visible = nf > 0.01; }); growM.color.setRGB(lerp(0.14, 0.85, nf), lerp(0.09, 0.45, nf), lerp(0.19, 1, nf));
         sprites.forEach(([o, c]) => o.material.color.copy(c).multiplyScalar(lerp(1, 0.13, nf)));
         return { intensity: sun.intensity, color: sun.color };
     }
