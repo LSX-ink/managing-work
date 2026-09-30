@@ -571,3 +571,26 @@ def test_the_story_bible_keeps_the_world_consistent(s):
     asyncio.run(cv.write_script(client, s, account))
     assert "Character Mara: 30, red coat" in client.calls[0]["messages"][0]["content"]
     assert "Story bible: @lowkey.lore" in str(studio(s, action="bible", account="lowkey.lore").card)
+
+
+def test_lessons_from_view_counts_feed_the_writer(s):
+    client = FakeClient([("Open on a named person mid-action: top 3 all did.", "end_turn")])
+    creator._ctx["client"] = client
+    try:
+        for n in range(3):
+            add_video(s, status="posted", views=1000 * (n + 1), title=f"V{n}")
+        assert "Only 3" in studio(s, action="lessons", account="lowkey.lore").card["text"]
+        assert client.calls == []  # too few videos with views to learn from
+        add_video(s, status="posted", views=90000, title="Big one", hook="Maya had 9 seconds.", mood="tense")
+        shown = studio(s, action="lessons", account="lowkey.lore")
+        assert "mid-action" in shown.card["text"]
+        rows = client.calls[0]["messages"][0]["content"]
+        assert rows.index("90000 | Big one | Maya had 9 seconds. | tense") < rows.index("3000 | V2")
+        asyncio.run(creator.ensure_lessons(s, "lowkey.lore"))
+        assert len(client.calls) == 1  # once a day
+        account = cs.account(cs.load(s), "lowkey.lore")
+        prompt = cv.SCRIPT_PROMPT.format(**{k: "" for k in ("taste", "bible", "name", "theme", "format", "series",
+                                         "look", "recent", "best", "trends", "idea")}, lessons=account["lessons"]["brief"])
+        assert "view counts say works (follow these lessons): Open on a named person" in prompt
+    finally:
+        creator._ctx["client"] = None
