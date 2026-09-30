@@ -135,7 +135,9 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         update = {"status": "ready", "title": result["title"], "caption": result["caption"],
                   "hashtags": result["hashtags"], "keyword": result["keyword"], "hook": result.get("hook", ""),
                   "notes": f"{account['style']} look" + (f", series {result['series']}" if result.get("series") else "")
-                  + (f", editor's score {result['score']}/10" if result.get("score") else ""),
+                  + (f", editor's score {result['score']}/10" if result.get("score") else "")
+                  + (f". Check before posting: {'; '.join(result['checks'])}" if result.get("checks") else ""),
+                  "checks": result.get("checks", []),
                   "file": cs.relative(settings, result["path"]), "mood": result.get("mood", ""),
                   "score": result.get("score", 0), "hook_score": result.get("hook_score", 0), "retention": result.get("retention", 0),
                   "scenes": len(result["scenes"]), "pinned_comment": result.get("pinned_comment", ""),

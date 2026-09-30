@@ -680,6 +680,25 @@ def audio_seconds(path: Path) -> float:
     return int(match[1]) * 3600 + int(match[2]) * 60 + float(match[3]) if match else 0.0
 
 
+def check_video(path: Path) -> list[str]:
+    """Watch the finished video once before it's offered for approval, the way an editor would: too short for
+    TikTok's 1-minute payouts, no sound at all, or stretches of black screen. Returns the problems found."""
+    out = subprocess.run([ffmpeg(), "-hide_banner", "-i", str(path), "-vf", "blackdetect=d=1.0:pix_th=0.06",
+                          "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
+    problems = []
+    match = re.search(r"Duration: (\d+):(\d+):([\d.]+)", out)
+    seconds = int(match[1]) * 3600 + int(match[2]) * 60 + float(match[3]) if match else 0.0
+    if seconds < MIN_LENGTH - 0.5:
+        problems.append(f"only {seconds:.0f} seconds long; TikTok pays for 1 minute or more")
+    loudest = re.search(r"max_volume: (-?[\d.]+|-inf) dB", out)
+    if not loudest or loudest[1] == "-inf" or float(loudest[1]) < -50:
+        problems.append("there's no sound")
+    black = sum(float(d) for d in re.findall(r"black_duration:([\d.]+)", out))
+    if black >= 1.0:
+        problems.append(f"{black:.0f} seconds of black screen")
+    return problems
+
+
 def reading_seconds(text: str) -> float:
     return max(2.5, len(text.split()) / 2.6 + 0.8)
 
@@ -927,6 +946,11 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         except Exception as exc:  # a track ffmpeg can't read: keep the voice-only cut
             print(f"[jarvis] Backing track skipped: {exc}", flush=True)
     (work / "joined.mp4").replace(video)
+    try:
+        checks = await asyncio.to_thread(check_video, video)
+    except Exception as exc:  # the check is a safety net; never lose a finished video over it
+        print(f"[jarvis] Quality check skipped: {exc}", flush=True)
+        checks = []
     (work / "scene0.png").replace(video.with_suffix(".png"))  # the cover picture
     for f in work.iterdir():
         f.unlink(missing_ok=True)
@@ -944,10 +968,11 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                   + (f" (beat the first draft: \"{script['old_hook']}\")" if script.get("old_hook") else ""), ""]
     if script.get("retention_fix"):
         lines += [f"Retention pass: {script['retention_fix']}", ""]
+    lines += [f"Quality check: {'; '.join(checks) if checks else 'passed'}", ""]
     lines += ["## Script", ""]
     lines += [f"{i}. {s['narration']}" for i, s in enumerate(scenes, 1)]
     video.with_suffix(".md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return {**script, "path": video, "missing_pictures": missing,
+    return {**script, "path": video, "missing_pictures": missing, "checks": checks,
             "music": track.name if track else ""}
 
 
