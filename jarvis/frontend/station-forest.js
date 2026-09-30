@@ -91,6 +91,8 @@ LSX.forest = (k) => {
             if (i < 160) {
                 r = 44 + rnd(i + 6005) * 30; const slot = Math.round((a - Math.PI / 6) / step), off = a - (slot * step + Math.PI / 6);
                 if (Math.abs(off) < 0.24) a += Math.sign(off || 1) * 0.3;
+                const toT = Math.atan2(Math.sin(a - towerAng), Math.cos(a - towerAng));
+                if (Math.abs(toT) < 0.26) r = 58 + rnd(i + 6009) * 16;   // behind the tower, not through it
             }
             const x = Math.cos(a) * r, z = Math.sin(a) * r, s = 0.8 + rnd(i + 6002) * 0.8, y = fh(x, z);
             q.setFromAxisAngle(V(0, 1, 0), rnd(i + 6003) * 6.3); m4.compose(V(x, y, z), q, V(s, s * (0.9 + rnd(i + 6004) * 0.4), s)); trunkI.setMatrixAt(i, m4);
@@ -106,6 +108,73 @@ LSX.forest = (k) => {
     for (let q = 0; q < 12; q++) { const a = q / 12 * Math.PI * 2, p = V(Math.cos(a) * 40.5, 0, Math.sin(a) * 40.5); streetLamp(ringLamps, p.x, p.z, Math.atan2(Math.sin(a), -Math.cos(a))); }
     const ringPools = fPools.slice();
 
+    // control tower: a concrete shaft with a glass cab, beacon, radar and windsock, set between two pages' roads
+    const tower = new THREE.Group(); forest.add(tower);
+    const concM = new THREE.MeshStandardMaterial({ color: 0xb9b4aa, roughness: 0.95 });
+    const cabGlass = new THREE.MeshStandardMaterial({ color: 0x1d2c38, emissive: 0x8fc4ff, emissiveIntensity: 0.05, metalness: 0.6, roughness: 0.12 });
+    const beaconM = new THREE.MeshBasicMaterial({ color: 0x3a1010 }), sockM = new THREE.MeshStandardMaterial({ color: 0xe8702a, roughness: 0.8, side: THREE.DoubleSide });
+    add(tower, new THREE.BoxGeometry(9, 4, 7), concM, 0, 2, 0); add(tower, new THREE.BoxGeometry(0.1, 2.6, 1.8), new THREE.MeshBasicMaterial({ color: 0xfff0d0 }), -4.55, 1.3, 0);
+    add(tower, new THREE.BoxGeometry(9.3, 0.3, 7.3), mat.dark, 0, 4.1, 0);
+    add(tower, new THREE.CylinderGeometry(1.5, 1.8, 15, 12), concM, 1.5, 11.5, 0);
+    for (let q = 0; q < 5; q++) add(tower, new THREE.BoxGeometry(0.12, 0.8, 0.5), cabGlass, -0.05, 6 + q * 2.6, 0).position.x = 1.5 - 1.62;
+    add(tower, new THREE.CylinderGeometry(3.4, 2.4, 0.6, 8), mat.dark, 1.5, 19.2, 0);
+    const cab = add(tower, new THREE.CylinderGeometry(3.3, 3.0, 2.8, 8, 1, true), cabGlass, 1.5, 20.9, 0); cab.material.side = THREE.DoubleSide;
+    for (let q = 0; q < 8; q++) { const a = q / 8 * Math.PI * 2 + Math.PI / 8; add(tower, new THREE.BoxGeometry(0.14, 2.8, 0.14), mat.dark, 1.5 + Math.cos(a) * 3.15, 20.9, Math.sin(a) * 3.15); }
+    add(tower, new THREE.CylinderGeometry(3.7, 3.5, 0.5, 8), mat.hullB, 1.5, 22.5, 0);
+    for (let q = 0; q < 2; q++) { const c = worker(); c.position.set(1.5 - 1.2 + q * 1.4, 19.5, -1 + q * 1.6); c.scale.setScalar(0.95); tower.add(c); face(c, -1, q ? 0.4 : -0.3); pose(c, q, false, false, false); }
+    add(tower, new THREE.CylinderGeometry(0.06, 0.06, 5, 6), mat.steel, 2.6, 25, 0.8);
+    const beacon = add(tower, new THREE.SphereGeometry(0.28, 10, 8), beaconM, 2.6, 27.6, 0.8);
+    const radarArm = new THREE.Group(); radarArm.position.set(0.6, 23.2, -1); tower.add(radarArm);
+    add(radarArm, new THREE.BoxGeometry(0.3, 0.9, 0.3), mat.dark, 0, -0.2, 0); add(radarArm, new THREE.BoxGeometry(0.25, 0.6, 3.2), mat.steel, 0.1, 0.35, 0);
+    const sockPole = add(tower, new THREE.CylinderGeometry(0.05, 0.06, 3, 6), mat.steel, -3.6, 5.6, 2.8);
+    const sock = new THREE.Mesh(new THREE.ConeGeometry(0.4, 2.2, 10, 1, true).rotateZ(Math.PI / 2).translate(-1.1, 0, 0), sockM); sock.position.set(-3.6, 6.9, 2.8); tower.add(sock);
+    tower.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const towerPool = new THREE.Mesh(new THREE.CircleGeometry(9, 28), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xcfe2ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    towerPool.rotation.x = -Math.PI / 2; towerPool.position.set(-5, 0.09, 0); tower.add(towerPool);
+    let towerAng = 0;
+    // edge lights round the pad: steady amber, and a white chase running in towards the centre while she lands or lifts off
+    const edgeOn = new THREE.MeshBasicMaterial({ color: 0xffb040 }), edgeOff = new THREE.MeshBasicMaterial({ color: 0x4a3a22 }), chaseM = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const edgeLights = [], EDGE = 32;
+    for (let q = 0; q < EDGE; q++) { const a = q / EDGE * Math.PI * 2; edgeLights.push(add(forest, new THREE.CylinderGeometry(0.2, 0.24, 0.16, 8), edgeOn, Math.cos(a) * 26.2, 0.48, Math.sin(a) * 26.2)); }
+    // electric cargo carts doing rounds of the ring road, one lane each way
+    const cartM = new THREE.MeshStandardMaterial({ color: 0xe9e6de, roughness: 0.5, metalness: 0.3 }), tyreM = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
+    const headM = new THREE.MeshBasicMaterial({ color: 0xfff4dc }), tailM = new THREE.MeshBasicMaterial({ color: 0x5a1010 }), ambM = new THREE.MeshBasicMaterial({ color: 0x5a3a10 });
+    const carts = [];
+    for (let q = 0; q < 4; q++) {
+        const c = new THREE.Group(); forest.add(c);
+        add(c, new THREE.BoxGeometry(3.6, 0.35, 1.7), mat.dark, 0, 0.55, 0); add(c, new THREE.BoxGeometry(1.2, 1.3, 1.6), cartM, 1.3, 1.35, 0);
+        add(c, new THREE.BoxGeometry(0.05, 0.7, 1.4), mat.glass, 1.93, 1.55, 0); add(c, new THREE.BoxGeometry(2.3, 0.08, 1.72), mat.orange, -0.55, 0.77, 0);
+        for (const [x, z] of [[1.2, 0.85], [1.2, -0.85], [-1.2, 0.85], [-1.2, -0.85]]) add(c, new THREE.CylinderGeometry(0.34, 0.34, 0.24, 12).rotateX(Math.PI / 2), tyreM, x, 0.34, z);
+        for (let b = 0; b < 1 + (q % 3); b++) add(c, cgeo, crateMat, -1.3 + b * 1.25, 1.25, 0).castShadow = true;
+        for (const z of [0.6, -0.6]) { add(c, new THREE.BoxGeometry(0.06, 0.16, 0.26), headM, 1.93, 0.95, z); add(c, new THREE.BoxGeometry(0.06, 0.14, 0.24), tailM, -1.82, 0.8, z); }
+        const amb = add(c, new THREE.SphereGeometry(0.13, 8, 6), ambM, 1.3, 2.08, 0);
+        const beam = new THREE.Mesh(new THREE.CircleGeometry(4, 20), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xfff0d0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+        beam.rotation.x = -Math.PI / 2; beam.position.set(5, 0.1, 0); beam.scale.set(1.5, 0.7, 1); c.add(beam);
+        c.traverse((o) => { if (o.isMesh && o !== beam) o.castShadow = true; });
+        carts.push({ g: c, amb, beam, lane: q % 2 ? 34.6 : 37.4, dir: q % 2 ? -1 : 1, off: q * 1.7, speed: 3.2 + (q % 3) * 0.5 });
+    }
+    function portTraffic(T, C) {
+        // the carts pull over to the kerb and wait while the ship is coming down or lifting off
+        const hold = (T > 23.8 && T < 27.6) || (T > 30.3 && T < 32.8);
+        carts.forEach((ct) => {
+            ct.pos = ct.pos === undefined ? ct.off : ct.pos;
+            ct.v = (ct.v || 0) + ((hold ? 0 : 1) - (ct.v || 0)) * 0.05;
+            ct.pos += ct.dir * ct.v * ct.speed / ct.lane * (ct.dt || 0);
+            const a = ct.pos, x = Math.cos(a) * ct.lane, z = Math.sin(a) * ct.lane;
+            ct.g.position.set(x, 0.05, z); const tx = -Math.sin(a) * ct.dir, tz = Math.cos(a) * ct.dir; ct.g.rotation.y = Math.atan2(-tz, tx);
+            ct.amb.material = (C * 1.6 + ct.off) % 1 < 0.35 ? edgeOn : ambM;
+        });
+        const landing = (T > 23.5 && T < 27.2) || (T > 30.3 && T < 32.6);
+        edgeLights.forEach((m, q) => {
+            const ph = ((C * 14 - q) % EDGE + EDGE) % EDGE;
+            m.material = landing && ph < 3 ? chaseM : (nightNow > 0.2 || landing ? edgeOn : edgeOff);
+        });
+        beacon.material.color.setRGB((C % 1.4) < 0.18 ? 1 : 0.23, 0.05, 0.05);
+        radarArm.rotation.y = C * 1.2;
+        const wind = 0.6 + Math.sin(C * 0.21) * 0.4; sock.rotation.set(0, -towerAng + 2.2 + Math.sin(C * 0.4) * 0.25, -0.9 * (1 - wind));
+    }
+    let lastC = null;
+
     // pages: [{name, label, colour}] from GET /station/state. Rebuilds the offices only when the list changes.
     function setPages(pages) {
         const list = (pages || []).slice(0, MAX_SLOTS);
@@ -119,6 +188,8 @@ LSX.forest = (k) => {
         town = new THREE.Group(); forest.add(town);
         fPools = ringPools.slice();
         const n = Math.min(MAX_SLOTS, Math.max(6, list.length + 2));
+        towerAng = Math.PI / 6 - Math.PI / n;   // halfway between the last page's road and the first
+        tower.position.set(Math.cos(towerAng) * 49, 0, Math.sin(towerAng) * 49); tower.rotation.y = Math.atan2(-Math.sin(towerAng), Math.cos(towerAng));
         offices = Array.from({ length: n }, (_, i) => office(town, list[i] || null, i, n));
         plantTrees(n);
         // delivery crew: an unloader at the ramp and a courier for each office, and one crate per page
@@ -182,6 +253,7 @@ LSX.forest = (k) => {
         ramp.rotation.z = l === 0 ? 0.74 * ease(open) : 0; hold.visible = ramp.rotation.z > 0.03; cabin.intensity = l < 0.02 ? 1.2 : 0;
         const firing = (T >= 24.5 && T < 27.2) || (T >= 30.5 && T < 32.5); thrust(C, l > 0.25 ? 0.7 : 0, firing ? 0.9 : 0);
         radar.rotation.y = C * 1.8; bellyStrobe.visible = (C % 1.1) < 0.12; portLife(T, C, l);
+        carts.forEach((ct) => { ct.dt = lastC === null ? 0 : clamp(C - lastC, 0, 0.1); }); lastC = C; portTraffic(T, C);
         const bySlot = [];
         deliveries.forEach((dl) => { if (!bySlot[dl.slot] || dl.d < bySlot[dl.slot].d) bySlot[dl.slot] = dl; });   // the newest per page
         const landing = T > 23 && T < 27.4;
@@ -215,6 +287,8 @@ LSX.forest = (k) => {
     function applyNight(nf) {
         offices.forEach((o) => { if (o.glass) o.glass.emissiveIntensity = 0.15 + (1.1 - 0.15) * nf; });
         fPools.forEach((m) => { m.material.opacity = nf * 0.55; m.visible = nf > 0.01; });
+        cabGlass.emissiveIntensity = 0.05 + nf * 0.9; towerPool.material.opacity = nf * 0.45;
+        carts.forEach((ct) => { ct.beam.material.opacity = nf * 0.5; });
     }
     function night(nf, env, sunLight) {
         nightNow = nf;
