@@ -1110,3 +1110,30 @@ def test_scenes_render_two_at_a_time(monkeypatch):
     monkeypatch.setattr(cv, "render_scene", broken)
     with pytest.raises(RuntimeError, match="ffmpeg failed"):
         asyncio.run(cv.render_all([(1,), (2,)]))
+
+
+def test_scene_voices_are_fetched_side_by_side_but_kept_in_order(s, tmp_path, monkeypatch):
+    live, most, seconds = [0], [0], []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal"):
+        live[0] += 1
+        most[0] = max(most[0], live[0])
+        await asyncio.sleep(0.05 if text.startswith("The") else 0.01)  # the first scene's voice is the slowest
+        live[0] -= 1
+        target.write_bytes(text.encode())
+        return True
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", narrate)
+    monkeypatch.setattr(cv, "audio_seconds", lambda voice: 2.0 + len(voice.read_bytes()) / 100)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, secs, out, *a: (seconds.append((out.name, audio.name)),
+                                                                                  out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    scenes = [{"narration": "The phone buzzed."}, {"narration": "Nobody answered."}, {"narration": "Run."}]
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
+    asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script))
+    assert 1 < most[0] <= cv.VOICE_JOBS
+    assert sorted(seconds) == [("scene0.mp4", "scene0.mp3"), ("scene1.mp4", "scene1.mp3"), ("scene2.mp4", "scene2.mp3")]
