@@ -137,7 +137,7 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
                   "notes": f"{account['style']} look" + (f", series {result['series']}" if result.get("series") else "")
                   + (f", editor's score {result['score']}/10" if result.get("score") else ""),
                   "file": cs.relative(settings, result["path"]), "mood": result.get("mood", ""),
-                  "score": result.get("score", 0), "hook_score": result.get("hook_score", 0),
+                  "score": result.get("score", 0), "hook_score": result.get("hook_score", 0), "retention": result.get("retention", 0),
                   "scenes": len(result["scenes"]), "pinned_comment": result.get("pinned_comment", ""),
                   "sound": result.get("sound", ""),
                   "story": " ".join(s["narration"] for s in result["scenes"])[:1500]}
