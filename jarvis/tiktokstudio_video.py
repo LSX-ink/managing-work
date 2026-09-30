@@ -111,13 +111,15 @@ Rules:
   CALLED BACK"); it teases the story without giving the twist away and is not the same as the first spoken line.
 - pinned_comment: the first comment to pin under the video, written as the account: a question or a small
   extra clue that gets people arguing their theories in the comments (under 150 characters).
+- ambience: the quiet sound of the story's world under the voice: "rain", "wind", "city", "room", "night" or
+  "none" (for explainers and anything without a place).
 - mood: 2 or 3 words for the backing music (for example "tense slow piano", "eerie ambient", "upbeat hype").
 - sound: one trending TikTok sound from the trends above that fits this story (name and artist), or a style of
   sound to search for if none fits. The user adds it in the TikTok app when posting.
 
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
-  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...",
+  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "..."}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator"}}]}}"""
 
@@ -216,6 +218,8 @@ def parse_script(text: str) -> dict:
         "character": cs.clean(data.get("character"), 300),
         "mood": cs.clean(data.get("mood"), 80),
         "cover": cs.clean(data.get("cover"), 60),
+        "ambience": str(data.get("ambience") or "").lower().strip() if str(data.get("ambience") or "").lower().strip()
+        in AMBIENCE else "",
         "pinned_comment": cs.clean(data.get("pinned_comment"), 200),
         "sound": cs.clean(data.get("sound"), 200),
         "score": _score(data.get("score")),
@@ -269,7 +273,7 @@ async def edit_script(client, settings: Settings, brief: str, draft: dict) -> di
         return draft  # the editor cut too much
     edited["character"] = edited["character"] or draft["character"]
     edited["bible"] = edited["bible"] or draft["bible"]
-    for key in ("cover", "mood", "sound", "pinned_comment"):
+    for key in ("cover", "mood", "sound", "pinned_comment", "ambience"):
         edited[key] = edited[key] or draft[key]
     return edited
 
@@ -691,6 +695,27 @@ def add_music(video: Path, track: Path, out: Path) -> None:
          "-movflags", "+faststart", str(out)])
 
 
+# a quiet bed of room tone under the whole video, made by ffmpeg itself (no files needed): the scene's world
+AMBIENCE = {
+    "rain": "anoisesrc=c=pink:a=0.5,highpass=f=400,lowpass=f=6000,volume=0.38",
+    "wind": "anoisesrc=c=brown:a=0.6,lowpass=f=500,tremolo=f=0.15:d=0.7,volume=0.25",
+    "city": "anoisesrc=c=pink:a=0.4,bandpass=f=300:width_type=o:w=3,volume=0.45",
+    "room": "anoisesrc=c=brown:a=0.3,lowpass=f=200,volume=0.4",
+    "night": "anoisesrc=c=brown:a=0.3,lowpass=f=150,volume=0.55,aecho=0.8:0.6:600:0.3",
+}
+
+
+def add_ambience(video: Path, kind: str, out: Path) -> None:
+    """Mix the chosen room tone quietly under the voice, fading in and out."""
+    seconds = audio_seconds(video)
+    run(["-i", str(video), "-f", "lavfi", "-t", f"{seconds:.3f}", "-i", f"{AMBIENCE[kind]},aresample=44100",
+         "-filter_complex",
+         f"[1:a]afade=t=in:d=1.5,afade=t=out:st={max(0.0, seconds - 2):.2f}:d=2[amb];"
+         "[0:a][amb]amix=inputs=2:duration=first:normalize=0[a]",
+         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", f"{seconds:.3f}",
+         "-movflags", "+faststart", str(out)])
+
+
 def join(parts: list[Path], out: Path) -> None:
     listing = out.with_suffix(".txt")
     listing.write_text("".join(f"file '{p.name}'\n" for p in parts), encoding="utf-8")
@@ -756,6 +781,12 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     while video.exists():
         video, n = folder / f"{name} ({n}).mp4", n + 1
     await asyncio.to_thread(join, parts, work / "joined.mp4")
+    if script.get("ambience") in AMBIENCE and account.get("ambience", True) is not False:
+        try:
+            await asyncio.to_thread(add_ambience, work / "joined.mp4", script["ambience"], work / "amb.mp4")
+            (work / "amb.mp4").replace(work / "joined.mp4")
+        except Exception as exc:
+            print(f"[jarvis] Ambience skipped: {exc}", flush=True)
     track = music_for(folder, script.get("mood", ""))
     if track:
         try:
