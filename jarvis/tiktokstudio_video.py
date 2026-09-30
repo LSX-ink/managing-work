@@ -123,6 +123,19 @@ Add "scores" (your scores for the ORIGINAL draft) and "score" (1 to 10, your hon
 Reply with ONLY the JSON."""
 
 
+HOOK_PROMPT = """You write the first line of TikTok stories. Here is a finished script:
+{script}
+
+The first spoken line right now is: "{first}"
+
+Write 8 alternative first lines for the SAME story, each a different technique: in medias res action, a shocking
+specific detail, a direct question to the viewer, a confession, a countdown or number, a forbidden or secret angle,
+a contradiction, and a line of dialogue. Each must be under 14 words, sayable in under 2 seconds, specific (names,
+numbers, objects), and must flow straight into the second line: "{second}". No clickbait the story doesn't pay off.
+Then score each one AND the current line 1 to 10 on "would I stop scrolling". Reply with ONLY this JSON:
+{{"hooks": [{{"line": "...", "score": 0}}], "current": 0}}"""
+
+
 TRENDS_PROMPT = """Search the web for what is trending on TikTok THIS WEEK for an account about: {theme}.
 Find: 5 trending topics or story angles, 5 hashtags that are growing, video formats and hooks getting high
 engagement (first-line styles, series, lengths, posting times), and 3 trending sounds that fit. Then reply with a
@@ -193,7 +206,8 @@ async def write_script(client, settings: Settings, account: dict, idea: str = ""
     reply = await client.messages.create(model=settings.model, max_tokens=6000,
                                          messages=[{"role": "user", "content": prompt}])
     draft = parse_script("".join(getattr(b, "text", "") for b in reply.content))
-    return await edit_script(client, settings, prompt, draft)
+    edited = await edit_script(client, settings, prompt, draft)
+    return await pick_hook(client, settings, edited)
 
 
 async def edit_script(client, settings: Settings, brief: str, draft: dict) -> dict:
@@ -210,6 +224,30 @@ async def edit_script(client, settings: Settings, brief: str, draft: dict) -> di
     edited["character"] = edited["character"] or draft["character"]
     edited["bible"] = edited["bible"] or draft["bible"]
     return edited
+
+
+async def pick_hook(client, settings: Settings, script: dict) -> dict:
+    """Pits 8 new opening lines against the current one and keeps whichever stops the scroll best."""
+    first, second = script["scenes"][0]["narration"], script["scenes"][1]["narration"]
+    try:
+        reply = await client.messages.create(model=settings.model, max_tokens=2000, messages=[
+            {"role": "user", "content": HOOK_PROMPT.format(first=first, second=second, script=json.dumps(
+                [s["narration"] for s in script["scenes"]], ensure_ascii=False))}])
+        match = re.search(r"\{.*\}", "".join(getattr(b, "text", "") for b in reply.content), re.S)
+        data = json.loads(match.group(0)) if match else {}
+    except Exception as exc:  # the API, or JSON that didn't parse: the current hook stands
+        print(f"[jarvis] Hook test skipped: {exc}", flush=True)
+        return script
+    hooks = [(_score(h.get("score")), cs.clean(h.get("line"), 160)) for h in data.get("hooks") or []
+             if isinstance(h, dict) and cs.clean(h.get("line"))]
+    if not hooks:
+        return script
+    score, line = max(hooks, key=lambda h: h[0])
+    if score <= _score(data.get("current")):
+        return {**script, "hook_score": _score(data.get("current"))}
+    opening = {**script["scenes"][0], "narration": line, "text": cs.clean(line, 120)}
+    return {**script, "scenes": [opening, *script["scenes"][1:]], "hook": line, "hook_score": score,
+            "old_hook": first}
 
 
 # ---- 2. pictures -------------------------------------------------------------------------------------------
@@ -628,6 +666,9 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     lines = [f"# {script['title']}", "", f"{script['caption']}", "", tags, ""]
     if script.get("score"):
         lines += [f"Editor's score: {script['score']}/10", ""]
+    if script.get("hook_score"):
+        lines += [f"Hook score: {script['hook_score']}/10"
+                  + (f" (beat the first draft: \"{script['old_hook']}\")" if script.get("old_hook") else ""), ""]
     lines += ["## Script", ""]
     lines += [f"{i}. {s['narration']}" for i, s in enumerate(scenes, 1)]
     video.with_suffix(".md").write_text("\n".join(lines) + "\n", encoding="utf-8")

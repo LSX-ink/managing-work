@@ -382,7 +382,7 @@ def test_trends_are_checked_daily_and_fed_into_the_script(s):
     add_video(s, status="posted", views=82000)
     account = cs.account(cs.load(s), "lowkey.lore")
     asyncio.run(cv.write_script(client, s, account, recent=["Old one"], best=creator.best_titles(cs.load(s), "lowkey.lore")))
-    prompt = client.calls[-1]["messages"][0]["content"]
+    prompt = client.calls[2]["messages"][0]["content"]
     assert "POV hooks" in prompt and "The Last Voicemail (82,000 views)" in prompt and "Old one" in prompt
 
 
@@ -488,7 +488,7 @@ def test_the_writer_pitches_ideas_and_an_editor_rewrites_the_draft(s):
     client = FakeClient([(draft, "end_turn"), (EDITED, "end_turn")])
     account = cs.load(s)["accounts"][0]
     out = asyncio.run(cv.write_script(client, s, account))
-    first, second = (c["messages"][0]["content"] for c in client.calls)
+    first, second = (c["messages"][0]["content"] for c in client.calls[:2])
     assert "pitch 5 wildly different ideas" in first and "loops back" in first and '"closeup"' in first
     assert "toughest short-form story editor" in second and "The Last Voicemail" in second and first in second
     assert out["hook"] == "It knew her name." and out["score"] == 9
@@ -499,7 +499,20 @@ def test_the_writer_pitches_ideas_and_an_editor_rewrites_the_draft(s):
 def test_a_failed_edit_keeps_the_draft(s):
     client = FakeClient([(SCRIPT, "end_turn"), ("not json at all", "end_turn")])
     out = asyncio.run(cv.write_script(client, s, cs.load(s)["accounts"][0]))
-    assert out["title"] == "The Last Voicemail" and out["score"] == 0 and len(client.calls) == 2
+    assert out["title"] == "The Last Voicemail" and out["score"] == 0 and len(client.calls) == 3  # writer, editor, hook test
+
+
+def test_the_hook_test_swaps_in_a_stronger_first_line(s):
+    hooks = json.dumps({"hooks": [{"line": "She got a voicemail from her own phone.", "score": 9},
+                                  {"line": "Meh.", "score": 4}], "current": 6})
+    client = FakeClient([(SCRIPT, "end_turn"), ("no", "end_turn"), (hooks, "end_turn")])
+    out = asyncio.run(cv.write_script(client, s, cs.load(s)["accounts"][0]))
+    assert "8 alternative first lines" in client.calls[2]["messages"][0]["content"]
+    assert out["scenes"][0]["narration"] == out["hook"] == "She got a voicemail from her own phone."
+    assert out["hook_score"] == 9 and out["old_hook"] and len(out["scenes"]) == len(json.loads(SCRIPT)["scenes"])
+    weaker = json.dumps({"hooks": [{"line": "Meh.", "score": 4}], "current": 8})
+    kept = asyncio.run(cv.pick_hook(FakeClient([(weaker, "end_turn")]), s, cv.parse_script(SCRIPT)))
+    assert kept["scenes"][0] == cv.parse_script(SCRIPT)["scenes"][0] and kept["hook_score"] == 8
 
 
 def test_word_by_word_captions(tmp_path):
