@@ -57,6 +57,7 @@ Look: {look}
 Write ONE new video for today. It must last at least one minute, ideally 65 to 90 seconds: 170 to 230 spoken words in total. {idea}
 Titles already used (never repeat or closely copy these): {recent}
 What did best on this account so far (do more of what works): {best}
+What this account's own view counts say works (follow these lessons): {lessons}
 What's trending on TikTok for this niche right now (ride these where they fit, never copy anyone): {trends}
 Story bible for this account (its recurring world: bring characters back where they fit, keep their looks
 exactly the same, pay off or deepen open threads, and add new ones freely):
@@ -139,6 +140,16 @@ Then score each one AND the current line 1 to 10 on "would I stop scrolling". Re
 {{"hooks": [{{"line": "...", "score": 0}}], "current": 0}}"""
 
 
+LESSONS_PROMPT = """You are the analyst for the TikTok account @{name} ({theme}). Here is every video with a view
+count, one per line (views | title | first line | mood | scenes | editor's score | hook score | part | posted):
+{rows}
+
+Compare the top third with the bottom third. What do the winners share that the losers don't: the kind of first
+line, the topic, the character, the mood, length, series parts, posting time? Reply with 3 to 6 short, concrete
+lessons the writer must follow next time (for example "open on a named person mid-action, not a question"), each
+backed by the numbers. Plain text, one lesson per line, under 900 characters. No preamble."""
+
+
 TRENDS_PROMPT = """Search the web for what is trending on TikTok THIS WEEK for an account about: {theme}.
 Find: 5 trending topics or story angles, 5 hashtags that are growing, video formats and hooks getting high
 engagement (first-line styles, series, lengths, posting times), and 3 trending sounds that fit. Then reply with a
@@ -158,6 +169,17 @@ async def research_trends(client, settings: Settings, account: dict) -> str:
         messages = [*messages, {"role": "assistant", "content": reply.content}]
     text = "".join(getattr(b, "text", "") for b in reply.content if getattr(b, "type", "") == "text")
     return cs.clean(text, 1500)
+
+
+async def learn_lessons(client, settings: Settings, account: dict, videos: list[dict]) -> str:
+    """Short lessons from which of this account's videos got the most views, for the writer to follow."""
+    rows = "\n".join(" | ".join(str(x) for x in (
+        v.get("views", 0), v.get("title", ""), v.get("hook", ""), v.get("mood", "") or "-", v.get("scenes") or "-",
+        v.get("score") or "-", v.get("hook_score") or "-", v.get("part", 1), v.get("posted_at") or v.get("made_at") or "-"))
+        for v in sorted(videos, key=lambda v: v.get("views", 0), reverse=True))
+    reply = await client.messages.create(model=settings.model, max_tokens=1500, messages=[
+        {"role": "user", "content": LESSONS_PROMPT.format(name=account["name"], theme=account["theme"], rows=rows)}])
+    return cs.clean("".join(getattr(b, "text", "") for b in reply.content), 1000)
 
 
 # ---- 1. script ---------------------------------------------------------------------------------------------
@@ -207,6 +229,7 @@ async def write_script(client, settings: Settings, account: dict, idea: str = ""
         look=cs.STYLES[account["style"]], recent="; ".join((recent or [])[-30:]) or "none yet",
         best="; ".join(best or []) or "no view counts yet",
         trends=(account.get("trends") or {}).get("brief") or "not checked yet; use what you know works",
+        lessons=(account.get("lessons") or {}).get("brief") or "not enough views yet",
         idea=f"Today's idea from the user: {idea}" if idea else "Pick today's idea yourself.")
     reply = await client.messages.create(model=settings.model, max_tokens=6000,
                                          messages=[{"role": "user", "content": prompt}])

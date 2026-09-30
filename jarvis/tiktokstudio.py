@@ -124,6 +124,7 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         if account["format"] == "clips":
             return await _finish(settings, vid["id"], await make_clips(settings, data, account, folder, replaces))
         await ensure_trends(settings, account["name"])
+        await ensure_lessons(settings, account["name"])
         account = cs.account(cs.load(settings), account["name"])
         result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
                                best=best_titles(data, account["name"]), taste=cs.taste_summary(account))
@@ -134,7 +135,9 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
                   "hashtags": result["hashtags"], "keyword": result["keyword"], "hook": result.get("hook", ""),
                   "notes": f"{account['style']} look" + (f", series {result['series']}" if result.get("series") else "")
                   + (f", editor's score {result['score']}/10" if result.get("score") else ""),
-                  "file": cs.relative(settings, result["path"]),
+                  "file": cs.relative(settings, result["path"]), "mood": result.get("mood", ""),
+                  "score": result.get("score", 0), "hook_score": result.get("hook_score", 0),
+                  "scenes": len(result["scenes"]),
                   "story": " ".join(s["narration"] for s in result["scenes"])[:1500]}
     except Exception as exc:  # the network, the API or ffmpeg let us down; say so and carry on
         print(f"[jarvis] Studio video failed: {exc}", flush=True)
@@ -195,6 +198,34 @@ async def ensure_trends(settings: Settings, account_name: str, force: bool = Fal
         account["trends"] = trends = {"day": date.today().isoformat(), "brief": brief}
         cs.save(settings, data)
     return trends
+
+
+LESSONS_AFTER = 4  # videos with views before there's anything to learn
+
+
+def viewed(data: dict, account: str) -> list[dict]:
+    return [v for v in data["videos"] if v.get("account") == account and v.get("views")]
+
+
+async def ensure_lessons(settings: Settings, account_name: str, force: bool = False) -> dict:
+    """Once a day, work out from this account's view counts what its best videos share; the writer follows it."""
+    data = cs.load(settings)
+    account = cs.account(data, account_name)
+    lessons = account.get("lessons") or {}
+    videos = viewed(data, account["name"])
+    if len(videos) < LESSONS_AFTER or (not force and lessons.get("day") == date.today().isoformat()):
+        return lessons
+    try:
+        brief = await cv.learn_lessons(_ctx["client"], settings, account, videos)
+    except Exception as exc:  # no lessons today: the writer still has the trends and the best titles
+        print(f"[jarvis] Lessons for {account_name}: {exc}", flush=True)
+        return lessons
+    if brief:
+        data = cs.load(settings)
+        account = cs.account(data, account_name)
+        account["lessons"] = lessons = {"day": date.today().isoformat(), "brief": brief, "videos": len(videos)}
+        cs.save(settings, data)
+    return lessons
 
 
 async def make_in_background(settings: Settings, jobs: list[tuple]) -> None:
@@ -497,7 +528,7 @@ async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -
 # ---- the tool ---------------------------------------------------------------------------------------------
 
 ACTIONS = ["studio", "make_video", "approve", "reject", "skip", "pause", "resume", "set_views", "accounts", "add_account", "update_account",
-           "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup", "bible"]
+           "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup", "bible", "lessons"]
 
 
 def tool_definitions() -> list[dict]:
@@ -529,7 +560,9 @@ def tool_definitions() -> list[dict]:
                        "script, with the account's best-performing videos) so you can plan what to post next. connect (account) gives the TikTok login link. setup explains "
                        "what auto-posting needs. bible (account) shows the account's story bible: its recurring "
                        "characters (with their fixed looks), world and open story threads, which every new video "
-                       "builds on so series stay consistent.",
+                       "builds on so series stay consistent. lessons (account, refresh) shows what the account's view "
+                       "counts say works (what its best videos share), learnt daily once 4 videos have views and "
+                       "followed by every new script.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -557,7 +590,7 @@ def tool_definitions() -> list[dict]:
                 "min_views": {"type": "integer", "description": "Clip accounts: only clips with at least this many views."},
                 "extend": {"type": "integer", "description": "Clip accounts: seconds of the stream added before and after each clip (0 = plain clips)."},
                 "confirmed": {"type": "boolean"},
-                "refresh": {"type": "boolean", "description": "trends: check again now."},
+                "refresh": {"type": "boolean", "description": "trends or lessons: check again now."},
             },
             "required": ["action"],
             "additionalProperties": False,
@@ -622,6 +655,17 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
                             screen.card("text", f"Trends: @{account['name']}", f"creator-trends-{account['name']}",
                                         text=text, buttons=[{"label": "Make one from this",
                                                              "say": f"Make a TikTok video now for {account['name']} using this week's trends."}]))
+    if action == "lessons":
+        if _ctx["client"] is None:
+            raise ValueError("The studio isn't running; restart Alfred.")
+        account = cs.account(cs.load(settings), args.get("account"))
+        lessons = await ensure_lessons(settings, account["name"], force=bool(args.get("refresh")))
+        have = len(viewed(cs.load(settings), account["name"]))
+        text = lessons.get("brief") or (f"Only {have} of {account['name']}'s videos have view counts so far. I start "
+                                        f"learning from them at {LESSONS_AFTER}.")
+        return screen.Shown(f"What's working on {account['name']}. INSTRUCTION for Alfred: sum it up in two sentences.",
+                            screen.card("text", f"What's working: @{account['name']}", f"creator-lessons-{account['name']}",
+                                        text=text))
     if action == "bible":
         account = cs.account(cs.load(settings), args.get("account"))
         text = cs.bible_summary(account)
