@@ -542,6 +542,13 @@ def test_a_backing_track_is_picked_from_the_music_folders(tmp_path):
     (folder / "Music").mkdir()
     (folder / "Music" / "mine.m4a").write_bytes(b"x")
     assert cv.music_for(folder).name == "mine.m4a"  # the account's own music comes first
+    (folder / "Music" / "tense").mkdir()
+    (folder / "Music" / "tense" / "strings.mp3").write_bytes(b"x")
+    (folder / "Music" / "eerie piano.mp3").write_bytes(b"x")
+    assert cv.music_for(folder, "tense slow build").name == "strings.mp3"  # a mood subfolder
+    assert cv.music_for(folder, "Eerie ambient").name == "eerie piano.mp3"  # a mood word in the name
+    parsed = cv.parse_script(json.dumps({**json.loads(SCRIPT), "mood": "eerie ambient", "sound": "Oblivion by Grimes"}))
+    assert parsed["mood"] == "eerie ambient" and parsed["sound"] == "Oblivion by Grimes"
 
 
 def test_the_story_bible_keeps_the_world_consistent(s):

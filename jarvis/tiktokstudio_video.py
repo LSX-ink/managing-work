@@ -98,10 +98,13 @@ Rules:
   is new or has grown. Use {{}} for nothing.
 - keyword: 1 to 3 words shown big at the top (e.g. ADHD, Letter "M", Unsent Letter #4).
 - caption: one or two lines for the post, ending with a question. hashtags: 4 to 6, lower case, without #.
+- mood: 2 or 3 words for the backing music (for example "tense slow piano", "eerie ambient", "upbeat hype").
+- sound: one trending TikTok sound from the trends above that fits this story (name and artist), or a style of
+  sound to search for if none fits. The user adds it in the TikTok app when posting.
 
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
-  "hook": "...", "caption": "...", "hashtags": ["..."],
+  "hook": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "..."}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "..."}}]}}"""
 
@@ -177,6 +180,8 @@ def parse_script(text: str) -> dict:
         "caption": cs.clean(data.get("caption"), 1500),
         "hashtags": [t for t in tags if t][:8],
         "character": cs.clean(data.get("character"), 300),
+        "mood": cs.clean(data.get("mood"), 80),
+        "sound": cs.clean(data.get("sound"), 200),
         "score": _score(data.get("score")),
         "bible": data.get("bible") if isinstance(data.get("bible"), dict) else {},
         "scenes": [{"text": cs.clean(s.get("text") or s.get("narration"), 120),
@@ -574,15 +579,24 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
          "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-ac", "2", str(out)])
 
 
-def music_for(folder: Path) -> Path | None:
-    """A backing track the user dropped in: the account's own Music folder first, then TikTok/Music for all accounts."""
+def music_for(folder: Path, mood: str = "") -> Path | None:
+    """A backing track the user dropped in: the account's own Music folder first, then TikTok/Music for all accounts.
+    Tracks whose name or subfolder matches the story's mood (Music/tense/..., "eerie piano.mp3") win."""
     tracks = []
     for place in (folder / "Music", folder.parent / "Music"):
         if place.is_dir():
-            tracks = [p for p in place.iterdir() if p.suffix.lower() in (".mp3", ".m4a", ".wav", ".aac", ".ogg")]
+            tracks = [p for p in place.rglob("*") if p.suffix.lower() in (".mp3", ".m4a", ".wav", ".aac", ".ogg")]
             if tracks:
                 break
-    return random.choice(tracks) if tracks else None
+    if not tracks:
+        return None
+    wanted = set(re.findall(r"[a-z]{3,}", mood.lower()))
+
+    def fit(track: Path) -> int:
+        return len(wanted & set(re.findall(r"[a-z]{3,}", " ".join(track.parts[-3:]).lower())))
+
+    best = max(fit(t) for t in tracks)
+    return random.choice([t for t in tracks if fit(t) == best])
 
 
 def add_music(video: Path, track: Path, out: Path) -> None:
@@ -650,7 +664,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     while video.exists():
         video, n = folder / f"{name} ({n}).mp4", n + 1
     await asyncio.to_thread(join, parts, work / "joined.mp4")
-    track = music_for(folder)
+    track = music_for(folder, script.get("mood", ""))
     if track:
         try:
             await asyncio.to_thread(add_music, work / "joined.mp4", track, work / "scored.mp4")
@@ -666,6 +680,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     lines = [f"# {script['title']}", "", f"{script['caption']}", "", tags, ""]
     if script.get("score"):
         lines += [f"Editor's score: {script['score']}/10", ""]
+    if script.get("sound"):
+        lines += [f"Sound to add in TikTok: {script['sound']}", ""]
     if script.get("hook_score"):
         lines += [f"Hook score: {script['hook_score']}/10"
                   + (f" (beat the first draft: \"{script['old_hook']}\")" if script.get("old_hook") else ""), ""]
