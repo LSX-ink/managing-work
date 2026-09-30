@@ -554,7 +554,10 @@ async def narrate(http: httpx.AsyncClient, settings: Settings, text: str, voice:
 # spoken lit up in the account's colour. Timed from the voice's word timings, or spread over the scene if there
 # are none. Drama-style accounts keep their headline box instead.
 
-CAPTION_Y, CAPTION_H = 1260, 420
+# TikTok's own buttons run down the right edge and its caption text covers the bottom ~420px, so captions sit
+# above that and are kept SAFE_SIDE px in from both sides (centred, so they never hide under the like button).
+CAPTION_Y, CAPTION_H = 1120, 420
+SAFE_SIDE, SAFE_BOTTOM = 170, 1500
 
 
 PUNCH_SCALE = 1.3  # how much bigger the scene's key words are drawn
@@ -607,28 +610,41 @@ def chunks(words: list[tuple[float, float, str]], size: int = 3) -> list[list[tu
 
 def caption_image(line: list[str], lit: int, accent, punch=()) -> Image.Image:
     """One caption line. The word being spoken is lit in the accent colour; the scene's key words ("punch") are
-    drawn bigger and always in the accent colour, so they land even before they're said."""
+    drawn bigger and always in the accent colour, so they land even before they're said. Kept inside TikTok's safe
+    zone: it shrinks to fit, and long words that still don't fit wrap onto a second row."""
     im = Image.new("RGBA", (W, CAPTION_H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(im)
     words = [w.upper() for w in line]
     big = [bare(w) in punch for w in line]
-    size = 86
+    room = W - 2 * SAFE_SIDE
 
-    def layout(size):
+    def layout(size, rows):
         fonts = [ac.font(size * PUNCH_SCALE if b else size) for b in big]
         widths = [draw.textlength(w, font=f) for w, f in zip(words, fonts)]
         space = draw.textlength(" ", font=ac.font(size))
-        return fonts, widths, space, sum(widths) + space * (len(words) - 1)
-    fonts, widths, space, total = layout(size)
-    while size > 44 and total > W - 120:
+        totals = [sum(widths[a:b]) + space * (b - a - 1) for a, b in rows]
+        return fonts, widths, space, totals
+    size, rows = 86, [(0, len(words))]
+    fonts, widths, space, totals = layout(size, rows)
+    while size > 56 and max(totals) > room:
         size -= 6
-        fonts, widths, space, total = layout(size)
-    x, baseline = (W - total) / 2, CAPTION_H / 2 + size * 0.4
-    for i, (w, f, width) in enumerate(zip(words, fonts, widths)):
-        top = baseline - (size * PUNCH_SCALE if big[i] else size) * 0.8
-        draw.text((x, top), w, font=f, fill=accent if i == lit or big[i] else (255, 255, 255),
-                  stroke_width=9 if big[i] else 7, stroke_fill=(0, 0, 0))
-        x += width + space
+        fonts, widths, space, totals = layout(size, rows)
+    if max(totals) > room and len(words) > 1:  # two rows, split where the rows come out most even
+        cut = min(range(1, len(words)), key=lambda c: abs(sum(widths[:c]) - sum(widths[c:])))
+        rows = [(0, cut), (cut, len(words))]
+        fonts, widths, space, totals = layout(size, rows)
+    while size > 30 and max(totals) > room:
+        size -= 4
+        fonts, widths, space, totals = layout(size, rows)
+    step = size * PUNCH_SCALE * 1.05
+    first = CAPTION_H / 2 + size * 0.4 - step * (len(rows) - 1) / 2
+    for r, ((a, b), total) in enumerate(zip(rows, totals)):
+        x, baseline = (W - total) / 2, first + r * step
+        for i in range(a, b):
+            top = baseline - (size * PUNCH_SCALE if big[i] else size) * 0.8
+            draw.text((x, top), words[i], font=fonts[i], fill=accent if i == lit or big[i] else (255, 255, 255),
+                      stroke_width=9 if big[i] else 7, stroke_fill=(0, 0, 0))
+            x += widths[i] + space
     return im
 
 
