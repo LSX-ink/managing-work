@@ -686,6 +686,11 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     pictures = await asyncio.gather(*(fetch_picture(http, who + s["picture"], account["style"], seed) for s in scenes))
     closeups = await asyncio.gather(*(fetch_picture(http, who + s["closeup"], account["style"], seed + 7)
                                       if s.get("closeup") else _none() for s in scenes))
+    retried = await asyncio.gather(*(fetch_picture(http, who + s["picture"], account["style"], seed + 13)
+                                     if p is None else _none() for s, p in zip(scenes, pictures)))
+    pictures = [p or r for p, r in zip(pictures, retried)]
+    missing = sum(p is None for p in pictures)
+    pictures, closeups = fill_gaps(list(pictures), list(closeups))
     captions = captions_on(account)
     accent = ac.hex_colour(account.get("accent"), "#e8c547")
     shots, voices = [], []
@@ -748,8 +753,25 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     lines += ["## Script", ""]
     lines += [f"{i}. {s['narration']}" for i, s in enumerate(scenes, 1)]
     video.with_suffix(".md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return {**script, "path": video, "missing_pictures": sum(p is None for p in pictures),
+    return {**script, "path": video, "missing_pictures": missing,
             "music": track.name if track else ""}
+
+
+def fill_gaps(pictures: list, closeups: list) -> tuple[list, list]:
+    """Scenes whose picture never came: use the scene's own close-up, else a mirrored, tighter crop of the nearest
+    scene's picture, so a video never cuts to a blank gradient while other pictures exist."""
+    for i, picture in enumerate(pictures):
+        if picture is not None:
+            continue
+        if closeups[i] is not None:
+            pictures[i], closeups[i] = closeups[i], None
+            continue
+        near = sorted((abs(j - i), j) for j, p in enumerate(pictures) if p is not None and j != i)
+        if near:
+            src = pictures[near[0][1]]
+            w, h = src.size
+            pictures[i] = ImageOps.mirror(src.crop((w // 8, h // 8, w - w // 8, h - h // 8)).resize((w, h)))
+    return pictures, closeups
 
 
 async def _none():
