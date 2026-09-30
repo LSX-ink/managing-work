@@ -535,7 +535,7 @@ LSX.desert = (k) => {
     }
     function frame(T, C, idle, blend = 1) {
         const u = idle ? 0 : baseU(T);
-        desertExtras(C); bgFrame(C); baseFrame(C, u); truckFrame(C); factoryFrame(C); round3Frame(T, C, idle);
+        desertExtras(C); bgFrame(C); baseFrame(C, u); truckFrame(C); factoryFrame(C); round3Frame(T, C, idle); homeWeather(C);
         {
             const HAB = V(-50.5, 0.4, -29.5), PADE = V(-27, 0.4, -15), w = (C / 26) % 1, f = w < 0.4 ? ease(w / 0.4) : w < 0.5 ? 1 : w < 0.9 ? 1 - ease((w - 0.5) / 0.4) : 0;
             shiftW.visible = w < 0.95; shiftW.position.copy(HAB).lerp(PADE, f); shiftW.userData.baseY = 0.4; const out = w < 0.4; face(shiftW, (PADE.x - HAB.x) * (out ? 1 : -1), (PADE.z - HAB.z) * (out ? 1 : -1));
@@ -667,6 +667,42 @@ LSX.desert = (k) => {
         });
         turbines.forEach((t) => { t.rotor.rotation.x = C * t.sp + t.ph; t.lamp.material.color.setRGB(Math.sin(C * 1.6) > 0.3 ? 1 : 0.25, 0.04, 0.04); });
     }
+    // ---- weather on HOME: now and then a dust storm rolls in from the west, and on clear nights there are meteors
+    const STORMN = 1800, stormGeo = pointsGeo(STORMN), stormSeed = Array.from({ length: STORMN }, (_, i) => [rnd(i + 9900), rnd(i + 9901), rnd(i + 9902)]);
+    const dustStorm = new THREE.Points(stormGeo, softPoints('#c89a64', THREE.NormalBlending)); dustStorm.frustumCulled = false; desert.add(dustStorm);
+    let stormNow = 0, nightNow2 = 0, fogBase = new THREE.Color(), sunBase = 2.2;
+    // by the real clock: a storm about every 23 minutes, lasting around 5
+    const stormAt = () => { const t = Date.now() / 1000 / 1380 % 1; return t < 0.22 ? clamp(Math.min(t / 0.05, (0.22 - t) / 0.05)) : 0; };
+    const METEORS = 5, metPos = new Float32Array(METEORS * 6), metCol = new Float32Array(METEORS * 6), metGeo = new THREE.BufferGeometry();
+    metGeo.setAttribute('position', new THREE.BufferAttribute(metPos, 3)); metGeo.setAttribute('color', new THREE.BufferAttribute(metCol, 3));
+    const meteors = new THREE.LineSegments(metGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+    meteors.frustumCulled = false; desert.add(meteors);
+    function homeWeather(C) {
+        stormNow = stormAt(); dustStorm.visible = stormNow > 0.01;
+        desert.fog.density = 0.0011 + stormNow * 0.009;
+        desert.fog.color.copy(fogBase).lerp(new THREE.Color(0.55, 0.36, 0.2).multiplyScalar(1 - nightNow2 * 0.9), stormNow * 0.8);
+        sun.intensity = sunBase * (1 - stormNow * 0.65);
+        if (dustStorm.visible) {
+            const p = stormGeo.attributes.position, a = stormGeo.attributes.aA, sz = stormGeo.attributes.aS;
+            for (let i = 0; i < STORMN; i++) {
+                const [u, v, w] = stormSeed[i], ph = (u + C * (0.05 + w * 0.03)) % 1, x = -180 + ph * 360, z = -150 + v * 300, y = hgt(x, z) + 0.5 + w * w * 22 + Math.sin(C * 2 + i) * 0.6;
+                p.setXYZ(i, x, y, z); a.setX(i, Math.sin(ph * Math.PI) * 0.22 * stormNow); sz.setX(i, 6 + w * 22);
+            }
+            p.needsUpdate = a.needsUpdate = sz.needsUpdate = true;
+        }
+        meteors.visible = nightNow2 > 0.5 && stormNow < 0.1;
+        if (meteors.visible) {
+            for (let m = 0; m < METEORS; m++) {
+                const t = C * 0.35 + m * 1.37, beat = Math.floor(t), ph = t - beat, live = rnd(beat * 11 + m) > 0.6 && ph < 0.35, f = ph / 0.35;
+                const az = rnd(beat * 7 + m) * Math.PI * 2, el = 0.5 + rnd(beat * 3 + m) * 0.5, R = 1400, dir = rnd(beat + m * 5) * Math.PI * 2;
+                const hx = Math.cos(az) * Math.cos(el) * R, hy = Math.sin(el) * R, hz = Math.sin(az) * Math.cos(el) * R, dx = Math.cos(dir) * 180, dy = -60 - rnd(beat + m) * 60, dz = Math.sin(dir) * 180;
+                const x = hx + dx * f, y = hy + dy * f, z = hz + dz * f, b = live ? Math.sin(f * Math.PI) : 0;
+                metPos.set([x, y, z, x - dx * 0.25, y - dy * 0.25, z - dz * 0.25], m * 6); metCol.set([b, b, b * 0.95, 0, 0, 0], m * 6);
+            }
+            metGeo.attributes.position.needsUpdate = metGeo.attributes.color.needsUpdate = true;
+        }
+    }
+
     // ---- day and night ---------------------------------------------------------------------------------------------
     const lightPools = mastLights.map((p) => {
         const m = new THREE.Mesh(new THREE.CircleGeometry(16, 40), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xffd9a8, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -678,6 +714,7 @@ LSX.desert = (k) => {
         desert.environment = env;
         sun.intensity = lerp(2.2, 0.28, nf); sun.color.setRGB(lerp(1, 0.62, nf), lerp(0.88, 0.7, nf), lerp(0.72, 1, nf));
         hemi.intensity = lerp(0.5, 0.1, nf); desert.fog.color.setRGB(lerp(0.69, 0.035, nf), lerp(0.58, 0.04, nf), lerp(0.42, 0.055, nf));
+        fogBase.copy(desert.fog.color); sunBase = sun.intensity; nightNow2 = nf;
         lightPools.forEach((m) => { m.material.opacity = nf * 0.5; m.visible = nf > 0.01; }); flood.intensity = lerp(1.5, 3, nf);
         growPools.forEach((m) => { m.material.opacity = nf * 0.6; m.visible = nf > 0.01; }); growM.color.setRGB(lerp(0.14, 0.85, nf), lerp(0.09, 0.45, nf), lerp(0.19, 1, nf));
         sprites.forEach(([o, c]) => o.material.color.copy(c).multiplyScalar(lerp(1, 0.13, nf)));
