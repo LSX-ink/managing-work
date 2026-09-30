@@ -703,3 +703,26 @@ def test_sequels_wear_a_part_badge_and_notes_carry_a_pinned_comment(s, tmp_path,
     assert "Pin this comment: Who left the voicemail?" in out["path"].with_suffix(".md").read_text()
     cover = Image.open(out["path"].with_suffix(".png"))
     assert cover.getpixel((70, 70)) != cover.getpixel((cv.W - 70, 70))  # the badge sits top left
+
+
+def test_a_quiet_room_tone_goes_under_the_story(s, tmp_path, monkeypatch):
+    calls = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "add_ambience", lambda video, kind, out: (calls.append(kind), out.write_bytes(b"amb")))
+    assert cv.parse_script(json.dumps({**json.loads(SCRIPT), "ambience": "Thunder"}))["ambience"] == ""
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "ambience": "Rain"}))
+    account = cs.load(s)["accounts"][0]
+    out = asyncio.run(cv.make(None, None, s, account, tmp_path, script=script))
+    assert calls == ["rain"] and out["path"].read_bytes() == b"amb"
+    asyncio.run(cv.make(None, None, s, {**account, "ambience": False}, tmp_path, script=script))
+    assert calls == ["rain"]  # an account can turn it off
