@@ -71,8 +71,11 @@ def state(settings: Settings, now: float | None = None) -> dict:
                   "at": v.get("posted_at", "")}
                  for v in videos if v.get("status") in DONE and (_when(v.get("posted_at")) or 0) >= since]
     making = sum(a["making"] for a in accounts)
+    paused = bool(data.get("paused"))
     return {
-        "phase": "waiting" if waiting else "making" if making else "idle",
+        # while content making is paused the ship stays on the ground at HOME, whatever is waiting
+        "phase": "idle" if paused else "waiting" if waiting else "making" if making else "idle",
+        "paused": paused,
         "making": making,
         "ready": len(waiting),
         "accounts": accounts,
@@ -96,12 +99,15 @@ ACTIONS = {
     "day": "Day mode at the bases.",
     "auto": "Day and night now follow your clock.",
     "approvals": "Here are the videos waiting at LSX.",
+    "ground": "The ship stays on the pad at HOME until you say she can fly.",
+    "fly": "The ship's cleared to fly again: she heads to LSX when videos are ready.",
     "off": "Station off. The plain star background is back.",
     "on": "Station on.",
 }
 ALIASES = {"home": "base", "desert": "base", "port": "lsx", "forest": "lsx", "system": "space", "planets": "space",
            "deep_space": "deep", "galaxy": "deep", "in": "zoom_in", "out": "zoom_out", "clock": "auto",
-           "waiting": "approvals", "queue": "approvals"}
+           "waiting": "approvals", "queue": "approvals",
+           "grounded": "ground", "stay": "ground", "land": "ground", "launch": "fly", "release": "fly", "unground": "fly"}
 
 
 def tool_definitions() -> list[dict]:
@@ -111,7 +117,8 @@ def tool_definitions() -> list[dict]:
                        "with the forest port where videos wait for approval). base: show me the base / fly down to "
                        "HOME; lsx: go to LSX, the port; space: both planets; deep: zoom out to deep space and see "
                        "the whole solar system; zoom_in, zoom_out; night, day, auto: night mode, day mode, or follow "
-                       "the clock; approvals: open the list of videos waiting at LSX to tick or cross; off and on: "
+                       "the clock; approvals: open the list of videos waiting at LSX to tick or cross; ground: keep the ship on the pad "
+                       "at HOME (she never flies to LSX); fly: let her fly to LSX again when videos are ready; off and on: "
                        "turn the station background off (plain stars) or back on.",
         "input_schema": {
             "type": "object",

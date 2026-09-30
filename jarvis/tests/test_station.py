@@ -66,6 +66,19 @@ def test_making_without_waiting(s):
     assert out["phase"] == "making" and out["waiting"] == []
 
 
+def test_paused_content_keeps_the_ship_grounded(s):
+    store(s, [{"id": "v1", "account": "lowkey.lore", "status": "ready", "title": "Waiting"}])
+    data = cs.load(s); data["paused"] = True; cs.save(s, data)
+    out = station.state(s)
+    assert out["phase"] == "idle" and out["paused"] is True
+    assert out["ready"] == 1 and out["waiting"][0]["id"] == "v1"  # still there to tick or cross
+
+
+def test_ground_and_fly_actions(s):
+    assert station.run_tool("station_view", {"action": "ground"}, s).card["data"]["action"] == "ground"
+    assert station.run_tool("station_view", {"action": "launch"}, s).card["data"]["action"] == "fly"
+
+
 def test_station_view_signature_and_results(s):
     assert station in tools.ABILITIES
     inspect.signature(station.run_tool).bind("name", {}, None, None)  # name, args, settings, http
