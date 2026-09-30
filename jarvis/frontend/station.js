@@ -75,7 +75,7 @@
     }
 
     // ---- page elements ------------------------------------------------------------------------------------------------
-    let tagHome, tagLsx, pinBase, pinLsx, deepTags = [], btnTod, btnWaiting, fadeTo = 0;
+    let tagHome, tagLsx, pinBase, pinLsx, deepTags = [], btnTod, btnShip, btnWaiting, fadeTo = 0;
     function buildCanvas() {
         canvas = el('canvas'); canvas.id = 'station'; canvas.setAttribute('aria-hidden', 'true');
         document.body.prepend(canvas);
@@ -99,6 +99,7 @@
         button('−', 'Zoom out', () => act('zoom_out'));
         button('+', 'Zoom in', () => act('zoom_in'));
         btnTod = button(todMode, 'Day and night: auto, day or night', () => act({ AUTO: 'day', DAY: 'night', NIGHT: 'auto' }[todMode]));
+        btnShip = button(grounded ? 'SHIP · GROUNDED' : 'SHIP · FLYING', 'Keep the ship on the ground at HOME, or let her fly to LSX', () => act(grounded ? 'fly' : 'ground'));
         btnWaiting = button('', 'Videos waiting for approval at LSX', () => act('approvals')); btnWaiting.className = 'st-waiting'; btnWaiting.hidden = true;
         document.body.append(veil, ui, controls);
         canvas.hidden = veil.hidden = ui.hidden = controls.hidden = true;
@@ -194,7 +195,9 @@
     // LSX port for approval), back (flying home). T is the trip's timeline in the scene parts; C runs for the loops.
     const trip = { mode: 'idle', T: 52, blend: 1, since: 0, want: 'idle', first: true };
     let st = null, waitingIds = new Set(), delivered = new Set(), deliveries = [], pages = null, pageKey = '';
-    function wantOf(s) { return s.waiting.length ? 'parked' : s.making ? 'loading' : 'idle'; }
+    // grounded (the user's word, kept in this browser) or paused content: the ship stays on the pad at HOME
+    let grounded = load('grounded', true);
+    function wantOf(s) { return grounded || s.paused ? 'idle' : s.waiting.length ? 'parked' : s.making ? 'loading' : 'idle'; }
     function jump(mode) {
         trip.mode = mode; trip.since = 0;
         trip.T = { idle: 52, loading: 8, parked: 28.4 }[mode]; trip.blend = 1;
@@ -363,6 +366,7 @@
         else if (action === 'zoom_out') setZoom(view.target - 0.12);
         else if (action === 'night' || action === 'day' || action === 'auto') { todMode = action.toUpperCase(); save('tod', todMode); nightNow = -1; if (btnTod) btnTod.textContent = todMode; }
         else if (action === 'approvals') openPanel();
+        else if (action === 'ground' || action === 'fly') { grounded = action === 'ground'; save('grounded', grounded); if (st) trip.want = wantOf(st); if (btnShip) btnShip.textContent = grounded ? 'SHIP · GROUNDED' : 'SHIP · FLYING'; }
         if (z && !view.pending) view.zoom = view.target;
     }
     window.addEventListener('jarvis:popup', (e) => {
