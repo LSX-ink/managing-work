@@ -627,3 +627,32 @@ def test_each_scene_is_read_at_its_own_pace(s, tmp_path, monkeypatch):
     scenes = [{"narration": "It was quiet.", "pace": "SLOW"}, {"narration": "Run!", "pace": "sprint"}]
     parsed = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
     assert [sc["pace"] for sc in parsed["scenes"]] == ["slow", "normal"]
+
+
+def test_missing_pictures_are_retried_then_filled_from_other_shots():
+    from PIL import Image
+    a, b = Image.new("RGB", (64, 64), (200, 0, 0)), Image.new("RGB", (64, 64), (0, 0, 200))
+    pictures, closeups = cv.fill_gaps([a, None, None, None], [None, b, None, None])
+    assert pictures[1] is b and closeups[1] is None  # its own close-up steps in
+    assert pictures[2] is not None and pictures[2].getpixel((5, 5)) == (0, 0, 200)  # the nearest scene, mirrored
+    assert all(p is not None for p in pictures)
+    assert cv.fill_gaps([None, None], [None, None]) == ([None, None], [None, None])  # nothing to borrow
+
+
+def test_a_failed_picture_is_fetched_again(s, tmp_path, monkeypatch):
+    from PIL import Image
+    seeds = []
+
+    async def flaky(http, description, style, seed, size=(1024, 1024)):
+        seeds.append(seed)
+        return Image.new("RGB", (64, 64)) if len(seeds) > 2 else None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", flaky)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    out = asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=cv.parse_script(SCRIPT)))
+    assert out["missing_pictures"] == 0 and len(seeds) == 4 and seeds[2] == seeds[0] + 13
