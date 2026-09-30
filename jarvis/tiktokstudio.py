@@ -129,7 +129,8 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
                                best=best_titles(data, account["name"]), taste=cs.taste_summary(account))
         update = {"status": "ready", "title": result["title"], "caption": result["caption"],
                   "hashtags": result["hashtags"], "keyword": result["keyword"], "hook": result.get("hook", ""),
-                  "notes": f"{account['style']} look" + (f", series {result['series']}" if result.get("series") else ""),
+                  "notes": f"{account['style']} look" + (f", series {result['series']}" if result.get("series") else "")
+                  + (f", editor's score {result['score']}/10" if result.get("score") else ""),
                   "file": cs.relative(settings, result["path"]),
                   "story": " ".join(s["narration"] for s in result["scenes"])[:1500]}
     except Exception as exc:  # the network, the API or ffmpeg let us down; say so and carry on
