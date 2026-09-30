@@ -5,7 +5,7 @@
 // deliveries [{slot, d, fromShip}] the approvals being delivered (d = seconds since the tick).
 window.LSX = window.LSX || {};
 LSX.forest = (k) => {
-    const { THREE, clamp, lerp, ease, rnd, fbm, V, canvas, tex, add, logoCanvas, mat, glow, ship, shipParts, thrust, worker, pose, face, crateMat, cgeo,
+    const { THREE, clamp, lerp, ease, rnd, fbm, V, canvas, tex, add, rbox, logoCanvas, mat, glow, ship, shipParts, thrust, worker, pose, face, crateMat, cgeo,
         skyMat, dayEnv, pad, softPoints, pointsGeo, glowTex } = k;
     const { legs, ramp, hold, cabin, radar, bellyStrobe } = shipParts;
 
@@ -32,6 +32,7 @@ LSX.forest = (k) => {
     const OFF_R = 60, MAX_SLOTS = 10;
     const slotAngle = (i, n) => i / n * Math.PI * 2 + Math.PI / 6;
     const lampHeadM = new THREE.MeshBasicMaterial({ color: 0x3a3630 });
+    const CAR_COLS = [0x1f3b5c, 0x8a1c1c, 0xd8d8d4, 0x2b2b2e, 0x5c6b3a, 0xa0a4a8];
     const plotM = new THREE.MeshStandardMaterial({ color: 0x8a8272, roughness: 1 }), bushM = new THREE.MeshStandardMaterial({ color: 0x3d6a2c, roughness: 1, flatShading: true });
     let ownTex = [], town = null, offices = [], fPools = [], unloaders = [], couriers = [], parcels = [], nightNow = 0, pageKey = '';
     const own = (t) => { ownTex.push(t); return t; };   // textures made for one set of offices, freed when they're rebuilt
@@ -79,6 +80,16 @@ LSX.forest = (k) => {
         add(g, new THREE.BoxGeometry(0.4, 3.2, 11.4), mat.dark, -5.9, 12.4, 0);
         for (const [x, z] of [[2, -5], [2, 5]]) { add(g, new THREE.BoxGeometry(2.6, 1.4, 2.6), mat.steel, x, 11.5, z); add(g, new THREE.CylinderGeometry(1, 1, 0.2, 16), mat.dark, x, 12.3, z); }
         for (const z of [-7.5, 7.5]) { add(g, new THREE.BoxGeometry(2, 0.8, 2), mat.dark, -8, 0.4, z); add(g, new THREE.SphereGeometry(1.2, 10, 8), bushM, -8, 1.6, z); }
+        // staff cars parked in front, either side of the road
+        for (const z of [-6.6, 6.6]) {
+            if (rnd(i * 31 + z) < 0.25) continue;
+            const car = new THREE.Group(); car.position.set(-12 + (rnd(i * 17 + z) - 0.5) * 2, 0.05, z); g.add(car);
+            const paint = new THREE.MeshStandardMaterial({ color: CAR_COLS[Math.floor(rnd(i * 7 + z) * CAR_COLS.length)], metalness: 0.6, roughness: 0.35 });
+            add(car, rbox(4.2, 0.75, 1.8, 0.2), paint, 0, 0.7, 0); add(car, rbox(2.3, 0.65, 1.6, 0.2), paint, -0.3, 1.35, 0);
+            add(car, new THREE.BoxGeometry(2.1, 0.5, 1.64), mat.glass, -0.3, 1.38, 0);
+            for (const [x, zz] of [[1.35, 0.9], [1.35, -0.9], [-1.35, 0.9], [-1.35, -0.9]]) add(car, new THREE.CylinderGeometry(0.36, 0.36, 0.25, 12).rotateX(Math.PI / 2), mat.dark, x, 0.36, zz);
+            car.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+        }
         return { pg, dir, door, pile, wait, glass };
     }
     // trees: conifers and broadleaf, packed outside the clearing (instanced so the forest stays cheap)
@@ -221,6 +232,26 @@ LSX.forest = (k) => {
         bobber.position.set(bob.x + Math.sin(C * 0.3) * 0.4, -0.3 + Math.max(0, Math.sin(C * 2.1)) * 0.05 - (Math.sin(C * 0.37) > 0.97 ? 0.15 : 0), bob.z); void tip;
     }
 
+    // ---- showers: every so often a band of rain passes over the port; the light dims and the fog closes in
+    const RAIN = 2600, rainPos = new Float32Array(RAIN * 6), rainGeo = new THREE.BufferGeometry();
+    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+    const rainM = new THREE.LineBasicMaterial({ color: 0xbfcad4, transparent: true, opacity: 0, depthWrite: false });
+    const rain = new THREE.LineSegments(rainGeo, rainM); rain.frustumCulled = false; forest.add(rain);
+    const rainSeed = Array.from({ length: RAIN }, (_, i) => [rnd(i + 9800) * 2 - 1, rnd(i + 9801) * 2 - 1, rnd(i + 9802)]);
+    let baseSun = 2.1, rainNow = 0;
+    const rainAt = () => { const w = Math.sin(Date.now() / 1000 * Math.PI * 2 / 540); return clamp((w - 0.35) / 0.3); };   // by the real clock: about 9 minutes a cycle, wet for a third of it
+    function weather(C) {
+        rainNow = rainAt(C); rain.visible = rainNow > 0.01; rainM.opacity = rainNow * 0.65;
+        fSun.intensity = baseSun * (1 - 0.6 * rainNow); forest.fog.density = 0.0016 + rainNow * 0.0045;
+        if (!rain.visible) return;
+        const span = 150, top = 60;
+        for (let i = 0; i < RAIN; i++) {
+            const [sx, sz, sy] = rainSeed[i], y = top - ((sy * top + C * 26) % top), x = sx * span + y * 0.12, z = sz * span;
+            rainPos.set([x, y, z, x - 0.18, y + 1.6, z], i * 6);
+        }
+        rainGeo.attributes.position.needsUpdate = true;
+    }
+
     // pages: [{name, label, colour}] from GET /station/state. Rebuilds the offices only when the list changes.
     function setPages(pages) {
         const list = (pages || []).slice(0, MAX_SLOTS);
@@ -299,7 +330,7 @@ LSX.forest = (k) => {
         ramp.rotation.z = l === 0 ? 0.74 * ease(open) : 0; hold.visible = ramp.rotation.z > 0.03; cabin.intensity = l < 0.02 ? 1.2 : 0;
         const firing = (T >= 24.5 && T < 27.2) || (T >= 30.5 && T < 32.5); thrust(C, l > 0.25 ? 0.7 : 0, firing ? 0.9 : 0);
         radar.rotation.y = C * 1.8; bellyStrobe.visible = (C % 1.1) < 0.12; portLife(T, C, l);
-        carts.forEach((ct) => { ct.dt = lastC === null ? 0 : clamp(C - lastC, 0, 0.1); }); lastC = C; portTraffic(T, C); lakeFrame(C);
+        carts.forEach((ct) => { ct.dt = lastC === null ? 0 : clamp(C - lastC, 0, 0.1); }); lastC = C; portTraffic(T, C); lakeFrame(C); weather(C);
         const bySlot = [];
         deliveries.forEach((dl) => { if (!bySlot[dl.slot] || dl.d < bySlot[dl.slot].d) bySlot[dl.slot] = dl; });   // the newest per page
         const landing = T > 23 && T < 27.4;
@@ -339,7 +370,7 @@ LSX.forest = (k) => {
     function night(nf, env, sunLight) {
         nightNow = nf;
         forest.environment = env;
-        fSun.intensity = sunLight.intensity; fSun.color.copy(sunLight.color); fHemi.intensity = 0.55 + (0.1 - 0.55) * nf;
+        baseSun = sunLight.intensity; fSun.intensity = baseSun * (1 - 0.6 * rainNow); fSun.color.copy(sunLight.color); fHemi.intensity = 0.55 + (0.1 - 0.55) * nf;
         forest.fog.color.setRGB(0.55 + (0.03 - 0.55) * nf, 0.6 + (0.04 - 0.6) * nf, 0.47 + (0.05 - 0.47) * nf);
         lampHeadM.color.setRGB(0.2 + 0.8 * nf, 0.19 + 0.66 * nf, 0.17 + 0.43 * nf);
         applyNight(nf);
