@@ -61,6 +61,8 @@ Write ONE new video for today. It must last at least one minute, ideally 65 to 9
 Titles already used (never repeat or closely copy these): {recent}
 What did best on this account so far (do more of what works): {best}
 What this account's own view counts say works (follow these lessons): {lessons}
+Your last few videos on this account (make today's clearly different from them: another mood, another kind of
+opening line, another setting and point of view; a sequel keeps its story but still changes the mood or angle): {variety}
 What's trending on TikTok for this niche right now (ride these where they fit, never copy anyone): {trends}
 Story bible for this account (its recurring world: bring characters back where they fit, keep their looks
 exactly the same, pay off or deepen open threads, and add new ones freely):
@@ -243,8 +245,8 @@ def _score(value) -> int:
 
 
 async def write_script(client, settings: Settings, account: dict, idea: str = "", recent: list[str] | None = None,
-                       best: list[str] | None = None, taste: str = "") -> dict:
-    prompt = SCRIPT_PROMPT.format(
+                       best: list[str] | None = None, taste: str = "", variety: str = "") -> dict:
+    prompt = SCRIPT_PROMPT.format(variety=variety or "none yet",
         taste=taste or cs.taste_summary(account), bible=cs.bible_summary(account),
         name=account["name"], theme=account["theme"], format=cs.FORMATS[account["format"]],
         series=", ".join(account.get("series") or []) or "none yet; pick a catchy repeatable one",
@@ -725,9 +727,9 @@ def join(parts: list[Path], out: Path) -> None:
 
 async def make(client, http: httpx.AsyncClient, settings: Settings, account: dict, folder: Path,
                idea: str = "", recent: list[str] | None = None, script: dict | None = None,
-               best: list[str] | None = None, taste: str = "", part: int = 1) -> dict:
+               best: list[str] | None = None, taste: str = "", part: int = 1, variety: str = "") -> dict:
     """Write, picture, voice and render one video into folder. Returns the script plus the MP4 path."""
-    script = script or await write_script(client, settings, account, idea, recent, best, taste)
+    script = script or await write_script(client, settings, account, idea, recent, best, taste, variety)
     work = folder / f".{cs.new_id()}"
     work.mkdir(parents=True, exist_ok=True)
     seed = random.randint(1, 10**6)

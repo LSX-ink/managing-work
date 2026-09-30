@@ -142,7 +142,7 @@ def test_a_missing_picture_or_voice_still_makes_a_video(s, tmp_path, monkeypatch
 def test_studio_makes_a_video_and_queues_it(s, monkeypatch):
     announced = []
 
-    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste="", part=1):
+    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste="", part=1, variety=""):
         path = folder / "Clip.mp4"
         path.write_bytes(b"mp4")
         return {**cv.parse_script(SCRIPT), "path": path, "missing_pictures": 0}
@@ -590,7 +590,7 @@ def test_lessons_from_view_counts_feed_the_writer(s):
         assert len(client.calls) == 1  # once a day
         account = cs.account(cs.load(s), "lowkey.lore")
         prompt = cv.SCRIPT_PROMPT.format(**{k: "" for k in ("taste", "bible", "name", "theme", "format", "series",
-                                         "look", "recent", "best", "trends", "idea")}, lessons=account["lessons"]["brief"])
+                                         "look", "recent", "best", "trends", "idea", "variety")}, lessons=account["lessons"]["brief"])
         assert "view counts say works (follow these lessons): Open on a named person" in prompt
     finally:
         creator._ctx["client"] = None
@@ -726,3 +726,17 @@ def test_a_quiet_room_tone_goes_under_the_story(s, tmp_path, monkeypatch):
     assert calls == ["rain"] and out["path"].read_bytes() == b"amb"
     asyncio.run(cv.make(None, None, s, {**account, "ambience": False}, tmp_path, script=script))
     assert calls == ["rain"]  # an account can turn it off
+
+
+def test_variety_brief_steers_the_next_video_away_from_the_last_ones(s):
+    add_video(s, status="posted", title="Old", mood="cosy", hook="Old hook.")
+    add_video(s, status="rejected", title="Binned", mood="sad")
+    add_video(s, status="ready", title="The Last Voicemail", mood="tense", hook="Maya had 9 seconds.", story="Maya stares at the phone.")
+    brief = creator.variety_brief(cs.load(s), "lowkey.lore", count=2)
+    assert "Binned" not in brief and '"Old"' in brief
+    assert 'mood tense, opened with "Maya had 9 seconds.", began: Maya stares' in brief
+    assert creator.variety_brief(cs.load(s), "nobody") == ""
+    client = FakeClient([(SCRIPT, "end_turn"), (SCRIPT, "end_turn")])
+    asyncio.run(cv.write_script(client, s, cs.account(cs.load(s), "lowkey.lore"), variety=brief))
+    assert "make today's clearly different" in client.calls[0]["messages"][0]["content"]
+    assert "Maya had 9 seconds." in client.calls[0]["messages"][0]["content"]
