@@ -33,6 +33,19 @@ LSX.desert = (k) => {
     gg.strokeStyle = 'rgba(40,40,40,.35)'; gg.lineWidth = 3; for (let y = 0; y < 512; y += 22) { gg.beginPath(); for (let x = 0; x <= 512; x += 16) gg.lineTo(x, y + Math.sin(x * 0.03 + y) * 5); gg.stroke(); }
     const ground = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, bumpMap: tex(grainC, 160, 160, false), bumpScale: 0.06 }));
     ground.receiveShadow = true; desert.add(ground);
+    // cloud shadows: soft dark patches drifting across the sand with the wind, by the real clock
+    const cloudU = { t: { value: 0 } };
+    ground.material.onBeforeCompile = (sh) => {
+        sh.uniforms.cT = cloudU.t;
+        sh.vertexShader = 'varying vec2 vCW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vCW = (modelMatrix * vec4(transformed, 1.0)).xz;');
+        sh.fragmentShader = `varying vec2 vCW; uniform float cT;
+            float cH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+            float cN(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(cH(i), cH(i + vec2(1, 0)), f.x), mix(cH(i + vec2(0, 1)), cH(i + vec2(1, 1)), f.x), f.y); }
+            ` + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+            { vec2 q = vCW * 0.006 + vec2(cT * 0.012, cT * 0.005); float n = cN(q) * 0.6 + cN(q * 2.3 + 7.0) * 0.3 + cN(q * 5.1) * 0.1;
+              diffuseColor.rgb *= 1.0 - smoothstep(0.52, 0.66, n) * 0.32; }`);
+    };
     // far mountains all round the horizon, blue with distance, so the desert doesn't end in a flat edge
     {
         const N = 360, R = 1250, pos = [], idx = [];
@@ -131,7 +144,21 @@ LSX.desert = (k) => {
     for (const z of [-0.7, 0.7]) add(rover, new THREE.BoxGeometry(0.1, 0.2, 0.3), glow(0xfff4dc), 2.36, 1.3, z);
     const roverLamp = add(rover, new THREE.SphereGeometry(0.14, 6, 4), glow(0xffa020), 1.6, 2.8, 0);
     const SAND = 500, sandGeo = pointsGeo(SAND);
+    // a dust trail kicked up behind the rover's wheels, drifting off and settling
+    const RDUST = 90, rdGeo = pointsGeo(RDUST), rdust = new THREE.Points(rdGeo, softPoints('#c9a47a', THREE.NormalBlending)); rdust.frustumCulled = false; desert.add(rdust);
     function desertExtras(C) {
+        cloudU.t.value = (Date.now() / 1000) % 100000;
+        {   // each puff was dropped by the rover a little while ago, where it was then
+            const rp = rdGeo.attributes.position, ra = rdGeo.attributes.aA, rs = rdGeo.attributes.aS;
+            for (let i = 0; i < RDUST; i++) {
+                const age = ((C * 0.9 + i / RDUST * 3) % 3), a0 = (C - age) * 0.16 + 2.2, side = i % 2 ? 1 : -1;
+                const x0 = Math.cos(a0) * 36 - 4, z0 = Math.sin(a0) * 24, tx = -Math.sin(a0) * 36, tz = Math.cos(a0) * 24, tl = Math.hypot(tx, tz);
+                const bx = x0 - tx / tl * 2.2 - tz / tl * 1.2 * side, bz = z0 - tz / tl * 2.2 + tx / tl * 1.2 * side;
+                rp.setXYZ(i, bx + age * 0.9 + (rnd(i) - 0.5) * age, 0.5 + age * 0.5 + rnd(i + 1) * 0.3, bz + age * 0.3 + (rnd(i + 2) - 0.5) * age);
+                ra.setX(i, 0.28 * (1 - age / 3) * clamp(age * 4)); rs.setX(i, 1 + age * 1.6);
+            }
+            rp.needsUpdate = ra.needsUpdate = rs.needsUpdate = true;
+        }
         const ang = C * 0.16 + 2.2, rx = 36, rz = 24;
         rover.position.set(Math.cos(ang) * rx - 4, 0.4, Math.sin(ang) * rz);
         rover.rotation.y = Math.atan2(-(Math.cos(ang) * rz), -Math.sin(ang) * rx);
