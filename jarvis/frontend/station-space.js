@@ -143,6 +143,27 @@ LSX.space = async (k, pause) => {
     for (let i = 0; i < 12; i++) add(station, new THREE.BoxGeometry(0.4, 0.4, 0.4), winMat, Math.cos(i / 12 * Math.PI * 2) * 6, Math.sin(i / 12 * Math.PI * 2) * 6, 0.72);
     const stationLamp = add(station, new THREE.SphereGeometry(0.4, 6, 4), glow(0xff3b30), 0, 0, 4.2);
     station.position.copy(HOMEC).add(V(52, 50, 44)); station.scale.setScalar(1.3);
+    // more station: a truss along the spin axis with two big solar wings and white radiators, docking lights that
+    // chase towards the port the shuttle uses, and red/green running lights round the ring
+    add(station, new THREE.BoxGeometry(0.5, 0.5, 20), mat.steel, 0, 0, 0);
+    const wings = [-1, 1].map((sg) => { const g = new THREE.Group(); g.position.z = sg * 9.5; station.add(g);
+        add(g, new THREE.BoxGeometry(0.2, 0.2, 1.2), mat.dark, 0, 0, 0); for (const x of [-5.5, 5.5]) add(g, new THREE.BoxGeometry(9, 0.08, 3.4), panelM, x, 0, 0); return g; });
+    const radM = new THREE.MeshStandardMaterial({ color: 0xeef0f2, roughness: 0.6, metalness: 0.1 });
+    for (const z of [-3.2, 3.2]) for (const sg of [-1, 1]) add(station, new THREE.BoxGeometry(0.06, 3.2, 1.6), radM, sg * 1.9, sg * 1.2, z).rotation.z = sg * 0.6;
+    const dockLights = []; for (let q = 0; q < 6; q++) dockLights.push(add(station, new THREE.SphereGeometry(0.16, 6, 4), new THREE.MeshBasicMaterial({ color: 0x9fdcff }), 0, -1.5 - q * 0.75, -0.9));
+    const navLights = []; for (let q = 0; q < 8; q++) { const a = q / 8 * Math.PI * 2; navLights.push(add(station, new THREE.SphereGeometry(0.14, 6, 4), new THREE.MeshBasicMaterial({ color: q % 2 ? 0xff3b30 : 0x3cff8a }), Math.cos(a) * 6.8, Math.sin(a) * 6.8, 0)); }
+    // a space telescope in a high orbit over HOME: a long tube with a sun shade, an aperture door and two solar wings,
+    // slowly turning from one target to the next
+    const scope = new THREE.Group(); space.add(scope); scope.scale.setScalar(1.2);
+    const foilM = new THREE.MeshStandardMaterial({ color: 0xd9b25a, metalness: 0.9, roughness: 0.35 });
+    add(scope, new THREE.CylinderGeometry(1.3, 1.3, 7, 20, 1, true), mat.steel, 0, 0, 0).material.side = THREE.DoubleSide;
+    add(scope, new THREE.CylinderGeometry(1.35, 1.35, 2.2, 20), foilM, 0, -4.4, 0);
+    add(scope, new THREE.CylinderGeometry(1.34, 1.34, 0.15, 20, 1, true), mat.dark, 0, 1.2, 0);
+    const door = add(scope, new THREE.CylinderGeometry(1.35, 1.35, 0.1, 20), mat.steel, 0, 0, 0); door.geometry.translate(0, 0, 1.35); door.position.set(0, 3.5, -1.35); door.rotation.x = -1.9;
+    for (const sg of [-1, 1]) add(scope, new THREE.BoxGeometry(6, 0.06, 2), panelM, sg * 4.6, -2.4, 0);
+    add(scope, new THREE.SphereGeometry(0.1, 6, 4), glow(0xffffff), 0, -5.6, 0);
+    scope.position.copy(HOMEC).add(V(-70, 38, 30));
+    const scopeQ = new THREE.Quaternion(), scopeQ2 = new THREE.Quaternion();
     const rockM = new THREE.MeshStandardMaterial({ color: 0x6f665c, roughness: 1, flatShading: true });
     const rocks = []; for (let i = 0; i < 70; i++) {
         const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6 + rnd(i + 400) * 2.4, 0), rockM);
@@ -240,6 +261,14 @@ LSX.space = async (k, pause) => {
     const ringT = tex(ringC); ringT.wrapS = ringT.wrapT = THREE.ClampToEdgeWrapping;
     const giantRing = new THREE.Mesh(ringGeo, new THREE.MeshStandardMaterial({ map: ringT, transparent: true, side: THREE.DoubleSide, depthWrite: false, roughness: 1 }));
     giantRing.position.copy(giant.position); giantRing.rotation.set(-Math.PI / 2 + 0.45, 0.2, 0.35); space.add(giantRing);
+    // the planet's shadow falls across the rings on the side away from the sun, soft at the edge
+    giantRing.material.onBeforeCompile = (sh) => {
+        sh.uniforms.gC = { value: giant.position }; sh.uniforms.gR = { value: GIANTR }; sh.uniforms.sunP = { value: SUNP };
+        sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        sh.fragmentShader = 'varying vec3 vWP; uniform vec3 gC; uniform float gR; uniform vec3 sunP;\n' + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+            { vec3 d = normalize(sunP - vWP), oc = gC - vWP; float b = dot(oc, d), perp = sqrt(max(dot(oc, oc) - b * b, 0.0));
+              float sh = b > 0.0 ? 1.0 - smoothstep(gR * 0.96, gR * 1.04, perp) : 0.0; diffuseColor.rgb *= 1.0 - sh * 0.9; }`);
+    };
     await pause();
     const iceT = planetTexture('ice', 512, 256);
     const ice = new THREE.Mesh(new THREE.SphereGeometry(ICER, 48, 24), new THREE.MeshStandardMaterial({ map: tex(iceT), bumpMap: tex(iceT.bump, 1, 1, false), bumpScale: 1, roughness: 0.7 }));
@@ -327,6 +356,14 @@ LSX.space = async (k, pause) => {
         const ma = C * 0.18 + 3; lsxMoon.position.set(LSXC.x + Math.cos(ma) * 78, LSXC.y + 20 + Math.sin(ma) * 10, LSXC.z + Math.sin(ma) * 60);
         const a = C * 0.12 + 1; moon.position.copy(HOMEC).add(V(Math.cos(a) * 92, Math.sin(a) * 26, Math.sin(a) * -70)); moon.rotation.y = C * 0.05;
         station.rotation.set(0.5, C * 0.15, 0.3); stationLamp.visible = Math.floor(C * 1.5) % 2 === 0;
+        wings.forEach((g) => { g.rotation.z = C * 0.05; });
+        dockLights.forEach((l, q) => { l.visible = Math.floor(C * 6) % 8 === q; });
+        navLights.forEach((l, q) => { l.visible = (Math.floor(C * 1.1) + (q % 2)) % 2 === 0; });
+        {   // the telescope slews to a new target every 40 seconds, then holds still to take its picture
+            const n = Math.floor(C / 40), f = ease(clamp((C % 40) / 12)), aim = (m) => V(Math.sin(m * 2.3) , 0.4 + Math.cos(m * 1.7) * 0.5, Math.cos(m * 2.3)).normalize();
+            scopeQ.setFromUnitVectors(V(0, 1, 0), aim(n)); scopeQ2.setFromUnitVectors(V(0, 1, 0), aim(n + 1));
+            scope.quaternion.copy(scopeQ).slerp(scopeQ2, f);
+        }
         rocks.forEach((r) => { r.rotation.set(C * r.userData.s.x * 0.5, C * r.userData.s.y * 0.5, 0); });
         gMoons.forEach((g) => { const a = C * g.sp + g.ph; g.m.position.copy(giant.position).addScaledVector(gAx, Math.cos(a) * g.d).addScaledVector(gAy, Math.sin(a) * g.d); g.m.rotation.y = a; });
         giant.rotation.y = C * 0.02; ice.rotation.y = C * 0.01; belt.quaternion.setFromAxisAngle(nrm, C * 0.0015);
