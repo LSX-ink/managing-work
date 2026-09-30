@@ -513,6 +513,69 @@ LSX.desert = (k) => {
     const STATIC = [[V(1.5, 0.4, 7.0), Math.PI / 2], [V(-5.5, 0.4, 7.1), Math.PI / 2], [null, Math.PI / 2], [V(12, 0.4, -4), 2.4]];
     const homeOf = (i) => (i < 3 ? carrier(12, i).p : (STATIC[i - 3][0] || V(-9.5, 0.4, 6.6)));
     const safe = (i) => { const h = homeOf(i), d = V(h.x, 0, h.z).normalize(); return h.clone().addScaledVector(d, 26).setY(0.4); };
+    // ---- the build site: while the ship is grounded the crew put up the base's next building east of the pad.
+    // A slab, a steel frame that rises floor by floor, scaffolding, a tower crane swinging beams up, a beam stack.
+    // Progress follows the real clock, so it keeps going between visits: a building takes about 20 minutes.
+    const SITE = V(24, 0, 42), SITE_Y = hgt(24, 42), FLOORS = 4, FLOOR_H = 3.6;
+    const site = new THREE.Group(); site.position.set(SITE.x, SITE_Y - 0.1, SITE.z); desert.add(site);
+    const concM = new THREE.MeshStandardMaterial({ color: 0xa9a49a, roughness: 0.95 }), beamM = new THREE.MeshStandardMaterial({ color: 0xb8582a, metalness: 0.5, roughness: 0.5 });
+    const scafM = new THREE.MeshStandardMaterial({ color: 0xc9c2b0, metalness: 0.6, roughness: 0.5 });
+    add(site, new THREE.BoxGeometry(14, 0.5, 10), concM, 0, 0.25, 0);
+    const floorsG = [];   // one group per floor: four columns and a ring of beams, shown as the building rises
+    for (let f = 0; f < FLOORS; f++) {
+        const g = new THREE.Group(); g.position.y = 0.5 + f * FLOOR_H; site.add(g); floorsG.push(g);
+        for (const [x, z] of [[-6.5, -4.5], [6.5, -4.5], [-6.5, 4.5], [6.5, 4.5], [0, -4.5], [0, 4.5]]) add(g, new THREE.BoxGeometry(0.35, FLOOR_H, 0.35), beamM, x, FLOOR_H / 2, z);
+        for (const z of [-4.5, 4.5]) add(g, new THREE.BoxGeometry(13.4, 0.35, 0.3), beamM, 0, FLOOR_H, z);
+        for (const x of [-6.5, 0, 6.5]) add(g, new THREE.BoxGeometry(0.3, 0.35, 9.4), beamM, x, FLOOR_H, 0);
+        add(g, new THREE.BoxGeometry(13.2, 0.18, 9.2), concM, 0, FLOOR_H + 0.1, 0);
+    }
+    const scaffold = new THREE.Group(); site.add(scaffold);   // along the south face, as high as the frame
+    for (let x = -7; x <= 7; x += 2.33) add(scaffold, new THREE.CylinderGeometry(0.05, 0.05, 1, 5), scafM, x, 0.5, 6).userData.post = true;
+    const planks = []; for (let f = 0; f < FLOORS; f++) planks.push(add(scaffold, new THREE.BoxGeometry(14.2, 0.08, 1.1), new THREE.MeshStandardMaterial({ color: 0x8a6a44, roughness: 1 }), 0, 0.5 + f * FLOOR_H + 0.9, 6.3));
+    const stack = []; for (let q = 0; q < 8; q++) stack.push(add(site, new THREE.BoxGeometry(6, 0.3, 0.3), beamM, -3, 0.65 + (q >> 1) * 0.32, -8 + (q & 1) * 0.4));
+    add(site, new THREE.BoxGeometry(3, 0.25, 1.4), mat.dark, -3, 0.55, -7.8);
+    // tower crane: mast, slewing jib with counterweight, a trolley and a hook carrying a beam up
+    const crane = new THREE.Group(); crane.position.set(9.5, 0, -6); site.add(crane);
+    add(crane, new THREE.BoxGeometry(2.4, 1, 2.4), concM, 0, 0.5, 0);
+    for (const [x, z] of [[-0.6, -0.6], [0.6, -0.6], [-0.6, 0.6], [0.6, 0.6]]) add(crane, new THREE.BoxGeometry(0.14, 24, 0.14), mat.orange, x, 12.5, z);
+    for (let h = 1.5; h < 24; h += 1.5) add(crane, new THREE.BoxGeometry(1.3, 0.08, 1.3), mat.orange, 0, h, 0);
+    const slew = new THREE.Group(); slew.position.y = 24.5; crane.add(slew);
+    add(slew, new THREE.BoxGeometry(1.8, 1.4, 1.8), mat.hullB, 0, 0.7, 0); add(slew, new THREE.BoxGeometry(26, 0.5, 0.8), mat.orange, 7, 1.8, 0);
+    add(slew, new THREE.BoxGeometry(3, 1.4, 1.4), concM, -6.5, 1.2, 0); add(slew, new THREE.ConeGeometry(0.6, 3.5, 4), mat.orange, 0, 3.5, 0);
+    const trolley = add(slew, new THREE.BoxGeometry(0.8, 0.4, 0.9), mat.dark, 8, 1.4, 0);
+    const cable = add(slew, new THREE.CylinderGeometry(0.03, 0.03, 1, 4).translate(0, -0.5, 0), mat.dark, 8, 1.2, 0);
+    const hookBeam = add(slew, new THREE.BoxGeometry(0.3, 0.3, 6), beamM, 8, 0, 0);
+    const craneLamp = add(slew, new THREE.SphereGeometry(0.16, 6, 4), new THREE.MeshBasicMaterial({ color: 0x401010 }), 0, 5.3, 0);
+    const siteFlash = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xa8d8ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); desert.add(siteFlash);
+    site.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    let siteLevel = 0;
+    function siteFrame(C, working) {
+        const prog = (Date.now() / 1000 / 1200) % 1, level = prog * FLOORS;   // floors done, fractional
+        siteLevel = level;
+        floorsG.forEach((g, f) => { const k = clamp(level - f); g.visible = k > 0.02; g.scale.y = Math.max(0.02, k); });
+        const top = 0.5 + Math.min(FLOORS, Math.ceil(level + 0.001)) * FLOOR_H;
+        scaffold.children.forEach((c) => { if (c.userData.post) { c.scale.y = top; c.position.y = top / 2; } });
+        planks.forEach((pk, f) => { pk.visible = f < Math.ceil(level + 0.001); });
+        stack.forEach((b, q) => { b.visible = q < 8 - Math.floor((level % 1) * 8); });
+        // the crane: pick a beam off the stack, swing round, lift it to the working floor, set it down, swing back
+        const w = (C / 24) % 1, swing = w < 0.2 ? 0 : w < 0.45 ? ease((w - 0.2) / 0.25) : w < 0.7 ? 1 : w < 0.95 ? 1 - ease((w - 0.7) / 0.25) : 0;
+        slew.rotation.y = lerp(-2.2, -0.9, swing) + Math.sin(C * 0.3) * 0.02;
+        const carrying = w > 0.12 && w < 0.72, drop = w < 0.12 ? 22 : w < 0.2 ? lerp(22, 12, (w - 0.12) / 0.08) : w < 0.6 ? lerp(12, 22 - top + 1.5, clamp((w - 0.45) / 0.15)) : 22 - top + 1.5;
+        trolley.position.x = lerp(12, 8, swing); cable.position.x = hookBeam.position.x = trolley.position.x;
+        cable.scale.y = Math.max(1, drop); hookBeam.position.y = 1.2 - drop; hookBeam.visible = working && carrying;
+        craneLamp.material.color.setRGB(Math.floor(C * 1.2) % 2 ? 1 : 0.25, 0.04, 0.04);
+        const weldOn = working && Math.floor(C * 2.1) % 4 !== 3;
+        siteFlash.visible = weldOn; siteFlash.position.set(SITE.x - 3, SITE_Y + top - 0.6, SITE.z + 5.2); siteFlash.scale.setScalar(1.5 + Math.random() * 1.2);
+    }
+    // where the build crew stand: a welder up on the scaffold at the working floor, a rigger guiding beams in
+    const siteSpots = () => {
+        const top = 0.5 + Math.min(FLOORS, Math.ceil(siteLevel + 0.001)) * FLOOR_H;
+        return [
+            { p: V(SITE.x - 3, SITE_Y + Math.max(0.4, top - FLOOR_H + 0.95), SITE.z + 6.3), d: V(0, 0, -1), weld: true },
+            { p: V(SITE.x - 3, SITE_Y + 0.4, SITE.z - 9.5), d: V(1, 0, 0.4), look: true },
+        ];
+    };
+
     // routine work: what each crew member does when the ship is away, or home with nothing to load
     function task(i, t, shipHome) {
         if (i < 3) {
@@ -527,6 +590,15 @@ LSX.desert = (k) => {
         if (i === 5) return { p: V(-9.5, 0.4, 9.2), d: V(0, 0, -1), walk: false, look: true };
         const a = V(12, 0.4, -4.6), b = V(20, 0.4, 10), w = (t / 14) % 1, f = ease(w < 0.5 ? w * 2 : 2 - w * 2);
         return { p: a.clone().lerp(b, f), d: w < 0.5 ? b.clone().sub(a) : a.clone().sub(b), walk: w % 0.5 > 0.04 && w % 0.5 < 0.46, look: true };
+    }
+    // home with nothing to fly: 0 and 1 build at the site, 2 restocks crates, 3 to 5 maintain the ship (welding,
+    // and up on the lift at the hull), 6 walks between the ship and the site checking on both
+    function idleSpot(i, C) {
+        if (i < 2) return siteSpots()[i];
+        if (i >= 3 && i <= 5) return prepSpot(i, C);
+        if (i === 6) { const a = V(10, 0.4, 8), b = V(SITE.x - 8, SITE_Y + 0.4, SITE.z - 8), ww = (C / 40) % 1, f = ease(ww < 0.5 ? ww * 2 : 2 - ww * 2);
+            const walk = ww % 0.5 > 0.06 && ww % 0.5 < 0.44; return { p: a.clone().lerp(b, f), d: ww < 0.5 ? b.clone().sub(a) : a.clone().sub(b), walk, look: !walk }; }
+        return task(i, C, true);
     }
     function prepSpot(i, C) {   // loading the ship: three carry crates up the ramp, three weld, one stands by
         if (i < 3) return carrier(C, i);
@@ -557,12 +629,12 @@ LSX.desert = (k) => {
             if (u < 0) {
                 const s = prepSpot(i, C);
                 if (blend < 1) {   // walking over from routine work to load the ship
-                    const r = task(i, C, true).p, to = i === 5 ? V(-9.5, 0.4, 6.6) : s.p, q = ease(blend);
+                    const r = idleSpot(i, C).p, to = i === 5 ? V(-9.5, 0.4, 6.6) : s.p, q = ease(blend);
                     p = r.clone().lerp(to, q); d = to.clone().sub(r); walk = q < 0.98 && d.lengthSq() > 0.01;
                     if (!walk) d = s.d;
                 } else { p = s.p; d = s.d; walk = s.walk; carry = s.carry; weld = !!s.weld; }
             } else if (idle) {
-                const tk = task(i, C, true); p = tk.p; d = tk.d; walk = tk.walk; crouch = !!tk.crouch; carry = !!tk.carry; look = !!tk.look;
+                const tk = idleSpot(i, C); p = tk.p; d = tk.d; walk = !!tk.walk; crouch = !!tk.crouch; carry = !!tk.carry; look = !!tk.look; weld = !!tk.weld;
             } else if (T < 15.5) {   // take-off: everyone runs clear and crouches
                 const run = clamp(u / 0.55), h = homeOf(i);
                 if (i === 5) { w.position.set(-9.5, 5.9 * (1 - clamp(u / 0.2)) + 0.4, 6.6); w.userData.baseY = w.position.y; pose(w, C, false, false, false); return; }
@@ -572,16 +644,16 @@ LSX.desert = (k) => {
                 p = from.clone().lerp(tk.p, q); d = q > 0 && q < 1 ? (T < 20 ? tk.p.clone().sub(from) : from.clone().sub(tk.p)) : tk.d;
                 walk = (q > 0 && q < 1) || tk.walk; crouch = q >= 1 && tk.crouch; carry = q >= 1 && tk.carry; look = q >= 1 && tk.look;
             } else if (T < 46.5) { p = safe(i); d = p.clone().negate(); look = T > 40; }
-            else { const q = ease(clamp((T - 46.5) / 5)), to = task(i, C, true).p; p = safe(i).lerp(to, q); d = to.clone().sub(safe(i)); walk = q < 1; }
+            else { const q = ease(clamp((T - 46.5) / 5)), to = idleSpot(i, C).p; p = safe(i).lerp(to, q); d = to.clone().sub(safe(i)); walk = q < 1; }
             w.position.copy(p); w.userData.baseY = p.y; face(w, d.x, d.z); pose(w, C * 1.3 + i, walk, carry, weld, crouch);
             if (look) { w.userData.head.rotation.z = -0.45 + Math.sin(C * 0.5 + i) * 0.1; w.userData.head.rotation.y = 0; }
         });
         scissor.scale.y = u < 0 ? 1 : 1 - clamp(u / 0.2) * 0.9;
-        hose.visible = u < 0; arm.scale.x = u < 0 ? 1 : Math.max(0.05, 1 - u * 4); arm.position.x = -6 * arm.scale.x;
+        hose.visible = u < 0 || idle; siteFrame(C, idle); arm.scale.x = u < 0 ? 1 : Math.max(0.05, 1 - u * 4); arm.position.x = -6 * arm.scale.x;
         // sparks
         const sp = sparkGeo.attributes.position; let n = 0;
         sparkSpots.forEach((o, s) => {
-            const on = u < 0 && blend >= 1 && Math.floor(C * 2.3 + s * 1.7) % 5 !== 4; arcLights[s].intensity = on ? 1.4 + Math.sin(C * 80 + s) * 0.8 : 0;
+            const on = ((u < 0 && blend >= 1) || idle) && Math.floor(C * 2.3 + s * 1.7) % 5 !== 4; arcLights[s].intensity = on ? 1.4 + Math.sin(C * 80 + s) * 0.8 : 0;
             for (let i = 0; i < SPARKS; i++) {
                 const age = ((C * 2.2 + rnd(i + s * 50)) % 1) * 0.7, vx = (rnd(i + s * 9) - 0.5) * 4, vy = rnd(i + s * 9 + 1) * 3.5, vz = rnd(i + s * 9 + 2) * 3;
                 const q = on ? 1 : 0; sp.setXYZ(n++, o.x + vx * age * q, o.y + (vy * age - 4.9 * age * age) * q - (on ? 0 : 999), o.z + vz * age * q);
