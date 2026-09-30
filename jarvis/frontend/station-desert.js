@@ -146,7 +146,22 @@ LSX.desert = (k) => {
     const SAND = 500, sandGeo = pointsGeo(SAND);
     // a dust trail kicked up behind the rover's wheels, drifting off and settling
     const RDUST = 90, rdGeo = pointsGeo(RDUST), rdust = new THREE.Points(rdGeo, softPoints('#c9a47a', THREE.NormalBlending)); rdust.frustumCulled = false; desert.add(rdust);
+    // vultures riding a thermal high over the base: broad wings, long slow circles, a flap now and then
+    const VULT = 5, vGeo = new THREE.BufferGeometry(); vGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(VULT * 12), 3)); vGeo.setIndex([...Array(VULT)].flatMap((_, i) => [i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 3, i * 4 + 2]));
+    const vults = new THREE.Mesh(vGeo, new THREE.MeshBasicMaterial({ color: 0x2a221c, side: THREE.DoubleSide })); vults.frustumCulled = false; desert.add(vults);
+    function vultFrame(C) {
+        const vp = vGeo.attributes.position;
+        for (let i = 0; i < VULT; i++) {
+            const a = C * (0.07 + i * 0.008) + i * 1.3, r = 40 + i * 11, cx = -30 + Math.sin(C * 0.01) * 20, cz = 10;
+            const x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r, y = 45 + i * 4 + Math.sin(C * 0.2 + i) * 3, fl = Math.floor(C * 0.3 + i) % 7 === 0 ? Math.sin(C * 6 + i) * 1.2 : -0.35;
+            const dx = -Math.sin(a), dz = Math.cos(a), sx = -dz, sz = dx;
+            vp.setXYZ(i * 4, x + dx * 0.6, y, z + dz * 0.6); vp.setXYZ(i * 4 + 1, x + sx * 1.4, y + fl * 0.4, z + sz * 1.4);
+            vp.setXYZ(i * 4 + 2, x - dx * 0.7, y, z - dz * 0.7); vp.setXYZ(i * 4 + 3, x - sx * 1.4, y + fl * 0.4, z - sz * 1.4);
+        }
+        vp.needsUpdate = true;
+    }
     function desertExtras(C) {
+        vultFrame(C);
         cloudU.t.value = (Date.now() / 1000) % 100000;
         {   // each puff was dropped by the rover a little while ago, where it was then
             const rp = rdGeo.attributes.position, ra = rdGeo.attributes.aA, rs = rdGeo.attributes.aS;
