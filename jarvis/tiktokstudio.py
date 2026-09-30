@@ -128,7 +128,7 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         account = cs.account(cs.load(settings), account["name"])
         result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
                                best=best_titles(data, account["name"]), taste=cs.taste_summary(account),
-                               part=vid["part"])
+                               part=vid["part"], variety=variety_brief(data, account["name"]))
         fresh = cs.load(settings)  # remember the characters and threads this video added to the account's world
         cs.update_bible(cs.account(fresh, account["name"]), result.get("bible"))
         cs.save(settings, fresh)
@@ -145,6 +145,23 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         print(f"[jarvis] Studio video failed: {exc}", flush=True)
         update = {"status": "failed", "error": str(exc)[:300]}
     return await _finish(settings, vid["id"], update)
+
+
+def variety_brief(data: dict, name: str, count: int = 3) -> str:
+    """The account's last few finished videos in a line each (mood, opening line, how the story starts), so the next
+    one is written to feel different instead of repeating the same mood and opening every day."""
+    done = [v for v in data.get("videos", []) if v.get("account") == name and v.get("status") in ("ready", "approved", "posted")]
+    lines = []
+    for v in done[-count:]:
+        bits = [f'"{v.get("title", "")}"']
+        if v.get("mood"):
+            bits.append(f"mood {v['mood']}")
+        if v.get("hook"):
+            bits.append(f'opened with "{v["hook"][:120]}"')
+        if v.get("story"):
+            bits.append(f'began: {v["story"][:140]}')
+        lines.append(", ".join(bits))
+    return " | ".join(lines)
 
 
 async def _finish(settings: Settings, video_id: str, update: dict) -> dict:

@@ -41,7 +41,7 @@ def run_and_wait(coro):
 
 
 def fake_story(seen):
-    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste="", part=1):
+    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste="", part=1, variety=""):
         seen.append({"idea": idea, "taste": taste, "account": account["name"]})
         path = folder / f"New {len(seen)}.mp4"
         path.write_bytes(b"mp4")
