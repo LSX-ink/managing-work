@@ -94,6 +94,8 @@ Rules:
   shows the same person. Leave it empty if there is no recurring person.
 - "picture" is the main shot of the scene and "closeup" a second, different shot of the same moment (a detail,
   hands, an object, the eyes, another angle), each 10 to 25 words, for an image generator. No text in pictures.
+- "pace" for each scene is how Alfred reads it, like a voice actor: "slow" for reveals, dread and the last line,
+  "fast" for panic, chases and escalating lists, "normal" otherwise. Vary it; most scenes are normal.
 - "bible": what this video adds to the story bible: characters it uses (name, look, notes), threads it opens
   (open questions or mysteries to pay off in later videos), threads it closes, and the world in one line if it
   is new or has grown. Use {{}} for nothing.
@@ -109,7 +111,7 @@ Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
   "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "..."}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
-  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "..."}}]}}"""
+  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal"}}]}}"""
 
 EDITOR_PROMPT = """You are the toughest short-form story editor on TikTok. A writer was given this brief:
 
@@ -212,7 +214,9 @@ def parse_script(text: str) -> dict:
         "scenes": [{"text": cs.clean(s.get("text") or s.get("narration"), 120),
                     "narration": cs.clean(s.get("narration") or s.get("text"), 400),
                     "picture": cs.clean(s.get("picture") or s.get("text"), 300),
-                    "closeup": cs.clean(s.get("closeup"), 300)} for s in scenes[:14]],
+                    "closeup": cs.clean(s.get("closeup"), 300),
+                    "pace": str(s.get("pace") or "").lower() if str(s.get("pace") or "").lower() in PACES else "normal"}
+                   for s in scenes[:14]],
     }
 
 
@@ -429,8 +433,11 @@ def frame(picture: Image.Image, account: dict, script: dict, scene: dict) -> Ima
 
 # ---- 4. voice ----------------------------------------------------------------------------------------------
 
+PACES = {"slow": "-6%", "normal": "+6%", "fast": "+16%"}  # the free voice's speaking rate for each scene pace
+
+
 async def narrate(http: httpx.AsyncClient, settings: Settings, text: str, voice: str, target: Path,
-                  words: list | None = None) -> bool:
+                  words: list | None = None, pace: str = "normal") -> bool:
     """Save the narration as an MP3; False when no voice is available. With the free voice, words (if given) is
     filled with (start, end, word) timings in seconds, for the captions."""
     audio = await tts.synthesize(http, settings, text) if settings.elevenlabs_api_key and not voice else None
@@ -441,9 +448,9 @@ async def narrate(http: httpx.AsyncClient, settings: Settings, text: str, voice:
         import edge_tts
         name = voice or settings.creator_voice or DEFAULT_VOICE
         try:
-            talk = edge_tts.Communicate(text, name, rate="+6%", boundary="WordBoundary")
+            talk = edge_tts.Communicate(text, name, rate=PACES.get(pace, "+6%"), boundary="WordBoundary")
         except TypeError:  # an older edge-tts without word timings
-            talk = edge_tts.Communicate(text, name, rate="+6%")
+            talk = edge_tts.Communicate(text, name, rate=PACES.get(pace, "+6%"))
         with open(target, "wb") as out:
             async for chunk in talk.stream():
                 if chunk.get("type") == "audio":
@@ -696,7 +703,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             await asyncio.to_thread(draw_still, closeup, second)
             mine.append(second)
         voice, words = work / f"scene{i}.mp3", []
-        has_voice = await narrate(http, settings, scene["narration"], account.get("voice", ""), voice, words)
+        has_voice = await narrate(http, settings, scene["narration"], account.get("voice", ""), voice, words,
+                                   scene.get("pace", "normal"))
         seconds = await asyncio.to_thread(audio_seconds, voice) if has_voice else 0
         shots.append(mine)
         voices.append((voice, seconds, words) if seconds > 0.3 else (None, reading_seconds(scene["narration"]), []))
