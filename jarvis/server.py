@@ -489,4 +489,6 @@ if __name__ == "__main__":
     import uvicorn
 
     print(f"J.A.R.V.I.S. on http://{settings.host}:{settings.port}  (model: {settings.model})", flush=True)
+    # Browsers only allow the microphone on https or localhost, so point at the address that works.
+    print(f"  Open  http://localhost:{settings.port}  on this PC (the microphone only works on localhost or https)", flush=True)
     uvicorn.run(app, host=settings.host, port=settings.port)
