@@ -607,3 +607,23 @@ def test_hook_text_on_the_first_scene_and_cover():
     assert cv.with_hook_text(plain, "Words", "#e8c547", "explainer") is plain  # it has its own headline
     parsed = cv.parse_script(json.dumps({**json.loads(SCRIPT), "cover": "She never called back"}))
     assert parsed["cover"] == "She never called back"
+
+
+def test_each_scene_is_read_at_its_own_pace(s, tmp_path, monkeypatch):
+    import sys
+    import types
+    rates = []
+
+    class Talk:
+        def __init__(self, text, name, rate="+0%", boundary=None):
+            rates.append(rate)
+
+        async def stream(self):
+            yield {"type": "audio", "data": b"mp3"}
+    monkeypatch.setitem(sys.modules, "edge_tts", types.SimpleNamespace(Communicate=Talk))
+    for pace in ("slow", "fast", "shouty"):
+        assert asyncio.run(cv.narrate(None, s, "Run.", "", tmp_path / f"{pace}.mp3", [], pace))
+    assert rates == ["-6%", "+16%", "+6%"]
+    scenes = [{"narration": "It was quiet.", "pace": "SLOW"}, {"narration": "Run!", "pace": "sprint"}]
+    parsed = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
+    assert [sc["pace"] for sc in parsed["scenes"]] == ["slow", "normal"]
