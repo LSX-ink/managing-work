@@ -111,7 +111,7 @@
     window.addEventListener('resize', resize);
 
     // ---- the camera: zoom -1 deep space, 0 both planets, 0.5 through the clouds, 1 standing on the pad ----------------
-    const view = { zoom: 0, target: 0, yaw: 0, pitch: 0, dest: 'home', pending: null, fx: 0, focus: 0 };
+    const view = { zoom: 0, target: 0, yaw: 0, pitch: 0, dest: 'home', pending: null, fx: 0, focus: 0, panX: 0, panZ: 0, deepPan: null };
     let alfred = 0, alfredTo = 0;   // 0..1: Alfred is listening or speaking, so the scene eases in behind the wolf
     const setZoom = (z) => { view.target = clamp(z, -1, groundReady(view.dest) ? 1 : 0.46); };
     const goTo = (dest, z) => { if (view.dest === dest && !view.pending) setZoom(z); else { view.pending = [dest, z]; view.target = Math.min(view.target, 0); } };
@@ -140,6 +140,7 @@
             // the sun sits low on the left (a view offset), and the emptiest side of the system lies behind the wolf
             const q = sm(clamp(-view.zoom)), n = space.nrm, up = deepUp(w, h);
             const tgt = W.tgt.clone().lerp(space.SUNP, q), D = W.D * Math.pow(16500 / W.D, q);
+            if (view.deepPan) tgt.addScaledVector(view.deepPan, q);
             const deepDir = n.clone().multiplyScalar(0.94).addScaledVector(up, -0.34).normalize();
             const dir = W.dir.clone().lerp(deepDir, q).normalize().applyAxisAngle(n, view.yaw * q).applyAxisAngle(V(0, 1, 0), view.yaw * (1 - q));
             camera.up.copy(V(0, 1, 0).lerp(up.clone().applyAxisAngle(n, view.yaw), q).normalize());
@@ -164,7 +165,8 @@
             near = clamp(D * 0.004, 0.02, 4); far = Math.max(3200, D + 3200);
         } else {   // on the ground
             const d = clamp((view.zoom - 0.5) / 0.5), R = 560 * Math.pow(16 / 560, d), elv = clamp(lerp(1.3, 0.14, sm(d)) + view.pitch, 0.04, 1.5), az = view.yaw + 0.25;
-            const tgt = V(-2, lerp(0, 4.5, d), 0).lerp(V(0, lerp(0, 5, d), -96), view.dest === 'home' ? sm(view.fx) : 0);
+            const tgt = V(-2, lerp(0, 4.5, d), 0).lerp(V(0, lerp(0, 5, d), -96), view.dest === 'home' ? sm(view.fx) : 0).add(V(view.panX, 0, view.panZ));
+            if (view.panX || view.panZ) tgt.y += (view.dest === 'lsx' ? forest.fh : desert.hgt)(tgt.x, tgt.z);
             camera.position.set(tgt.x + Math.sin(az) * Math.cos(elv) * R, tgt.y + Math.sin(elv) * R, tgt.z + Math.cos(az) * Math.cos(elv) * R);
             const ground = view.dest === 'lsx' ? forest.fh : desert.hgt;
             camera.position.y = Math.max(camera.position.y, ground(camera.position.x, camera.position.z) + 1.6); camera.lookAt(tgt);
@@ -352,11 +354,11 @@
         if (action === 'on') { save('on', true); start(); return; }
         if (!running) return;
         const z = reduced();
-        if (action === 'base') { view.focus = 0; goTo('home', 0.86); }
-        else if (action === 'factory') { view.focus = 1; view.yaw = 0; view.pitch = -0.1; goTo('home', 0.84); }
+        if (action === 'base') { view.panX = view.panZ = 0; view.focus = 0; goTo('home', 0.86); }
+        else if (action === 'factory') { view.panX = view.panZ = 0; view.focus = 1; view.yaw = 0; view.pitch = -0.1; goTo('home', 0.84); }
         else if (action === 'lsx') goTo('lsx', 0.86);
-        else if (action === 'space') { goTo(view.dest, 0); view.yaw = 0; view.pitch = 0; }
-        else if (action === 'deep') { if (view.zoom > 0.02) { view.pending = [view.dest, -1]; view.target = 0; } else setZoom(-1); view.yaw = 0; view.pitch = 0; }
+        else if (action === 'space') { view.deepPan = null; goTo(view.dest, 0); view.yaw = 0; view.pitch = 0; }
+        else if (action === 'deep') { view.deepPan = null; if (view.zoom > 0.02) { view.pending = [view.dest, -1]; view.target = 0; } else setZoom(-1); view.yaw = 0; view.pitch = 0; }
         else if (action === 'zoom_in') setZoom(view.target + 0.12);
         else if (action === 'zoom_out') setZoom(view.target - 0.12);
         else if (action === 'night' || action === 'day' || action === 'auto') { todMode = action.toUpperCase(); save('tod', todMode); nightNow = -1; if (btnTod) btnTod.textContent = todMode; }
@@ -470,22 +472,59 @@
         node.textContent = name; if (sub) node.append(el('small', '', sub));
     }
 
+    // ---- arrow keys: on the ground they walk the camera round the base or the port; out in space left and right
+    // turn round the planets and up and down tilt; zoomed out to deep space they slide across the solar system.
+    // + and - zoom. Keys typed into the chat box, or any other field, are left alone.
+    const keys = new Set(), ARROWS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    const typing = (t) => t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    window.addEventListener('keydown', (e) => {
+        if (!running || typing(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
+        // a game or a calendar in a pop-up may want the same keys: wait until every handler has had the key, and
+        // leave it if one of them used it
+        setTimeout(() => {
+            if (e.defaultPrevented) return;
+            if (ARROWS.includes(e.key)) keys.add(e.key);
+            else if (e.key === '+' || e.key === '=') setZoom(view.target + 0.06);
+            else if (e.key === '-' || e.key === '_') setZoom(view.target - 0.06);
+        }, 0);
+    });
+    window.addEventListener('keyup', (e) => keys.delete(e.key));
+    window.addEventListener('blur', () => keys.clear());
+    function arrowMove(dt) {
+        if (!keys.size || !dt) return;
+        const x = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0), y = (keys.has('ArrowUp') ? 1 : 0) - (keys.has('ArrowDown') ? 1 : 0);
+        if (view.zoom >= 0.5) {   // walk: up goes the way the camera faces, left and right step sideways
+            const d = clamp((view.zoom - 0.5) / 0.5), R = 560 * Math.pow(16 / 560, d), az = view.yaw + 0.25, sp = Math.max(8, R * 0.7) * dt;
+            view.panX += (-Math.sin(az) * y + Math.cos(az) * x) * sp; view.panZ += (-Math.cos(az) * y - Math.sin(az) * x) * sp;
+            const lim = view.dest === 'lsx' ? 300 : 450, r = Math.hypot(view.panX, view.panZ);
+            if (r > lim) { view.panX *= lim / r; view.panZ *= lim / r; }
+        } else if (view.zoom < -0.3 && camera) {   // slide across the system's plane
+            const n = space.nrm, right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).projectOnPlane(n).normalize();
+            const fwd = n.clone().cross(right).normalize();
+            view.deepPan = view.deepPan || new THREE.Vector3();
+            view.deepPan.addScaledVector(right, x * 5000 * dt).addScaledVector(fwd, y * 5000 * dt).clampLength(0, 9000);
+        } else {
+            view.yaw -= x * 1.2 * dt; view.pitch = clamp(view.pitch + y * 0.8 * dt, -0.6, 0.9);
+        }
+    }
+
     // ---- the loop ---------------------------------------------------------------------------------------------------
     let last = null, C = 0, lastDraw = 0;
     function tick(now) {
         if (!running) return;
         raf = requestAnimationFrame(tick);
-        const moving = Math.abs(view.target - view.zoom) > 0.002 || view.pending || drag || Math.abs(alfredTo - alfred) > 0.01 || Math.abs(view.focus - view.fx) > 0.01;
+        const moving = Math.abs(view.target - view.zoom) > 0.002 || view.pending || drag || keys.size || Math.abs(alfredTo - alfred) > 0.01 || Math.abs(view.focus - view.fx) > 0.01;
         const calm = reduced();
         const every = calm && !moving ? 250 : moving || view.zoom >= 0.5 || trip.mode === 'out' || trip.mode === 'back' ? 0 : 32;   // about 30 fps when nothing moves
         if (now - lastDraw < every) return;
         lastDraw = now;
         const dt = last === null ? 0 : Math.min(0.1, (now - last) / 1000); last = now;
         if (!calm) C += dt;
+        arrowMove(dt);
         const rate = calm ? 1 : Math.min(1, dt * (view.pending ? 3 : 5));
         view.zoom += (view.target - view.zoom) * rate; view.fx += (view.focus - view.fx) * (calm ? 1 : Math.min(1, dt * 2));
         alfred += (alfredTo - alfred) * (calm ? 1 : Math.min(1, dt * 2.2));
-        if (view.pending && view.zoom < 0.02) { view.dest = view.pending[0]; view.zoom = Math.min(view.zoom, 0); setZoom(view.pending[1]); view.pending = null; if (calm) view.zoom = view.target; }
+        if (view.pending && view.zoom < 0.02) { view.panX = view.panZ = 0; view.dest = view.pending[0]; view.zoom = Math.min(view.zoom, 0); setZoom(view.pending[1]); view.pending = null; if (calm) view.zoom = view.target; }
         if (view.zoom >= 0.5 && !groundReady(view.dest)) { view.zoom = 0.46; view.target = Math.min(view.target, 0.46); }
         stepTrip(dt);
         applyNight(todMode === 'AUTO' ? clockNight() : todMode === 'NIGHT' ? 1 : 0);
