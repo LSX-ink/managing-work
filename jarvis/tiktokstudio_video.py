@@ -909,6 +909,16 @@ def add_ambience(video: Path, kind: str, out: Path) -> None:
          "-movflags", "+faststart", str(out)])
 
 
+LOUDNESS = "loudnorm=I=-14:TP=-1.5:LRA=11"  # TikTok plays everything at about -14 LUFS; match it so nothing sounds quiet
+
+
+def normalise(video: Path, out: Path) -> None:
+    """Level the finished mix to TikTok's loudness, so the voice is as loud as the videos around it in the feed
+    (a quiet video gets swiped), without clipping. The picture is copied, not re-encoded."""
+    run(["-i", str(video), "-af", f"{LOUDNESS},aresample=44100", "-map", "0:v", "-map", "0:a", "-c:v", "copy",
+         "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(out)])
+
+
 def join(parts: list[Path], out: Path) -> None:
     listing = out.with_suffix(".txt")
     listing.write_text("".join(f"file '{p.name}'\n" for p in parts), encoding="utf-8")
@@ -996,6 +1006,11 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             (work / "scored.mp4").replace(work / "joined.mp4")
         except Exception as exc:  # a track ffmpeg can't read: keep the voice-only cut
             print(f"[jarvis] Backing track skipped: {exc}", flush=True)
+    try:
+        await asyncio.to_thread(normalise, work / "joined.mp4", work / "loud.mp4")
+        (work / "loud.mp4").replace(work / "joined.mp4")
+    except Exception as exc:
+        print(f"[jarvis] Loudness levelling skipped: {exc}", flush=True)
     (work / "joined.mp4").replace(video)
     try:
         checks = await asyncio.to_thread(check_video, video)
