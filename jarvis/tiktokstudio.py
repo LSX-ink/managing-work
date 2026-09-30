@@ -127,7 +127,8 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         await ensure_lessons(settings, account["name"])
         account = cs.account(cs.load(settings), account["name"])
         result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
-                               best=best_titles(data, account["name"]), taste=cs.taste_summary(account))
+                               best=best_titles(data, account["name"]), taste=cs.taste_summary(account),
+                               part=vid["part"])
         fresh = cs.load(settings)  # remember the characters and threads this video added to the account's world
         cs.update_bible(cs.account(fresh, account["name"]), result.get("bible"))
         cs.save(settings, fresh)
@@ -137,7 +138,7 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
                   + (f", editor's score {result['score']}/10" if result.get("score") else ""),
                   "file": cs.relative(settings, result["path"]), "mood": result.get("mood", ""),
                   "score": result.get("score", 0), "hook_score": result.get("hook_score", 0),
-                  "scenes": len(result["scenes"]),
+                  "scenes": len(result["scenes"]), "pinned_comment": result.get("pinned_comment", ""),
                   "story": " ".join(s["narration"] for s in result["scenes"])[:1500]}
     except Exception as exc:  # the network, the API or ffmpeg let us down; say so and carry on
         print(f"[jarvis] Studio video failed: {exc}", flush=True)

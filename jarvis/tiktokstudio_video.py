@@ -109,13 +109,15 @@ Rules:
 - caption: one or two lines for the post, ending with a question. hashtags: 4 to 6, lower case, without #.
 - cover: 2 to 5 punchy words shown big on screen over the first scene and on the cover (for example "SHE NEVER
   CALLED BACK"); it teases the story without giving the twist away and is not the same as the first spoken line.
+- pinned_comment: the first comment to pin under the video, written as the account: a question or a small
+  extra clue that gets people arguing their theories in the comments (under 150 characters).
 - mood: 2 or 3 words for the backing music (for example "tense slow piano", "eerie ambient", "upbeat hype").
 - sound: one trending TikTok sound from the trends above that fits this story (name and artist), or a style of
   sound to search for if none fits. The user adds it in the TikTok app when posting.
 
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
-  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...",
+  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "..."}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator"}}]}}"""
 
@@ -214,6 +216,7 @@ def parse_script(text: str) -> dict:
         "character": cs.clean(data.get("character"), 300),
         "mood": cs.clean(data.get("mood"), 80),
         "cover": cs.clean(data.get("cover"), 60),
+        "pinned_comment": cs.clean(data.get("pinned_comment"), 200),
         "sound": cs.clean(data.get("sound"), 200),
         "score": _score(data.get("score")),
         "bible": data.get("bible") if isinstance(data.get("bible"), dict) else {},
@@ -266,7 +269,7 @@ async def edit_script(client, settings: Settings, brief: str, draft: dict) -> di
         return draft  # the editor cut too much
     edited["character"] = edited["character"] or draft["character"]
     edited["bible"] = edited["bible"] or draft["bible"]
-    for key in ("cover", "mood", "sound"):
+    for key in ("cover", "mood", "sound", "pinned_comment"):
         edited[key] = edited[key] or draft[key]
     return edited
 
@@ -429,6 +432,20 @@ def with_hook_text(im: Image.Image, text: str, accent, style: str = "") -> Image
     draw.rectangle((0, HOOK_TEXT_Y - 50, W, HOOK_TEXT_Y + tall + 60), fill=(0, 0, 0, 90))
     y = centred(draw, HOOK_TEXT_Y, " ".join(lines), font, (255, 255, 255), width=900, gap=8, stroke=5)
     draw.rectangle((W // 2 - 90, y + 24, W // 2 + 90, y + 34), fill=accent)
+    return im
+
+
+def with_part_badge(im: Image.Image, part: int, accent) -> Image.Image:
+    """A "PART 2" tag in the top corner of every scene of a sequel, so viewers know to look for part 1."""
+    if part < 2:
+        return im
+    im = im.copy()
+    draw = ImageDraw.Draw(im)
+    font = ac.font(44)
+    label = f"PART {part}"
+    box = draw.textbbox((0, 0), label, font=font)
+    draw.rounded_rectangle((60, 60, 60 + box[2] - box[0] + 48, 60 + box[3] - box[1] + 34), 14, fill=accent)
+    draw.text((84, 72 - box[1]), label, font=font, fill=(0, 0, 0))
     return im
 
 
@@ -683,7 +700,7 @@ def join(parts: list[Path], out: Path) -> None:
 
 async def make(client, http: httpx.AsyncClient, settings: Settings, account: dict, folder: Path,
                idea: str = "", recent: list[str] | None = None, script: dict | None = None,
-               best: list[str] | None = None, taste: str = "") -> dict:
+               best: list[str] | None = None, taste: str = "", part: int = 1) -> dict:
     """Write, picture, voice and render one video into folder. Returns the script plus the MP4 path."""
     script = script or await write_script(client, settings, account, idea, recent, best, taste)
     work = folder / f".{cs.new_id()}"
@@ -707,7 +724,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         opener = script.get("cover", "") if i == 0 else ""
 
         def draw_still(pic, path):
-            with_hook_text(frame(pic, account, script, shown), opener, accent, account.get("style", "")).save(path)
+            still_image = with_hook_text(frame(pic, account, script, shown), opener, accent, account.get("style", ""))
+            with_part_badge(still_image, part, accent).save(path)
         still = work / f"scene{i}.png"
         await asyncio.to_thread(draw_still, picture or blank_picture(), still)
         mine = [still]
@@ -756,6 +774,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         lines += [f"Editor's score: {script['score']}/10", ""]
     if script.get("sound"):
         lines += [f"Sound to add in TikTok: {script['sound']}", ""]
+    if script.get("pinned_comment"):
+        lines += [f"Pin this comment: {script['pinned_comment']}", ""]
     if script.get("hook_score"):
         lines += [f"Hook score: {script['hook_score']}/10"
                   + (f" (beat the first draft: \"{script['old_hook']}\")" if script.get("old_hook") else ""), ""]
