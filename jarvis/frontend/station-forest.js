@@ -73,6 +73,15 @@ LSX.forest = (k) => {
         add(g, new THREE.BoxGeometry(12.4, 0.5, 18.4), accM, 0, 10.6, 0); add(g, new THREE.BoxGeometry(12.2, 0.35, 18.2), accM, 0, 3.6, 0);
         add(g, new THREE.BoxGeometry(3, 0.25, 5), mat.dark, -7.4, 3.2, 0); add(g, new THREE.BoxGeometry(0.1, 2.8, 2.4), new THREE.MeshBasicMaterial({ color: 0xfff0d0 }), -6.2, 1.4, 0);
         for (const z of [-2.2, 2.2]) add(g, new THREE.BoxGeometry(0.2, 3.2, 0.2), mat.dark, -8.7, 1.6, z);
+        // sliding glass doors in front of the lit lobby: they part when someone walks up
+        const doorM = new THREE.MeshStandardMaterial({ color: 0x9fb8c8, transparent: true, opacity: 0.55, roughness: 0.1, metalness: 0.5 });
+        const doors = [-1, 1].map((sg) => { const dm = add(g, new THREE.BoxGeometry(0.08, 2.7, 1.2), doorM, -6.32, 1.4, sg * 0.6); add(dm, new THREE.BoxGeometry(0.1, 2.7, 0.06), mat.dark, 0, 0, sg * 0.6); dm.userData.sg = sg; return dm; });
+        add(g, new THREE.BoxGeometry(0.3, 0.3, 5), mat.dark, -6.35, 2.9, 0);
+        // a flag on a pole by the entrance in the page's colour, stirring in the wind
+        add(g, new THREE.CylinderGeometry(0.08, 0.1, 9, 6), mat.steel, -9.5, 4.5, -4.2);
+        const flagG = new THREE.PlaneGeometry(2.6, 1.5, 12, 4).translate(1.3, 0, 0);
+        const flag = new THREE.Mesh(flagG, new THREE.MeshStandardMaterial({ color: new THREE.Color(pg.colour || '#e8c547'), side: THREE.DoubleSide, roughness: 0.8 })); flag.position.set(-9.5, 8.1, -4.2); g.add(flag);
+        flag.userData.base = Float32Array.from(flagG.attributes.position.array);
         const [sc, sg] = signCanvas(1024, 256); sg.fillStyle = '#121418'; sg.fillRect(0, 0, 1024, 256); sg.drawImage(logoCanvas(200), 20, 28, 200, 200);
         sg.fillStyle = '#f2efe8'; fitText(sg, pg.name, 760, 96, '"Share Tech Mono", sans-serif'); sg.fillText(pg.name, 240, 130);
         sg.fillStyle = pg.colour || '#e8c547'; sg.font = '500 40px "Share Tech Mono", monospace'; sg.fillText(`${pg.label || 'VIDEOS'} · OFFICE`.slice(0, 36), 244, 200); sg.fillRect(0, 238, 1024, 18);
@@ -90,7 +99,7 @@ LSX.forest = (k) => {
             for (const [x, zz] of [[1.35, 0.9], [1.35, -0.9], [-1.35, 0.9], [-1.35, -0.9]]) add(car, new THREE.CylinderGeometry(0.36, 0.36, 0.25, 12).rotateX(Math.PI / 2), mat.dark, x, 0.36, zz);
             car.traverse((o) => { if (o.isMesh) o.castShadow = true; });
         }
-        return { pg, dir, door, pile, wait, glass };
+        return { pg, dir, door, pile, wait, glass, doors, flag, doorOpen: 0 };
     }
     // trees: conifers and broadleaf, packed outside the clearing (instanced so the forest stays cheap)
     const TREES = 4200, trunkG = new THREE.CylinderGeometry(0.22, 0.34, 3, 6).translate(0, 1.5, 0), coneG = new THREE.ConeGeometry(2.1, 7, 7).translate(0, 6, 0), crownG = new THREE.IcosahedronGeometry(2.8, 0).translate(0, 5.2, 0);
@@ -317,7 +326,9 @@ LSX.forest = (k) => {
     // a delivery's steps, in seconds after the tick: the crate comes down the ramp to the page's pile (0 to 2.2),
     // the courier walks out from the office (0 to 8), carries it home (8 to 19) and stays inside a while (to 35)
     const COURIER_OUT = 8, COURIER_HOME = 19, COURIER_IN = 35;
+    let lastF = null, dtF = 0;
     function frame(T, C, deliveries = []) {
+        dtF = lastF === null ? 0 : clamp(C - lastF, 0, 0.1); lastF = C;
         let l = 1;
         if (T >= 24.5 && T < 27.1) l = Math.pow(1 - clamp((T - 24.5) / 2.6), 2.4);
         else if (T >= 27.1 && T < 30.6) l = 0;
@@ -356,6 +367,13 @@ LSX.forest = (k) => {
             else if (d < COURIER_IN) { cw.visible = false; }
             cw.position.copy(p); cw.userData.baseY = 0.4; face(cw, dir.x, dir.z); pose(cw, C * 1.3 + i * 2, walk, carry, false);
             if (!walk) cw.userData.head.rotation.z = landing ? -0.45 : 0;
+            // the doors open for the courier going in or coming out, and close behind them
+            const near = cw.visible && cw.position.distanceTo(o.door) < 3.6 && (walk || d < COURIER_IN);
+            o.doorOpen += ((near ? 1 : 0) - o.doorOpen) * clamp(dtF * 4);
+            o.doors.forEach((dm) => { dm.position.z = dm.userData.sg * (0.6 + o.doorOpen * 1.15); });
+            const fp = o.flag.geometry.attributes.position, b = o.flag.userData.base;
+            for (let q = 0; q < fp.count; q++) { const x = b[q * 3]; fp.setZ(q, Math.sin(x * 2.2 - C * 5 + i) * 0.14 * x + Math.sin(x * 4 - C * 7.3) * 0.04 * x); }
+            fp.needsUpdate = true; o.flag.geometry.computeVertexNormals();
         });
     }
     // how long a delivery takes, so station.js knows when to drop it
