@@ -1054,3 +1054,23 @@ def test_slow_scenes_rise_out_of_black(s, tmp_path, monkeypatch):
     subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / "dip.mp4"), "-frames:v", "1", str(tmp_path / "d0.png")],
                    check=True, capture_output=True)
     assert ImageStat.Stat(Image.open(tmp_path / "d0.png").convert("L")).mean[0] < 40  # opens dark
+
+
+def test_the_mix_is_levelled_to_tiktok_loudness(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    import re
+    import subprocess
+    from PIL import Image
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (90, 90, 90)).save(still)
+    quiet = tmp_path / "quiet.m4a"
+    subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "sine=f=220:d=3,volume=0.02", str(quiet)],
+                   check=True, capture_output=True)
+    cv.render_scene([still], quiet, 3.0, tmp_path / "q.mp4")
+    cv.normalise(tmp_path / "q.mp4", tmp_path / "loud.mp4")
+
+    def loudness(path):
+        out = subprocess.run([cv.ffmpeg(), "-i", str(path), "-af", "ebur128", "-f", "null", "-"],
+                             capture_output=True, text=True).stderr
+        return float(re.findall(r"I:\s+(-?[\d.]+) LUFS", out)[-1])
+    assert loudness(tmp_path / "q.mp4") < -30 and abs(loudness(tmp_path / "loud.mp4") + 14) < 3
