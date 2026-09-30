@@ -5,7 +5,7 @@
 // deliveries [{slot, d, fromShip}] the approvals being delivered (d = seconds since the tick).
 window.LSX = window.LSX || {};
 LSX.forest = (k) => {
-    const { THREE, clamp, ease, rnd, fbm, V, canvas, tex, add, logoCanvas, mat, ship, shipParts, thrust, worker, pose, face, crateMat, cgeo,
+    const { THREE, clamp, lerp, ease, rnd, fbm, V, canvas, tex, add, logoCanvas, mat, glow, ship, shipParts, thrust, worker, pose, face, crateMat, cgeo,
         skyMat, dayEnv, pad, softPoints, pointsGeo, glowTex } = k;
     const { legs, ramp, hold, cabin, radar, bellyStrobe } = shipParts;
 
@@ -15,7 +15,9 @@ LSX.forest = (k) => {
     const fHemi = new THREE.HemisphereLight(0xcfe0ee, 0x4a5a36, 0.55); forest.add(fHemi);
     const fSun = new THREE.DirectionalLight(0xfff1dc, 2.1); fSun.position.copy(k.SUN).multiplyScalar(240); fSun.castShadow = true;
     fSun.shadow.mapSize.set(2048, 2048); Object.assign(fSun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 520 }); forest.add(fSun);
-    const fh = (x, z) => { const r = Math.hypot(x, z); return clamp((r - 110) / 120) * (fbm(x * 0.006 + 3, z * 0.006, 1.3, 4) - 0.35) * 60; };
+    const LAKE = V(-104, 0, -38), LAKE_R = 24;   // a lake in the forest south-west of the clearing
+    const fh0 = (x, z) => { const r = Math.hypot(x, z); return clamp((r - 110) / 120) * (fbm(x * 0.006 + 3, z * 0.006, 1.3, 4) - 0.35) * 60; };
+    const fh = (x, z) => { const d = Math.hypot(x - LAKE.x, z - LAKE.z) / LAKE_R, h = fh0(x, z); return d > 1.35 ? h : lerp(-2.2, h, clamp((d - 0.85) / 0.5)); };
     const grassC = canvas(512), gc = grassC.getContext('2d'); gc.fillStyle = '#3c5428'; gc.fillRect(0, 0, 512, 512);
     for (let i = 0; i < 30000; i++) { const t = rnd(i + 5000); gc.fillStyle = `rgba(${50 + t * 50 | 0},${72 + t * 50 | 0},${28 + t * 24 | 0},${0.25 + rnd(i + 5001) * 0.35})`; gc.fillRect(rnd(i + 5002) * 512, rnd(i + 5003) * 512, 1.5, 3); }
     const fGround = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600, 120, 120), new THREE.MeshStandardMaterial({ map: tex(grassC, 90, 90), roughness: 1 }));
@@ -94,7 +96,10 @@ LSX.forest = (k) => {
                 const toT = Math.atan2(Math.sin(a - towerAng), Math.cos(a - towerAng));
                 if (Math.abs(toT) < 0.26) r = 58 + rnd(i + 6009) * 16;   // behind the tower, not through it
             }
-            const x = Math.cos(a) * r, z = Math.sin(a) * r, s = 0.8 + rnd(i + 6002) * 0.8, y = fh(x, z);
+            let x = Math.cos(a) * r, z = Math.sin(a) * r; const s = 0.8 + rnd(i + 6002) * 0.8;
+            const ld = Math.hypot(x - LAKE.x, z - LAKE.z);
+            if (ld < LAKE_R + 6) { const k2 = (LAKE_R + 6 + rnd(i + 6010) * 20) / Math.max(ld, 0.1); x = LAKE.x + (x - LAKE.x) * k2; z = LAKE.z + (z - LAKE.z) * k2; }
+            const y = fh(x, z);
             q.setFromAxisAngle(V(0, 1, 0), rnd(i + 6003) * 6.3); m4.compose(V(x, y, z), q, V(s, s * (0.9 + rnd(i + 6004) * 0.4), s)); trunkI.setMatrixAt(i, m4);
             const conifer = rnd(i + 6006) < 0.65;
             c.setHSL(conifer ? 0.3 + rnd(i + 6007) * 0.05 : 0.2 + rnd(i + 6007) * 0.08, 0.45, conifer ? 0.16 + rnd(i + 6008) * 0.08 : 0.24 + rnd(i + 6008) * 0.1);
@@ -175,6 +180,47 @@ LSX.forest = (k) => {
     }
     let lastC = null;
 
+    // ---- the lake: still water with ripples, reeds, a wooden jetty with a worker fishing, and a small boat going round
+    const waterC = canvas(256), wc = waterC.getContext('2d'); wc.fillStyle = '#808080'; wc.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 900; i++) { wc.strokeStyle = `rgba(${rnd(i) > 0.5 ? 255 : 0},${rnd(i) > 0.5 ? 255 : 0},${rnd(i) > 0.5 ? 255 : 0},.08)`; wc.beginPath(); const x = rnd(i + 1) * 256, y = rnd(i + 2) * 256; wc.ellipse(x, y, 4 + rnd(i + 3) * 12, 1 + rnd(i + 4) * 2, 0, 0, 7); wc.stroke(); }
+    const waterBump = tex(waterC, 6, 6, false);
+    const water = new THREE.Mesh(new THREE.CircleGeometry(LAKE_R * 1.15, 64), new THREE.MeshStandardMaterial({ color: 0x1d3a44, metalness: 0.9, roughness: 0.08, bumpMap: waterBump, bumpScale: 0.02, transparent: true, opacity: 0.93 }));
+    water.rotation.x = -Math.PI / 2; water.position.set(LAKE.x, -0.35, LAKE.z); forest.add(water);
+    const reedM = new THREE.MeshStandardMaterial({ color: 0x6b7a3a, roughness: 1, side: THREE.DoubleSide });
+    const reedG = new THREE.ConeGeometry(0.06, 1.8, 3).translate(0, 0.9, 0), REEDS = 260, reeds = new THREE.InstancedMesh(reedG, reedM, REEDS);
+    { const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+        for (let i = 0; i < REEDS; i++) {
+            const a = rnd(i + 9700) * Math.PI * 2; if (Math.abs(Math.atan2(Math.sin(a - 0.35), Math.cos(a - 0.35))) < 0.25) { reeds.setMatrixAt(i, new THREE.Matrix4().makeScale(0, 0, 0)); continue; }
+            const r = LAKE_R * (0.95 + rnd(i + 9701) * 0.25), x = LAKE.x + Math.cos(a) * r, z = LAKE.z + Math.sin(a) * r;
+            e.set((rnd(i + 9702) - 0.5) * 0.3, 0, (rnd(i + 9703) - 0.5) * 0.3); q.setFromEuler(e); const sc = 0.6 + rnd(i + 9704) * 0.8;
+            m4.compose(V(x, Math.max(-0.35, fh(x, z)) - 0.1, z), q, V(sc, sc, sc)); reeds.setMatrixAt(i, m4);
+        } }
+    forest.add(reeds);
+    // the jetty points from the clearing side of the shore out over the water
+    const woodM = new THREE.MeshStandardMaterial({ color: 0x7a5a3c, roughness: 0.9 });
+    const jetty = new THREE.Group(); const jA = 0.35, jBase = V(LAKE.x + Math.cos(jA) * (LAKE_R + 2), 0, LAKE.z + Math.sin(jA) * (LAKE_R + 2));
+    jetty.position.copy(jBase).setY(0.1); jetty.rotation.y = Math.atan2(Math.sin(jA), -Math.cos(jA)); forest.add(jetty);
+    for (let q = 0; q < 12; q++) add(jetty, new THREE.BoxGeometry(0.35, 0.12, 3), woodM, q * 1.0 + 0.5, 0.3, 0);
+    for (let q = 0; q < 4; q++) for (const z of [-1.3, 1.3]) add(jetty, new THREE.CylinderGeometry(0.12, 0.12, 2.4, 6), woodM, 1 + q * 3.5, -0.5, z);
+    const fisher = worker(); jetty.add(fisher); fisher.position.set(11.2, 0.36, 0.6); fisher.userData.baseY = 0.36;
+    const rod = add(jetty, new THREE.CylinderGeometry(0.02, 0.035, 3.6, 4), mat.dark, 12.6, 2.1, 0.7); rod.rotation.z = -0.9;
+    const bobber = add(forest, new THREE.SphereGeometry(0.1, 6, 4), mat.orange);
+    const boat = new THREE.Group(); forest.add(boat);
+    add(boat, new THREE.BoxGeometry(3.8, 0.6, 1.5), new THREE.MeshStandardMaterial({ color: 0xe9e6de, roughness: 0.6 }), 0, 0.3, 0); add(boat, new THREE.ConeGeometry(0.75, 1.2, 4).rotateZ(-Math.PI / 2).rotateX(Math.PI / 4), new THREE.MeshStandardMaterial({ color: 0xe9e6de, roughness: 0.6 }), 2.5, 0.3, 0);
+    add(boat, new THREE.BoxGeometry(1, 0.8, 1.1), mat.hullB, -0.6, 0.9, 0); add(boat, new THREE.BoxGeometry(3.9, 0.12, 1.55), mat.orange, 0, 0.55, 0);
+    const boatWake = new THREE.Mesh(new THREE.PlaneGeometry(9, 2.4), new THREE.MeshBasicMaterial({ map: glowTex, color: 0xd8e8f0, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
+    boatWake.rotation.x = -Math.PI / 2; boatWake.position.set(-4.5, 0.02, 0); boat.add(boatWake);
+    const boatLamp = add(boat, new THREE.SphereGeometry(0.1, 6, 4), glow(0x3cff8a), -0.6, 1.4, 0);
+    function lakeFrame(C) {
+        waterBump.offset.set(C * 0.004, C * 0.003);
+        const a = C * 0.05, r = LAKE_R * 0.6; boat.position.set(LAKE.x + Math.cos(a) * r, -0.45 + Math.sin(C * 1.3) * 0.04, LAKE.z + Math.sin(a) * r);
+        boat.rotation.set(Math.sin(C * 1.1) * 0.03, Math.atan2(-Math.cos(a), -Math.sin(a)), Math.sin(C * 0.9) * 0.03); boatLamp.visible = Math.floor(C * 1.4) % 2 === 0;
+        pose(fisher, C, false, false, false); face(fisher, 1, 0);
+        fisher.updateMatrixWorld(); rod.updateMatrixWorld();
+        const tip = V(0, 1.8, 0).applyMatrix4(rod.matrixWorld), bob = jBase.clone().add(V(-Math.cos(jA) * 16, 0, -Math.sin(jA) * 16));
+        bobber.position.set(bob.x + Math.sin(C * 0.3) * 0.4, -0.3 + Math.max(0, Math.sin(C * 2.1)) * 0.05 - (Math.sin(C * 0.37) > 0.97 ? 0.15 : 0), bob.z); void tip;
+    }
+
     // pages: [{name, label, colour}] from GET /station/state. Rebuilds the offices only when the list changes.
     function setPages(pages) {
         const list = (pages || []).slice(0, MAX_SLOTS);
@@ -253,7 +299,7 @@ LSX.forest = (k) => {
         ramp.rotation.z = l === 0 ? 0.74 * ease(open) : 0; hold.visible = ramp.rotation.z > 0.03; cabin.intensity = l < 0.02 ? 1.2 : 0;
         const firing = (T >= 24.5 && T < 27.2) || (T >= 30.5 && T < 32.5); thrust(C, l > 0.25 ? 0.7 : 0, firing ? 0.9 : 0);
         radar.rotation.y = C * 1.8; bellyStrobe.visible = (C % 1.1) < 0.12; portLife(T, C, l);
-        carts.forEach((ct) => { ct.dt = lastC === null ? 0 : clamp(C - lastC, 0, 0.1); }); lastC = C; portTraffic(T, C);
+        carts.forEach((ct) => { ct.dt = lastC === null ? 0 : clamp(C - lastC, 0, 0.1); }); lastC = C; portTraffic(T, C); lakeFrame(C);
         const bySlot = [];
         deliveries.forEach((dl) => { if (!bySlot[dl.slot] || dl.d < bySlot[dl.slot].d) bySlot[dl.slot] = dl; });   // the newest per page
         const landing = T > 23 && T < 27.4;
