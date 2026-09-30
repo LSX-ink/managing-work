@@ -1015,3 +1015,11 @@ def test_the_mood_picks_a_colour_grade(tmp_path):
     plain, cold, warm = mean("plain"), mean("cold", grade="cold"), mean("warm", grade="warm")
     assert cold[2] - cold[0] > plain[2] - plain[0] + 3  # bluer
     assert warm[0] - warm[2] > plain[0] - plain[2] + 3  # redder
+
+
+def test_captions_stay_clear_of_tiktoks_buttons_and_caption_text():
+    for line, punch in ((["she", "never", "called"], ()), (["unbelievably", "extraordinary", "voicemail."], ["voicemail"])):
+        im = cv.caption_image(line, 0, (232, 197, 71), punch)
+        left, top, right, bottom = im.getbbox()
+        assert left >= cv.SAFE_SIDE - 10 and right <= cv.W - cv.SAFE_SIDE + 10  # the stroke may spill a few px
+        assert cv.CAPTION_Y + bottom <= cv.SAFE_BOTTOM
