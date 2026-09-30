@@ -159,6 +159,41 @@ LSX.space = async (k, pause) => {
     const lsxMoon = new THREE.Mesh(new THREE.SphereGeometry(5, 32, 16), new THREE.MeshStandardMaterial({ map: tex(lsxMoonT), bumpMap: tex(lsxMoonT.bump, 1, 1, false), bumpScale: 1, roughness: 1, color: 0xd8cfc4 })); space.add(lsxMoon);
     await pause();
 
+    // thunderstorms on LSX: a few storm cells drifting with the clouds, each flickering with lightning now and then
+    const bolts = Array.from({ length: 7 }, (_, q) => {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xcfe2ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+        space.add(sp); return { sp, lat: (rnd(q + 9600) - 0.5) * 1.6, lon: rnd(q + 9601) * Math.PI * 2, seed: q * 7.3 };
+    });
+    function storms(C) {
+        bolts.forEach((b) => {
+            const lon = b.lon + C * 0.02, p = V(Math.cos(b.lat) * Math.cos(lon), Math.sin(b.lat), -Math.cos(b.lat) * Math.sin(lon));
+            b.sp.position.copy(LSXC).addScaledVector(p, LSXR * 1.018);
+            const t = C * 1.3 + b.seed, beat = Math.floor(t), ph = t - beat, on = rnd(beat * 13 + b.seed) > 0.72;
+            const f = on ? (ph < 0.06 ? 1 : ph < 0.1 ? 0.2 : ph < 0.16 ? 0.8 : Math.max(0, 1 - (ph - 0.16) * 6)) : 0;
+            b.sp.material.opacity = f * 0.9; b.sp.scale.setScalar(3 + f * 4 + rnd(beat + b.seed) * 3); b.sp.visible = f > 0.01;
+        });
+    }
+    // a shuttle that ferries crew between the orbital station and HOME: undocks, drops down to the base, climbs back, docks
+    const shuttle = new THREE.Group(); space.add(shuttle);
+    add(shuttle, new THREE.CylinderGeometry(0.5, 0.7, 3, 10).rotateZ(Math.PI / 2), mat.hullB); add(shuttle, new THREE.ConeGeometry(0.5, 1.2, 10).rotateZ(-Math.PI / 2), mat.hullB, 2.1, 0, 0);
+    add(shuttle, new THREE.BoxGeometry(1.6, 0.1, 2.6), mat.dark, -0.4, 0, 0);
+    const shuttleFlame = add(shuttle, new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: 0x9fd0ff }), -1.8, 0, 0);
+    const shuttleLamp = add(shuttle, new THREE.SphereGeometry(0.12, 6, 4), glow(0x3cff8a), 0, 0.6, 0);
+    shuttle.scale.setScalar(0.7);
+    function shuttleFrame(C) {
+        const cyc = 80, t = (C % cyc) / cyc, dock = station.position.clone().add(V(0, -6, 0).applyEuler(station.rotation).multiplyScalar(1.3));
+        const low = P.clone().addScaledVector(N, 3), mid = P.clone().addScaledVector(N, 45).lerp(dock, 0.4);
+        let p, look;
+        if (t < 0.15) { p = dock; look = mid; }   // docked
+        else if (t < 0.45) { const f = ease((t - 0.15) / 0.3), a = dock.clone().lerp(mid, f), b = mid.clone().lerp(low, f); p = a.lerp(b, f); look = low; }
+        else if (t < 0.6) { p = low; look = mid; }   // down at the base
+        else if (t < 0.9) { const f = ease((t - 0.6) / 0.3), a = low.clone().lerp(mid, f), b = mid.clone().lerp(dock, f); p = a.lerp(b, f); look = dock; }
+        else { p = dock; look = mid; }
+        shuttle.position.copy(p); const d = look.clone().sub(p); if (d.lengthSq() > 0.01) shuttle.quaternion.setFromUnitVectors(V(1, 0, 0), d.normalize());
+        const burning = (t > 0.15 && t < 0.45) || (t > 0.6 && t < 0.9); shuttleFlame.visible = burning; shuttleFlame.scale.setScalar(0.8 + Math.sin(C * 40) * 0.2);
+        shuttle.visible = !(t >= 0.45 && t < 0.6); shuttleLamp.visible = Math.floor(C * 2) % 2 === 0;
+    }
+
     // ---- the rest of the solar system ------------------------------------------------------------------------------
     // the orbits lie in the plane through the sun, HOME and LSX
     const SUNP = spaceSun.position.clone().normalize().multiplyScalar(2600).add(V(0, -40, 0)), SUNR = 120;
@@ -406,7 +441,7 @@ LSX.space = async (k, pause) => {
     function frame(T, C, { idle, nearLsx, rampOpen, camera, deep = 0 }) {
         // the belt and the orbit lines come up as you zoom out, so the both-planets view stays calm round the wolf
         belt.visible = deep > 0.02; beltDustM.opacity = 0.55 * deep; orbitM.opacity = 0.05 + 0.13 * deep;
-        spaceExtras(C); cometFrame(C, deep);
+        spaceExtras(C); cometFrame(C, deep); storms(C); shuttleFrame(C);
         clouds.rotation.y = C * 0.02; portFrame(C);
         clouds.material.opacity = 1 - nearLsx * 0.85; lsxRim.visible = lsxHalo.visible = nearLsx < 0.7;
         if (ship.parent !== space) space.add(ship);
