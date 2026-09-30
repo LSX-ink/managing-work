@@ -11,7 +11,8 @@
    cinematic), with the line for that scene written small on screen.
 4. Voice: ElevenLabs when its key is set, otherwise Microsoft's free neural voices (edge-tts). No voice at all
    still makes a captioned video.
-5. Captions: big word-by-word captions timed to the voice, the spoken word lit in the account's colour.
+5. Captions: big word-by-word captions timed to the voice, the spoken word lit in the account's colour and the
+   scene's key words ("punch") drawn bigger.
 6. Video: ffmpeg (bundled by imageio-ffmpeg) gives each shot its own camera move, a soft swish on each cut, matches the scene to its
    narration and joins the scenes into one 1080x1920 MP4. A backing track dropped into the TikTok/Music folder
    (or the account's own Music folder) plays quietly underneath, dipping when Alfred speaks.
@@ -105,6 +106,8 @@ Rules:
   voicemail, a scream, a whisper), who says it. For a named character (from the story bible or this video) put
   their name, so they keep the same voice in every video; otherwise "woman", "man", "old man", "old woman" or
   "child". Use a character voice for 1 to 3 lines that hit hard; everything else is the narrator.
+- "punch" for each scene is the 1 or 2 words of its narration that carry the scene (the number, the name, the
+  twist word), copied exactly; the captions draw them bigger. Leave it empty for a scene with no stand-out word.
 - "bible": what this video adds to the story bible: characters it uses (name, look, notes, and voice_type:
   "woman", "man", "old man", "old woman" or "child"), threads it opens
   (open questions or mysteries to pay off in later videos), threads it closes, and the world in one line if it
@@ -125,7 +128,7 @@ Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
   "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "...", "voice_type": "woman"}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
-  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator"}}]}}"""
+  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator", "punch": ["..."]}}]}}"""
 
 EDITOR_PROMPT = """You are the toughest short-form story editor on TikTok. A writer was given this brief:
 
@@ -247,7 +250,8 @@ def parse_script(text: str) -> dict:
                     "picture": cs.clean(s.get("picture") or s.get("text"), 300),
                     "closeup": cs.clean(s.get("closeup"), 300),
                     "pace": str(s.get("pace") or "").lower() if str(s.get("pace") or "").lower() in PACES else "normal",
-                    "speaker": cs.clean(s.get("speaker"), 40).lower() or "narrator"}
+                    "speaker": cs.clean(s.get("speaker"), 40).lower() or "narrator",
+                    "punch": punch_words(s.get("punch"))}
                    for s in scenes[:14]],
     }
 
@@ -547,6 +551,26 @@ async def narrate(http: httpx.AsyncClient, settings: Settings, text: str, voice:
 CAPTION_Y, CAPTION_H = 1260, 420
 
 
+PUNCH_SCALE = 1.3  # how much bigger the scene's key words are drawn
+
+
+def bare(word: str) -> str:
+    """A word as it's compared: lower case, without the punctuation around it."""
+    return re.sub(r"^[^\w#]+|[^\w%]+$", "", str(word).lower())
+
+
+def punch_words(value) -> list[str]:
+    """The scene's key words from the script: at most two, each one plain word."""
+    items = value if isinstance(value, list) else str(value or "").split(",")
+    out = []
+    for item in items:
+        for w in str(item).split():
+            w = bare(w)[:30]
+            if w and w not in out and len(out) < 2:
+                out.append(w)
+    return out
+
+
 def captions_on(account: dict) -> bool:
     return account.get("style") != "drama" and account.get("captions", True) is not False
 
@@ -575,26 +599,35 @@ def chunks(words: list[tuple[float, float, str]], size: int = 3) -> list[list[tu
     return out + ([line] if line else [])
 
 
-def caption_image(line: list[str], lit: int, accent) -> Image.Image:
+def caption_image(line: list[str], lit: int, accent, punch=()) -> Image.Image:
+    """One caption line. The word being spoken is lit in the accent colour; the scene's key words ("punch") are
+    drawn bigger and always in the accent colour, so they land even before they're said."""
     im = Image.new("RGBA", (W, CAPTION_H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(im)
-    size = 86
-    font = ac.font(size)
     words = [w.upper() for w in line]
-    space = draw.textlength(" ", font=font)
-    while size > 44 and sum(draw.textlength(w, font=font) for w in words) + space * (len(words) - 1) > W - 120:
+    big = [bare(w) in punch for w in line]
+    size = 86
+
+    def layout(size):
+        fonts = [ac.font(size * PUNCH_SCALE if b else size) for b in big]
+        widths = [draw.textlength(w, font=f) for w, f in zip(words, fonts)]
+        space = draw.textlength(" ", font=ac.font(size))
+        return fonts, widths, space, sum(widths) + space * (len(words) - 1)
+    fonts, widths, space, total = layout(size)
+    while size > 44 and total > W - 120:
         size -= 6
-        font = ac.font(size)
-        space = draw.textlength(" ", font=font)
-    x = (W - (sum(draw.textlength(w, font=font) for w in words) + space * (len(words) - 1))) / 2
-    for i, w in enumerate(words):
-        draw.text((x, CAPTION_H / 2 - size / 2), w, font=font, fill=accent if i == lit else (255, 255, 255),
-                  stroke_width=7, stroke_fill=(0, 0, 0))
-        x += draw.textlength(w, font=font) + space
+        fonts, widths, space, total = layout(size)
+    x, baseline = (W - total) / 2, CAPTION_H / 2 + size * 0.4
+    for i, (w, f, width) in enumerate(zip(words, fonts, widths)):
+        top = baseline - (size * PUNCH_SCALE if big[i] else size) * 0.8
+        draw.text((x, top), w, font=f, fill=accent if i == lit or big[i] else (255, 255, 255),
+                  stroke_width=9 if big[i] else 7, stroke_fill=(0, 0, 0))
+        x += width + space
     return im
 
 
-def caption_track(words: list[tuple[float, float, str]], seconds: float, accent, work: Path, tag: str) -> Path | None:
+def caption_track(words: list[tuple[float, float, str]], seconds: float, accent, work: Path, tag: str,
+                  punch=()) -> Path | None:
     """A list of caption images with how long each shows, for ffmpeg's concat reader; None when there's nothing to say."""
     if not words:
         return None
@@ -612,7 +645,7 @@ def caption_track(words: list[tuple[float, float, str]], seconds: float, accent,
             if until <= t:
                 continue
             path = work / f"{tag}-{n}.png"
-            caption_image([w[2] for w in line], i, accent).save(path)
+            caption_image([w[2] for w in line], i, accent, punch).save(path)
             entries.append((path, until - t))
             t, n = until, n + 1
     if not n:
@@ -830,7 +863,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         track = None
         if captions:
             timed = words or estimate_words(scenes[i]["narration"], spoken)
-            track = await asyncio.to_thread(caption_track, timed, seconds, accent, work, f"cap{i}")
+            track = await asyncio.to_thread(caption_track, timed, seconds, accent, work, f"cap{i}",
+                                            scenes[i].get("punch", []))
         part = work / f"scene{i}.mp4"
         loop_to = shots[0][0] if i == len(shots) - 1 and i > 0 and account.get("loop", True) is not False else None
         await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i,

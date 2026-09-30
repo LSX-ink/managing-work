@@ -823,3 +823,19 @@ def test_last_scene_settles_into_the_first_frame_so_the_video_loops(tmp_path):
     start, end = frame(tmp_path / "s0.mp4", "first"), frame(tmp_path / "s9.mp4", "last")
     assert ImageStat.Stat(ImageChops.difference(start, end).convert("L")).mean[0] < 6  # the end frame is the opening frame
     assert cv.audio_seconds(tmp_path / "s9.mp4") > 1.2  # the settle is added on top, not cut from the scene
+
+
+def test_punch_words_are_drawn_bigger_in_the_captions(tmp_path):
+    script = json.loads(SCRIPT)
+    script["scenes"][0]["punch"] = ["Voicemail!", "own phone", "extra"]
+    assert cv.parse_script(json.dumps(script))["scenes"][0]["punch"] == ["voicemail", "own"]
+    assert cv.parse_script(SCRIPT)["scenes"][0]["punch"] == []
+    assert cv.punch_words("3AM, 100%") == ["3am", "100%"]
+    plain = cv.caption_image(["a", "voicemail."], 0, (232, 197, 71))
+    punched = cv.caption_image(["a", "voicemail."], 0, (232, 197, 71), ["voicemail"])
+
+    def ink(im, colour):  # how many pixels are drawn in that colour
+        return sum(1 for p in im.getdata() if p[3] and p[:3] == colour)
+    assert ink(punched, (232, 197, 71)) > ink(plain, (232, 197, 71))  # the key word is in the accent colour, and bigger
+    listing = cv.caption_track(cv.estimate_words("A voicemail.", 2.0), 2.0, (232, 197, 71), tmp_path, "p", ["voicemail"])
+    assert listing and listing.exists()
