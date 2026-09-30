@@ -675,7 +675,7 @@ def test_a_character_line_is_spoken_in_the_characters_voice(s, tmp_path, monkeyp
     scenes = [{"narration": "The phone buzzed.", "speaker": "Narrator"},
               {"narration": "Don't open the door.", "speaker": "Old Man"}, {"narration": "Run.", "speaker": "alien"}]
     script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
-    assert [sc["speaker"] for sc in script["scenes"]] == ["narrator", "old man", "narrator"]
+    assert [sc["speaker"] for sc in script["scenes"]] == ["narrator", "old man", "alien"]  # unknown names: narrator voice
     account = {**cs.load(s)["accounts"][0], "voice": "en-GB-RyanNeural"}
     asyncio.run(cv.make(None, None, s, account, tmp_path, script=script))
     assert voices == ["en-GB-RyanNeural", cv.SPEAKERS["old man"], "en-GB-RyanNeural"]
@@ -740,3 +740,40 @@ def test_variety_brief_steers_the_next_video_away_from_the_last_ones(s):
     asyncio.run(cv.write_script(client, s, cs.account(cs.load(s), "lowkey.lore"), variety=brief))
     assert "make today's clearly different" in client.calls[0]["messages"][0]["content"]
     assert "Maya had 9 seconds." in client.calls[0]["messages"][0]["content"]
+
+
+def test_named_characters_keep_their_voice_across_videos(s, tmp_path, monkeypatch):
+    voices = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal"):
+        voices.append(voice)
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", narrate)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    account = {**cs.load(s)["accounts"][0], "voice": "en-GB-RyanNeural"}
+    bible = {"characters": [{"name": "Mara", "look": "30, red coat", "voice_type": "woman"},
+                            {"name": "Theo", "look": "old", "voice_type": "old man"}]}
+    scenes = [{"narration": "The phone buzzed.", "speaker": "narrator"}, {"narration": "Who is this?", "speaker": "Mara"},
+              {"narration": "Stay inside.", "speaker": "Theo"}]
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes, "bible": bible}))
+    result = asyncio.run(cv.make(None, None, s, account, tmp_path, script=script))
+    mara, theo = voices[1], voices[2]
+    assert mara in cs.CHARACTER_VOICES["woman"] and theo in cs.CHARACTER_VOICES["old man"] and voices[0] == "en-GB-RyanNeural"
+    cs.update_bible(account, result["bible"])
+    assert {c["name"]: c["voice"] for c in account["bible"]["characters"]} == {"Mara": mara, "Theo": theo}
+    assert "Character Mara: 30, red coat [voice: woman]" in cs.bible_summary(account)
+    # a later video: Mara comes back without a voice type and sounds the same; a second woman gets a different voice
+    voices.clear()
+    later = {"characters": [{"name": "mara"}, {"name": "June", "voice_type": "woman"}]}
+    scenes = [{"narration": "It's me again.", "speaker": "Mara"}, {"narration": "Hello?", "speaker": "June"}]
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes, "bible": later}))
+    asyncio.run(cv.make(None, None, s, account, tmp_path, script=script))
+    assert voices[0] == mara and voices[1] in cs.CHARACTER_VOICES["woman"] and voices[1] != mara
+    cs.update_bible(account, {"characters": [{"name": "Mara", "voice": "en-US-JennyNeural"}]})
+    assert {c["name"]: c["voice"] for c in account["bible"]["characters"]}["Mara"] == mara  # a voice, once given, never changes
