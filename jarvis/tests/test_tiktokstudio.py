@@ -968,3 +968,30 @@ def test_a_boom_flashes_white_and_a_glitch_splits_the_colours(tmp_path):
     late = ImageStat.Stat(ImageChops.difference(frame(tmp_path / "glitch.mp4", 20), frame(tmp_path / "calm.mp4", 20)))
     early = ImageStat.Stat(ImageChops.difference(frame(tmp_path / "glitch.mp4", 1), frame(tmp_path / "calm.mp4", 1)))
     assert sum(early.mean) > sum(late.mean) + 5  # the glitch only lasts a moment
+
+
+def test_the_finished_video_is_checked_before_it_is_offered(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    from PIL import Image
+    dark, lit = tmp_path / "dark.png", tmp_path / "lit.png"
+    Image.new("RGB", (cv.W, cv.H), (0, 0, 0)).save(dark)
+    Image.new("RGB", (cv.W, cv.H), (120, 90, 200)).save(lit)
+    cv.render_scene([dark], None, 1.5, tmp_path / "dark.mp4")
+    problems = cv.check_video(tmp_path / "dark.mp4")
+    assert any("seconds long" in p for p in problems) and "there's no sound" in problems
+    assert any("black screen" in p for p in problems)
+    cv.render_scene([lit], None, 1.5, tmp_path / "lit.mp4", hit="boom")
+    monkeypatch.setattr(cv, "MIN_LENGTH", 1.0)
+    assert cv.check_video(tmp_path / "lit.mp4") == []  # long enough, has a sound, no black
+
+
+def test_check_problems_are_shown_with_the_video(s, monkeypatch):
+    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste="", part=1, variety=""):
+        path = folder / "Quiet.mp4"
+        path.write_bytes(b"mp4")
+        return {**cv.parse_script(SCRIPT), "path": path, "missing_pictures": 0, "checks": ["there's no sound"]}
+    monkeypatch.setattr(cv, "make", fake_make)
+    creator._ctx.update(client=object())
+    asyncio.run(creator.make_in_background(s, [("lowkey.lore", "", None)]))
+    v = cs.load(s)["videos"][-1]
+    assert v["checks"] == ["there's no sound"] and "Check before posting: there's no sound" in v["notes"]
