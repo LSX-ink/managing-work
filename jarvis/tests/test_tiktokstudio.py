@@ -858,7 +858,7 @@ def test_scene_sound_effects_are_cued_and_capped(s, tmp_path, monkeypatch):
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
     monkeypatch.setattr(cv, "narrate", no_voice)
-    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append(a[-3]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append(a[4]), out.write_bytes(b"mp4")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=parsed))
@@ -1023,3 +1023,34 @@ def test_captions_stay_clear_of_tiktoks_buttons_and_caption_text():
         left, top, right, bottom = im.getbbox()
         assert left >= cv.SAFE_SIDE - 10 and right <= cv.W - cv.SAFE_SIDE + 10  # the stroke may spill a few px
         assert cv.CAPTION_Y + bottom <= cv.SAFE_BOTTOM
+
+
+def test_slow_scenes_rise_out_of_black(s, tmp_path, monkeypatch):
+    script = cv.parse_script(SCRIPT)
+    script["scenes"] = [dict(script["scenes"][0], pace="slow"), dict(script["scenes"][1], pace="slow"),
+                        dict(script["scenes"][1], pace="slow", hit="boom"), dict(script["scenes"][1], pace="fast")]
+    dips = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (dips.append(a[-1]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script))
+    assert dips == [False, True, False, False]  # never the hook, never on top of a hit's own look
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image, ImageStat
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (200, 200, 200)).save(still)
+    cv.render_scene([still], None, 1.0, tmp_path / "dip.mp4", dip=True)
+    subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / "dip.mp4"), "-frames:v", "1", str(tmp_path / "d0.png")],
+                   check=True, capture_output=True)
+    assert ImageStat.Stat(Image.open(tmp_path / "d0.png").convert("L")).mean[0] < 40  # opens dark

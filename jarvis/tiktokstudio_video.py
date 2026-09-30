@@ -751,6 +751,7 @@ WHOOSH = ("anoisesrc=d=0.45:c=pink:a=0.6:r=44100,highpass=f=350,lowpass=f=4200,"
 # The camera follows the scene's pace: a slow creep for reveals and dread, a quick push for panic.
 PUSH_RATE = {"slow": 0.0004, "normal": 0.0007, "fast": 0.0014}
 SHAKE_HITS = ("boom", "glitch")  # these hits jolt the camera for a moment as the scene cuts in
+DIP_SECONDS = 0.3  # a slow scene (a reveal, dread) rises out of black instead of hard-cutting in: a beat to breathe
 HIT_LOOKS = {  # and some hit the eye too, for the first fraction of a second: a white flash, a colour-split glitch
     "boom": "fade=t=in:st=0:d=0.18:color=white",
     "glitch": "rgbashift=rh=-18:bh=18:gv=6:enable='lt(t,0.25)',noise=alls=40:allf=t:enable='lt(t,0.25)'",
@@ -810,7 +811,7 @@ LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # e
 
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
-                 grade: str = "") -> None:
+                 grade: str = "", dip: bool = False) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -841,7 +842,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         inputs += ["-f", "concat", "-safe", "0", "-i", str(captions)]
         chains.append(f"[{k + 1}:v]format=rgba,setpts=PTS-STARTPTS[cap];[vc][cap]overlay=0:{CAPTION_Y}:eof_action=pass[vo]")
         video = "[vo]"
-    look = f"{HIT_LOOKS[hit]}," if hit in HIT_LOOKS else ""
+    look = f"{HIT_LOOKS[hit]}," if hit in HIT_LOOKS else (f"fade=t=in:st=0:d={DIP_SECONDS}," if dip else "")
     chains.append(f"{video}{look}format=yuv420p[v]")
     if hit in HITS or whoosh:
         effect = f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH
@@ -920,8 +921,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                best: list[str] | None = None, taste: str = "", part: int = 1, variety: str = "") -> dict:
     """Write, picture, voice and render one video into folder. Returns the script plus the MP4 path."""
     script = script or await write_script(client, settings, account, idea, recent, best, taste, variety)
-    cast = cs.assign_voices(account, script.get("bible"))
-    grade = grade_for(script.get("mood", ""), account)  # named characters keep one voice across every video
+    cast = cs.assign_voices(account, script.get("bible"))  # named characters keep one voice across every video
+    grade = grade_for(script.get("mood", ""), account)
     work = folder / f".{cs.new_id()}"
     work.mkdir(parents=True, exist_ok=True)
     seed = random.randint(1, 10**6)
@@ -972,8 +973,9 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         sfx = account.get("sfx", True) is not False
         hit = scenes[i].get("hit", "") if sfx and hits < MAX_HITS else ""
         hits += bool(hit)
+        pace = scenes[i].get("pace", "normal")
         await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
-                                scenes[i].get("pace", "normal"), grade)
+                                pace, grade, i > 0 and pace == "slow" and not hit)
         parts.append(part)
     name = cs.slug(f"{script['title']}")
     video = folder / f"{name}.mp4"
