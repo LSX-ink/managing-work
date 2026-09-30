@@ -591,7 +591,11 @@ fetch('/config').then((r) => r.json()).then((c) => {
     applyLanguage();
     // "hud" or a colour variant such as "hud-gold": both classes go on the page
     if (config.theme && config.theme.startsWith('hud')) document.body.classList.add('hud', config.theme);
-    document.dispatchEvent(new CustomEvent('jarvis:config', { detail: config }));
+    // Scripts lower in the page (the planets, the HUD extras) may still be loading when /config answers,
+    // so hold the event until every script has run; otherwise they never hear it and quietly stay off.
+    const tell = () => document.dispatchEvent(new CustomEvent('jarvis:config', { detail: config }));
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tell, { once: true });
+    else tell();
 }).catch(() => {});
 // Chrome loads its voice list asynchronously; touching it early starts the load.
 if ('speechSynthesis' in window) speechSynthesis.getVoices();
