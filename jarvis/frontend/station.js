@@ -22,7 +22,7 @@
 
     let config = {}, allowed = false, running = false, booting = false;
     let THREE = null, renderer = null, camera = null, k = null, space = null, desert = null, forest = null;
-    let canvas = null, veil = null, ui = null, controls = null, panel = null, raf = 0, pollTimer = 0;
+    let warp = null, canvas = null, veil = null, ui = null, controls = null, panel = null, raf = 0, pollTimer = 0;
 
     // ---- loading --------------------------------------------------------------------------------------------------
     const script = (src) => new Promise((ok, fail) => {
@@ -85,6 +85,7 @@
     function stop() {
         running = false; cancelAnimationFrame(raf); clearTimeout(pollTimer);
         document.body.classList.remove('station-on', 'station-focus');
+        document.body.classList.remove('station-close'); close = null; if (warp) warp.style.opacity = 0;
         if (canvas) canvas.hidden = true; if (veil) veil.hidden = true; if (ui) ui.hidden = true; if (controls) controls.hidden = true;
         closePanel();
         if (renderer) { renderer.dispose(); renderer.forceContextLoss(); renderer = null; }
@@ -100,6 +101,7 @@
     }
     function buildDom() {
         buildCanvas();
+        warp = el('canvas'); warp.id = 'station-warp'; warp.setAttribute('aria-hidden', 'true'); canvas.after(warp);
         veil = el('div'); veil.id = 'station-veil'; veil.setAttribute('aria-hidden', 'true');
         ui = el('div'); ui.id = 'station-ui'; ui.setAttribute('aria-hidden', 'true');
         tagHome = el('div', 'st-tag st-home'); tagLsx = el('div', 'st-tag st-lsx');
@@ -156,7 +158,8 @@
     window.addEventListener('resize', resize);
 
     // ---- the camera: zoom -1 deep space, 0 both planets, 0.5 through the clouds, 1 standing on the pad ----------------
-    const view = { zoom: 0, target: 0, yaw: 0, pitch: 0, dest: 'home', pending: null, fx: 0, focus: 0, panX: 0, panZ: 0, deepPan: null };
+    const view = { zoom: -1, target: -1, yaw: 0, pitch: 0, dest: 'home', pending: null, fx: 0, focus: 0, panX: 0, panZ: 0, deepPan: null };
+    // the view opens on the whole solar system, where the planets are points of light like stars; they grow as you zoom
     let alfred = 0, alfredTo = 0;   // 0..1: Alfred is listening or speaking, so the scene eases in behind the wolf
     const setZoom = (z) => { view.target = clamp(z, -1, groundReady(view.dest) ? 1 : 0.46); };
     const goTo = (dest, z) => { if (view.dest === dest && !view.pending) setZoom(z); else { view.pending = [dest, z]; view.target = Math.min(view.target, 0); } };
@@ -556,6 +559,35 @@
         }
     }
 
+    // ---- zoom effects: light streaks and a lens kick while the view zooms, the wolf only out in the solar system ----
+    const streaks = Array.from({ length: 140 }, (_, i) => ({ a: rndJs(i) * Math.PI * 2, r: 0.08 + rndJs(i + 0.3) * 0.95, w: 0.4 + rndJs(i + 0.7) * 1.4 }));
+    function rndJs(x) { const v = Math.sin(x * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); }
+    let warpShown = false, prevZoom = null, speed = 0, close = null;
+    function zoomEffects(dt, calm) {
+        const v = prevZoom === null || dt <= 0 ? 0 : (view.zoom - prevZoom) / dt;
+        prevZoom = view.zoom;
+        speed += (v - speed) * Math.min(1, dt * 8);
+        const s = calm ? 0 : clamp(Math.abs(speed) * 1.4);
+        camera.fov *= 1 + 0.07 * s * Math.sign(speed);   // the lens stretches as you dive in and squeezes as you pull out
+        camera.updateProjectionMatrix();
+        const near = view.zoom > 0.12;
+        if (near !== close) { close = near; document.body.classList.toggle('station-close', near); }
+        if (!warp) return;
+        if (s < 0.03) { if (warpShown) { warp.getContext('2d').clearRect(0, 0, warp.width, warp.height); warp.style.opacity = 0; warpShown = false; } return; }
+        const w = window.innerWidth, h = window.innerHeight;
+        if (warp.width !== w || warp.height !== h) { warp.width = w; warp.height = h; }
+        const g = warp.getContext('2d'), cx = w / 2, cy = h * 0.42, R = Math.hypot(w, h) / 2, dir = Math.sign(speed);
+        g.clearRect(0, 0, w, h); g.lineCap = 'round';
+        const drift = (C * 0.6) % 1;
+        for (const st of streaks) {
+            const r0 = ((st.r + drift * dir) % 1 + 1) % 1, len = (0.05 + 0.3 * s) * (0.3 + r0);
+            const a = r0 * R, b = (r0 + len * dir) * R;
+            g.strokeStyle = `rgba(210,225,255,${(0.5 * s * (0.2 + r0)).toFixed(3)})`; g.lineWidth = st.w * (0.5 + r0);
+            g.beginPath(); g.moveTo(cx + Math.cos(st.a) * a, cy + Math.sin(st.a) * a); g.lineTo(cx + Math.cos(st.a) * b, cy + Math.sin(st.a) * b); g.stroke();
+        }
+        warp.style.opacity = 1; warpShown = true;
+    }
+
     // ---- the loop ---------------------------------------------------------------------------------------------------
     let last = null, C = 0, lastDraw = 0;
     function tick(now) {
@@ -580,6 +612,7 @@
         applyNight(todMode === 'AUTO' ? clockNight() : todMode === 'NIGHT' ? 1 : 0);
         const onGround = view.zoom >= 0.5, inDesert = onGround && view.dest === 'home', scene = onGround ? (inDesert ? desert.scene : forest.scene) : space.scene;
         placeCamera();
+        zoomEffects(dt, calm);
         const idle = trip.mode === 'idle';
         if (!onGround) {
             let open = 0; deliveries.forEach((d) => { if (d.fromShip) open = Math.max(open, clamp(d.d / 0.5) * (1 - clamp((d.d - 3.4) / 0.4))); });

@@ -102,3 +102,9 @@ html.a11y-motion #station-ui .st-tag.waiting small { animation: none; }
 #station-note[hidden] { display: none; }
 /* small screens: keep the weather panel clear of the view buttons */
 @media (max-width: 1000px) { body.station-on .hud-rightcol { margin-bottom: 110px; } }
+
+/* zoom effects (station.js zoomEffects): light streaks rush past while the view zooms */
+#station-warp { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.25s ease; }
+/* the wolf stays out in the solar system: zooming in to a planet or down to the ground leaves him behind */
+body.hud #hud-sphere { transition: transform 0.9s ease, opacity 0.6s ease; }
+body.hud.station-close #hud-sphere { opacity: 0; }
