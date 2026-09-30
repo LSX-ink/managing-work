@@ -47,7 +47,11 @@
     }
 
     async function start() {
-        if (running || booting || !allowed) return;
+        if (running || booting) return;
+        if (!allowed) {
+            if (config.station === false && String(config.theme || '').startsWith('hud')) why('PLANETS OFF IN SETTINGS · SET JARVIS_STATION=true IN .env');
+            return;
+        }
         if (!load('on', true)) { why('PLANETS OFF · TAP TO TURN ON'); return; }
         if (!webgl()) { why('PLANETS NEED GRAPHICS ACCELERATION ON IN YOUR BROWSER'); return; }
         why('');
