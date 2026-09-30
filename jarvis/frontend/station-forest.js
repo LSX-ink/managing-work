@@ -117,6 +117,8 @@ LSX.forest = (k) => {
                 if (Math.abs(toT) < 0.26) r = 58 + rnd(i + 6009) * 16;   // behind the tower, not through it
             }
             let x = Math.cos(a) * r, z = Math.sin(a) * r; const s = 0.8 + rnd(i + 6002) * 0.8;
+            { const ux = Math.cos(roadAng), uz = Math.sin(roadAng), al = x * ux + z * uz, pp = -x * uz + z * ux;   // keep off the access road
+                if (al > 30 && Math.abs(pp) < 8) { const np = Math.sign(pp || 1) * (8 + rnd(i + 6011) * 8); x = ux * al - uz * np; z = uz * al + ux * np; } }
             const ld = Math.hypot(x - LAKE.x, z - LAKE.z);
             if (ld < LAKE_R + 6) { const k2 = (LAKE_R + 6 + rnd(i + 6010) * 20) / Math.max(ld, 0.1); x = LAKE.x + (x - LAKE.x) * k2; z = LAKE.z + (z - LAKE.z) * k2; }
             const y = fh(x, z);
@@ -129,6 +131,63 @@ LSX.forest = (k) => {
     }
     for (const m of [trunkI, coneI, crownI]) { m.castShadow = true; m.receiveShadow = true; forest.add(m); }
     const RAMP_END = V(-18.5, 0.4, 0);
+    // ---- the access road: from the ring road out through the forest, halfway between two offices. Supply trucks
+    // come in along it, stop at the ring to unload and head back out into the trees.
+    let roadAng = Math.PI * 2 / 3; const access = new THREE.Group(); forest.add(access);
+    const arC = canvas(64, 256), ag = arC.getContext('2d'); ag.fillStyle = '#3a3a3c'; ag.fillRect(0, 0, 64, 256);
+    for (let i = 0; i < 900; i++) { ag.fillStyle = `rgba(${rnd(i + 7100) > 0.5 ? '255,255,255' : '0,0,0'},0.06)`; ag.fillRect(rnd(i + 7101) * 64, rnd(i + 7102) * 256, 2, 2); }
+    ag.fillStyle = '#d8d4c8'; ag.fillRect(2, 0, 2, 256); ag.fillRect(60, 0, 2, 256); ag.fillStyle = '#e8c547'; ag.fillRect(31, 0, 2, 150);
+    const arT = tex(arC, 1, 1); arT.wrapT = THREE.RepeatWrapping;
+    const accessM = new THREE.MeshStandardMaterial({ map: arT, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2 });
+    const roadY = (x, z) => Math.max(fh(x, z), fh(x + 6, z), fh(x - 6, z), fh(x, z + 6), fh(x, z - 6)) + 0.15;
+    const R0 = 38, R1 = 560, SEG = 4;
+    function buildAccess() {
+        access.clear();
+        ringLamps.children.forEach((l) => { if (l.isGroup) { const d = Math.atan2(Math.sin(Math.atan2(l.position.z, l.position.x) - roadAng), Math.cos(Math.atan2(l.position.z, l.position.x) - roadAng)); l.visible = Math.abs(d) > 0.1; } });
+        ringPools.forEach((pl) => { const d = Math.atan2(pl.position.z, pl.position.x) - roadAng; pl.visible = Math.abs(Math.atan2(Math.sin(d), Math.cos(d))) > 0.1; });
+        const ux = Math.cos(roadAng), uz = Math.sin(roadAng), px = -uz, pz = ux, n = Math.ceil((R1 - R0) / SEG) + 1, pos = [], uv = [], idx = [];
+        for (let i = 0; i < n; i++) {
+            const r = R0 + i * SEG, cx = ux * r, cz = uz * r, y = r < 110 ? 0.08 : roadY(cx, cz);
+            for (const sg of [-1, 1]) { pos.push(cx + px * 3.6 * sg, y, cz + pz * 3.6 * sg); uv.push(sg < 0 ? 0 : 1, r / 16); }
+            if (i) { const a = (i - 1) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+        }
+        const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+        const m = new THREE.Mesh(g, accessM); m.receiveShadow = true; access.add(m);
+        // a sign at the road's mouth
+        const [sc, sg2] = signCanvas(512, 128); sg2.fillStyle = '#1f5a36'; sg2.fillRect(0, 0, 512, 128); sg2.strokeStyle = '#f2efe8'; sg2.lineWidth = 6; sg2.strokeRect(8, 8, 496, 112);
+        sg2.fillStyle = '#f2efe8'; sg2.font = '700 44px "Share Tech Mono", sans-serif'; sg2.fillText('SUPPLY ROAD  ↑', 40, 80);
+        const at = V(ux * 46 + px * 5.5, 0, uz * 46 + pz * 5.5);
+        add(access, new THREE.BoxGeometry(0.2, 3.4, 0.2), mat.dark, at.x, 1.7, at.z);
+        const sign = new THREE.Mesh(new THREE.PlaneGeometry(4, 1), new THREE.MeshBasicMaterial({ map: tex(sc), side: THREE.DoubleSide })); sign.position.set(at.x, 3.6, at.z); sign.rotation.y = Math.atan2(-uz, ux) + Math.PI / 2; access.add(sign);
+    }
+    // two supply trucks: a cab and a trailer, one hauling logs and one a container
+    const trucks = [0, 1].map((q) => {
+        const t = new THREE.Group(); forest.add(t);
+        const paint = new THREE.MeshStandardMaterial({ color: q ? 0x2f5d8a : 0xa8322a, metalness: 0.5, roughness: 0.4 });
+        add(t, rbox(2.6, 2.4, 2.4, 0.25), paint, 3.6, 1.9, 0); add(t, new THREE.BoxGeometry(0.1, 1, 2.1), mat.glass, 4.92, 2.5, 0);
+        add(t, new THREE.BoxGeometry(9, 0.4, 2.4), mat.dark, -1.4, 0.9, 0);
+        if (q) add(t, new THREE.BoxGeometry(7.4, 2.6, 2.4), new THREE.MeshStandardMaterial({ color: 0xc8612a, roughness: 0.6, metalness: 0.4 }), -2.2, 2.4, 0);
+        else for (let l = 0; l < 7; l++) add(t, new THREE.CylinderGeometry(0.42, 0.42, 7, 10), new THREE.MeshStandardMaterial({ color: 0x7a5a3a, roughness: 1 }), -2.2, 1.55 + Math.floor(l / 3) * 0.72, (l % 3 - 1) * 0.8 + (l > 5 ? 0 : 0)).rotation.z = Math.PI / 2;
+        for (const x of [3.6, -3.2, -4.6]) for (const z of [-1.1, 1.1]) add(t, new THREE.CylinderGeometry(0.55, 0.55, 0.4, 12).rotateX(Math.PI / 2), mat.dark, x, 0.55, z);
+        const lamps = [-0.8, 0.8].map((z) => add(t, new THREE.BoxGeometry(0.1, 0.25, 0.4), glow(0xfff4dc), 4.92, 1.2, z));
+        t.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+        return { t, lamps, off: q * 45 };
+    });
+    function trucksFrame(C) {
+        const ux = Math.cos(roadAng), uz = Math.sin(roadAng), px = -uz, pz = ux;
+        trucks.forEach((tk) => {
+            // 90 s round trip: in (0-35), unload at the ring (35-47), U-turn (47-51), out (51-86), gone (86-90)
+            const t = (C + tk.off) % 90; let r, lane, head;
+            if (t < 35) { r = lerp(R1 - 20, 48, ease(t / 35)); lane = -1.8; head = -1; }
+            else if (t < 47) { r = 48; lane = -1.8; head = -1; }
+            else if (t < 51) { const f = ease((t - 47) / 4), a = f * Math.PI; r = 48 - Math.sin(a) * 3; lane = -1.8 * Math.cos(a); head = 0; tk.t.rotation.y = Math.atan2(-(uz * -Math.cos(a) + pz * Math.sin(a)), ux * -Math.cos(a) + px * Math.sin(a)); }
+            else { r = lerp(48, R1 - 20, ease((t - 51) / 35)); lane = 1.8; head = 1; }
+            const x = ux * r + px * lane, z = uz * r + pz * lane;
+            tk.t.position.set(x, (r < 110 ? 0.08 : roadY(x, z)) - 0.05, z);
+            if (head) tk.t.rotation.y = Math.atan2(-uz * head, ux * head);
+            tk.t.visible = t < 86;
+        });
+    }
     const ringLamps = new THREE.Group(); forest.add(ringLamps);
     for (let q = 0; q < 12; q++) { const a = q / 12 * Math.PI * 2, p = V(Math.cos(a) * 40.5, 0, Math.sin(a) * 40.5); streetLamp(ringLamps, p.x, p.z, Math.atan2(Math.sin(a), -Math.cos(a))); }
     const ringPools = fPools.slice();
@@ -277,6 +336,7 @@ LSX.forest = (k) => {
         towerAng = Math.PI / 6 - Math.PI / n;   // halfway between the last page's road and the first
         tower.position.set(Math.cos(towerAng) * 49, 0, Math.sin(towerAng) * 49); tower.rotation.y = Math.atan2(-Math.sin(towerAng), Math.cos(towerAng));
         offices = Array.from({ length: n }, (_, i) => office(town, list[i] || null, i, n));
+        roadAng = towerAng + 2 * (Math.PI * 2 / n); buildAccess();
         plantTrees(n);
         // delivery crew: an unloader at the ramp and a courier for each office, and one crate per page
         unloaders = []; couriers = []; parcels = [];
@@ -341,7 +401,7 @@ LSX.forest = (k) => {
         ramp.rotation.z = l === 0 ? 0.74 * ease(open) : 0; hold.visible = ramp.rotation.z > 0.03; cabin.intensity = l < 0.02 ? 1.2 : 0;
         const firing = (T >= 24.5 && T < 27.2) || (T >= 30.5 && T < 32.5); thrust(C, l > 0.25 ? 0.7 : 0, firing ? 0.9 : 0);
         radar.rotation.y = C * 1.8; bellyStrobe.visible = (C % 1.1) < 0.12; portLife(T, C, l);
-        carts.forEach((ct) => { ct.dt = lastC === null ? 0 : clamp(C - lastC, 0, 0.1); }); lastC = C; portTraffic(T, C); lakeFrame(C); weather(C);
+        carts.forEach((ct) => { ct.dt = lastC === null ? 0 : clamp(C - lastC, 0, 0.1); }); lastC = C; portTraffic(T, C); lakeFrame(C); weather(C); trucksFrame(C);
         const bySlot = [];
         deliveries.forEach((dl) => { if (!bySlot[dl.slot] || dl.d < bySlot[dl.slot].d) bySlot[dl.slot] = dl; });   // the newest per page
         const landing = T > 23 && T < 27.4;
