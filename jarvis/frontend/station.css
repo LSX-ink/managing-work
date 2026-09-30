@@ -1,0 +1,94 @@
+/* Station LSX (station.js): the 3D world behind the HUD. The canvas, the dimming veil and the planet tags all sit at
+   z-index -1: above the page background, below every panel and the wolf. The approval panel and the small view
+   buttons are the only parts above the HUD. */
+#station { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; display: block; pointer-events: auto; }
+#station[hidden], #station-veil[hidden], #station-ui[hidden], #station-controls[hidden] { display: none; }
+body.hud.station-on.hud-stars::before, body.hud.station-on.hud-stars::after { display: none; }   /* the scene has its own stars */
+
+/* while Alfred listens or speaks the scene dims behind the wolf, and the wolf grows a little */
+#station-veil {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0;
+    background: radial-gradient(circle at var(--sx, 50%) var(--sy, 45%), var(--hud-glow, rgba(20, 70, 160, 0.35)) 0, rgba(0, 0, 0, 0.35) 22%, rgba(0, 0, 0, 0.72) 70%);
+}
+body.hud #hud-sphere { transition: transform 0.9s ease; }
+body.hud.station-focus #hud-sphere { transform: scale(1.1); }
+
+/* planet tags and base pins, placed by station.js each frame */
+#station-ui { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+#station-ui .st-tag, #station-ui .st-pin {
+    position: absolute; left: 0; top: 0; opacity: 0; pointer-events: auto; cursor: pointer; white-space: nowrap;
+    margin: 0; translate: -50% -100%; transition: opacity 0.3s ease;
+    font-family: 'Share Tech Mono', ui-monospace, Consolas, monospace; letter-spacing: 0.18em; color: var(--hud-bright, #9fd8ff);
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+}
+#station-ui .st-tag { font-size: 13px; text-align: center; padding: 0 0 8px; border-bottom: 1px solid var(--hud-dim, rgba(63, 169, 255, 0.28)); }
+#station-ui .st-tag small { display: block; font-size: 10px; letter-spacing: 0.14em; color: var(--hud-mid, #3fa9ff); margin-top: 2px; }
+#station-ui .st-tag.waiting small { color: var(--hud-warn, #ffc24a); animation: st-blink 1.6s ease-in-out infinite; }
+/* deep space: HOME and LSX are close together, so their tags go out to the sides */
+#station-ui.deep .st-home { translate: calc(-100% - 12px) -50%; padding: 0; border-bottom: 0; text-align: right; }
+#station-ui.deep .st-lsx { translate: 12px -50%; padding: 0; border-bottom: 0; text-align: left; }
+#station-ui.deep .st-home small { display: none; }
+#station-ui .st-deep { cursor: default; font-size: 11px; color: var(--hud-mid, #3fa9ff); border-bottom: 0; }
+#station-ui .st-pin {
+    font-size: 10px; padding: 3px 7px; translate: -50% calc(-100% - 10px);
+    border: 1px solid var(--hud, #3fa9ff); background: var(--hud-panel, rgba(6, 18, 40, 0.72));
+}
+#station-ui .st-pin::after {   /* the stalk down to the spot */
+    content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 10px; background: var(--hud, #3fa9ff);
+}
+#station-ui .st-pin.waiting { border-color: var(--hud-warn, #ffc24a); color: var(--hud-warn, #ffc24a); }
+@keyframes st-blink { 50% { opacity: 0.45; } }
+
+/* view buttons: a thin row in the bottom-right corner */
+#station-controls {
+    position: fixed; right: 16px; bottom: 16px; z-index: 4; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px;
+    max-width: calc(100vw - 32px);
+}
+#station-controls button {
+    padding: 4px 8px; font: inherit; font-size: 11px; letter-spacing: 0.12em; cursor: pointer;
+    border: 1px solid var(--hud-dim, rgba(63, 169, 255, 0.28)); background: var(--hud-panel, rgba(6, 18, 40, 0.72)); color: var(--hud-mid, #3fa9ff);
+}
+#station-controls button:hover, #station-controls button:focus-visible { border-color: var(--hud, #3fa9ff); color: var(--hud-bright, #9fd8ff); outline: none; }
+#station-controls .st-waiting { border-color: var(--hud-warn, #ffc24a); color: var(--hud-warn, #ffc24a); }
+#station-controls .st-waiting[hidden] { display: none; }
+body[data-chat="bottom-right"] #station-controls { bottom: auto; top: 64px; }   /* keep clear of a chat docked there */
+
+/* the approval panel near LSX */
+#station-panel {
+    position: fixed; z-index: 16; max-height: min(70vh, 640px); overflow-y: auto; box-sizing: border-box;
+    padding: 12px 14px; border: 1px solid var(--hud-dim, rgba(63, 169, 255, 0.28)); background: var(--hud-panel, rgba(6, 18, 40, 0.9));
+    color: var(--hud-bright, #9fd8ff); font-family: 'Share Tech Mono', ui-monospace, Consolas, monospace; scrollbar-width: thin;
+    backdrop-filter: blur(4px);
+}
+#station-panel[hidden] { display: none; }
+#station-panel .st-head { display: flex; align-items: center; gap: 8px; }
+#station-panel h2 { flex: 1; margin: 0; font-size: 12px; font-weight: normal; letter-spacing: 0.2em; color: var(--hud, #3fa9ff); }
+#station-panel .st-close { border: 0; background: none; color: var(--hud-mid, #3fa9ff); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+#station-panel .st-msg { margin: 8px 0 0; font-size: 12px; color: var(--hud-warn, #ffc24a); }
+#station-panel ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
+#station-panel li { border-top: 1px solid var(--hud-dim, rgba(63, 169, 255, 0.28)); padding-top: 8px; display: grid; gap: 4px; }
+#station-panel .st-acc { font-size: 11px; letter-spacing: 0.16em; }
+#station-panel .st-title { font-size: 14px; overflow-wrap: anywhere; }
+#station-panel .st-meta { font-size: 10px; letter-spacing: 0.14em; color: var(--hud-mid, #3fa9ff); }
+#station-panel video, #station-panel img { width: 100%; max-height: 260px; background: #000; object-fit: contain; border: 1px solid var(--hud-dim, rgba(63, 169, 255, 0.28)); }
+#station-panel .st-nopreview { font-size: 11px; letter-spacing: 0.14em; color: var(--hud-mid, #3fa9ff); padding: 18px 0; text-align: center; border: 1px dashed var(--hud-dim, rgba(63, 169, 255, 0.28)); }
+#station-panel .st-row { display: flex; gap: 6px; align-items: stretch; }
+#station-panel .st-row input {
+    flex: 1; min-width: 0; font: inherit; font-size: 11px; letter-spacing: 0.08em; padding: 4px 6px;
+    border: 1px solid var(--hud-dim, rgba(63, 169, 255, 0.28)); background: transparent; color: var(--hud-bright, #9fd8ff);
+}
+#station-panel .st-row input:focus { border-color: var(--hud, #3fa9ff); outline: none; }
+#station-panel .st-row button { width: 44px; font-size: 18px; cursor: pointer; background: transparent; border: 1px solid; }
+#station-panel .st-yes { color: #3dff8a; border-color: rgba(61, 255, 138, 0.5); }
+#station-panel .st-no { color: #ff6b6b; border-color: rgba(255, 107, 107, 0.5); }
+#station-panel .st-row button:hover:not(:disabled), #station-panel .st-row button:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
+#station-panel .st-row button:disabled { opacity: 0.4; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+    body.hud #hud-sphere { transition: none; }
+    body.hud.station-focus #hud-sphere { transform: none; }
+    #station-ui .st-tag.waiting small { animation: none; }
+}
+html.a11y-motion body.hud.station-focus #hud-sphere { transform: none; }
+html.a11y-motion body.hud #hud-sphere { transition: none; }
+html.a11y-motion #station-ui .st-tag.waiting small { animation: none; }

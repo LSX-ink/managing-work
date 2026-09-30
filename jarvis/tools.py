@@ -207,6 +207,7 @@ import study_write
 import tiktokstudio
 import money_research
 import sports_games
+import station
 import sports_live
 import sports_scoring
 import sports_teams
@@ -339,6 +340,7 @@ ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn
 ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
 ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
+ABILITIES += [station]  # the station world behind the HUD
 
 
 def defer(tool: dict) -> dict:

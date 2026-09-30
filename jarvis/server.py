@@ -28,6 +28,7 @@ import memory
 import nowplaying
 import pc
 import screen
+import station
 import reminders
 import timers
 import tiktok
@@ -199,6 +200,7 @@ async def client_config():
         "model": settings.model,
         "city": settings.city,
         "wakeWord": settings.wake_word,
+        "station": settings.station,
     }
 
 
@@ -345,6 +347,12 @@ async def creator_video_action(video_id: str, action: str, request: Request):
         return JSONResponse({"ok": False, "said": str(exc)}, status_code=400)
     card = await asyncio.to_thread(lambda: tiktokstudio.studio_card(settings, tiktokstudio_store.load(settings)))
     return {"ok": True, "said": said, "card": card}
+
+
+@app.get("/station/state")
+async def station_state():
+    """What the HUD's station world shows: videos being made, waiting for approval at LSX, and approved lately."""
+    return await asyncio.to_thread(station.state, settings)
 
 
 @app.get("/tiktok/connect")
