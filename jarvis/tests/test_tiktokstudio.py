@@ -120,7 +120,7 @@ def test_every_look_makes_a_full_size_frame():
 
 def test_a_missing_picture_or_voice_still_makes_a_video(s, tmp_path, monkeypatch):
     rendered = []
-    monkeypatch.setattr(cv, "render_scene", lambda still, voice, seconds, out: (rendered.append((voice, seconds)), out.write_bytes(b"v")))
+    monkeypatch.setattr(cv, "render_scene", lambda still, voice, seconds, out, *a: (rendered.append((voice, seconds)), out.write_bytes(b"v")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
 
     async def no_picture(*a, **k):
@@ -472,3 +472,60 @@ def test_clipzz_waits_for_twitch_keys(s):
 def test_overlay_is_a_see_through_phone_layer():
     im = clips.overlay("He did NOT expect that", "twitch.tv/kai")
     assert im.size == (cv.W, cv.H) and im.mode == "RGBA" and im.getpixel((540, 1000))[3] == 0
+
+
+# ---- storytelling and quality -------------------------------------------------------------------------------
+
+EDITED = json.dumps({"title": "The Last Voicemail", "hook": "It knew her name.", "character": "", "score": 9,
+                     "scores": {"hook": 6}, "caption": "Would you?", "hashtags": ["story"],
+                     "scenes": [{"text": "Play.", "narration": "At 3 a.m. she pressed play.", "picture": "a phone",
+                                 "closeup": "her thumb on the screen"},
+                                {"text": "Her name.", "narration": "It said her name.", "picture": "a kitchen"}]})
+
+
+def test_the_writer_pitches_ideas_and_an_editor_rewrites_the_draft(s):
+    draft = json.dumps({**json.loads(SCRIPT), "character": "a woman of 30, red coat", "pitches": [{"idea": "x", "score": 7}]})
+    client = FakeClient([(draft, "end_turn"), (EDITED, "end_turn")])
+    account = cs.load(s)["accounts"][0]
+    out = asyncio.run(cv.write_script(client, s, account))
+    first, second = (c["messages"][0]["content"] for c in client.calls)
+    assert "pitch 5 wildly different ideas" in first and "loops back" in first and '"closeup"' in first
+    assert "toughest short-form story editor" in second and "The Last Voicemail" in second and first in second
+    assert out["hook"] == "It knew her name." and out["score"] == 9
+    assert out["character"] == "a woman of 30, red coat"  # the editor dropped it, the draft's is kept
+    assert out["scenes"][0]["closeup"] == "her thumb on the screen" and out["scenes"][1]["closeup"] == ""
+
+
+def test_a_failed_edit_keeps_the_draft(s):
+    client = FakeClient([(SCRIPT, "end_turn"), ("not json at all", "end_turn")])
+    out = asyncio.run(cv.write_script(client, s, cs.load(s)["accounts"][0]))
+    assert out["title"] == "The Last Voicemail" and out["score"] == 0 and len(client.calls) == 2
+
+
+def test_word_by_word_captions(tmp_path):
+    words = cv.estimate_words("At three, she pressed play on it.", 3.0)
+    assert words[0][0] == pytest.approx(0.1) and words[-1][1] == pytest.approx(3.0)
+    assert [[w[2] for w in line] for line in cv.chunks(words)] == [["At", "three,"], ["she", "pressed", "play"], ["on", "it."]]
+    listing = cv.caption_track(words, 5.0, (232, 197, 71), tmp_path, "cap0")
+    text = listing.read_text()
+    assert text.count("duration") == len(words) + 2  # one per word, plus the quiet lead-in and tail
+    total = sum(float(line.split()[1]) for line in text.splitlines() if line.startswith("duration"))
+    assert total == pytest.approx(5.0, abs=0.01)
+    im = cv.caption_image(["pressed", "play"], 1, (232, 197, 71))
+    assert im.size == (cv.W, cv.CAPTION_H) and im.mode == "RGBA"
+    assert cv.caption_track([], 5.0, (0, 0, 0), tmp_path, "cap1") is None
+    assert cv.captions_on({"style": "noir"}) and not cv.captions_on({"style": "drama"})
+    assert not cv.captions_on({"style": "noir", "captions": False})
+
+
+def test_a_backing_track_is_picked_from_the_music_folders(tmp_path):
+    folder = tmp_path / "TikTok" / "lowkey.lore"
+    folder.mkdir(parents=True)
+    assert cv.music_for(folder) is None
+    (tmp_path / "TikTok" / "Music").mkdir()
+    (tmp_path / "TikTok" / "Music" / "all.mp3").write_bytes(b"x")
+    (tmp_path / "TikTok" / "Music" / "notes.txt").write_text("x")
+    assert cv.music_for(folder).name == "all.mp3"
+    (folder / "Music").mkdir()
+    (folder / "Music" / "mine.m4a").write_bytes(b"x")
+    assert cv.music_for(folder).name == "mine.m4a"  # the account's own music comes first
