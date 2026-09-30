@@ -13,3 +13,4 @@
     background: transparent; color: #f2f4f7; border: 1px solid #8a93a0; text-decoration: none;
 }
 .mic-help-go { background: #ffcc4d; color: #0b0f14; border-color: #ffcc4d; font-weight: 600; }
+.mic-help-detail { margin: 10px 0 0; font-size: 11px; color: #8a93a0; overflow-wrap: anywhere; }
