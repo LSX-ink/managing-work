@@ -23,6 +23,19 @@ LSX.forest = (k) => {
     const fGround = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600, 120, 120), new THREE.MeshStandardMaterial({ map: tex(grassC, 90, 90), roughness: 1 }));
     { const p = fGround.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, fh(p.getX(i), -p.getY(i))); fGround.geometry.computeVertexNormals(); }
     fGround.rotation.x = -Math.PI / 2; fGround.receiveShadow = true; forest.add(fGround);
+    // cloud shadows drifting over the forest and the clearing, by the real clock
+    const fCloudT = { value: 0 };
+    fGround.material.onBeforeCompile = (sh) => {
+        sh.uniforms.cT = fCloudT;
+        sh.vertexShader = 'varying vec2 vCW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vCW = (modelMatrix * vec4(transformed, 1.0)).xz;');
+        sh.fragmentShader = `varying vec2 vCW; uniform float cT;
+            float cH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+            float cN(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(cH(i), cH(i + vec2(1, 0)), f.x), mix(cH(i + vec2(0, 1)), cH(i + vec2(1, 1)), f.x), f.y); }
+            ` + sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+            { vec2 q = vCW * 0.007 + vec2(cT * 0.010, -cT * 0.006); float n = cN(q) * 0.6 + cN(q * 2.3 + 7.0) * 0.3 + cN(q * 5.1) * 0.1;
+              diffuseColor.rgb *= 1.0 - smoothstep(0.52, 0.66, n) * 0.35; }`);
+    };
     const fPad = pad.clone(); fPad.position.set(0, 0, 0); forest.add(fPad);
     const roadM = new THREE.MeshStandardMaterial({ color: 0x3a3a3c, roughness: 0.9 }), kerbM = new THREE.MeshStandardMaterial({ color: 0xd8d4c8, roughness: 0.8 });
     const ring = new THREE.Mesh(new THREE.RingGeometry(33, 39, 96), roadM); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; ring.receiveShadow = true; forest.add(ring);
@@ -375,6 +388,7 @@ LSX.forest = (k) => {
             }
             lp.needsUpdate = true;
         }
+        fCloudT.value = (Date.now() / 1000) % 100000;
         const bp = birdGeo.attributes.position;
         for (let i = 0; i < BIRDS; i++) {
             const a = C * 0.18 + i * 0.35 + Math.sin(i) * 0.3, r = 120 + (i % 5) * 9, cx = 60, cz = -140;
