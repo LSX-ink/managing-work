@@ -777,3 +777,25 @@ def test_named_characters_keep_their_voice_across_videos(s, tmp_path, monkeypatc
     assert voices[0] == mara and voices[1] in cs.CHARACTER_VOICES["woman"] and voices[1] != mara
     cs.update_bible(account, {"characters": [{"name": "Mara", "voice": "en-US-JennyNeural"}]})
     assert {c["name"]: c["voice"] for c in account["bible"]["characters"]}["Mara"] == mara  # a voice, once given, never changes
+
+
+def test_retention_pass_rewrites_the_scene_viewers_would_swipe_on(s):
+    base = json.loads(SCRIPT)
+    scenes = [{"text": f"Line {i}", "narration": f"Scene {i} happens.", "picture": f"shot {i}"} for i in range(1, 6)]
+    script = cv.parse_script(json.dumps({**base, "scenes": scenes}))
+    n = len(script["scenes"])
+    weak = {"scores": [8] + [3] + [7] * (n - 3), "weakest": 3, "why": "a summary, nothing new",
+            "text": "The voicemail was from tomorrow", "narration": "The timestamp said tomorrow.", "after": 9}
+    fixed = asyncio.run(cv.fix_retention(FakeClient([(json.dumps(weak), "end_turn")]), s, script))
+    assert fixed["scenes"][2]["narration"] == "The timestamp said tomorrow."
+    assert fixed["scenes"][2]["picture"] == script["scenes"][2]["picture"]  # same shot, sharper line
+    assert fixed["scenes"][1] == script["scenes"][1] and len(fixed["scenes"]) == n
+    assert fixed["retention"] == 7 and "scene 3 rewritten (3 to 9/10)" in fixed["retention_fix"]
+    # a rewrite that isn't better, a hook scene, or a broken reply: the script stands
+    worse = {**weak, "after": 2}
+    kept = asyncio.run(cv.fix_retention(FakeClient([(json.dumps(worse), "end_turn")]), s, script))
+    assert kept["scenes"] == script["scenes"] and "retention_fix" not in kept
+    hook = {**weak, "weakest": 1}
+    assert asyncio.run(cv.fix_retention(FakeClient([(json.dumps(hook), "end_turn")]), s, script))["scenes"] == script["scenes"]
+    assert asyncio.run(cv.fix_retention(FakeClient([("no json", "end_turn")]), s, script)) == script
+    assert asyncio.run(cv.fix_retention(FakeClient([]), s, script)) == script

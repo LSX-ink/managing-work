@@ -158,6 +158,20 @@ Then score each one AND the current line 1 to 10 on "would I stop scrolling". Re
 {{"hooks": [{{"line": "...", "score": 0}}], "current": 0}}"""
 
 
+RETENTION_PROMPT = """You are TikTok's retention analyst. Here is a finished script, one scene per line
+(number | on-screen line | narration):
+{scenes}
+
+Watch it in your head like a viewer with their thumb over the screen. For every scene from 2 onwards, score 1 to
+10 how sure you are they keep watching through it. Find the ONE scene where most people would swipe away (a
+slow bit, a summary, a repeat, a lull after the hook, a line that tells instead of shows) and rewrite it so it
+raises the stakes, reveals something, or opens a new question, keeping the same story, character and length and
+flowing from the scene before into the scene after. Reply with ONLY this JSON:
+{{"scores": [0], "weakest": 2, "why": "one short reason", "text": "new on-screen line under 12 words",
+"narration": "new narration, one or two short sentences", "after": 0}}
+"scores" lists scenes 2 onwards in order, "weakest" is the scene number and "after" your score for the rewrite."""
+
+
 LESSONS_PROMPT = """You are the analyst for the TikTok account @{name} ({theme}). Here is every video with a view
 count, one per line (views | title | first line | mood | scenes | editor's score | hook score | part | posted):
 {rows}
@@ -260,7 +274,7 @@ async def write_script(client, settings: Settings, account: dict, idea: str = ""
                                          messages=[{"role": "user", "content": prompt}])
     draft = parse_script("".join(getattr(b, "text", "") for b in reply.content))
     edited = await edit_script(client, settings, prompt, draft)
-    return await pick_hook(client, settings, edited)
+    return await fix_retention(client, settings, await pick_hook(client, settings, edited))
 
 
 async def edit_script(client, settings: Settings, brief: str, draft: dict) -> dict:
@@ -303,6 +317,35 @@ async def pick_hook(client, settings: Settings, script: dict) -> dict:
     opening = {**script["scenes"][0], "narration": line, "text": cs.clean(line, 120)}
     return {**script, "scenes": [opening, *script["scenes"][1:]], "hook": line, "hook_score": score,
             "old_hook": first}
+
+
+async def fix_retention(client, settings: Settings, script: dict) -> dict:
+    """Finds the scene viewers would most likely swipe away on and rewrites it, if the rewrite scores higher."""
+    scenes = script["scenes"]
+    if len(scenes) < 3:
+        return script
+    rows = "\n".join(f"{i} | {s['text']} | {s['narration']}" for i, s in enumerate(scenes, 1))
+    try:
+        reply = await client.messages.create(model=settings.model, max_tokens=1500, messages=[
+            {"role": "user", "content": RETENTION_PROMPT.format(scenes=rows)}])
+        match = re.search(r"\{.*\}", "".join(getattr(b, "text", "") for b in reply.content), re.S)
+        data = json.loads(match.group(0)) if match else {}
+        weakest = int(data.get("weakest"))
+    except Exception as exc:  # the API, or JSON that didn't parse: the script stands
+        print(f"[jarvis] Retention pass skipped: {exc}", flush=True)
+        return script
+    scores = [_score(x) for x in data.get("scores") or [] if isinstance(x, (int, float, str))]
+    narration = cs.clean(data.get("narration"), 400)
+    if not 2 <= weakest <= len(scenes) or not narration:
+        return script
+    before = scores[weakest - 2] if len(scores) >= weakest - 1 else 0
+    after = _score(data.get("after"))
+    if after <= before:
+        return {**script, "retention": min(scores) if scores else 0}
+    fixed = {**scenes[weakest - 1], "narration": narration, "text": cs.clean(data.get("text"), 120) or cs.clean(narration, 120)}
+    scores[weakest - 2] = after
+    return {**script, "scenes": [*scenes[:weakest - 1], fixed, *scenes[weakest:]], "retention": min(scores),
+            "retention_fix": f"scene {weakest} rewritten ({before} to {after}/10): {cs.clean(data.get('why'), 160)}"}
 
 
 # ---- 2. pictures -------------------------------------------------------------------------------------------
@@ -814,6 +857,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     if script.get("hook_score"):
         lines += [f"Hook score: {script['hook_score']}/10"
                   + (f" (beat the first draft: \"{script['old_hook']}\")" if script.get("old_hook") else ""), ""]
+    if script.get("retention_fix"):
+        lines += [f"Retention pass: {script['retention_fix']}", ""]
     lines += ["## Script", ""]
     lines += [f"{i}. {s['narration']}" for i, s in enumerate(scenes, 1)]
     video.with_suffix(".md").write_text("\n".join(lines) + "\n", encoding="utf-8")
