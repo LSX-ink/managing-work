@@ -290,6 +290,29 @@ LSX.space = async (k, pause) => {
             m4.compose(onOrbit(r, a, (rnd(i + 9006) - 0.5) * 50).sub(SUNP), q, V(s, s * (0.6 + rnd(i + 9007) * 0.5), s)); beltI.setMatrixAt(i, m4);
         } }
     const belt = new THREE.Group(); belt.position.copy(SUNP); belt.add(beltI); space.add(belt);
+    // a mining site in the belt: a big asteroid with a mining ship hovering over it, its drill glowing, and an ore
+    // hauler running loads from the mine to LSX and back
+    const mine = new THREE.Group(); mine.position.copy(onOrbit(R_BELT, 1.1, 10).sub(SUNP)); belt.add(mine);
+    const bigRock = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 1), rockM); bigRock.scale.set(46, 34, 40); mine.add(bigRock);
+    { const p = bigRock.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const f = 0.8 + rnd(i + 9500) * 0.35; p.setXYZ(i, p.getX(i) * f, p.getY(i) * f, p.getZ(i) * f); } bigRock.geometry.computeVertexNormals(); }
+    const miner = ship.clone(); miner.traverse((c) => { if (c.isLight) c.visible = false; }); miner.scale.setScalar(0.9); miner.position.set(0, 58, 0); miner.rotation.z = 0.2; mine.add(miner);
+    const drill = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffb060, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); drill.position.set(0, 30, 0); mine.add(drill);
+    const tether = add(mine, new THREE.CylinderGeometry(0.6, 0.6, 26, 6), mat.steel, 0, 44, 0);
+    const hauler = ship.clone(); hauler.traverse((c) => { if (c.isLight) c.visible = false; }); hauler.scale.setScalar(0.6); space.add(hauler);
+    const mineW = V(0, 0, 0);
+    function mineFrame(C, deep) {
+        const on = deep > 0.02; hauler.visible = on; if (!on) return;
+        bigRock.rotation.y = C * 0.01; drill.scale.setScalar(90 + Math.sin(C * 23) * 20 + Math.random() * 30); drill.material.opacity = 0.7 + Math.sin(C * 17) * 0.3;
+        mine.updateWorldMatrix(true, false); mineW.setFromMatrixPosition(mine.matrixWorld);
+        // 120 s: load at the mine (0-15), fly to LSX (15-60), unload (60-75), fly back (75-120)
+        const t = C % 120, to = LSXC.clone().add(V(0, 70, 0)), from = mineW.clone().add(V(0, 90, 0));
+        let a = from, b = from, f = 0;
+        if (t >= 15 && t < 60) { a = from; b = to; f = ease((t - 15) / 45); }
+        else if (t >= 60 && t < 75) { a = b = to; }
+        else if (t >= 75) { a = to; b = from; f = ease((t - 75) / 45); }
+        hauler.position.copy(a).lerp(b, f);
+        if (a !== b) hauler.quaternion.setFromUnitVectors(V(1, 0, 0), b.clone().sub(a).normalize());
+    }
     const DUSTN = 3000, beltDust = new THREE.BufferGeometry(), bd = new Float32Array(DUSTN * 3);
     for (let i = 0; i < DUSTN; i++) { const p = onOrbit(R_BELT + (rnd(i + 9100) - 0.5) * 320, rnd(i + 9101) * Math.PI * 2, (rnd(i + 9102) - 0.5) * 70).sub(SUNP); bd.set([p.x, p.y, p.z], i * 3); }
     beltDust.setAttribute('position', new THREE.BufferAttribute(bd, 3));
@@ -478,7 +501,7 @@ LSX.space = async (k, pause) => {
     function frame(T, C, { idle, nearLsx, rampOpen, camera, deep = 0 }) {
         // the belt and the orbit lines come up as you zoom out, so the both-planets view stays calm round the wolf
         belt.visible = deep > 0.02; beltDustM.opacity = 0.55 * deep; orbitM.opacity = 0.05 + 0.13 * deep;
-        spaceExtras(C); cometFrame(C, deep); storms(C); shuttleFrame(C);
+        spaceExtras(C); cometFrame(C, deep); mineFrame(C, deep); storms(C); shuttleFrame(C);
         clouds.rotation.y = C * 0.02; portFrame(C);
         clouds.material.opacity = 1 - nearLsx * 0.85; lsxRim.visible = lsxHalo.visible = nearLsx < 0.7;
         if (ship.parent !== space) space.add(ship);
@@ -526,7 +549,7 @@ LSX.space = async (k, pause) => {
     k.linearize(space);
     return { free,
         scene: space, frame, sky, HOMEC, HOMER, LSXC, LSXR, P, N, LP, LN, lA, lB, SUNP, SUNR, nrm,
-        giant: { pos: giant.position, r: GIANTR * 2.3 }, ice: { pos: ice.position, r: ICER }, belt: R_BELT, inner: { pos: inner.position, r: INNERR }, comet: cometPos,
+        giant: { pos: giant.position, r: GIANTR * 2.3 }, ice: { pos: ice.position, r: ICER }, belt: R_BELT, inner: { pos: inner.position, r: INNERR }, comet: cometPos, mine: mineW,
         pickables: { home: [homeP, surfPatch], lsx: [lsxP, portPatch] },
     };
 };

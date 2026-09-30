@@ -87,7 +87,7 @@
         tagHome = el('div', 'st-tag st-home'); tagLsx = el('div', 'st-tag st-lsx');
         pinBase = el('div', 'st-pin', 'BASE'); pinLsx = el('div', 'st-pin st-lsx', 'PORT');
         tagHome.dataset.go = 'home'; pinBase.dataset.go = 'home'; tagLsx.dataset.go = 'lsx-tag'; pinLsx.dataset.go = 'lsx';
-        deepTags = ['SUN', 'GAS GIANT', 'ICE WORLD', 'ASTEROID BELT', 'INNER WORLD', 'COMET'].map((t) => el('div', 'st-tag st-deep', t));
+        deepTags = ['SUN', 'GAS GIANT', 'ICE WORLD', 'ASTEROID BELT', 'INNER WORLD', 'COMET', 'MINING SITE'].map((t) => el('div', 'st-tag st-deep', t));
         ui.append(tagHome, tagLsx, pinBase, pinLsx, ...deepTags);
         controls = el('nav'); controls.id = 'station-controls'; controls.setAttribute('aria-label', 'Station view');
         const button = (label, title, fn) => { const b = el('button', '', label); b.type = 'button'; b.title = title; b.setAttribute('aria-label', title); b.addEventListener('click', fn); controls.append(b); return b; };
@@ -468,7 +468,7 @@
         place(pinLsx, lp, showL); pinLsx.textContent = n ? `PORT · ${n} WAITING` : 'PORT'; pinLsx.classList.toggle('waiting', n > 0);
         const bodies = [space.SUNP.clone().add(THREEV(0, space.SUNR * 1.6, 0)), space.giant.pos.clone().add(THREEV(0, 220, 0)), space.ice.pos.clone().add(THREEV(0, 80, 0)),
             space.SUNP.clone().add(space.free.clone().applyAxisAngle(space.nrm, -1.1).multiplyScalar(space.belt)),
-            space.inner.pos.clone().add(THREEV(0, 60, 0)), space.comet.clone().add(THREEV(0, 50, 0))];
+            space.inner.pos.clone().add(THREEV(0, 60, 0)), space.comet.clone().add(THREEV(0, 50, 0)), space.mine.clone().add(THREEV(0, 70, 0))];
         deepTags.forEach((t, i) => place(t, screenOf(bodies[i]), deep));
     }
     function setTag(node, name, sub) {
