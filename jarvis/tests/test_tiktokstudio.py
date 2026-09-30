@@ -945,3 +945,26 @@ def test_a_draft_script_is_read_first_then_filmed_exactly(s, monkeypatch):
     assert filmed == [drafted] and cs.load(s)["videos"][-1]["status"] == "ready"
     with pytest.raises(ValueError, match="no draft"):
         asyncio.run(creator.run_tool("tiktok_studio", {"action": "make_video", "draft": "latest"}, s))
+
+
+def test_a_boom_flashes_white_and_a_glitch_splits_the_colours(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image, ImageChops, ImageDraw, ImageStat
+    still = tmp_path / "s.png"
+    im = Image.new("RGB", (cv.W, cv.H), (20, 30, 90))
+    ImageDraw.Draw(im).rectangle((300, 600, 780, 1300), fill=(240, 200, 40))
+    im.save(still)
+
+    def frame(video, n):
+        out = tmp_path / f"{video.stem}-{n}.png"
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(video), "-vf", f"select=eq(n\\,{n})", "-frames:v", "1", str(out)],
+                       check=True, capture_output=True)
+        return Image.open(out).convert("RGB")
+    for name, kw in {"calm": {}, "boom": {"hit": "boom"}, "glitch": {"hit": "glitch"}}.items():
+        cv.render_scene([still], None, 1.0, tmp_path / f"{name}.mp4", **kw)
+    bright = [ImageStat.Stat(frame(tmp_path / f"{n}.mp4", 0).convert("L")).mean[0] for n in ("calm", "boom")]
+    assert bright[1] > bright[0] + 60  # the boom opens on a flash
+    late = ImageStat.Stat(ImageChops.difference(frame(tmp_path / "glitch.mp4", 20), frame(tmp_path / "calm.mp4", 20)))
+    early = ImageStat.Stat(ImageChops.difference(frame(tmp_path / "glitch.mp4", 1), frame(tmp_path / "calm.mp4", 1)))
+    assert sum(early.mean) > sum(late.mean) + 5  # the glitch only lasts a moment
