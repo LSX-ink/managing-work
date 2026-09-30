@@ -1074,3 +1074,15 @@ def test_the_mix_is_levelled_to_tiktok_loudness(tmp_path):
                              capture_output=True, text=True).stderr
         return float(re.findall(r"I:\s+(-?[\d.]+) LUFS", out)[-1])
     assert loudness(tmp_path / "q.mp4") < -30 and abs(loudness(tmp_path / "loud.mp4") + 14) < 3
+
+
+def test_the_spoken_word_pops_up_a_little():
+    def height(im, colour):
+        rows = [y for y in range(im.height) if any(im.getpixel((x, y))[:3] == colour and im.getpixel((x, y))[3]
+                                                   for x in range(0, im.width, 3))]
+        return rows[-1] - rows[0] if rows else 0
+    accent = (232, 197, 71)
+    lit = cv.caption_image(["hello", "there"], 0, accent)
+    flat = cv.caption_image(["hello", "there"], 0, accent, ["hello"])  # a punch word is already its biggest
+    assert height(lit, accent) > 0 and height(flat, accent) > height(lit, accent)
+    assert cv.PUNCH_SCALE > cv.LIT_SCALE > 1

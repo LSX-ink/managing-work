@@ -561,6 +561,7 @@ SAFE_SIDE, SAFE_BOTTOM = 170, 1500
 
 
 PUNCH_SCALE = 1.3  # how much bigger the scene's key words are drawn
+LIT_SCALE = 1.12  # the word being spoken pops up a little as it's said, so the captions bounce along with the voice
 
 
 def bare(word: str) -> str:
@@ -616,10 +617,11 @@ def caption_image(line: list[str], lit: int, accent, punch=()) -> Image.Image:
     draw = ImageDraw.Draw(im)
     words = [w.upper() for w in line]
     big = [bare(w) in punch for w in line]
+    scale = [PUNCH_SCALE if b else (LIT_SCALE if i == lit else 1.0) for i, b in enumerate(big)]
     room = W - 2 * SAFE_SIDE
 
     def layout(size, rows):
-        fonts = [ac.font(size * PUNCH_SCALE if b else size) for b in big]
+        fonts = [ac.font(size * k) for k in scale]
         widths = [draw.textlength(w, font=f) for w, f in zip(words, fonts)]
         space = draw.textlength(" ", font=ac.font(size))
         totals = [sum(widths[a:b]) + space * (b - a - 1) for a, b in rows]
@@ -641,7 +643,7 @@ def caption_image(line: list[str], lit: int, accent, punch=()) -> Image.Image:
     for r, ((a, b), total) in enumerate(zip(rows, totals)):
         x, baseline = (W - total) / 2, first + r * step
         for i in range(a, b):
-            top = baseline - (size * PUNCH_SCALE if big[i] else size) * 0.8
+            top = baseline - size * scale[i] * 0.8
             draw.text((x, top), words[i], font=fonts[i], fill=accent if i == lit or big[i] else (255, 255, 255),
                       stroke_width=9 if big[i] else 7, stroke_fill=(0, 0, 0))
             x += widths[i] + space
