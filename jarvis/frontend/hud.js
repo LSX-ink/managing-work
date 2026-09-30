@@ -231,6 +231,23 @@
         drawWave(t);
     }
 
+    // the weather panel shrinks to its title bar and back; the choice is kept in this browser
+    function envToggle() {
+        const panel = $('hud-env'), button = $('hud-env-toggle');
+        if (!panel || !button || button.dataset.ready) return;
+        button.dataset.ready = '1';
+        const show = (open) => {
+            panel.classList.toggle('shut', !open);
+            button.setAttribute('aria-expanded', String(open));
+            $('hud-env-sign').textContent = open ? '−' : '+';
+            try { localStorage.setItem('jarvis-env-open', open ? '1' : '0'); } catch (e) { /* private window */ }
+        };
+        let open = true;
+        try { open = localStorage.getItem('jarvis-env-open') !== '0'; } catch (e) { /* private window */ }
+        show(open);
+        button.addEventListener('click', () => show(panel.classList.contains('shut')));
+    }
+
     function start(cfg) {
         if (!document.body.classList.contains('hud')) return;
         config = cfg;
@@ -239,6 +256,7 @@
         $('hud-model').textContent = (config.model || '—').toUpperCase();
         $('hud-voice').textContent = config.serverVoice ? 'ELEVENLABS' : 'BROWSER';
         if (config.city) $('hud-city').textContent = `ENVIRONMENT · ${config.city.toUpperCase()}`;
+        envToggle();
         if (navigator.getBattery) {
             navigator.getBattery().then((b) => {
                 const show = () => { $('hud-battery').textContent = `${Math.round(b.level * 100)}%${b.charging ? ' · CHARGING' : ''}`; };

@@ -157,7 +157,8 @@ body.hud .hud-panel h2 {
     margin: 4px 0 10px; border-bottom: 1px solid var(--hud-dim); padding-bottom: 4px;
 }
 body.hud .hud-left { grid-area: left; }
-body.hud .hud-right { grid-area: right; text-align: center; }
+body.hud .hud-rightcol { grid-area: right; display: flex; flex-direction: column; gap: 16px; align-self: start; min-width: 0; }
+body.hud .hud-right { text-align: center; }
 body.hud .hud-left dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 13px; }
 body.hud .hud-left dt { color: var(--hud-mid); }
 body.hud .hud-left dd { color: var(--hud-bright); text-align: right; overflow-wrap: anywhere; }
@@ -166,8 +167,14 @@ body.hud .hud-left dd { color: var(--hud-bright); text-align: right; overflow-wr
 #hud-date { font-size: 13px; color: var(--hud-mid); margin-bottom: 14px; letter-spacing: 0.2em; }
 #hud-radar, #hud-wave { display: block; margin: 0 auto 12px; max-width: 100%; }
 
-body.hud .hud-bottom { width: 100%; font-size: 14px; }
-body.hud .hud-bottom p { color: var(--hud-bright); line-height: 1.5; }
+body.hud .hud-bottom { font-size: 14px; }
+body.hud .hud-bottom p { color: var(--hud-bright); line-height: 1.5; margin: 0; }
+#hud-env h2 { margin-bottom: 8px; }
+#hud-env-toggle { all: unset; display: flex; width: 100%; justify-content: space-between; gap: 8px; cursor: pointer; }
+#hud-env-toggle:focus-visible { outline: 1px dashed var(--hud); outline-offset: 3px; }
+#hud-env-sign { color: var(--hud-bright); font-size: 14px; line-height: 1; }
+#hud-env.shut h2 { margin-bottom: 0; border-bottom: 0; padding-bottom: 0; }
+#hud-env.shut #hud-weather { display: none; }
 
 /* ---- centre column: sphere, transcript, input ------------------------------ */
 
@@ -243,6 +250,7 @@ body.hud #confirm { border-color: var(--hud-warn); border-radius: 0; background:
 @media (max-width: 1000px) {
     body.hud { grid-template-columns: minmax(0, 1fr); grid-template-areas: "bar" "center"; padding: 16px; }
     body.hud .hud-left, body.hud .hud-right { display: none; }
+    body.hud .hud-rightcol { grid-area: auto; }
     body.hud #np-popup { top: 64px; right: 16px; }
     body.hud .hud-sub { display: none; }
     body.hud #hud-sphere { width: min(420px, 90vw); height: min(420px, 90vw); margin: 0; }

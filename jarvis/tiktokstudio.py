@@ -139,6 +139,7 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
                   "file": cs.relative(settings, result["path"]), "mood": result.get("mood", ""),
                   "score": result.get("score", 0), "hook_score": result.get("hook_score", 0),
                   "scenes": len(result["scenes"]), "pinned_comment": result.get("pinned_comment", ""),
+                  "sound": result.get("sound", ""),
                   "story": " ".join(s["narration"] for s in result["scenes"])[:1500]}
     except Exception as exc:  # the network, the API or ffmpeg let us down; say so and carry on
         print(f"[jarvis] Studio video failed: {exc}", flush=True)
@@ -412,19 +413,21 @@ def studio_card(settings: Settings, data: dict, focus: str = "") -> dict:
     done = [v for v in data["videos"] if v.get("status") in ("posted", "approved", "rejected")][-8:]
     videos = []
     for v in (live + done)[-30:]:
-        row = {k: v.get(k) for k in ("id", "account", "title", "status", "part", "views", "caption", "error", "mode")}
+        row = {k: v.get(k) for k in ("id", "account", "title", "status", "part", "views", "caption", "error", "mode",
+                                     "score", "hook_score", "mood", "sound", "pinned_comment")}
         row["hashtags"] = " ".join(f"#{t}" for t in v.get("hashtags", []))
         if v.get("file"):
             row["src"] = f"/screen/file?path={screen.quote(v['file'])}"
         videos.append(row)
     accounts = [{"name": a["name"], "style": a["style"], "format": a["format"], "per_day": a.get("per_day", 3),
-                 "theme": a["theme"], "connected": tiktok.connected(settings, a["name"])} for a in data["accounts"]]
+                 "theme": a["theme"], "connected": tiktok.connected(settings, a["name"]),
+                 "lessons": bool((a.get("lessons") or {}).get("brief"))} for a in data["accounts"]]
     return screen.card("creator-studio", "TikTok studio", "creator-studio",
                        buttons=[{"label": "Make one now", "say": "Make a TikTok video now."}],
                        data={"accounts": accounts, "videos": videos, "configured": tiktok.configured(settings),
                              "setup": " ".join([tiktok.setup_line(), *dict.fromkeys(
                                  filter(None, (clips_blocked(settings, a) for a in data["accounts"] if a["format"] == "clips")))]),
-                             "focus": focus, "making": _ctx["making"]})
+                             "focus": focus, "making": _ctx["making"], "paused": bool(data.get("paused"))})
 
 
 def queue(settings: Settings) -> list[dict]:

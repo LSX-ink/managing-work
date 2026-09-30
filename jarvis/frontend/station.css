@@ -92,3 +92,13 @@ body[data-chat="bottom-right"] #station-controls { bottom: auto; top: 64px; }   
 html.a11y-motion body.hud.station-focus #hud-sphere { transform: none; }
 html.a11y-motion body.hud #hud-sphere { transition: none; }
 html.a11y-motion #station-ui .st-tag.waiting small { animation: none; }
+
+/* why the planets aren't showing, when they can't */
+#station-note {
+    position: fixed; left: 50%; bottom: 16px; translate: -50% 0; z-index: 4; padding: 4px 10px; font: inherit; font-size: 11px;
+    letter-spacing: 0.12em; cursor: pointer; border: 1px solid var(--hud-warn, #ffc24a); color: var(--hud-warn, #ffc24a);
+    background: var(--hud-panel, rgba(6, 18, 40, 0.72));
+}
+#station-note[hidden] { display: none; }
+/* small screens: keep the weather panel clear of the view buttons */
+@media (max-width: 1000px) { body.station-on .hud-rightcol { margin-bottom: 110px; } }

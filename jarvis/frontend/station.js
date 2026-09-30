@@ -35,8 +35,22 @@
     const webgl = () => { try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); } catch (e) { return false; } };
     const pause = () => new Promise((ok) => setTimeout(ok, 0));
 
+    // when the planets can't show, say why in the bottom corner (tap to try again) instead of failing silently
+    let note = null;
+    function why(text) {
+        if (!note) {
+            note = el('button', ''); note.id = 'station-note'; note.type = 'button';
+            note.addEventListener('click', () => { save('on', true); why(''); start(); });
+            document.body.append(note);
+        }
+        note.textContent = text; note.hidden = !text;
+    }
+
     async function start() {
-        if (running || booting || !allowed || !load('on', true) || !webgl()) return;
+        if (running || booting || !allowed) return;
+        if (!load('on', true)) { why('PLANETS OFF · TAP TO TURN ON'); return; }
+        if (!webgl()) { why('PLANETS NEED GRAPHICS ACCELERATION ON IN YOUR BROWSER'); return; }
+        why('');
         booting = true;
         try {
             await loadScripts();
@@ -62,6 +76,7 @@
         } catch (e) {
             console.warn('Station could not start:', e);
             stop();
+            why(`PLANETS COULDN'T LOAD · TAP TO TRY AGAIN`);
         } finally { booting = false; }
     }
     function stop() {
@@ -353,7 +368,7 @@
 
     // ---- Alfred: station_view cards, and easing in behind the wolf while he listens or speaks ------------------------
     function act(action) {
-        if (action === 'off') { save('on', false); stop(); return; }
+        if (action === 'off') { save('on', false); stop(); why('PLANETS OFF · TAP TO TURN ON'); return; }
         if (action === 'on') { save('on', true); start(); return; }
         if (!running) return;
         const z = reduced();
