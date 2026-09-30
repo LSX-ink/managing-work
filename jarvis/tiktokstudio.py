@@ -2,9 +2,12 @@
 
 - Every morning (from JARVIS_CREATOR_HOUR, 7am by default) he makes each account's videos for the day (3 unless
   you change it), one after another, and tells you when they're waiting for you.
-- Each video waits in the studio queue. One tap on Approve posts it with TikTok's Content Posting API (to your
-  TikTok inbox as a draft, or straight to the account; see tiktok.py). Without a connected TikTok app, the MP4
-  and its caption are saved in the Work memory folder, ready to upload by hand.
+- Each video waits in the studio queue. Nothing posts without a tick: Approve posts it with TikTok's Content
+  Posting API (to your TikTok inbox as a draft, or straight to the account; see tiktok.py). Without a connected
+  TikTok app, the MP4 and its caption are saved in the Work memory folder, ready to upload by hand.
+- An X (reject) marks the video rejected and straight away starts a better replacement for the same account.
+- Taste: every tick and X (with the reason, if given) is remembered per account, and each new script or clip pick
+  is told what the user liked and disliked, so the videos lean towards what gets ticked while staying fresh.
 - Sequels: when a story reaches 50k views Alfred makes part 2, then another part at every 100k more (150k, 250k,
   350k), up to part 5, which ends the series on a shocking cliffhanger. Views are read from TikTok when the
   account is connected with the video.list permission, or you tell Alfred ("that story has 80k views").
@@ -31,7 +34,8 @@ LAST_PART = 5
 FIRST_SEQUEL_AT = 50_000
 SEQUEL_STEP = 100_000
 screen.EXTRA_KINDS.add("creator-studio")
-_ctx: dict = {"client": None, "http": None, "announce": None, "making": False, "views_at": 0.0}
+_ctx: dict = {"client": None, "http": None, "announce": None, "making": False, "views_at": 0.0, "pending": []}
+_tasks: set = set()  # background makes started by an X, kept so they aren't dropped mid-way
 
 
 def start(settings: Settings, client, http: httpx.AsyncClient, announce) -> asyncio.Task:
@@ -90,7 +94,17 @@ def sequel_idea(data: dict, latest: dict) -> str:
 
 # ---- making videos ------------------------------------------------------------------------------------------
 
-async def make_one(settings: Settings, account_name: str, idea: str = "", sequel_of: dict | None = None) -> dict:
+def replace_idea(rejected: dict) -> str:
+    """The brief for a video made after an X: it replaces the rejected one and must do better."""
+    why = f" The user's reason: {rejected['reason']}." if rejected.get("reason") else ""
+    hook = f" (hook: {rejected['hook']})" if rejected.get("hook") else ""
+    return (f"This video REPLACES '{rejected.get('title')}'{hook}, which the user rejected.{why} Work out what was "
+            "weak about it and make something clearly better and different: a stronger hook, a fresher idea and "
+            "tighter pacing. Don't reuse its idea.")
+
+
+async def make_one(settings: Settings, account_name: str, idea: str = "", sequel_of: dict | None = None,
+                   replaces: dict | None = None) -> dict:
     data = cs.load(settings)
     account = cs.account(data, account_name)
     vid = {"id": cs.new_id(), "account": account["name"], "day": date.today().isoformat(), "status": "making",
@@ -99,19 +113,23 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
         vid["part"] = sequel_of.get("part", 1) + 1
         vid["series_of"] = sequel_of.get("series_of", sequel_of["id"])
         idea = sequel_idea(data, sequel_of)
+    if replaces:
+        vid["replaces"] = replaces["id"]
+        idea = f"{replace_idea(replaces)} {idea}".strip()
     data["videos"].append(vid)
     cs.save(settings, data)
     recent = [v["title"] for v in data["videos"] if v.get("account") == account["name"] and v.get("status") != "making"]
     try:
         folder = cs.work_folder(settings, "TikTok", account["name"])
         if account["format"] == "clips":
-            return await _finish(settings, vid["id"], await make_clips(settings, data, account, folder))
+            return await _finish(settings, vid["id"], await make_clips(settings, data, account, folder, replaces))
         await ensure_trends(settings, account["name"])
         account = cs.account(cs.load(settings), account["name"])
         result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
-                               best=best_titles(data, account["name"]))
+                               best=best_titles(data, account["name"]), taste=cs.taste_summary(account))
         update = {"status": "ready", "title": result["title"], "caption": result["caption"],
-                  "hashtags": result["hashtags"], "keyword": result["keyword"],
+                  "hashtags": result["hashtags"], "keyword": result["keyword"], "hook": result.get("hook", ""),
+                  "notes": f"{account['style']} look" + (f", series {result['series']}" if result.get("series") else ""),
                   "file": cs.relative(settings, result["path"]),
                   "story": " ".join(s["narration"] for s in result["scenes"])[:1500]}
     except Exception as exc:  # the network, the API or ffmpeg let us down; say so and carry on
@@ -131,11 +149,11 @@ async def _finish(settings: Settings, video_id: str, update: dict) -> dict:
     return vid
 
 
-async def make_clips(settings: Settings, data: dict, account: dict, folder) -> dict:
+async def make_clips(settings: Settings, data: dict, account: dict, folder, replaces: dict | None = None) -> dict:
     """A clip video: new viral clips and old viral ones take turns through the day."""
     era = "new" if cs.made_today(data, account["name"]) % 2 else "old"
     try:
-        result = await clips.make(_ctx["http"], settings, account, folder, era)
+        result = await clips.make(_ctx["http"], settings, account, folder, era, _ctx["client"], replaces)
     except Exception as exc:
         print(f"[jarvis] Clip video failed: {exc}", flush=True)
         return {"status": "failed", "error": str(exc)[:300]}
@@ -144,7 +162,8 @@ async def make_clips(settings: Settings, data: dict, account: dict, folder) -> d
     a["used_clips"] = (a.get("used_clips") or [])[-clips.MAX_USED:] + result["clip_ids"]
     cs.save(settings, fresh)
     return {"status": "ready", "title": result["title"], "caption": result["caption"], "hashtags": result["hashtags"],
-            "keyword": era, "file": cs.relative(settings, result["path"]), "story": ""}
+            "keyword": era, "file": cs.relative(settings, result["path"]), "story": "",
+            "hook": result.get("hook", ""), "notes": result.get("notes", ""), "clip_ids": result["clip_ids"]}
 
 
 def best_titles(data: dict, account: str, n: int = 5) -> list[str]:
@@ -174,16 +193,20 @@ async def ensure_trends(settings: Settings, account_name: str, force: bool = Fal
     return trends
 
 
-async def make_in_background(settings: Settings, jobs: list[tuple[str, str, dict | None]]) -> None:
+async def make_in_background(settings: Settings, jobs: list[tuple]) -> None:
+    """Make the jobs one after another: (account, idea, sequel_of[, replaces]). Jobs that arrive while a video is
+    being made wait their turn."""
+    _ctx["pending"].extend(jobs)
     if _ctx["making"]:
         return
     _ctx["making"] = True
     made = []
     try:
-        for account, idea, sequel in jobs:
-            made.append(await make_one(settings, account, idea, sequel))
+        while _ctx["pending"]:
+            made.append(await make_one(settings, *_ctx["pending"].pop(0)))
     finally:
         _ctx["making"] = False
+        _ctx["pending"].clear()
     ready = [v for v in made if v["status"] == "ready"]
     if ready:
         names = ", ".join(f"{v['title']}" + (f" (part {v['part']})" if v.get("part", 1) > 1 else "") for v in ready)
@@ -192,13 +215,24 @@ async def make_in_background(settings: Settings, jobs: list[tuple[str, str, dict
         await _say(f"I couldn't finish the TikTok video: {made[-1].get('error', 'something went wrong')}.")
 
 
+def clips_blocked(settings: Settings, account: dict) -> str:
+    """Why a clip account can't make videos yet ('' when it can): no streamer has allowed clipping, or only Twitch
+    streamers have and there are no Twitch keys. Kick needs no keys."""
+    if not cs.allowed(account):
+        return (f"{account['name']} has no streamers who allow clipping yet; tell Alfred who does "
+                "(e.g. 'add xqc on Kick to Clipzz, he allows clipping').")
+    if not cs.allowed(account, "kick") and not twitch.configured(settings):
+        return twitch.setup_line()
+    return ""
+
+
 def todays_jobs(settings: Settings, data: dict, today: date) -> list[tuple[str, str, None]]:
     jobs = []
     for a in data["accounts"]:
         fails = sum(1 for v in data["videos"] if v.get("account") == a["name"] and v.get("day") == today.isoformat()
                     and v.get("status") == "failed")
         missing = a.get("per_day", 3) - cs.made_today(data, a["name"], today)
-        if a.get("format") == "clips" and not twitch.configured(settings):
+        if a.get("format") == "clips" and clips_blocked(settings, a):
             continue  # nothing to find clips with yet; the studio card says what's needed
         if fails < FAILS_PER_DAY:
             jobs += [(a["name"], "", None)] * max(0, missing)
@@ -237,7 +271,7 @@ async def watch(settings: Settings) -> None:
                     _ctx["views_at"] = time.time()
                     await refresh_views(settings)
                 data = cs.load(settings)
-                jobs = [(v["account"], "", v) for v in sequels_due(data)] + todays_jobs(settings, data, date.today())
+                jobs = [] if data.get("paused") else [(v["account"], "", v) for v in sequels_due(data)] + todays_jobs(settings, data, date.today())
                 if jobs:
                     await make_in_background(settings, jobs)
         except Exception as exc:
@@ -249,10 +283,14 @@ async def watch(settings: Settings) -> None:
 
 async def approve(settings: Settings, ref: str) -> str:
     data = cs.load(settings)
-    v = cs.find_video(data, ref)
+    v = cs.find_video(data, ref, waiting=True)
     can_post = tiktok.configured(settings) and tiktok.connected(settings, v["account"])
-    if v.get("status") not in ("ready", "failed_post") and not (v.get("status") == "approved" and can_post):
+    if v.get("status") not in cs.WAITING and not (v.get("status") == "approved" and can_post):
         raise ValueError(f"'{v.get('title')}' is {v.get('status')}, so there's nothing to approve.")
+    account = cs.find_account(data, v["account"])
+    if account and not v.get("liked"):  # a tick teaches Alfred what the user likes
+        v["liked"] = True
+        cs.remember(account, v, True)
     path = screen.memory_path(settings, v["file"])
     caption = f"{v.get('caption', '')}\n\n" + " ".join(f"#{t}" for t in v.get("hashtags", []))
     if can_post:
@@ -274,12 +312,30 @@ async def approve(settings: Settings, ref: str) -> str:
             f"{v['account']} by hand. {tiktok.setup_line()}")
 
 
-def skip(settings: Settings, ref: str) -> str:
+async def reject(settings: Settings, ref: str, reason: str = "") -> str:
+    """An X: the video is rejected (never posted), remembered as a dislike, and a better one is started at once."""
     data = cs.load(settings)
-    v = cs.find_video(data, ref)
-    v["status"] = "skipped"
+    v = cs.find_video(data, ref, waiting=True)
+    if v.get("status") not in cs.WAITING:
+        raise ValueError(f"'{v.get('title')}' is {v.get('status')}, so there's nothing to reject.")
+    reason = cs.clean(reason, 300)
+    v.update(status="rejected", reason=reason, rejected_at=time.strftime("%Y-%m-%d %H:%M"))
+    account = cs.find_account(data, v["account"])
+    if account:
+        cs.remember(account, v, False, reason)
     cs.save(settings, data)
-    return f"Skipped '{v['title']}'. The file stays in the folder."
+    said = f"Rejected '{v['title']}'; it won't be posted and the file stays in the folder."
+    if data.get("paused"):
+        return said + " Content making is paused, so I won't make a replacement until you say resume."
+    if account is None or _ctx["client"] is None:
+        return said + " I can't start a replacement until the studio is running; restart Alfred."
+    task = asyncio.create_task(make_in_background(settings, [(account["name"], "", None, dict(v))]))
+    _tasks.add(task)
+    task.add_done_callback(_tasks.discard)
+    return said + f" I'm already making a better one for {account['name']}; I'll tell you when it's ready."
+
+
+skip = reject  # the old Skip button and "skip that one" mean an X now
 
 
 def set_views(settings: Settings, ref: str, views) -> str:
@@ -300,9 +356,24 @@ def set_views(settings: Settings, ref: str, views) -> str:
 
 # ---- the studio card ---------------------------------------------------------------------------------------
 
+def set_paused(settings: Settings, paused: bool) -> str:
+    """Pause or resume all content making: no daily videos, sequels or replacements while paused."""
+    data = cs.load(settings)
+    data["paused"] = paused
+    cs.save(settings, data)
+    if not paused:
+        return "Content making is back on. The daily videos pick up from the next check."
+    dropped = len(_ctx["pending"])
+    _ctx["pending"].clear()
+    return ("Content making is paused: no new videos, sequels or replacements until you say resume."
+            + (" The one I'm making now will finish." if _ctx["making"] else "")
+            + (f" I dropped {dropped} waiting in line." if dropped else "")
+            + " Videos already waiting for approval stay there.")
+
+
 def studio_card(settings: Settings, data: dict, focus: str = "") -> dict:
     live = [v for v in data["videos"] if v.get("status") in ("making", "ready", "failed_post", "failed")]
-    done = [v for v in data["videos"] if v.get("status") in ("posted", "approved")][-8:]
+    done = [v for v in data["videos"] if v.get("status") in ("posted", "approved", "rejected")][-8:]
     videos = []
     for v in (live + done)[-30:]:
         row = {k: v.get(k) for k in ("id", "account", "title", "status", "part", "views", "caption", "error", "mode")}
@@ -315,8 +386,28 @@ def studio_card(settings: Settings, data: dict, focus: str = "") -> dict:
     return screen.card("creator-studio", "TikTok studio", "creator-studio",
                        buttons=[{"label": "Make one now", "say": "Make a TikTok video now."}],
                        data={"accounts": accounts, "videos": videos, "configured": tiktok.configured(settings),
-                             "setup": tiktok.setup_line() + ("" if twitch.configured(settings) or not any(
-                                 a["format"] == "clips" for a in data["accounts"]) else " " + twitch.setup_line()), "focus": focus, "making": _ctx["making"]})
+                             "setup": " ".join([tiktok.setup_line(), *dict.fromkeys(
+                                 filter(None, (clips_blocked(settings, a) for a in data["accounts"] if a["format"] == "clips")))]),
+                             "focus": focus, "making": _ctx["making"]})
+
+
+def queue(settings: Settings) -> list[dict]:
+    """The videos waiting for a tick or an X, oldest first, for the HUD: each with a URL the browser can play."""
+    data = cs.load(settings)
+    rows = []
+    for v in data["videos"]:
+        if v.get("status") not in cs.WAITING or not v.get("file"):
+            continue
+        cover = str(v["file"]).rsplit(".", 1)[0] + ".png"
+        try:
+            has_cover = screen.memory_path(settings, cover).is_file()
+        except ValueError:
+            has_cover = False
+        rows.append({"id": v["id"], "account": v["account"], "title": v.get("title", ""),
+                     "kind": "clip" if _is_clips(data, v) else "story", "created": v.get("made_at") or v.get("day"),
+                     "video_url": f"/screen/file?path={screen.quote(v['file'])}",
+                     "thumb_url": f"/screen/file?path={screen.quote(cover)}" if has_cover else None})
+    return rows
 
 
 def studio(settings: Settings) -> screen.Shown:
@@ -329,7 +420,7 @@ def studio(settings: Settings) -> screen.Shown:
 
 # ---- accounts ----------------------------------------------------------------------------------------------
 
-FIELDS = ("theme", "style", "format", "series", "per_day", "voice", "accent", "streamers", "category")
+FIELDS = ("theme", "style", "format", "series", "per_day", "voice", "accent", "streamers", "category", "min_views", "extend")
 
 
 def add_account(settings: Settings, args: dict) -> str:
@@ -348,7 +439,7 @@ def add_account(settings: Settings, args: dict) -> str:
 def update_account(settings: Settings, args: dict) -> str:
     data = cs.load(settings)
     a = cs.account(data, args.get("account"))
-    fresh = cs.new_account(cs.clean(args.get("new_name")) or a["name"], used_clips=a.get("used_clips"),
+    fresh = cs.new_account(cs.clean(args.get("new_name")) or a["name"], used_clips=a.get("used_clips"), taste=a.get("taste"),
                            **{k: args.get(k) if args.get(k) is not None else a.get(k) for k in FIELDS})
     old = a["name"]
     a.update(fresh)
@@ -401,7 +492,7 @@ async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -
 
 # ---- the tool ---------------------------------------------------------------------------------------------
 
-ACTIONS = ["studio", "make_video", "approve", "skip", "set_views", "accounts", "add_account", "update_account",
+ACTIONS = ["studio", "make_video", "approve", "reject", "skip", "pause", "resume", "set_views", "accounts", "add_account", "update_account",
            "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup"]
 
 
@@ -411,14 +502,23 @@ def tool_definitions() -> list[dict]:
         "description": "Alfred's TikTok studio: he runs several TikTok accounts, each with its own theme and look, "
                        "and writes and directs their videos himself (script, AI pictures, voice, 1 minute or longer). "
                        "Each day it makes every account's videos (3 each by default) and queues them; nothing posts "
-                       "until the user approves. studio shows the queue with play, Approve and Skip. make_video "
-                       "(account, optional idea) starts one now in the background. approve / skip (video: id, title "
-                       "or 'latest'). set_views (video, views e.g. 80k) records views: 50k earns part 2, then every "
+                       "until the user ticks it. studio shows the queue with play, a tick (approve) and an X "
+                       "(reject). make_video (account, optional idea) starts one now in the background. approve "
+                       "(video) posts it: 'post that one', 'tick it', 'I like the lowkey.lore video'. reject (video, "
+                       "optional reason) is the X: 'reject that one', 'X it', 'no', 'I don't like the lowkey.lore "
+                       "video' (video: lowkey.lore), 'that clip is boring' (reason: boring); it never posts, Alfred "
+                       "learns from it and at once makes a better replacement for the same account. skip means "
+                       "reject. pause stops all content making (no daily videos, sequels or replacements): 'pause "
+                       "making content', 'stop making videos'; resume turns it back on. Every tick and X is remembered per account and steers the next videos. video is an "
+                       "id, part of a title, an account name, or 'latest' (the newest waiting video). set_views (video, views e.g. 80k) records views: 50k earns part 2, then every "
                        "100k more another part up to part 5, which ends on a shocking cliffhanger. accounts lists "
                        "them. add_account (account name, theme, style noir/explainer/drama/cinematic, format "
                        "story/facts/clips, series, per_day, voice e.g. en-GB-RyanNeural, accent colour; clip accounts: "
-                       "streamers, category). Clip accounts like Clipzz post viral Twitch clips, old and new, filling "
-                       "the phone screen, a minute or more, the streamer credited. update_account "
+                       "streamers, category, min_views, extend). Clip accounts like Clipzz post viral Twitch or Kick "
+                       "clips, old and new, filling the phone screen, a minute or more, the streamer credited, and "
+                       "only from streamers who allow clipping (allows_clipping). n3on.vault is N3on's clip page "
+                       "(Kick, and Twitch when set up): clips with 100k+ views, each extended by about 30 seconds "
+                       "before and after from the stream. update_account "
                        "(account, new_name or any field). remove_account (account, confirmed). name_ideas (theme) for "
                        "flashy Gen Z account names. profile_kit (account) makes a profile picture and a bio. trends (account, refresh) shows this "
                        "week's TikTok trends for its niche (checked daily before the first video and used in every "
@@ -430,7 +530,8 @@ def tool_definitions() -> list[dict]:
                 "action": {"type": "string", "enum": ACTIONS},
                 "account": {"type": "string", "description": "Account name, e.g. lowkey.lore."},
                 "idea": {"type": "string", "description": "make_video: a story idea or topic to use."},
-                "video": {"type": "string", "description": "Video id, part of its title, or 'latest'."},
+                "video": {"type": "string", "description": "Video id, part of its title, its account, or 'latest'."},
+                "reason": {"type": "string", "description": "reject: what the user didn't like, in their words."},
                 "views": {"type": "string", "description": "set_views: e.g. 80000 or 80k."},
                 "new_name": {"type": "string"},
                 "theme": {"type": "string"},
@@ -440,9 +541,15 @@ def tool_definitions() -> list[dict]:
                 "per_day": {"type": "integer", "description": "Videos a day for this account, 0 to 6."},
                 "voice": {"type": "string", "description": "A Microsoft neural voice, e.g. en-US-AndrewNeural."},
                 "accent": {"type": "string", "description": "Keyword colour for the explainer look, e.g. #ff4d6d."},
-                "streamers": {"type": "array", "items": {"type": "string"},
-                              "description": "Clip accounts: Twitch streamers to take clips from (best: ones who allow clipping). Empty: the category's top clips."},
+                "streamers": {"type": "array", "description": "Clip accounts: the streamers to clip (the full list). "
+                              "Set allows_clipping true only when the user says that streamer allows clipping; "
+                              "Alfred never clips anyone without it.",
+                              "items": {"type": "object", "properties": {
+                                  "name": {"type": "string"}, "platform": {"type": "string", "enum": list(cs.PLATFORMS)},
+                                  "allows_clipping": {"type": "boolean"}}, "required": ["name"]}},
                 "category": {"type": "string", "description": "Clip accounts: Twitch category, e.g. Just Chatting."},
+                "min_views": {"type": "integer", "description": "Clip accounts: only clips with at least this many views."},
+                "extend": {"type": "integer", "description": "Clip accounts: seconds of the stream added before and after each clip (0 = plain clips)."},
                 "confirmed": {"type": "boolean"},
                 "refresh": {"type": "boolean", "description": "trends: check again now."},
             },
@@ -467,14 +574,17 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
         data = cs.load(settings)
         account = cs.account(data, args.get("account"))
         if _ctx["making"]:
-            return "I'm already making a video; I'll tell you when it's ready, then ask again."
+            _ctx["pending"].append((account["name"], cs.clean(args.get("idea"), 500), None))
+            return f"I'm making another video right now; {account['name']}'s is next in line."
         asyncio.create_task(make_in_background(settings, [(account["name"], cs.clean(args.get("idea"), 500), None)]))
         return (f"I'm writing and directing a new video for {account['name']} now. It takes a few minutes; "
                 "I'll tell you when it's ready to approve.")
+    if action in ("pause", "resume"):
+        return set_paused(settings, action == "pause")
     if action == "approve":
-        return await approve(settings, args.get("video"))
-    if action == "skip":
-        return skip(settings, args.get("video"))
+        return await approve(settings, args.get("video") or args.get("account"))
+    if action in ("reject", "skip"):
+        return await reject(settings, args.get("video") or args.get("account"), args.get("reason") or "")
     if action == "set_views":
         return set_views(settings, args.get("video"), args.get("views") or 0)
     if action == "accounts":

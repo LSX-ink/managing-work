@@ -13,6 +13,8 @@ edge-tts>=7.0
 imageio-ffmpeg>=0.5
 # Clip accounts: download Twitch clips
 yt-dlp>=2025.1.1
+# Kick clips (n3on.vault): lets yt-dlp reach kick.com like a normal browser
+curl_cffi>=0.10
 # Time zones for the world clock on Windows
 tzdata; sys_platform == "win32"
 # Phone alerts (JARVIS_PHONE_ALERTS): read Phone Link's notifications on Windows

@@ -41,6 +41,7 @@ class Settings:
     persona: str = os.getenv("JARVIS_PERSONA", "jarvis").strip().lower()
     theme: str = os.getenv("JARVIS_THEME", "classic").strip().lower()  # "classic" orb or "hud" dashboard
     wake_word: bool = _bool("JARVIS_WAKE_WORD", False)  # only answer speech that uses Alfred's name
+    station: bool = _bool("JARVIS_STATION", True)  # the 3D station world behind the HUD; off = plain stars
     greeting: str = os.getenv("JARVIS_GREETING", "").strip()  # fixed wake-up line; empty = weather and tasks
     elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
@@ -82,6 +83,9 @@ class Settings:
     # Clip accounts (Clipzz): Twitch's official API finds the most-viewed clips
     twitch_client_id: str = os.getenv("TWITCH_CLIENT_ID", "").strip()
     twitch_client_secret: str = os.getenv("TWITCH_CLIENT_SECRET", "").strip()
+    # Kick clips (n3on.vault) need no keys; with Kick's official app keys the channel is checked first
+    kick_client_id: str = os.getenv("KICK_CLIENT_ID", "").strip()
+    kick_client_secret: str = os.getenv("KICK_CLIENT_SECRET", "").strip()
 
     def __post_init__(self) -> None:
         # A blank or mistyped host (an email address, a space) can't connect; pick it from the email address instead.

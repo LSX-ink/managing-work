@@ -1,16 +1,19 @@
 // TikTok studio pop-up (creator.py): every account with its Connect link, and each video Alfred made, with a
-// player, its caption, and one-tap Approve (posts it, or saves it ready to upload by hand), Skip and Download.
+// player, its caption, and one-tap tick (posts it, or saves it ready to upload by hand), X (rejects it and Alfred
+// makes a better one) and Download.
 (() => {
     const kinds = window.jarvisPopupKinds = window.jarvisPopupKinds || {};
     const WORD = { making: 'Being made', ready: 'Waiting for you', approved: 'Approved', posted: 'Sent to TikTok',
-                   failed: "Couldn't finish", failed_post: "Didn't post" };
+                   failed: "Couldn't finish", failed_post: "Didn't post", rejected: 'Rejected' };
 
     async function act(id, action, note) {
-        note.textContent = action === 'approve' ? 'Posting...' : 'Skipping...';
+        note.textContent = action === 'approve' ? 'Posting...' : 'Rejecting, and making a better one...';
         try {
-            const res = await fetch(`/creator/videos/${encodeURIComponent(id)}/${action}`, { method: 'POST' });
-            if (!res.ok) { note.textContent = await res.text(); return; }
-            const { said, card } = await res.json();
+            const res = await fetch(`/creator/videos/${encodeURIComponent(id)}/${action}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const answer = await res.json().catch(() => ({ ok: false, said: 'Something went wrong.' }));
+            if (!res.ok || !answer.ok) { note.textContent = answer.said; return; }
+            const { said, card } = answer;
             card.data.notice = said;
             document.dispatchEvent(new CustomEvent('jarvis:popup', { detail: card }));
         } catch (e) {
@@ -58,10 +61,10 @@
             const note = el('div', 'cr-dim');
             const buttons = el('div', 'cr-buttons');
             if (['ready', 'failed_post'].includes(v.status)) {
-                const ok = el('button', 'pop-action cr-approve', 'Approve');
+                const ok = el('button', 'pop-action cr-approve', '✓ Post');
                 ok.addEventListener('click', () => act(v.id, 'approve', note));
-                const no = el('button', 'pop-action', 'Skip');
-                no.addEventListener('click', () => act(v.id, 'skip', note));
+                const no = el('button', 'pop-action', '✕ Reject');
+                no.addEventListener('click', () => act(v.id, 'reject', note));
                 buttons.append(ok, no);
             }
             if (v.src) {
