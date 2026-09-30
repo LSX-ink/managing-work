@@ -911,3 +911,37 @@ def test_scenes_are_encoded_at_the_full_frame_rate(tmp_path):
     cv.render_scene([still], None, 1.0, tmp_path / "s.mp4")
     info = subprocess.run([cv.ffmpeg(), "-i", str(tmp_path / "s.mp4")], capture_output=True, text=True).stderr
     assert f"{cv.FPS} fps" in info  # not dropped to ffmpeg's default 25, which made the camera moves judder
+
+
+def test_a_draft_script_is_read_first_then_filmed_exactly(s, monkeypatch):
+    drafted = {**cv.parse_script(SCRIPT), "score": 8, "hook_score": 9}
+    drafted["scenes"][1]["hit"] = "boom"
+    filmed = []
+
+    async def fake_write(client, settings, account, idea="", recent=None, best=None, taste="", variety=""):
+        return drafted
+
+    async def nothing(*a, **k):
+        return None
+
+    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste="", part=1, variety=""):
+        filmed.append(script)
+        path = folder / "Drafted.mp4"
+        path.write_bytes(b"mp4")
+        return {**script, "path": path, "missing_pictures": 0}
+    monkeypatch.setattr(cv, "write_script", fake_write)
+    monkeypatch.setattr(cv, "make", fake_make)
+    monkeypatch.setattr(creator, "ensure_trends", nothing)
+    monkeypatch.setattr(creator, "ensure_lessons", nothing)
+    creator._ctx.update(client=object())
+    text = asyncio.run(creator.run_tool("tiktok_studio", {"action": "draft_script", "account": "lowkey.lore"}, s))
+    assert "The Last Voicemail" in text and "editor 8/10" in text and "sound: boom" in text and "film it" in text
+    assert len(cs.load(s)["drafts"]) == 1 and not cs.load(s)["videos"]  # nothing filmed yet
+    creator._ctx["making"] = True  # another video is being made: the draft queues behind it
+    queued = asyncio.run(creator.run_tool("tiktok_studio", {"action": "make_video", "draft": "latest"}, s))
+    assert "next in line" in queued and not cs.load(s).get("drafts")
+    creator._ctx["making"] = False
+    asyncio.run(creator.make_in_background(s, []))
+    assert filmed == [drafted] and cs.load(s)["videos"][-1]["status"] == "ready"
+    with pytest.raises(ValueError, match="no draft"):
+        asyncio.run(creator.run_tool("tiktok_studio", {"action": "make_video", "draft": "latest"}, s))
