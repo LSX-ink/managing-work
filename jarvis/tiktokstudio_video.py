@@ -704,8 +704,8 @@ def fit_to_length(voiced: list[float], length: float = MIN_LENGTH, gap: float = 
 
 
 MOTIONS = [  # a different camera move on each shot keeps the eye busy: push in, pull out, drift left, drift right
-    ("min(1+on*0.0007,1.12)", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
-    ("max(1.12-on*0.0007,1)", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
+    ("min(1+on*{r},1.12)", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
+    ("max(1.12-on*{r},1)", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"),
     ("1.12", "(iw-iw/zoom)*(1-on/{n})", "ih/2-(ih/zoom/2)"),
     ("1.12", "(iw-iw/zoom)*on/{n}", "ih/2-(ih/zoom/2)"),
 ]
@@ -713,6 +713,12 @@ MOTIONS = [  # a different camera move on each shot keeps the eye busy: push in,
 
 WHOOSH = ("anoisesrc=d=0.45:c=pink:a=0.6:r=44100,highpass=f=350,lowpass=f=4200,"
           "afade=t=in:d=0.18,afade=t=out:st=0.18:d=0.27,volume=0.9,aformat=channel_layouts=stereo")
+# The camera follows the scene's pace: a slow creep for reveals and dread, a quick push for panic.
+PUSH_RATE = {"slow": 0.0004, "normal": 0.0007, "fast": 0.0014}
+SHAKE_HITS = ("boom", "glitch")  # these hits jolt the camera for a moment as the scene cuts in
+SHAKE = (",scale={w}:{h},crop={W}:{H}:x='(iw-{W})/2+22*sin(n*2.7)*max(0,1-n/10)'"
+         ":y='(ih-{H})/2+16*cos(n*3.1)*max(0,1-n/10)'")
+
 
 # Sound effects the script can cue on a scene's first beat, made by ffmpeg itself (no files needed). They replace
 # that cut's swish, and only the first MAX_HITS in a video play, so they stay special.
@@ -733,11 +739,11 @@ LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # e
 
 
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
-                 whoosh: bool = False, loop_to: Path | None = None, hit: str = "") -> None:
+                 whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal") -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
-    in place of the swish."""
+    in place of the swish, and a boom or glitch shakes the camera as it lands. pace sets how fast the camera pushes."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)]
@@ -747,11 +753,13 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         stills, split, motions = [*stills, loop_to], [*split, tail], [*motions, LOOP_MOTION]
         frames += tail
     inputs, chains = [], []
+    rate = PUSH_RATE.get(pace, PUSH_RATE["normal"])
     for i, (image, n, (z, x, y)) in enumerate(zip(stills, split, motions)):
         inputs += ["-loop", "1", "-framerate", str(FPS), "-i", str(image)]
-        chains.append(f"[{i}:v]scale={int(W * 1.2)}:{int(H * 1.2)},zoompan=z='{z.format(n=max(1, n))}':d=1:"
+        shake = SHAKE.format(w=int(W * 1.04), h=int(H * 1.04), W=W, H=H) if i == 0 and hit in SHAKE_HITS else ""
+        chains.append(f"[{i}:v]scale={int(W * 1.2)}:{int(H * 1.2)},zoompan=z='{z.format(n=max(1, n), r=rate)}':d=1:"
                       f"x='{x.format(n=max(1, n))}':y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},"
-                      f"setpts=PTS-STARTPTS,setsar=1[s{i}]")
+                      f"setpts=PTS-STARTPTS,setsar=1{shake}[s{i}]")
     k = len(stills)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
@@ -769,7 +777,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     else:
         chains.append(f"[{k}:a]apad,aresample=44100[a]")
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
-         "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+         "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
          "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-ac", "2", str(out)])
 
 
@@ -889,7 +897,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         sfx = account.get("sfx", True) is not False
         hit = scenes[i].get("hit", "") if sfx and hits < MAX_HITS else ""
         hits += bool(hit)
-        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit)
+        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
+                                scenes[i].get("pace", "normal"))
         parts.append(part)
     name = cs.slug(f"{script['title']}")
     video = folder / f"{name}.mp4"

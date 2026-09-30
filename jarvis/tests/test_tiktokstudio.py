@@ -858,7 +858,7 @@ def test_scene_sound_effects_are_cued_and_capped(s, tmp_path, monkeypatch):
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
     monkeypatch.setattr(cv, "narrate", no_voice)
-    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append(a[-1]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append(a[-2]), out.write_bytes(b"mp4")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=parsed))
@@ -873,3 +873,41 @@ def test_a_sound_effect_renders_with_ffmpeg(tmp_path):
     for kind in cv.HITS:
         cv.render_scene([still], None, 0.4, tmp_path / f"{kind}.mp4", hit=kind)
         assert cv.audio_seconds(tmp_path / f"{kind}.mp4") >= 0.39
+
+
+def test_the_camera_follows_the_pace_and_a_boom_shakes_it(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image, ImageChops, ImageDraw, ImageStat
+    still = tmp_path / "s.png"
+    im = Image.new("RGB", (cv.W, cv.H), (20, 30, 90))
+    ImageDraw.Draw(im).rectangle((300, 600, 780, 1300), fill=(240, 200, 40))
+    im.save(still)
+
+    def frame(video, n):
+        out = tmp_path / f"{video.stem}-{n}.png"
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(video), "-vf", f"select=eq(n\\,{n})", "-frames:v", "1", str(out)],
+                       check=True, capture_output=True)
+        return Image.open(out).convert("L")
+
+    def moved(a, b):
+        return ImageStat.Stat(ImageChops.difference(a, b)).mean[0]
+    for name, kw in {"calm": {}, "boom": {"hit": "boom"}, "slow": {"pace": "slow"}, "fast": {"pace": "fast"}}.items():
+        cv.render_scene([still], None, 1.0, tmp_path / f"{name}.mp4", **kw)
+    assert moved(frame(tmp_path / "boom.mp4", 2), frame(tmp_path / "calm.mp4", 2)) > 1  # jolted off the calm frame
+    assert moved(frame(tmp_path / "boom.mp4", 25), frame(tmp_path / "calm.mp4", 25)) < moved(
+        frame(tmp_path / "boom.mp4", 2), frame(tmp_path / "calm.mp4", 2))  # and it settles
+    slow = moved(frame(tmp_path / "slow.mp4", 0), frame(tmp_path / "slow.mp4", 29))
+    fast = moved(frame(tmp_path / "fast.mp4", 0), frame(tmp_path / "fast.mp4", 29))
+    assert fast > slow  # a fast scene's camera travels further in the same second
+
+
+def test_scenes_are_encoded_at_the_full_frame_rate(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (10, 10, 10)).save(still)
+    cv.render_scene([still], None, 1.0, tmp_path / "s.mp4")
+    info = subprocess.run([cv.ffmpeg(), "-i", str(tmp_path / "s.mp4")], capture_output=True, text=True).stderr
+    assert f"{cv.FPS} fps" in info  # not dropped to ffmpeg's default 25, which made the camera moves judder
