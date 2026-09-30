@@ -224,8 +224,11 @@
         } catch (e) { /* keep the last count */ }
     }
 
+    let lastFrame = 0;
     function frame(t) {
         requestAnimationFrame(frame);   // first, so one bad frame can't stop the animation
+        if (t - lastFrame < 30) return;   // about 30 fps is smooth for the wolf, radar and wave, at half the work
+        lastFrame = t;
         drawSphere(t);
         drawRadar(t);
         drawWave(t);

@@ -19,6 +19,7 @@ import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.requests import ClientDisconnect
 
 import alerts
 import helpers
@@ -287,12 +288,40 @@ async def memory_note(index: int, request: Request):
     return result if isinstance(result, Response) else {"name": result.name}
 
 
+TOO_BIG = f"That file is too big; the limit is {memory.MAX_UPLOAD_BYTES // 1024 ** 3} GB."
+UPLOAD_CHUNK = 4 * 1024 * 1024
+
+
 @app.put("/memory/{index}/files/{filename}")
 async def memory_upload(index: int, filename: str, request: Request):
-    if int(request.headers.get("content-length") or 0) > memory.MAX_FILE_BYTES:
-        return Response("That file is too big; the limit is 20 MB.", status_code=413)
-    result = await memory_call(request, memory.save_file, index, filename, await request.body())
-    return result if isinstance(result, Response) else {"name": result.name}
+    """Stream the file straight to disk in big chunks, so large videos neither fill the memory nor stall Alfred."""
+    if int(request.headers.get("content-length") or 0) > memory.MAX_UPLOAD_BYTES:
+        return Response(TOO_BIG, status_code=413)
+    target = await memory_call(request, memory.upload_target, index, filename)
+    if isinstance(target, Response):
+        return target
+    part = target.with_name(target.name + ".part")
+    out = await asyncio.to_thread(open, part, "wb")
+    written, buffer = 0, bytearray()
+    try:
+        async for chunk in request.stream():
+            written += len(chunk)
+            if written > memory.MAX_UPLOAD_BYTES:
+                raise OverflowError
+            buffer += chunk
+            if len(buffer) >= UPLOAD_CHUNK:
+                await asyncio.to_thread(out.write, bytes(buffer))
+                buffer.clear()
+        await asyncio.to_thread(out.write, bytes(buffer))
+    except (OverflowError, ClientDisconnect, OSError) as exc:
+        await asyncio.to_thread(out.close)
+        part.unlink(missing_ok=True)
+        if isinstance(exc, OverflowError):
+            return Response(TOO_BIG, status_code=413)
+        return Response("The upload stopped before the whole file arrived.", status_code=400)
+    await asyncio.to_thread(out.close)
+    await asyncio.to_thread(part.replace, target)
+    return {"name": target.name}
 
 
 @app.post("/memory/{index}/open")
