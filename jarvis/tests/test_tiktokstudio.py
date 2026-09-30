@@ -656,3 +656,26 @@ def test_a_failed_picture_is_fetched_again(s, tmp_path, monkeypatch):
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     out = asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=cv.parse_script(SCRIPT)))
     assert out["missing_pictures"] == 0 and len(seeds) == 4 and seeds[2] == seeds[0] + 13
+
+
+def test_a_character_line_is_spoken_in_the_characters_voice(s, tmp_path, monkeypatch):
+    voices = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal"):
+        voices.append(voice)
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", narrate)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    scenes = [{"narration": "The phone buzzed.", "speaker": "Narrator"},
+              {"narration": "Don't open the door.", "speaker": "Old Man"}, {"narration": "Run.", "speaker": "alien"}]
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
+    assert [sc["speaker"] for sc in script["scenes"]] == ["narrator", "old man", "narrator"]
+    account = {**cs.load(s)["accounts"][0], "voice": "en-GB-RyanNeural"}
+    asyncio.run(cv.make(None, None, s, account, tmp_path, script=script))
+    assert voices == ["en-GB-RyanNeural", cv.SPEAKERS["old man"], "en-GB-RyanNeural"]
