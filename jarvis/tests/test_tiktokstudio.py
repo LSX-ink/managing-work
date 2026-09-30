@@ -839,3 +839,37 @@ def test_punch_words_are_drawn_bigger_in_the_captions(tmp_path):
     assert ink(punched, (232, 197, 71)) > ink(plain, (232, 197, 71))  # the key word is in the accent colour, and bigger
     listing = cv.caption_track(cv.estimate_words("A voicemail.", 2.0), 2.0, (232, 197, 71), tmp_path, "p", ["voicemail"])
     assert listing and listing.exists()
+
+
+def test_scene_sound_effects_are_cued_and_capped(s, tmp_path, monkeypatch):
+    script = json.loads(SCRIPT)
+    for scene in script["scenes"]:
+        scene["hit"] = "Boom"
+    script["scenes"][0]["hit"] = "kazoo"
+    parsed = cv.parse_script(json.dumps(script))
+    assert parsed["scenes"][0]["hit"] == "" and parsed["scenes"][1]["hit"] == "boom"
+    parsed["scenes"] = parsed["scenes"] + [dict(parsed["scenes"][1]) for _ in range(4)]
+    played = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append(a[-1]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=parsed))
+    assert sum(bool(h) for h in played) == cv.MAX_HITS and played[0] == ""
+
+
+def test_a_sound_effect_renders_with_ffmpeg(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    from PIL import Image
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (10, 10, 10)).save(still)
+    for kind in cv.HITS:
+        cv.render_scene([still], None, 0.4, tmp_path / f"{kind}.mp4", hit=kind)
+        assert cv.audio_seconds(tmp_path / f"{kind}.mp4") >= 0.39
