@@ -32,6 +32,15 @@ FORMATS = {
 STATUSES = ("making", "ready", "approved", "posted", "rejected", "skipped", "failed")
 PLATFORMS = ("twitch", "kick")
 MAX_TASTE = 20  # liked and rejected videos remembered per account
+# Voices for recurring characters, by kind: each character gets one the first time they speak and keeps it forever,
+# so a returning character always sounds the same. Distinct from the narrator's voice.
+CHARACTER_VOICES = {
+    "woman": ["en-GB-SoniaNeural", "en-GB-LibbyNeural", "en-IE-EmilyNeural", "en-AU-NatashaNeural", "en-US-JennyNeural"],
+    "man": ["en-US-GuyNeural", "en-IE-ConnorNeural", "en-AU-WilliamNeural", "en-US-ChristopherNeural", "en-CA-LiamNeural"],
+    "old man": ["en-GB-ThomasNeural", "en-US-DavisNeural"],
+    "old woman": ["en-US-AriaNeural", "en-GB-HollieNeural"],
+    "child": ["en-US-AnaNeural", "en-GB-MaisieNeural"],
+}
 MAX_CHARACTERS, MAX_THREADS = 12, 10  # the story bible: recurring characters and open story threads per account
 # N3on said yes to clipping (the user told Alfred so); he streams on Kick and sometimes Twitch.
 NEON = [{"name": "n3on", "platform": "kick", "allows_clipping": True},
@@ -215,6 +224,11 @@ def update_bible(account: dict, update) -> None:
         row = people.pop(name.lower(), {"name": name, "look": "", "notes": ""})
         row["look"] = clean(c.get("look"), 300) or row["look"]
         row["notes"] = clean(c.get("notes"), 300) or row["notes"]
+        kind = clean(c.get("voice_type"), 20).lower()
+        if kind in CHARACTER_VOICES and not row.get("voice_type"):
+            row["voice_type"] = kind
+        if clean(c.get("voice"), 60) and not row.get("voice"):
+            row["voice"] = clean(c.get("voice"), 60)  # set once, never changed: the character keeps their voice
         people[name.lower()] = row  # moved to the end: the most recently used last
     bible["characters"] = list(people.values())[-MAX_CHARACTERS:]
     closed = {clean(t, 200).lower() for t in update.get("threads_closed") or []}
@@ -229,10 +243,36 @@ def bible_summary(account: dict) -> str:
     if bible.get("world"):
         parts.append(f"World: {bible['world']}")
     for c in bible.get("characters") or []:
-        parts.append(f"Character {c['name']}: {c.get('look') or 'look not set'}" + (f" ({c['notes']})" if c.get("notes") else ""))
+        parts.append(f"Character {c['name']}: {c.get('look') or 'look not set'}" + (f" ({c['notes']})" if c.get("notes") else "")
+                     + (f" [voice: {c['voice_type']}]" if c.get("voice_type") else ""))
     if bible.get("threads"):
         parts.append("Open threads to pay off or deepen: " + "; ".join(bible["threads"]))
     return "\n".join(parts) or "Empty so far: this video can start the account's world."
+
+
+def assign_voices(account: dict, update) -> dict:
+    """Give every named character in this video (from the account's bible and the script's own bible update) a voice.
+    Known characters keep the voice they already have; new ones get an unused voice of their kind, which is written
+    into the update so the bible stores it. Returns {lower-case name: voice}."""
+    known = {c["name"].lower(): c for c in (account.get("bible") or {}).get("characters") or []}
+    taken = {c.get("voice") for c in known.values()} | {account.get("voice") or ""}
+    voices = {name: c["voice"] for name, c in known.items() if c.get("voice")}
+    for c in (update or {}).get("characters") or [] if isinstance(update, dict) else []:
+        if not isinstance(c, dict) or not clean(c.get("name"), 40):
+            continue
+        name = clean(c.get("name"), 40).lower()
+        if name in voices:
+            c["voice"] = voices[name]
+            continue
+        kind = clean(c.get("voice_type"), 20).lower() or (known.get(name) or {}).get("voice_type", "")
+        pool = CHARACTER_VOICES.get(kind)
+        if not pool:
+            continue
+        free = [v for v in pool if v not in taken] or pool
+        voice = free[sum(map(ord, name)) % len(free)]
+        c["voice"], voices[name] = voice, voice
+        taken.add(voice)
+    return voices
 
 
 def new_id() -> str:

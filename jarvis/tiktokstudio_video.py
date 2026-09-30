@@ -102,9 +102,11 @@ Rules:
 - "pace" for each scene is how Alfred reads it, like a voice actor: "slow" for reveals, dread and the last line,
   "fast" for panic, chases and escalating lists, "normal" otherwise. Vary it; most scenes are normal.
 - "speaker" for each scene is "narrator", or, when the whole scene is one character saying a line out loud (a
-  voicemail, a scream, a whisper), who says it: "woman", "man", "old man", "old woman" or "child". Use a
-  character voice for 1 to 3 lines that hit hard; everything else is the narrator.
-- "bible": what this video adds to the story bible: characters it uses (name, look, notes), threads it opens
+  voicemail, a scream, a whisper), who says it. For a named character (from the story bible or this video) put
+  their name, so they keep the same voice in every video; otherwise "woman", "man", "old man", "old woman" or
+  "child". Use a character voice for 1 to 3 lines that hit hard; everything else is the narrator.
+- "bible": what this video adds to the story bible: characters it uses (name, look, notes, and voice_type:
+  "woman", "man", "old man", "old woman" or "child"), threads it opens
   (open questions or mysteries to pay off in later videos), threads it closes, and the world in one line if it
   is new or has grown. Use {{}} for nothing.
 - keyword: 1 to 3 words shown big at the top (e.g. ADHD, Letter "M", Unsent Letter #4).
@@ -122,7 +124,7 @@ Rules:
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
   "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none",
-  "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "..."}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
+  "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "...", "voice_type": "woman"}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator"}}]}}"""
 
 EDITOR_PROMPT = """You are the toughest short-form story editor on TikTok. A writer was given this brief:
@@ -231,8 +233,7 @@ def parse_script(text: str) -> dict:
                     "picture": cs.clean(s.get("picture") or s.get("text"), 300),
                     "closeup": cs.clean(s.get("closeup"), 300),
                     "pace": str(s.get("pace") or "").lower() if str(s.get("pace") or "").lower() in PACES else "normal",
-                    "speaker": str(s.get("speaker") or "").lower().strip() if str(s.get("speaker") or "").lower().strip()
-                    in SPEAKERS else "narrator"}
+                    "speaker": cs.clean(s.get("speaker"), 40).lower() or "narrator"}
                    for s in scenes[:14]],
     }
 
@@ -730,6 +731,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                best: list[str] | None = None, taste: str = "", part: int = 1, variety: str = "") -> dict:
     """Write, picture, voice and render one video into folder. Returns the script plus the MP4 path."""
     script = script or await write_script(client, settings, account, idea, recent, best, taste, variety)
+    cast = cs.assign_voices(account, script.get("bible"))  # named characters keep one voice across every video
     work = folder / f".{cs.new_id()}"
     work.mkdir(parents=True, exist_ok=True)
     seed = random.randint(1, 10**6)
@@ -761,7 +763,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             await asyncio.to_thread(draw_still, closeup, second)
             mine.append(second)
         voice, words = work / f"scene{i}.mp3", []
-        speaks = SPEAKERS.get(scene.get("speaker", ""), account.get("voice", ""))
+        speaks = cast.get(scene.get("speaker", "")) or SPEAKERS.get(scene.get("speaker", ""), account.get("voice", ""))
         has_voice = await narrate(http, settings, scene["narration"], speaks, voice, words,
                                    scene.get("pace", "normal"))
         seconds = await asyncio.to_thread(audio_seconds, voice) if has_voice else 0
