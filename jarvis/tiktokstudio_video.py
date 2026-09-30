@@ -921,6 +921,22 @@ def normalise(video: Path, out: Path) -> None:
          "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(out)])
 
 
+RENDER_JOBS = 2  # scenes rendered side by side: most PCs have the cores, and it cuts the wait for a video a lot
+
+
+async def render_all(jobs: list[tuple]) -> None:
+    """Render every scene, RENDER_JOBS at a time (each is its own ffmpeg), keeping the first error if any fail."""
+    gate = asyncio.Semaphore(RENDER_JOBS)
+
+    async def one(job):
+        async with gate:
+            await asyncio.to_thread(render_scene, *job)
+    results = await asyncio.gather(*(one(j) for j in jobs), return_exceptions=True)
+    for r in results:
+        if isinstance(r, BaseException):
+            raise r
+
+
 def join(parts: list[Path], out: Path) -> None:
     listing = out.with_suffix(".txt")
     listing.write_text("".join(f"file '{p.name}'\n" for p in parts), encoding="utf-8")
@@ -973,7 +989,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         shots.append(mine)
         voices.append((voice, seconds, words) if seconds > 0.3 else (None, reading_seconds(scene["narration"]), []))
     lengths = fit_to_length([v[1] for v in voices])
-    parts, hits = [], 0
+    parts, hits, jobs = [], 0, []
     for i, (mine, (voice, spoken, words), seconds) in enumerate(zip(shots, voices, lengths)):
         track = None
         if captions:
@@ -986,9 +1002,10 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         hit = scenes[i].get("hit", "") if sfx and hits < MAX_HITS else ""
         hits += bool(hit)
         pace = scenes[i].get("pace", "normal")
-        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
-                                pace, grade, i > 0 and pace == "slow" and not hit)
+        jobs.append((mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
+                     pace, grade, i > 0 and pace == "slow" and not hit))
         parts.append(part)
+    await render_all(jobs)
     name = cs.slug(f"{script['title']}")
     video = folder / f"{name}.mp4"
     n = 2
