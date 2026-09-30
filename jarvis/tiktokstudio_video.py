@@ -676,19 +676,31 @@ WHOOSH = ("anoisesrc=d=0.45:c=pink:a=0.6:r=44100,highpass=f=350,lowpass=f=4200,"
           "afade=t=in:d=0.18,afade=t=out:st=0.18:d=0.27,volume=0.9,aformat=channel_layouts=stereo")
 
 
+# The loop: the last scene ends on a short, slow settle into the video's very first frame, so when TikTok replays
+# it the cut back to the start is seamless and the video feels like it never ended (rewatches push it out further).
+LOOP_SECONDS = 0.8
+LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # ends at zoom 1, where scene 1 starts
+
+
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
-                 whoosh: bool = False) -> None:
+                 whoosh: bool = False, loop_to: Path | None = None) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
-    and (whoosh) a soft swish as it cuts in."""
+    and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
+    the opening frame, so the video loops seamlessly."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)]
+    motions = [MOTIONS[(move + i) % len(MOTIONS)] for i in range(len(stills))]
+    if loop_to is not None:
+        tail = max(1, round(LOOP_SECONDS * FPS))
+        stills, split, motions = [*stills, loop_to], [*split, tail], [*motions, LOOP_MOTION]
+        frames += tail
     inputs, chains = [], []
-    for i, (image, n) in enumerate(zip(stills, split)):
-        z, x, y = MOTIONS[(move + i) % len(MOTIONS)]
+    for i, (image, n, (z, x, y)) in enumerate(zip(stills, split, motions)):
         inputs += ["-loop", "1", "-framerate", str(FPS), "-i", str(image)]
-        chains.append(f"[{i}:v]scale={int(W * 1.2)}:{int(H * 1.2)},zoompan=z='{z}':d=1:x='{x.format(n=max(1, n))}':"
-                      f"y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},setpts=PTS-STARTPTS,setsar=1[s{i}]")
+        chains.append(f"[{i}:v]scale={int(W * 1.2)}:{int(H * 1.2)},zoompan=z='{z.format(n=max(1, n))}':d=1:"
+                      f"x='{x.format(n=max(1, n))}':y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},"
+                      f"setpts=PTS-STARTPTS,setsar=1[s{i}]")
     k = len(stills)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
@@ -820,7 +832,9 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             timed = words or estimate_words(scenes[i]["narration"], spoken)
             track = await asyncio.to_thread(caption_track, timed, seconds, accent, work, f"cap{i}")
         part = work / f"scene{i}.mp4"
-        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i, i > 0 and account.get("sfx", True) is not False)
+        loop_to = shots[0][0] if i == len(shots) - 1 and i > 0 and account.get("loop", True) is not False else None
+        await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i,
+                                i > 0 and account.get("sfx", True) is not False, loop_to)
         parts.append(part)
     name = cs.slug(f"{script['title']}")
     video = folder / f"{name}.mp4"
