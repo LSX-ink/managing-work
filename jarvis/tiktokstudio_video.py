@@ -744,6 +744,36 @@ SHAKE = (",scale={w}:{h},crop={W}:{H}:x='(iw-{W})/2+22*sin(n*2.7)*max(0,1-n/10)'
          ":y='(ih-{H})/2+16*cos(n*3.1)*max(0,1-n/10)'")
 
 
+# A colour grade for the whole video, picked from the script's mood, so a horror story looks cold and a memory
+# looks warm (applied under the captions, so they stay clean white).
+GRADES = {
+    "cold": "colorbalance=bs=0.10:bm=0.06:rs=-0.05:rh=-0.04,eq=saturation=0.85:contrast=1.06",
+    "warm": "colorbalance=rs=0.08:rm=0.05:bs=-0.06:bh=-0.04,eq=saturation=1.05",
+    "vivid": "eq=saturation=1.3:contrast=1.08",
+    "faded": "eq=saturation=0.6:contrast=0.92:brightness=0.02",
+}
+GRADE_WORDS = {
+    "cold": ("eerie", "tense", "dark", "horror", "creepy", "dread", "ominous", "suspense", "cold", "mystery", "thriller"),
+    "warm": ("warm", "nostalgic", "romantic", "hopeful", "tender", "cozy", "sweet", "love"),
+    "vivid": ("upbeat", "hype", "energetic", "fun", "happy", "bright", "party", "playful"),
+    "faded": ("sad", "melancholy", "lonely", "grief", "memory", "somber", "bittersweet"),
+}
+
+
+def grade_for(mood: str, account: dict | None = None) -> str:
+    """The grade's name for this mood ('' for none); an account can pin one with grade: 'cold' or turn it off."""
+    pinned = (account or {}).get("grade")
+    if pinned is False or pinned == "none":
+        return ""
+    if pinned in GRADES:
+        return pinned
+    words = set(re.findall(r"[a-z]+", str(mood).lower()))
+    for name, keys in GRADE_WORDS.items():
+        if words & set(keys):
+            return name
+    return ""
+
+
 # Sound effects the script can cue on a scene's first beat, made by ffmpeg itself (no files needed). They replace
 # that cut's swish, and only the first MAX_HITS in a video play, so they stay special.
 HITS = {
@@ -763,7 +793,8 @@ LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # e
 
 
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
-                 whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal") -> None:
+                 whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
+                 grade: str = "") -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -786,7 +817,8 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                       f"x='{x.format(n=max(1, n))}':y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},"
                       f"setpts=PTS-STARTPTS,setsar=1{shake}[s{i}]")
     k = len(stills)
-    chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0[vc]")
+    graded = f",{GRADES[grade]}" if grade in GRADES else ""
+    chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0{graded}[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
     video = "[vc]"
     if captions:
@@ -872,7 +904,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                best: list[str] | None = None, taste: str = "", part: int = 1, variety: str = "") -> dict:
     """Write, picture, voice and render one video into folder. Returns the script plus the MP4 path."""
     script = script or await write_script(client, settings, account, idea, recent, best, taste, variety)
-    cast = cs.assign_voices(account, script.get("bible"))  # named characters keep one voice across every video
+    cast = cs.assign_voices(account, script.get("bible"))
+    grade = grade_for(script.get("mood", ""), account)  # named characters keep one voice across every video
     work = folder / f".{cs.new_id()}"
     work.mkdir(parents=True, exist_ok=True)
     seed = random.randint(1, 10**6)
@@ -924,7 +957,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         hit = scenes[i].get("hit", "") if sfx and hits < MAX_HITS else ""
         hits += bool(hit)
         await asyncio.to_thread(render_scene, mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
-                                scenes[i].get("pace", "normal"))
+                                scenes[i].get("pace", "normal"), grade)
         parts.append(part)
     name = cs.slug(f"{script['title']}")
     video = folder / f"{name}.mp4"
@@ -969,10 +1002,12 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     if script.get("retention_fix"):
         lines += [f"Retention pass: {script['retention_fix']}", ""]
     lines += [f"Quality check: {'; '.join(checks) if checks else 'passed'}", ""]
+    if grade:
+        lines += [f"Colour grade: {grade} (from the mood; set the account's grade to change it)", ""]
     lines += ["## Script", ""]
     lines += [f"{i}. {s['narration']}" for i, s in enumerate(scenes, 1)]
     video.with_suffix(".md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return {**script, "path": video, "missing_pictures": missing, "checks": checks,
+    return {**script, "path": video, "missing_pictures": missing, "checks": checks, "grade": grade,
             "music": track.name if track else ""}
 
 

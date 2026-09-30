@@ -858,7 +858,7 @@ def test_scene_sound_effects_are_cued_and_capped(s, tmp_path, monkeypatch):
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
     monkeypatch.setattr(cv, "narrate", no_voice)
-    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append(a[-2]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append(a[-3]), out.write_bytes(b"mp4")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=parsed))
@@ -995,3 +995,23 @@ def test_check_problems_are_shown_with_the_video(s, monkeypatch):
     asyncio.run(creator.make_in_background(s, [("lowkey.lore", "", None)]))
     v = cs.load(s)["videos"][-1]
     assert v["checks"] == ["there's no sound"] and "Check before posting: there's no sound" in v["notes"]
+
+
+def test_the_mood_picks_a_colour_grade(tmp_path):
+    assert cv.grade_for("tense slow piano") == "cold" and cv.grade_for("upbeat hype") == "vivid"
+    assert cv.grade_for("nostalgic lo-fi") == "warm" and cv.grade_for("jazz") == ""
+    assert cv.grade_for("tense", {"grade": "warm"}) == "warm" and cv.grade_for("tense", {"grade": False}) == ""
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image, ImageStat
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (128, 128, 128)).save(still)
+
+    def mean(name, **kw):
+        cv.render_scene([still], None, 0.3, tmp_path / f"{name}.mp4", **kw)
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / f"{name}.mp4"), "-frames:v", "1",
+                        str(tmp_path / f"{name}.png")], check=True, capture_output=True)
+        return ImageStat.Stat(Image.open(tmp_path / f"{name}.png").convert("RGB")).mean
+    plain, cold, warm = mean("plain"), mean("cold", grade="cold"), mean("warm", grade="warm")
+    assert cold[2] - cold[0] > plain[2] - plain[0] + 3  # bluer
+    assert warm[0] - warm[2] > plain[0] - plain[2] + 3  # redder
