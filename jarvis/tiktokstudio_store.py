@@ -27,9 +27,14 @@ STYLES = {
 FORMATS = {
     "story": "a short original story with a twist, told in scenes",
     "facts": "a punchy explainer series: one idea per video, told in short lines",
-    "clips": "viral streamer clips from Twitch, old and new, joined to a minute or more",
+    "clips": "viral streamer clips from Twitch or Kick, old and new, joined to a minute or more",
 }
-STATUSES = ("making", "ready", "approved", "posted", "skipped", "failed")
+STATUSES = ("making", "ready", "approved", "posted", "rejected", "skipped", "failed")
+PLATFORMS = ("twitch", "kick")
+MAX_TASTE = 20  # liked and rejected videos remembered per account
+# N3on said yes to clipping (the user told Alfred so); he streams on Kick and sometimes Twitch.
+NEON = [{"name": "n3on", "platform": "kick", "allows_clipping": True},
+        {"name": "n3on", "platform": "twitch", "allows_clipping": True}]
 # Two accounts to start from, in the looks of the pages the user liked. Rename or change them freely.
 STARTERS = [
     {"name": "lowkey.lore", "theme": "dark, moody short stories with a twist: love, loss, late nights and secrets",
@@ -43,9 +48,12 @@ STARTERS = [
      "style": "drama", "format": "story", "series": ["Karma Hit Different", "They Didn't Know", "Plot Twist"]},
     {"name": "Clipzz", "theme": "the most viral Twitch streamer moments, from old classics to this week's",
      "style": "clips", "format": "clips", "per_day": 5, "category": "Just Chatting"},
+    {"name": "n3on.vault", "theme": "N3on's most viral stream moments, each one extended with what happened just "
+                                    "before and after the clip", "style": "clips", "format": "clips", "per_day": 3,
+     "streamers": NEON, "min_views": 100_000, "extend": 30},
 ]
 # Starters added after someone's studio already existed get added once, by name.
-LATER_STARTERS = {"Clipzz"}
+LATER_STARTERS = {"Clipzz", "n3on.vault"}
 
 
 def clean(value, limit: int = 200) -> str:
@@ -55,6 +63,23 @@ def clean(value, limit: int = 200) -> str:
 def slug(text: str, fallback: str = "video") -> str:
     name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", str(text or "")).strip().strip(".")[:50].strip()
     return name or fallback
+
+
+def streamer(item, platform: str = "twitch") -> dict | None:
+    """{name, platform, allows_clipping} from a dict or a bare name; a bare name hasn't said yes to clipping."""
+    item = item if isinstance(item, dict) else {"name": item}
+    name = clean(item.get("name"), 40).lstrip("@")
+    if not name:
+        return None
+    where = str(item.get("platform") or platform).lower()
+    return {"name": name, "platform": where if where in PLATFORMS else "twitch",
+            "allows_clipping": item.get("allows_clipping") is True}
+
+
+def allowed(account: dict, platform: str | None = None) -> list[str]:
+    """Names of the account's streamers who allow clipping (on one platform, or any)."""
+    return [s["name"] for s in (streamer(x) for x in account.get("streamers") or [])
+            if s and s["allows_clipping"] and platform in (None, s["platform"])]
 
 
 def new_account(name: str, **fields) -> dict:
@@ -70,9 +95,12 @@ def new_account(name: str, **fields) -> dict:
             "style": style, "format": kind, "series": [clean(s, 60) for s in fields.get("series") or [] if clean(s, 60)][:10],
             "per_day": max(0, min(int(fields.get("per_day") if fields.get("per_day") is not None else 3), 6)),
             "voice": clean(fields.get("voice"), 60), "accent": clean(fields.get("accent"), 20) or "#e8c547",
-            "streamers": [clean(s, 40).lstrip("@") for s in fields.get("streamers") or [] if clean(s, 40)][:30],
+            "streamers": [s for s in (streamer(x) for x in fields.get("streamers") or []) if s][:30],
             "category": clean(fields.get("category"), 60) or "Just Chatting",
-            "used_clips": list(fields.get("used_clips") or [])[-3000:]}
+            "min_views": max(0, int(fields.get("min_views") or 0)),  # clip accounts: only clips with this many views
+            "extend": max(0, min(int(fields.get("extend") or 0), 120)),  # seconds added before and after each clip
+            "used_clips": list(fields.get("used_clips") or [])[-3000:],
+            "taste": fields.get("taste") if isinstance(fields.get("taste"), dict) else {"liked": [], "rejected": []}}
 
 
 def load(settings: Settings) -> dict:
@@ -120,18 +148,52 @@ def account(data: dict, name) -> dict:
     return found
 
 
-def find_video(data: dict, ref) -> dict:
-    """A video by its id, or by 'latest', or by part of its title."""
-    ref = clean(ref, 100).lower()
+WAITING = ("ready", "failed_post")
+
+
+def find_video(data: dict, ref, waiting: bool = False) -> dict:
+    """A video by its id, 'latest', part of its title, or its account ('the lowkey.lore video'). waiting prefers
+    the videos still waiting for a tick or an X."""
+    ref = clean(ref, 100).lower().lstrip("@")
     videos = data["videos"]
     if not videos:
         raise ValueError("There are no videos yet.")
-    if ref in ("", "latest", "last", "newest"):
-        return videos[-1]
+    queue = [v for v in videos if v.get("status") in WAITING] if waiting else []
+    if ref in ("", "latest", "last", "newest", "that one", "this one", "it"):
+        return (queue or videos)[-1]
     for v in reversed(videos):
         if v["id"] == ref or ref in v.get("title", "").lower():
             return v
+    named = find_account(data, ref)
+    mine = [v for v in queue or videos if named and v.get("account") == named["name"]]
+    if mine:
+        return mine[-1]
     raise ValueError(f"I can't find a video called {ref}.")
+
+
+# ---- taste: what the user ticked and what they X-ed ---------------------------------------------------------
+
+def remember(account: dict, video: dict, liked: bool, reason: str = "") -> None:
+    taste = account.setdefault("taste", {"liked": [], "rejected": []})
+    row = {"title": clean(video.get("title"), 90), "hook": clean(video.get("hook") or video.get("keyword"), 200),
+           "notes": clean(video.get("notes"), 200), "reason": clean(reason, 300), "day": date.today().isoformat()}
+    key = "liked" if liked else "rejected"
+    taste[key] = [*(taste.get(key) or []), row][-MAX_TASTE:]
+
+
+def taste_summary(account: dict, n: int = 6) -> str:
+    """A few lines for Claude: what the user approved and rejected on this account, newest first."""
+    taste = account.get("taste") or {}
+
+    def line(r: dict) -> str:
+        bits = [f"'{r.get('title')}'"] + [f"hook: {r['hook']}"] * bool(r.get("hook")) + [r.get("notes")] * bool(r.get("notes"))
+        return ", ".join(bits) + (f" (why: {r['reason']})" if r.get("reason") else "")
+    liked = [line(r) for r in reversed((taste.get("liked") or [])[-n:])]
+    rejected = [line(r) for r in reversed((taste.get("rejected") or [])[-n:])]
+    if not liked and not rejected:
+        return "No ticks or X's yet: be bold and try something fresh."
+    return ("The user APPROVED: " + ("; ".join(liked) or "nothing yet") + ".\nThe user REJECTED: "
+            + ("; ".join(rejected) or "nothing yet") + ".")
 
 
 def new_id() -> str:
@@ -141,7 +203,7 @@ def new_id() -> str:
 def made_today(data: dict, account_name: str, on: date | None = None) -> int:
     on = (on or date.today()).isoformat()
     return sum(1 for v in data["videos"] if v.get("account") == account_name and v.get("day") == on
-               and v.get("status") != "failed")
+               and v.get("status") not in ("failed", "rejected"))
 
 
 def work_folder(settings: Settings, *parts: str) -> Path:

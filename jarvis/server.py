@@ -17,7 +17,7 @@ from urllib.parse import parse_qs, urlparse
 import anthropic
 import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import alerts
@@ -317,22 +317,34 @@ async def memory_open(index: int, filename: str):
 
 # ---- TikTok studio -----------------------------------------------------------------------------------
 
+@app.get("/creator/queue")
+async def creator_queue():
+    """The videos waiting for a tick or an X, for the HUD: [{id, account, title, kind, created, video_url, thumb_url}]."""
+    return await asyncio.to_thread(tiktokstudio.queue, settings)
+
+
 @app.post("/creator/videos/{video_id}/{action}")
 async def creator_video_action(video_id: str, action: str, request: Request):
-    """One tap on the studio card: approve (and post) or skip a video."""
+    """One tap on the studio card or the HUD: approve (tick: posts it) or reject (X: a better one gets made; skip
+    means the same). reject takes an optional JSON body {"reason": "..."}. Answers {ok, said, card}."""
     if not from_our_page(request):
-        return Response("Not from the Jarvis page.", status_code=403)
+        return JSONResponse({"ok": False, "said": "Not from the Jarvis page."}, status_code=403)
     try:
         if action == "approve":
             said = await tiktokstudio.approve(settings, video_id)
-        elif action == "skip":
-            said = await asyncio.to_thread(tiktokstudio.skip, settings, video_id)
+        elif action in ("reject", "skip"):
+            try:
+                body = await request.json()
+            except ValueError:  # no body, or not JSON
+                body = {}
+            reason = body.get("reason", "") if isinstance(body, dict) else ""
+            said = await tiktokstudio.reject(settings, video_id, str(reason or ""))
         else:
-            return Response("Unknown action.", status_code=404)
+            return JSONResponse({"ok": False, "said": "Unknown action."}, status_code=404)
     except ValueError as exc:
-        return Response(str(exc), status_code=400)
+        return JSONResponse({"ok": False, "said": str(exc)}, status_code=400)
     card = await asyncio.to_thread(lambda: tiktokstudio.studio_card(settings, tiktokstudio_store.load(settings)))
-    return {"said": said, "card": card}
+    return {"ok": True, "said": said, "card": card}
 
 
 @app.get("/tiktok/connect")

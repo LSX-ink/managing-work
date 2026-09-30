@@ -27,7 +27,7 @@ def s(tmp_path):
 
 @pytest.fixture(autouse=True)
 def idle_studio():
-    creator._ctx.update(client=None, http=None, announce=None, making=False, views_at=0.0)
+    creator._ctx.update(client=None, http=None, announce=None, making=False, views_at=0.0, pending=[])
     yield
 
 
@@ -57,19 +57,19 @@ def add_video(s, **fields):
 
 def test_starts_with_flashy_accounts_in_the_looks_the_user_liked(s):
     data = cs.load(s)
-    assert [a["name"] for a in data["accounts"]] == ["lowkey.lore", "mindglitch.fyi", "karma.receipts", "Clipzz"]
-    assert [a["style"] for a in data["accounts"]] == ["noir", "explainer", "drama", "clips"]
-    assert [a["per_day"] for a in data["accounts"]] == [3, 3, 3, 5]
+    assert [a["name"] for a in data["accounts"]] == ["lowkey.lore", "mindglitch.fyi", "karma.receipts", "Clipzz", "n3on.vault"]
+    assert [a["style"] for a in data["accounts"]] == ["noir", "explainer", "drama", "clips", "clips"]
+    assert [a["per_day"] for a in data["accounts"]] == [3, 3, 3, 5, 3]
 
 
 def test_clipzz_joins_a_studio_made_before_it(s):
     old = {"accounts": [cs.new_account(**cs.STARTERS[0])], "videos": []}
     (Path(s.memory_dir) / cs.FILE).write_text(json.dumps(old), encoding="utf-8")
-    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore", "Clipzz"]
+    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore", "Clipzz", "n3on.vault"]
     data = cs.load(s)
     data["accounts"].pop()  # removed on purpose: it stays removed
     cs.save(s, data)
-    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore"]
+    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore", "Clipzz"]
 
 
 def test_add_rename_and_remove_accounts(s):
@@ -142,7 +142,7 @@ def test_a_missing_picture_or_voice_still_makes_a_video(s, tmp_path, monkeypatch
 def test_studio_makes_a_video_and_queues_it(s, monkeypatch):
     announced = []
 
-    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None):
+    async def fake_make(client, http, settings, account, folder, idea="", recent=None, script=None, best=None, taste=""):
         path = folder / "Clip.mp4"
         path.write_bytes(b"mp4")
         return {**cv.parse_script(SCRIPT), "path": path, "missing_pictures": 0}
@@ -168,7 +168,7 @@ def test_a_failed_video_is_reported_and_retried_only_a_few_times(s, monkeypatch)
     asyncio.run(creator.make_in_background(s, [("lowkey.lore", "", None)]))
     assert cs.load(s)["videos"][-1]["status"] == "failed"
     today = date.today()
-    assert len(creator.todays_jobs(s, cs.load(s), today)) == 9  # 3 accounts x 3, the failure doesn't count
+    assert len(creator.todays_jobs(s, cs.load(s), today)) == 12  # 4 accounts x 3, the failure doesn't count
     for _ in range(2):
         asyncio.run(creator.make_in_background(s, [("lowkey.lore", "", None)]))
     assert [j[0] for j in creator.todays_jobs(s, cs.load(s), today)].count("lowkey.lore") == 0
@@ -178,7 +178,7 @@ def test_daily_quota_counts_todays_videos(s):
     add_video(s)
     add_video(s, status="posted")
     jobs = creator.todays_jobs(s, cs.load(s), date.today())
-    assert [j[0] for j in jobs].count("lowkey.lore") == 1 and len(jobs) == 7
+    assert [j[0] for j in jobs].count("lowkey.lore") == 1 and len(jobs) == 10  # n3on.vault's Kick needs no keys
 
 
 # ---- approving -------------------------------------------------------------------------------------------
@@ -190,7 +190,8 @@ def test_approve_without_tiktok_saves_it_to_upload_by_hand(s):
     assert cs.load(s)["videos"][-1]["status"] == "approved"
     with pytest.raises(ValueError):
         studio(s, action="approve", video=v["id"])
-    assert "Skipped" in studio(s, action="skip", video="voicemail")
+    add_video(s, title="Another Voicemail")
+    assert "Rejected" in studio(s, action="skip", video="another")  # skip is an X now
 
 
 def fake_tiktok(calls, views=None):
@@ -429,8 +430,15 @@ def test_old_viral_is_a_week_in_the_past():
     assert (end - start).days == 7 and (twitch.window("new")[1] - start).days >= 30
 
 
+def allow(s, account, *names, platform="twitch", ok=True):
+    data = cs.load(s)
+    cs.account(data, account)["streamers"] = [{"name": n, "platform": platform, "allows_clipping": ok} for n in names]
+    cs.save(s, data)
+
+
 def test_clipzz_makes_a_credited_portrait_video(s, monkeypatch):
     s = replace(s, twitch_client_id="id", twitch_client_secret="sec")
+    allow(s, "Clipzz", "kai")
 
     async def fake_top(http, settings, era, streamers, category):
         return [clip(1, "kai", 40, 900), clip(2, "kai", 30, 800)]
@@ -453,6 +461,9 @@ def test_clipzz_makes_a_credited_portrait_video(s, monkeypatch):
 def test_clipzz_waits_for_twitch_keys(s):
     jobs = creator.todays_jobs(s, cs.load(s), date.today())
     assert "Clipzz" not in [j[0] for j in jobs]
+    assert "allow clipping" in creator.studio_card(s, cs.load(s))["data"]["setup"]
+    allow(s, "Clipzz", "kai")
+    assert "Clipzz" not in [j[0] for j in creator.todays_jobs(s, cs.load(s), date.today())]
     assert "TWITCH_CLIENT_ID" in creator.studio_card(s, cs.load(s))["data"]["setup"]
     s2 = replace(s, twitch_client_id="id", twitch_client_secret="sec")
     assert [j[0] for j in creator.todays_jobs(s2, cs.load(s2), date.today())].count("Clipzz") == 5

@@ -306,7 +306,10 @@ box). Say "add a TikTok account", "rename lowkey.lore", or "give me Gen Z names 
 
 Every morning from `JARVIS_CREATOR_HOUR` he writes, pictures, voices and cuts each account's videos (3 a day, each
 at least a minute long) and saves them in **Work/TikTok/<account>**. Say "show my TikTok studio" to watch them and
-press **Approve** or **Skip**. Nothing is posted until you approve it.
+press the tick (post) or the X (reject). Nothing is posted without a tick. An X ("reject that one", "I don't like
+the lowkey.lore video, it's too slow") straight away starts a better replacement for that account, and every tick
+and X is remembered, so new videos lean towards what you like while still trying fresh ideas. The HUD can list the
+waiting videos from `GET /creator/queue`.
 
 - With a TikTok developer app (`TIKTOK_CLIENT_KEY` and `TIKTOK_CLIENT_SECRET` in `.env`), press **Connect**
   beside each account once. Approved videos then go to your TikTok inbox to post, or post straight away with
@@ -314,9 +317,13 @@ press **Approve** or **Skip**. Nothing is posted until you approve it.
 - Without one, approved videos stay in the folder with their caption, ready to upload by hand.
 - **Clipzz** posts 5 viral Twitch streamer clips a day, old classics and this week's, cropped to fill the phone
   and joined to a minute or more, with the streamer credited on screen and in the caption. It needs a free Twitch
-  app (`TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` from dev.twitch.tv/console). Say "take Clipzz clips from
-  these streamers: ..." to stick to streamers who allow clipping; reposting other people's clips can get an
-  account struck or left out of TikTok's rewards.
+  app (`TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` from dev.twitch.tv/console). Clip accounts only clip
+  streamers marked as allowing it: say "add xqc on Kick to Clipzz, he allows clipping". Reposting other people's
+  clips can get an account struck or left out of TikTok's rewards.
+- **n3on.vault** is N3on's clip page (he allows clipping): his viral Kick clips with 100k+ views, new and old,
+  each cut again from the stream with about 30 seconds before and after (the plain clip when the stream is gone).
+  Kick needs no keys (`KICK_CLIENT_ID` and `KICK_CLIENT_SECRET` are optional); his Twitch clips join in when the
+  Twitch keys are set.
 - Trends: before each account's first video of the day Alfred checks this week's TikTok trends for its niche
   (topics, hashtags, hooks, sounds) and writes with them, along with what did best on that account. Ask "what's
   trending for mindglitch.fyi?" to plan what to post next.

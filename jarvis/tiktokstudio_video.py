@@ -1,7 +1,8 @@
 """Alfred as author and director: writes a short vertical video, pictures it, voices it and cuts it to an MP4.
 
 1. Script: Claude writes the title, hook, scenes (on-screen line + narration + a picture description), caption
-   and hashtags as JSON, in the account's theme, format and series, avoiding titles it used before.
+   and hashtags as JSON, in the account's theme, format and series, avoiding titles it used before and
+   leaning towards what the user ticked, away from what they X-ed.
 2. Pictures: one per scene from Pollinations (free, no key), in the account's look. If a picture can't be
    fetched, a plain dark frame is used so the video still gets made.
 3. Frames: each picture is laid out in the account's style with Pillow (noir card, black explainer or
@@ -52,6 +53,9 @@ Write ONE new video for today. It must last at least one minute, ideally 65 to 9
 Titles already used (never repeat or closely copy these): {recent}
 What did best on this account so far (do more of what works): {best}
 What's trending on TikTok for this niche right now (ride these where they fit, never copy anyone): {trends}
+What the user ticked and X-ed on this account (lean towards what they approved and away from what they rejected,
+but be creative: a fresh idea in the spirit of the approved ones, never a copy):
+{taste}
 
 Rules:
 - Stop the scroll in the first line: the hook is a bold claim, a question or a cliffhanger.
@@ -116,8 +120,9 @@ def parse_script(text: str) -> dict:
 
 
 async def write_script(client, settings: Settings, account: dict, idea: str = "", recent: list[str] | None = None,
-                       best: list[str] | None = None) -> dict:
+                       best: list[str] | None = None, taste: str = "") -> dict:
     prompt = SCRIPT_PROMPT.format(
+        taste=taste or cs.taste_summary(account),
         name=account["name"], theme=account["theme"], format=cs.FORMATS[account["format"]],
         series=", ".join(account.get("series") or []) or "none yet; pick a catchy repeatable one",
         look=cs.STYLES[account["style"]], recent="; ".join((recent or [])[-30:]) or "none yet",
@@ -327,9 +332,9 @@ def join(parts: list[Path], out: Path) -> None:
 
 async def make(client, http: httpx.AsyncClient, settings: Settings, account: dict, folder: Path,
                idea: str = "", recent: list[str] | None = None, script: dict | None = None,
-               best: list[str] | None = None) -> dict:
+               best: list[str] | None = None, taste: str = "") -> dict:
     """Write, picture, voice and render one video into folder. Returns the script plus the MP4 path."""
-    script = script or await write_script(client, settings, account, idea, recent, best)
+    script = script or await write_script(client, settings, account, idea, recent, best, taste)
     work = folder / f".{cs.new_id()}"
     work.mkdir(parents=True, exist_ok=True)
     seed = random.randint(1, 10**6)

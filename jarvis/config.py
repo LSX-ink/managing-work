@@ -82,6 +82,9 @@ class Settings:
     # Clip accounts (Clipzz): Twitch's official API finds the most-viewed clips
     twitch_client_id: str = os.getenv("TWITCH_CLIENT_ID", "").strip()
     twitch_client_secret: str = os.getenv("TWITCH_CLIENT_SECRET", "").strip()
+    # Kick clips (n3on.vault) need no keys; with Kick's official app keys the channel is checked first
+    kick_client_id: str = os.getenv("KICK_CLIENT_ID", "").strip()
+    kick_client_secret: str = os.getenv("KICK_CLIENT_SECRET", "").strip()
 
     def __post_init__(self) -> None:
         # A blank or mistyped host (an email address, a space) can't connect; pick it from the email address instead.
