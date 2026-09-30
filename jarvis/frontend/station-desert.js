@@ -33,6 +33,20 @@ LSX.desert = (k) => {
     gg.strokeStyle = 'rgba(40,40,40,.35)'; gg.lineWidth = 3; for (let y = 0; y < 512; y += 22) { gg.beginPath(); for (let x = 0; x <= 512; x += 16) gg.lineTo(x, y + Math.sin(x * 0.03 + y) * 5); gg.stroke(); }
     const ground = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, bumpMap: tex(grainC, 160, 160, false), bumpScale: 0.06 }));
     ground.receiveShadow = true; desert.add(ground);
+    // far mountains all round the horizon, blue with distance, so the desert doesn't end in a flat edge
+    {
+        const N = 360, R = 1250, pos = [], idx = [];
+        for (let i = 0; i <= N; i++) {
+            const a = i / N * Math.PI * 2, x = Math.cos(a), z = Math.sin(a);
+            const h = 40 + Math.pow(fbm(x * 2.2 + 7, z * 2.2, 3.3, 5), 2.2) * 420 + fbm(x * 9, z * 9, 1, 3) * 40;
+            const r = R + fbm(x * 3, z * 3, 8, 3) * 180;
+            pos.push(x * r, -30, z * r, x * (r - 60), h, z * (r - 60));
+            if (i < N) { const b = i * 2; idx.push(b, b + 2, b + 1, b + 1, b + 2, b + 3); }
+        }
+        const mg = new THREE.BufferGeometry(); mg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); mg.setIndex(idx); mg.computeVertexNormals();
+        const range = new THREE.Mesh(mg, new THREE.MeshStandardMaterial({ color: 0x8a7a6c, roughness: 1, side: THREE.DoubleSide, flatShading: true }));
+        desert.add(range);
+    }
     // mesas and rocks
     const strataC = canvas(256, 512), sg = strataC.getContext('2d');
     for (let y = 0; y < 512; y += 2) { const kk = fbm(0, y * 0.03, 3, 3), c = [186 - kk * 70, 118 - kk * 50, 78 - kk * 36].map((v) => v + (rnd(y) - 0.5) * 14 | 0); sg.fillStyle = `rgb(${c})`; sg.fillRect(0, y, 256, 2); }
