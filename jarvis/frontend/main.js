@@ -465,6 +465,7 @@ if (Recognition) {
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
             paused = true;
             setState('idle', t('micBlocked'));
+            document.dispatchEvent(new Event('jarvis:mic-blocked'));   // mic-help.js says how to fix it
         }
     };
 }

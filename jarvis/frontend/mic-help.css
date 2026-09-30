@@ -1,0 +1,15 @@
+/* Microphone help panel (mic-help.js). Sits above everything, readable in every theme. */
+#mic-help {
+    position: fixed; z-index: 9000; left: 50%; top: 18px; transform: translateX(-50%);
+    width: min(560px, calc(100vw - 32px)); box-sizing: border-box; padding: 16px 18px;
+    background: #0b0f14; color: #f2f4f7; border: 1px solid #ffcc4d; border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6); font: 14px/1.45 system-ui, sans-serif;
+}
+#mic-help h2 { margin: 0 0 8px; font-size: 14px; letter-spacing: 0.08em; color: #ffcc4d; }
+#mic-help ol { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 4px; }
+.mic-help-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.mic-help-buttons button, .mic-help-go {
+    font: inherit; font-size: 12px; letter-spacing: 0.08em; padding: 7px 12px; border-radius: 6px; cursor: pointer;
+    background: transparent; color: #f2f4f7; border: 1px solid #8a93a0; text-decoration: none;
+}
+.mic-help-go { background: #ffcc4d; color: #0b0f14; border-color: #ffcc4d; font-weight: 600; }
