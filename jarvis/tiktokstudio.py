@@ -271,7 +271,7 @@ async def watch(settings: Settings) -> None:
                     _ctx["views_at"] = time.time()
                     await refresh_views(settings)
                 data = cs.load(settings)
-                jobs = [(v["account"], "", v) for v in sequels_due(data)] + todays_jobs(settings, data, date.today())
+                jobs = [] if data.get("paused") else [(v["account"], "", v) for v in sequels_due(data)] + todays_jobs(settings, data, date.today())
                 if jobs:
                     await make_in_background(settings, jobs)
         except Exception as exc:
@@ -325,6 +325,8 @@ async def reject(settings: Settings, ref: str, reason: str = "") -> str:
         cs.remember(account, v, False, reason)
     cs.save(settings, data)
     said = f"Rejected '{v['title']}'; it won't be posted and the file stays in the folder."
+    if data.get("paused"):
+        return said + " Content making is paused, so I won't make a replacement until you say resume."
     if account is None or _ctx["client"] is None:
         return said + " I can't start a replacement until the studio is running; restart Alfred."
     task = asyncio.create_task(make_in_background(settings, [(account["name"], "", None, dict(v))]))
@@ -353,6 +355,21 @@ def set_views(settings: Settings, ref: str, views) -> str:
 
 
 # ---- the studio card ---------------------------------------------------------------------------------------
+
+def set_paused(settings: Settings, paused: bool) -> str:
+    """Pause or resume all content making: no daily videos, sequels or replacements while paused."""
+    data = cs.load(settings)
+    data["paused"] = paused
+    cs.save(settings, data)
+    if not paused:
+        return "Content making is back on. The daily videos pick up from the next check."
+    dropped = len(_ctx["pending"])
+    _ctx["pending"].clear()
+    return ("Content making is paused: no new videos, sequels or replacements until you say resume."
+            + (" The one I'm making now will finish." if _ctx["making"] else "")
+            + (f" I dropped {dropped} waiting in line." if dropped else "")
+            + " Videos already waiting for approval stay there.")
+
 
 def studio_card(settings: Settings, data: dict, focus: str = "") -> dict:
     live = [v for v in data["videos"] if v.get("status") in ("making", "ready", "failed_post", "failed")]
@@ -475,7 +492,7 @@ async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -
 
 # ---- the tool ---------------------------------------------------------------------------------------------
 
-ACTIONS = ["studio", "make_video", "approve", "reject", "skip", "set_views", "accounts", "add_account", "update_account",
+ACTIONS = ["studio", "make_video", "approve", "reject", "skip", "pause", "resume", "set_views", "accounts", "add_account", "update_account",
            "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup"]
 
 
@@ -491,7 +508,8 @@ def tool_definitions() -> list[dict]:
                        "optional reason) is the X: 'reject that one', 'X it', 'no', 'I don't like the lowkey.lore "
                        "video' (video: lowkey.lore), 'that clip is boring' (reason: boring); it never posts, Alfred "
                        "learns from it and at once makes a better replacement for the same account. skip means "
-                       "reject. Every tick and X is remembered per account and steers the next videos. video is an "
+                       "reject. pause stops all content making (no daily videos, sequels or replacements): 'pause "
+                       "making content', 'stop making videos'; resume turns it back on. Every tick and X is remembered per account and steers the next videos. video is an "
                        "id, part of a title, an account name, or 'latest' (the newest waiting video). set_views (video, views e.g. 80k) records views: 50k earns part 2, then every "
                        "100k more another part up to part 5, which ends on a shocking cliffhanger. accounts lists "
                        "them. add_account (account name, theme, style noir/explainer/drama/cinematic, format "
@@ -561,6 +579,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
         asyncio.create_task(make_in_background(settings, [(account["name"], cs.clean(args.get("idea"), 500), None)]))
         return (f"I'm writing and directing a new video for {account['name']} now. It takes a few minutes; "
                 "I'll tell you when it's ready to approve.")
+    if action in ("pause", "resume"):
+        return set_paused(settings, action == "pause")
     if action == "approve":
         return await approve(settings, args.get("video") or args.get("account"))
     if action in ("reject", "skip"):

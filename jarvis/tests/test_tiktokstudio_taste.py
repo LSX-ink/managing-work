@@ -334,3 +334,15 @@ def test_the_tool_offers_reject_with_a_reason():
     assert "reason" in tool["input_schema"]["properties"]
     assert "I don't like the lowkey.lore video" in tool["description"] and "reject that one" in tool["description"]
     json.dumps(tool)
+
+
+
+def test_pause_stops_making_content(s):
+    creator._ctx["pending"].append(("lowkey.lore", "", None))
+    said = asyncio.run(creator.run_tool("tiktok_studio", {"action": "pause"}, s))
+    assert "paused" in said and not creator._ctx["pending"] and cs.load(s)["paused"] is True
+    add_video(s)
+    said = run_and_wait(creator.reject(s, "latest"))
+    assert "won't make a replacement" in said and not creator._ctx["pending"]
+    said = asyncio.run(creator.run_tool("tiktok_studio", {"action": "resume"}, s))
+    assert "back on" in said and cs.load(s)["paused"] is False
