@@ -858,10 +858,11 @@ def test_scene_sound_effects_are_cued_and_capped(s, tmp_path, monkeypatch):
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
     monkeypatch.setattr(cv, "narrate", no_voice)
-    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append(a[4]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (played.append((a[1], a[4])), out.write_bytes(b"mp4")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=parsed))
+    played = [h for _, h in sorted(played)]  # scenes render side by side, so put them back in order
     assert sum(bool(h) for h in played) == cv.MAX_HITS and played[0] == ""
 
 
@@ -1038,12 +1039,12 @@ def test_slow_scenes_rise_out_of_black(s, tmp_path, monkeypatch):
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
     monkeypatch.setattr(cv, "narrate", no_voice)
-    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (dips.append(a[-1]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (dips.append((a[1], a[-1])), out.write_bytes(b"mp4")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     monkeypatch.setattr(cv, "check_video", lambda path: [])
     asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script))
-    assert dips == [False, True, False, False]  # never the hook, never on top of a hit's own look
+    assert [d for _, d in sorted(dips)] == [False, True, False, False]  # never the hook, never on top of a hit's own look
     monkeypatch.undo()
     pytest.importorskip("imageio_ffmpeg")
     import subprocess
@@ -1086,3 +1087,26 @@ def test_the_spoken_word_pops_up_a_little():
     flat = cv.caption_image(["hello", "there"], 0, accent, ["hello"])  # a punch word is already its biggest
     assert height(lit, accent) > 0 and height(flat, accent) > height(lit, accent)
     assert cv.PUNCH_SCALE > cv.LIT_SCALE > 1
+
+
+def test_scenes_render_two_at_a_time(monkeypatch):
+    import threading
+    import time as _time
+    busy, peak, lock = [0], [0], threading.Lock()
+
+    def slow_render(*job):
+        with lock:
+            busy[0] += 1
+            peak[0] = max(peak[0], busy[0])
+        _time.sleep(0.05)
+        with lock:
+            busy[0] -= 1
+    monkeypatch.setattr(cv, "render_scene", slow_render)
+    asyncio.run(cv.render_all([(i,) for i in range(6)]))
+    assert peak[0] == cv.RENDER_JOBS
+
+    def broken(*job):
+        raise RuntimeError("ffmpeg failed")
+    monkeypatch.setattr(cv, "render_scene", broken)
+    with pytest.raises(RuntimeError, match="ffmpeg failed"):
+        asyncio.run(cv.render_all([(1,), (2,)]))
