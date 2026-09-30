@@ -38,6 +38,9 @@ FPS = 30
 MIN_LENGTH = 61.0  # every video lasts at least a minute (TikTok's Creator Rewards only pays for 1 minute or more)
 PICTURE_URL = "https://image.pollinations.ai/prompt/{prompt}?width={w}&height={h}&seed={seed}&nologo=true&model=flux"
 DEFAULT_VOICE = "en-GB-RyanNeural"
+# who speaks a scene when it is a character's own line of dialogue, not the narrator
+SPEAKERS = {"woman": "en-GB-SoniaNeural", "man": "en-US-GuyNeural", "old man": "en-GB-ThomasNeural",
+            "old woman": "en-US-AriaNeural", "child": "en-US-AnaNeural"}
 LOOKS = {
     "noir": ("black and white photograph, moody, cinematic close-up, deep shadows, high contrast, film grain, "
              "shallow depth of field, no text"),
@@ -96,6 +99,9 @@ Rules:
   hands, an object, the eyes, another angle), each 10 to 25 words, for an image generator. No text in pictures.
 - "pace" for each scene is how Alfred reads it, like a voice actor: "slow" for reveals, dread and the last line,
   "fast" for panic, chases and escalating lists, "normal" otherwise. Vary it; most scenes are normal.
+- "speaker" for each scene is "narrator", or, when the whole scene is one character saying a line out loud (a
+  voicemail, a scream, a whisper), who says it: "woman", "man", "old man", "old woman" or "child". Use a
+  character voice for 1 to 3 lines that hit hard; everything else is the narrator.
 - "bible": what this video adds to the story bible: characters it uses (name, look, notes), threads it opens
   (open questions or mysteries to pay off in later videos), threads it closes, and the world in one line if it
   is new or has grown. Use {{}} for nothing.
@@ -111,7 +117,7 @@ Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
   "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "..."}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
-  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal"}}]}}"""
+  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator"}}]}}"""
 
 EDITOR_PROMPT = """You are the toughest short-form story editor on TikTok. A writer was given this brief:
 
@@ -215,7 +221,9 @@ def parse_script(text: str) -> dict:
                     "narration": cs.clean(s.get("narration") or s.get("text"), 400),
                     "picture": cs.clean(s.get("picture") or s.get("text"), 300),
                     "closeup": cs.clean(s.get("closeup"), 300),
-                    "pace": str(s.get("pace") or "").lower() if str(s.get("pace") or "").lower() in PACES else "normal"}
+                    "pace": str(s.get("pace") or "").lower() if str(s.get("pace") or "").lower() in PACES else "normal",
+                    "speaker": str(s.get("speaker") or "").lower().strip() if str(s.get("speaker") or "").lower().strip()
+                    in SPEAKERS else "narrator"}
                    for s in scenes[:14]],
     }
 
@@ -708,7 +716,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             await asyncio.to_thread(draw_still, closeup, second)
             mine.append(second)
         voice, words = work / f"scene{i}.mp3", []
-        has_voice = await narrate(http, settings, scene["narration"], account.get("voice", ""), voice, words,
+        speaks = SPEAKERS.get(scene.get("speaker", ""), account.get("voice", ""))
+        has_voice = await narrate(http, settings, scene["narration"], speaks, voice, words,
                                    scene.get("pace", "normal"))
         seconds = await asyncio.to_thread(audio_seconds, voice) if has_voice else 0
         shots.append(mine)
