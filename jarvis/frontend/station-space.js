@@ -110,6 +110,20 @@ LSX.space = async (k, pause) => {
     clouds.position.copy(LSXC); space.add(clouds);
     const lsxRim = rim(LSXR * 1.02, '#7fd0ff', 1.6); lsxRim.position.copy(LSXC); space.add(lsxRim);
     const lsxHalo = atmo(LSXR * 1.09, '#6cc6ff', 1.1); lsxHalo.position.copy(LSXC); space.add(lsxHalo);
+    // auroras: green and violet curtains waving round both of LSX's poles
+    const auroraU = { t: { value: 0 } };
+    const auroraM = new THREE.ShaderMaterial({
+        uniforms: auroraU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+        vertexShader: 'varying vec2 vU; void main(){ vU=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+        fragmentShader: `uniform float t; varying vec2 vU; void main(){ float x=vU.x*6.2832;
+            float w=.5+.5*sin(x*7.+t*.7+sin(x*3.-t*.4)*2.), band=pow(w,3.)*(.35+.65*(.5+.5*sin(x*23.+t*1.7)));
+            float fade=smoothstep(0.,.25,vU.y)*(1.-vU.y); vec3 c=mix(vec3(.2,1.,.55),vec3(.6,.3,1.),vU.y);
+            gl_FragColor=vec4(c*band*fade*.9,band*fade*.9); }`,
+    });
+    for (const sgn of [1, -1]) {
+        const cur = new THREE.Mesh(new THREE.CylinderGeometry(LSXR * 0.36, LSXR * 0.3, LSXR * 0.09, 96, 1, true), auroraM);
+        cur.position.copy(LSXC).add(V(0, sgn * LSXR * 0.955, 0)); if (sgn < 0) cur.rotation.x = Math.PI; space.add(cur);
+    }
     await pause();
     const moonT = planetTexture('moon', 512, 256);
     const moon = new THREE.Mesh(new THREE.SphereGeometry(8, 48, 24), new THREE.MeshStandardMaterial({ map: tex(moonT), bumpMap: tex(moonT.bump, 1, 1, false), bumpScale: 1.5, roughness: 1 })); space.add(moon);
@@ -147,7 +161,23 @@ LSX.space = async (k, pause) => {
     const onOrbit = (r, a, lift = 0) => SUNP.clone().addScaledVector(e1, Math.cos(a) * r).addScaledVector(e2, Math.sin(a) * r).addScaledVector(nrm, lift);
     const angleOf = (p) => { const d = p.clone().sub(SUNP); return Math.atan2(d.dot(e2), d.dot(e1)); };
     const R_HOME = HOMEC.distanceTo(SUNP), R_LSX = LSXC.distanceTo(SUNP), A_LSX = angleOf(LSXC);
-    const sunM = new THREE.Mesh(new THREE.SphereGeometry(SUNR, 48, 24), new THREE.MeshBasicMaterial({ color: 0xfff1cc }));
+    // the sun's surface: boiling granulation, darker towards the limb, with a few sunspots drifting round
+    const sunU = { t: { value: 0 } };
+    const sunM = new THREE.Mesh(new THREE.SphereGeometry(SUNR, 64, 32), new THREE.ShaderMaterial({
+        uniforms: sunU, fog: false,
+        vertexShader: 'varying vec3 vP; varying vec3 vN; varying vec3 vV; void main(){ vP=position; vN=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }',
+        fragmentShader: `uniform float t; varying vec3 vP; varying vec3 vN; varying vec3 vV;
+            float h(vec3 p){ return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453); }
+            float n3(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+                return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z); }
+            void main(){ vec3 p=normalize(vP);
+                float g=n3(p*28.+vec3(t*.30))*.55+n3(p*60.-vec3(t*.5))*.3+n3(p*7.+vec3(0.,t*.05,0.))*.35;
+                float mu=clamp(dot(vN,vV),0.,1.), limb=.42+.58*pow(mu,.55);
+                float a=t*.01; vec3 q=vec3(p.x*cos(a)-p.z*sin(a),p.y,p.x*sin(a)+p.z*cos(a));
+                float spots=smoothstep(.73,.8,n3(q*5.+11.))*smoothstep(.55,.2,abs(q.y));
+                vec3 c=mix(vec3(1.,.62,.26),vec3(1.,.97,.86),g)*limb; c*=1.-spots*.55; c+=vec3(.25,.12,0.)*pow(1.-mu,3.);
+                gl_FragColor=vec4(c*1.25,1.); }`,
+    }));
     sunM.position.copy(SUNP); space.add(sunM);
     const sunGlow = [[SUNR * 5, 0xffd9a0, 0.9], [SUNR * 14, 0xff9a50, 0.35], [SUNR * 34, 0xff8a40, 0.12]].map(([s, c, o]) => {
         const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -190,7 +220,50 @@ LSX.space = async (k, pause) => {
     // faint orbit lines
     const orbitM = new THREE.LineBasicMaterial({ color: 0x8fb4dc, transparent: true, opacity: 0.16, depthWrite: false });
     const orbitLine = (r) => { const pts = []; for (let i = 0; i < 256; i++) pts.push(onOrbit(r, i / 256 * Math.PI * 2)); const l = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), orbitM); space.add(l); return l; };
-    const orbits = [R_HOME, R_LSX, R_GIANT, R_ICE].map(orbitLine);
+    // a small cratered world close in to the sun, baked on the day side
+    const R_INNER = 1250, INNERR = 26, innerT = planetTexture('moon', 512, 256);
+    const inner = new THREE.Mesh(new THREE.SphereGeometry(INNERR, 48, 24), new THREE.MeshStandardMaterial({ map: tex(innerT), bumpMap: tex(innerT.bump, 1, 1, false), bumpScale: 1.2, color: 0xd8b89a, roughness: 1 }));
+    inner.position.copy(onOrbit(R_INNER, behind(R_INNER) - 2.1, 20)); space.add(inner);
+    const orbits = [R_HOME, R_LSX, R_GIANT, R_ICE, R_INNER].map(orbitLine);
+    // the corona: long faint streamers round the sun that turn slowly
+    const coronaC = canvas(512), cg = coronaC.getContext('2d'); cg.translate(256, 256);
+    for (let i = 0; i < 40; i++) {
+        const a = rnd(i + 9300) * Math.PI * 2, len = 120 + rnd(i + 9301) * 130, w = 0.03 + rnd(i + 9302) * 0.06;
+        const gr = cg.createLinearGradient(0, 0, Math.cos(a) * len, Math.sin(a) * len); gr.addColorStop(0.2, 'rgba(255,220,170,.35)'); gr.addColorStop(1, 'rgba(255,200,140,0)');
+        cg.fillStyle = gr; cg.beginPath(); cg.moveTo(Math.cos(a - w) * 50, Math.sin(a - w) * 50); cg.lineTo(Math.cos(a) * len, Math.sin(a) * len); cg.lineTo(Math.cos(a + w) * 50, Math.sin(a + w) * 50); cg.fill();
+    }
+    const corona = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(coronaC), color: 0xffe0b8, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false }));
+    corona.scale.setScalar(SUNR * 5.2); corona.position.copy(SUNP); space.add(corona);
+    // a comet on a long thin orbit: a bright head, a straight blue ion tail pointing away from the sun and a curved dusty one
+    const cometHead = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xdff4ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); space.add(cometHead);
+    const CT = 420, cometGeo = pointsGeo(CT), comet = new THREE.Points(cometGeo, softPoints('#bfe4ff', THREE.AdditiveBlending)); comet.frustumCulled = false; space.add(comet);
+    const DT = 420, dustGeo = pointsGeo(DT), dust = new THREE.Points(dustGeo, softPoints('#ffe6c0', THREE.AdditiveBlending)); dust.frustumCulled = false; space.add(dust);
+    const cometAt = (C) => {   // an ellipse with the sun at one focus, swinging slowly round
+        const ecc = 0.82, sa = 3000, M = C * 0.004 + 1.2; let E = M; for (let i = 0; i < 6; i++) E = M + ecc * Math.sin(E);
+        const x = sa * (Math.cos(E) - ecc), y = sa * Math.sqrt(1 - ecc * ecc) * Math.sin(E), rot = 2.4;
+        return SUNP.clone().addScaledVector(e1, x * Math.cos(rot) - y * Math.sin(rot)).addScaledVector(e2, x * Math.sin(rot) + y * Math.cos(rot)).addScaledVector(nrm, 140 + y * 0.08);
+    };
+    const cometPos = V(0, 0, 0);
+    function cometFrame(C, deep) {
+        const on = deep > 0.02; cometHead.visible = comet.visible = dust.visible = on; if (!on) return;
+        cometPos.copy(cometAt(C)); cometHead.position.copy(cometPos);
+        const away = cometPos.clone().sub(SUNP), rs = away.length(); away.normalize();
+        const heat = clamp(1600 / rs), len = 200 + heat * 900, vel = cometAt(C + 1).sub(cometPos).normalize();
+        cometHead.scale.setScalar(70 + heat * 150); cometHead.material.opacity = deep * (0.6 + heat * 0.4);
+        const cp = cometGeo.attributes.position, ca = cometGeo.attributes.aA, cs = cometGeo.attributes.aS;
+        for (let i = 0; i < CT; i++) {
+            const f = ((i / CT) + C * 0.08) % 1, sp = (rnd(i + 9400) - 0.5) * 18 * (0.3 + f);
+            const p = cometPos.clone().addScaledVector(away, f * len).addScaledVector(nrm, sp).addScaledVector(vel, (rnd(i + 9401) - 0.5) * 14 * f);
+            cp.setXYZ(i, p.x, p.y, p.z); ca.setX(i, (1 - f) * 0.4 * deep * (0.5 + heat)); cs.setX(i, 40 + f * 90);
+        }
+        const dp = dustGeo.attributes.position, da = dustGeo.attributes.aA, ds = dustGeo.attributes.aS;
+        for (let i = 0; i < DT; i++) {
+            const f = ((i / DT) + C * 0.05) % 1, bend = f * f * len * 0.45;
+            const p = cometPos.clone().addScaledVector(away, f * len * 0.8).addScaledVector(vel, -bend).addScaledVector(nrm, (rnd(i + 9500) - 0.5) * 30 * f);
+            dp.setXYZ(i, p.x, p.y, p.z); da.setX(i, (1 - f) * 0.3 * deep * (0.5 + heat)); ds.setX(i, 50 + f * 120);
+        }
+        cp.needsUpdate = ca.needsUpdate = cs.needsUpdate = dp.needsUpdate = da.needsUpdate = ds.needsUpdate = true;
+    }
     await pause();
 
     function spaceExtras(C) {
@@ -208,6 +281,7 @@ LSX.space = async (k, pause) => {
         rocks.forEach((r) => { r.rotation.set(C * r.userData.s.x * 0.5, C * r.userData.s.y * 0.5, 0); });
         giant.rotation.y = C * 0.02; ice.rotation.y = C * 0.01; belt.quaternion.setFromAxisAngle(nrm, C * 0.0015);
         sunGlow.forEach((s, q) => { s.material.rotation = C * 0.01 * (q + 1); });
+        sunU.t.value = C; auroraU.t.value = C; corona.material.rotation = C * 0.004; inner.rotation.y = C * 0.004;
     }
     // where the base is on HOME (N, P) and the port on LSX (LN, LP), with the tangents along each surface
     const N = V(0.42, 0.36, 0.83).normalize(), P = HOMEC.clone().addScaledVector(N, HOMER);
@@ -317,7 +391,7 @@ LSX.space = async (k, pause) => {
     function frame(T, C, { idle, nearLsx, rampOpen, camera, deep = 0 }) {
         // the belt and the orbit lines come up as you zoom out, so the both-planets view stays calm round the wolf
         belt.visible = deep > 0.02; beltDustM.opacity = 0.55 * deep; orbitM.opacity = 0.05 + 0.13 * deep;
-        spaceExtras(C);
+        spaceExtras(C); cometFrame(C, deep);
         clouds.rotation.y = C * 0.02; portFrame(C);
         clouds.material.opacity = 1 - nearLsx * 0.85; lsxRim.visible = lsxHalo.visible = nearLsx < 0.7;
         if (ship.parent !== space) space.add(ship);
@@ -357,7 +431,7 @@ LSX.space = async (k, pause) => {
 
     // the emptiest direction round the sun (the middle of the widest gap between the planets): station.js turns the
     // deep-space view so that this side lies behind the wolf
-    const angles = [HOMEC, LSXC, giant.position, ice.position].map(angleOf).sort((x, y) => x - y);
+    const angles = [HOMEC, LSXC, giant.position, ice.position, inner.position].map(angleOf).sort((x, y) => x - y);
     let gapAt = 0, gap = -1;
     angles.forEach((x, i) => { const next = i + 1 < angles.length ? angles[i + 1] : angles[0] + Math.PI * 2; if (next - x > gap) { gap = next - x; gapAt = x + gap / 2; } });
     const free = e1.clone().multiplyScalar(Math.cos(gapAt)).addScaledVector(e2, Math.sin(gapAt)).normalize();
@@ -365,7 +439,7 @@ LSX.space = async (k, pause) => {
     k.linearize(space);
     return { free,
         scene: space, frame, sky, HOMEC, HOMER, LSXC, LSXR, P, N, LP, LN, lA, lB, SUNP, SUNR, nrm,
-        giant: { pos: giant.position, r: GIANTR * 2.3 }, ice: { pos: ice.position, r: ICER }, belt: R_BELT,
+        giant: { pos: giant.position, r: GIANTR * 2.3 }, ice: { pos: ice.position, r: ICER }, belt: R_BELT, inner: { pos: inner.position, r: INNERR }, comet: cometPos,
         pickables: { home: [homeP, surfPatch], lsx: [lsxP, portPatch] },
     };
 };
