@@ -799,3 +799,27 @@ def test_retention_pass_rewrites_the_scene_viewers_would_swipe_on(s):
     assert asyncio.run(cv.fix_retention(FakeClient([(json.dumps(hook), "end_turn")]), s, script))["scenes"] == script["scenes"]
     assert asyncio.run(cv.fix_retention(FakeClient([("no json", "end_turn")]), s, script)) == script
     assert asyncio.run(cv.fix_retention(FakeClient([]), s, script)) == script
+
+
+def test_last_scene_settles_into_the_first_frame_so_the_video_loops(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image, ImageChops, ImageDraw, ImageStat
+    first, last = tmp_path / "first.png", tmp_path / "last.png"
+    im = Image.new("RGB", (cv.W, cv.H), (20, 30, 90))
+    ImageDraw.Draw(im).rectangle((300, 600, 780, 1300), fill=(240, 200, 40))
+    im.save(first)
+    Image.new("RGB", (cv.W, cv.H), (200, 40, 40)).save(last)
+    cv.render_scene([first], None, 0.5, tmp_path / "s0.mp4", move=0)
+    cv.render_scene([last], None, 0.5, tmp_path / "s9.mp4", move=3, loop_to=first)
+
+    def frame(video, which):
+        out = tmp_path / f"{video.stem}-{which}.png"
+        pick = ["-vf", "select=eq(n\\,0)"] if which == "first" else ["-sseof", "-0.05"]
+        args = [cv.ffmpeg(), "-y", *(pick[:2] if which == "last" else []), "-i", str(video),
+                *(pick if which == "first" else []), "-frames:v", "1", str(out)]
+        subprocess.run(args, check=True, capture_output=True)
+        return Image.open(out).convert("RGB")
+    start, end = frame(tmp_path / "s0.mp4", "first"), frame(tmp_path / "s9.mp4", "last")
+    assert ImageStat.Stat(ImageChops.difference(start, end).convert("L")).mean[0] < 6  # the end frame is the opening frame
+    assert cv.audio_seconds(tmp_path / "s9.mp4") > 1.2  # the settle is added on top, not cut from the scene
