@@ -1027,7 +1027,8 @@ def test_the_mood_picks_a_colour_grade(tmp_path):
 def test_captions_stay_clear_of_tiktoks_buttons_and_caption_text():
     for line, punch in ((["she", "never", "called"], ()), (["unbelievably", "extraordinary", "voicemail."], ["voicemail"])):
         im = cv.caption_image(line, 0, (232, 197, 71), punch)
-        left, top, right, bottom = im.getbbox()
+        left, top, right, bottom = im.getchannel("A").point(lambda a: 255 if a > 40 else 0).getbbox()  # the
+        # soft shadow's faint outer fringe doesn't count, only what can actually be seen
         assert left >= cv.SAFE_SIDE - 10 and right <= cv.W - cv.SAFE_SIDE + 10  # the stroke may spill a few px
         assert cv.CAPTION_Y + bottom <= cv.SAFE_BOTTOM
 
@@ -1371,3 +1372,12 @@ def test_a_full_song_skips_its_quiet_intro(tmp_path, monkeypatch):
     song, jingle = seen
     assert song[song.index("-ss") + 1] == f"{cv.MUSIC_SKIP:.2f}" and "afade=t=in" in " ".join(song)
     assert jingle[jingle.index("-ss") + 1] == "0.00" and "afade=t=in" not in " ".join(jingle)
+
+
+def test_captions_cast_a_soft_shadow_below_the_words():
+    im = cv.caption_image(["run"], 0, (232, 197, 71))
+    alpha = im.getchannel("A")
+    left, top, right, bottom = alpha.point(lambda a: 255 if a > 200 else 0).getbbox()  # the solid word
+    below = [im.getpixel((x, bottom + 4)) for x in range(left, right)]
+    assert any(p[3] > 0 and p[:3] == (0, 0, 0) for p in below)  # dark, see-through shade under the word
+    assert all(p[3] < 255 for p in below)
