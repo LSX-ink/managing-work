@@ -1026,6 +1026,27 @@ def test_the_mood_picks_a_colour_grade(tmp_path):
     assert warm[0] - warm[2] > plain[0] - plain[2] + 3  # redder
 
 
+def test_pictures_are_sharpened_after_scaling_up(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image, ImageDraw, ImageFilter, ImageStat
+    still = tmp_path / "s.png"
+    im = Image.new("RGB", (cv.W, cv.H), (60, 60, 60))
+    draw = ImageDraw.Draw(im)
+    for x in range(0, cv.W, 12):
+        draw.rectangle([x, 0, x + 5, cv.H], fill=(200, 200, 200))
+    im.filter(ImageFilter.GaussianBlur(1.5)).save(still)
+
+    def edges(name):
+        cv.render_scene([still], None, 0.3, tmp_path / f"{name}.mp4")
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / f"{name}.mp4"), "-frames:v", "1",
+                        str(tmp_path / f"{name}.png")], check=True, capture_output=True)
+        return ImageStat.Stat(Image.open(tmp_path / f"{name}.png").convert("L").filter(ImageFilter.FIND_EDGES)).stddev[0]
+    sharp = edges("sharp")
+    monkeypatch.setattr(cv, "SHARPEN", "")
+    assert sharp > edges("soft") * 1.1
+
+
 def test_captions_stay_clear_of_tiktoks_buttons_and_caption_text():
     for line, punch in ((["she", "never", "called"], ()), (["unbelievably", "extraordinary", "voicemail."], ["voicemail"])):
         im = cv.caption_image(line, 0, (232, 197, 71), punch)
