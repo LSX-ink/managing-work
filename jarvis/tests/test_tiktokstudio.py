@@ -458,6 +458,31 @@ def test_clipzz_makes_a_credited_portrait_video(s, monkeypatch):
     assert creator.sequels_due(cs.load(s)) == []
 
 
+def test_clips_from_quiet_and_loud_streamers_end_up_equally_loud(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    import re
+    import subprocess
+    from PIL import Image
+    layer = tmp_path / "layer.png"
+    Image.new("RGBA", (cv.W, cv.H), (0, 0, 0, 0)).save(layer)
+
+    def loudness(path):
+        out = subprocess.run([cv.ffmpeg(), "-i", str(path), "-af", "ebur128", "-f", "null", "-"],
+                             capture_output=True, text=True).stderr
+        return float(re.findall(r"I:\s+(-?[\d.]+) LUFS", out)[-1])
+    levels = []
+    for name, volume in (("quiet", 0.02), ("loud", 0.9)):
+        source = tmp_path / f"{name}.mp4"  # a 1280x720 stream clip
+        subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "testsrc=s=1280x720:d=2", "-f", "lavfi", "-i",
+                        f"sine=f=330:d=2,volume={volume}", "-shortest", str(source)], check=True, capture_output=True)
+        part = tmp_path / f"{name}-part.mp4"
+        clips.portrait(source, layer, part)
+        clips.level(part)
+        levels.append(loudness(part))
+    assert abs(levels[0] - levels[1]) < 2 and all(abs(v + 14) < 2 for v in levels)
+    clips.level(tmp_path / "missing.mp4")  # a failure is skipped, never fatal
+
+
 def test_clipzz_waits_for_twitch_keys(s):
     jobs = creator.todays_jobs(s, cs.load(s), date.today())
     assert "Clipzz" not in [j[0] for j in jobs]

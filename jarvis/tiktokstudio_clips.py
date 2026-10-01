@@ -175,12 +175,27 @@ def download(url: str, target: Path, section: tuple[float, float] | None = None)
 
 
 def portrait(source: Path, layer: Path, out: Path) -> None:
-    """Fill a 1080x1920 screen (crop the sides), put the hook and credit on top, keep the clip's own sound."""
+    """Fill a 1080x1920 screen (crop the sides), put the hook and credit on top, keep the clip's own sound.
+    Stream footage is usually 720p or 1080p wide, so the crop scales it up: the same light sharpen and encoder
+    settings as the studio's own videos keep it crisp and its dark game scenes free of banding."""
     fill = f"scale={cv.W}:{cv.H}:force_original_aspect_ratio=increase,crop={cv.W}:{cv.H},fps={cv.FPS},setsar=1"
+    sharpen = f",{cv.SHARPEN}" if cv.SHARPEN else ""
     cv.run(["-i", str(source), "-loop", "1", "-i", str(layer), "-filter_complex",
-            f"[0:v]{fill}[bg];[bg][1:v]overlay=0:0:shortest=1,format=yuv420p[v];[0:a]aresample=44100[a]",
-            "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "21",
-            "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-ac", "2", str(out)])
+            f"[0:v]{fill}{sharpen}[bg];[bg][1:v]overlay=0:0:shortest=1,format=yuv420p[v];[0:a]aresample=44100[a]",
+            "-map", "[v]", "-map", "[a]", *cv.VIDEO_CODEC,
+            "-c:a", "aac", "-b:a", cv.WORK_AUDIO, "-ar", "44100", "-ac", "2", str(out)])
+
+
+def level(part: Path) -> None:
+    """Bring one clip to TikTok's loudness in place, so a quiet streamer and a shouting one sit at the same volume
+    in the compilation (nobody reaches for the volume between clips). Kept as it was if levelling fails."""
+    out = part.with_name(f"{part.stem}-level{part.suffix}")
+    try:
+        cv.normalise(part, out)
+        out.replace(part)
+    except Exception as exc:
+        out.unlink(missing_ok=True)
+        print(f"[jarvis] Clip levelling skipped: {exc}", flush=True)
 
 
 def hook_line(clips: list[dict]) -> str:
@@ -259,6 +274,7 @@ async def make(http, settings, account: dict, folder: Path, era: str, client=Non
         await asyncio.to_thread(overlay(hook if i == 0 else clip.get("title") or hook, credit(clip)).save, layer)
         part = work / f"part{i}.mp4"
         await asyncio.to_thread(portrait, source, layer, part)
+        await asyncio.to_thread(level, part)
         parts.append(part)
     names = list(dict.fromkeys(c["broadcaster_name"] for c in chosen))
     sites = list(dict.fromkeys(c.get("platform", "twitch").title() for c in chosen))
