@@ -742,6 +742,29 @@ def trim_tail(voice: Path) -> None:
         out.unlink(missing_ok=True)
 
 
+# and a little silence before the first word too: the scene should start talking the moment it cuts in
+HEAD_TRIM = "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.04"
+
+
+def trim_head(voice: Path) -> float:
+    """Trim the silence before the first spoken word, in place. Returns the seconds removed, so the word timings
+    (measured from the old start) can be moved earlier by the same amount."""
+    before = audio_seconds(voice)
+    out = voice.with_name(f"{voice.stem}-head{voice.suffix}")
+    run(["-i", str(voice), "-af", HEAD_TRIM, str(out)])
+    after = audio_seconds(out)
+    if after <= 0.3:  # never swap in an empty file
+        out.unlink(missing_ok=True)
+        return 0.0
+    out.replace(voice)
+    return max(0.0, before - after)
+
+
+def shift_words(words: list, by: float) -> None:
+    """Move word timings earlier by `by` seconds, in place (never before 0)."""
+    words[:] = [(max(0.0, a - by), max(0.0, b - by), w) for a, b, w in words]
+
+
 def fit_to_length(voiced: list[float], length: float = MIN_LENGTH, gap: float = 0.35) -> list[float]:
     """Seconds per scene: each narration plus a short pause, and if that comes to under a minute the spare time is
     shared out so each picture holds a little longer. Longer stories keep their natural length."""
@@ -1000,6 +1023,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                                       scene.get("pace", "normal"))
         if has_voice:
             try:
+                shift_words(words, await asyncio.to_thread(trim_head, voice))
                 await asyncio.to_thread(trim_tail, voice)
             except Exception as exc:  # keep the untrimmed voice
                 print(f"[jarvis] Voice trim skipped: {exc}", flush=True)
