@@ -21,6 +21,7 @@
 
 import asyncio
 import json
+import math
 import random
 import re
 import subprocess
@@ -1037,10 +1038,27 @@ def add_ambience(video: Path, kind: str, out: Path) -> None:
 LOUDNESS = "loudnorm=I=-14:TP=-1.5:LRA=11"  # TikTok plays everything at about -14 LUFS; match it so nothing sounds quiet
 
 
+def measure_loudness(video: Path) -> dict | None:
+    """loudnorm's first pass: how loud the mix really is, so the levelling pass can apply one steady gain instead
+    of riding the volume up and down as it goes (which pumps). None if it can't be measured."""
+    try:
+        out = subprocess.run([ffmpeg(), "-hide_banner", "-i", str(video), "-vn", "-af", f"{LOUDNESS}:print_format=json",
+                              "-f", "null", "-"], capture_output=True, text=True).stderr
+        found = json.loads(out[out.rindex("{"):out.rindex("}") + 1])
+        values = {k: float(found[k]) for k in ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")}
+    except Exception:
+        return None
+    return values if all(math.isfinite(v) for v in values.values()) else None  # pure silence measures -inf
+
+
 def normalise(video: Path, out: Path) -> None:
     """Level the finished mix to TikTok's loudness, so the voice is as loud as the videos around it in the feed
-    (a quiet video gets swiped), without clipping. The picture is copied, not re-encoded."""
-    run(["-i", str(video), "-af", f"{LOUDNESS},aresample=44100", "-map", "0:v", "-map", "0:a", "-c:v", "copy",
+    (a quiet video gets swiped), without clipping. Measured first, then levelled in one even pass, so the voice
+    keeps its natural rise and fall. The picture is copied, not re-encoded."""
+    m = measure_loudness(video)
+    level = (f"{LOUDNESS}:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
+             f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true") if m else LOUDNESS
+    run(["-i", str(video), "-af", f"{level},aresample=44100", "-map", "0:v", "-map", "0:a", "-c:v", "copy",
          "-c:a", "aac", "-b:a", FINAL_AUDIO, "-movflags", "+faststart", str(out)])
 
 
