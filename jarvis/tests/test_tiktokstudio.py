@@ -1359,3 +1359,15 @@ def test_scenes_left_without_a_voice_are_named_in_the_checks(s, tmp_path, monkey
     script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
     out = asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script))
     assert out["checks"] == ["no voice on scene 2 (the voice service failed; remake it)"]
+
+
+def test_a_full_song_skips_its_quiet_intro(tmp_path, monkeypatch):
+    seen = []
+    monkeypatch.setattr(cv, "run", lambda args: seen.append(args))
+    lengths = {"video.mp4": 61.0, "song.mp3": 180.0, "jingle.mp3": 20.0}
+    monkeypatch.setattr(cv, "audio_seconds", lambda path: lengths[Path(path).name])
+    cv.add_music(tmp_path / "video.mp4", tmp_path / "song.mp3", tmp_path / "a.mp4")
+    cv.add_music(tmp_path / "video.mp4", tmp_path / "jingle.mp3", tmp_path / "b.mp4")
+    song, jingle = seen
+    assert song[song.index("-ss") + 1] == f"{cv.MUSIC_SKIP:.2f}" and "afade=t=in" in " ".join(song)
+    assert jingle[jingle.index("-ss") + 1] == "0.00" and "afade=t=in" not in " ".join(jingle)
