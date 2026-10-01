@@ -937,11 +937,18 @@ def music_for(folder: Path, mood: str = "") -> Path | None:
     return random.choice([t for t in tracks if fit(t) == best])
 
 
+# most tracks open with a quiet intro; a full-length song starts MUSIC_SKIP seconds in (with a quick fade so it
+# doesn't click), so the bed has energy from the first frame, when viewers decide whether to stay
+MUSIC_SKIP, MUSIC_SKIP_FROM = 12.0, 45.0
+
+
 def add_music(video: Path, track: Path, out: Path) -> None:
     """Lay the track quietly under the voice, dipping further whenever Alfred speaks, and fade it out at the end."""
     seconds = audio_seconds(video)
-    run(["-i", str(video), "-stream_loop", "-1", "-i", str(track), "-filter_complex",
-         "[0:a]asplit[v1][v2];[1:a]aresample=44100,volume=0.25[m];"
+    skip = MUSIC_SKIP if audio_seconds(track) > MUSIC_SKIP_FROM else 0.0
+    fade_in = "afade=t=in:d=0.4," if skip else ""
+    run(["-i", str(video), "-stream_loop", "-1", "-ss", f"{skip:.2f}", "-i", str(track), "-filter_complex",
+         f"[0:a]asplit[v1][v2];[1:a]aresample=44100,{fade_in}volume=0.25[m];"
          "[m][v1]sidechaincompress=threshold=0.02:ratio=10:attack=15:release=350[duck];"
          f"[duck]afade=t=out:st={max(0.0, seconds - 2.5):.2f}:d=2.5[bed];"
          "[v2][bed]amix=inputs=2:duration=first:normalize=0[a]",
