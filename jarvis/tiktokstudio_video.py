@@ -854,6 +854,9 @@ SHAKE = (",scale={w}:{h},crop={W}:{H}:x='(iw-{W})/2+22*sin(n*2.7)*max(0,1-n/10)'
 # A light sharpen after the pictures are scaled up and panned, so AI art (made at 1024px) doesn't look soft
 # on a 1080x1920 phone screen; mild enough not to add halos or crunch the noise.
 SHARPEN = "unsharp=5:5:0.7:5:5:0.0"
+# A soft vignette that darkens the corners a touch, pulling the eye to the middle of the frame where the subject
+# and the captions are (applied under the captions, so they stay clean white).
+VIGNETTE = "vignette=angle=PI/7"
 
 
 # A colour grade for the whole video, picked from the script's mood, so a horror story looks cold and a memory
@@ -939,7 +942,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                       f"x='{x.format(n=max(1, n))}':y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},"
                       f"setpts=PTS-STARTPTS,setsar=1{shake}[s{i}]")
     k = len(stills)
-    graded = (f",{SHARPEN}" if SHARPEN else "") + (f",{GRADES[grade]}" if grade in GRADES else "")
+    graded = "".join(f",{f}" for f in (SHARPEN, GRADES.get(grade, ""), VIGNETTE) if f)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0{graded}[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
     video = "[vc]"
