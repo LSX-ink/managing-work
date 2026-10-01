@@ -647,7 +647,18 @@ def caption_image(line: list[str], lit: int, accent, punch=()) -> Image.Image:
             draw.text((x, top), words[i], font=fonts[i], fill=accent if i == lit or big[i] else (255, 255, 255),
                       stroke_width=9 if big[i] else 7, stroke_fill=(0, 0, 0))
             x += widths[i] + space
-    return im
+    return with_shadow(im)
+
+
+SHADOW_DROP, SHADOW_BLUR, SHADOW_ALPHA = 6, 6, 0.6
+
+
+def with_shadow(im: Image.Image) -> Image.Image:
+    """A soft drop shadow under the caption, so white words stay readable over a bright sky or a white wall."""
+    shade = im.getchannel("A").point(lambda a: int(a * SHADOW_ALPHA))
+    shadow = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    shadow.paste((0, 0, 0, 255), (0, SHADOW_DROP), shade.crop((0, 0, im.width, im.height - SHADOW_DROP)))
+    return Image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(SHADOW_BLUR)), im)
 
 
 def caption_track(words: list[tuple[float, float, str]], seconds: float, accent, work: Path, tag: str,
