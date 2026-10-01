@@ -980,6 +980,7 @@ def normalise(video: Path, out: Path) -> None:
          "-c:a", "aac", "-b:a", FINAL_AUDIO, "-movflags", "+faststart", str(out)])
 
 
+VOICE_TRIES = 2
 VOICE_JOBS = 3  # scene voices fetched side by side (gentle on the voice service, much quicker than one by one)
 RENDER_JOBS = 2  # scenes rendered side by side: most PCs have the cores, and it cuts the wait for a video a lot
 
@@ -1029,8 +1030,12 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         voice, words = work / f"scene{i}.mp3", []
         speaks = cast.get(scene.get("speaker", "")) or SPEAKERS.get(scene.get("speaker", ""), account.get("voice", ""))
         async with gate:
-            has_voice = await narrate(http, settings, scene["narration"], speaks, voice, words,
-                                      scene.get("pace", "normal"))
+            for _ in range(VOICE_TRIES):  # the free voice service drops the odd request; one retry saves a silent scene
+                words.clear()
+                has_voice = await narrate(http, settings, scene["narration"], speaks, voice, words,
+                                          scene.get("pace", "normal"))
+                if has_voice:
+                    break
         if has_voice:
             try:
                 shift_words(words, await asyncio.to_thread(trim_head, voice))
