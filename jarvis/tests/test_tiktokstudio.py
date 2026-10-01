@@ -1131,7 +1131,9 @@ def test_the_mix_is_levelled_to_tiktok_loudness(tmp_path):
         out = subprocess.run([cv.ffmpeg(), "-i", str(path), "-af", "ebur128", "-f", "null", "-"],
                              capture_output=True, text=True).stderr
         return float(re.findall(r"I:\s+(-?[\d.]+) LUFS", out)[-1])
-    assert loudness(tmp_path / "q.mp4") < -30 and abs(loudness(tmp_path / "loud.mp4") + 14) < 3
+    assert loudness(tmp_path / "q.mp4") < -30 and abs(loudness(tmp_path / "loud.mp4") + 14) < 1.5
+    measured = cv.measure_loudness(tmp_path / "q.mp4")  # measured first, so the levelling is one even gain
+    assert measured and measured["input_i"] < -30
 
 
 def test_the_spoken_word_pops_up_a_little():
