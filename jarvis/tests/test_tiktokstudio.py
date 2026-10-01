@@ -521,7 +521,9 @@ def test_word_by_word_captions(tmp_path):
     assert [[w[2] for w in line] for line in cv.chunks(words)] == [["At", "three,"], ["she", "pressed", "play"], ["on", "it."]]
     listing = cv.caption_track(words, 5.0, (232, 197, 71), tmp_path, "cap0")
     text = listing.read_text()
-    assert text.count("duration") == len(words) + 2  # one per word, plus the quiet lead-in and tail
+    pops = text.count("-pop.png")  # a fresh line pops in for a couple of frames first
+    assert text.count("duration") - pops == len(words) + 2  # one per word, plus the quiet lead-in and tail
+    assert pops >= 1
     total = sum(float(line.split()[1]) for line in text.splitlines() if line.startswith("duration"))
     assert total == pytest.approx(5.0, abs=0.01)
     im = cv.caption_image(["pressed", "play"], 1, (232, 197, 71))
@@ -1404,3 +1406,16 @@ def test_full_screen_looks_ask_for_tall_pictures(s, tmp_path, monkeypatch):
         assert sizes and set(sizes) == {want}
     w, h = cv.TALL_PICTURE
     assert abs(w / h - cv.W / cv.H) < 0.01 and w * h <= 1024 * 1024 * 1.3
+
+
+def test_a_fresh_caption_line_pops_in_smaller_for_two_frames(tmp_path):
+    words = [(0.0, 0.6, "Run"), (0.6, 1.2, "now"), (1.2, 1.3, "Go")]
+    text = cv.caption_track(words, 2.0, (232, 197, 71), tmp_path, "cap").read_text()
+    lines = text.splitlines()
+    first = lines.index("file 'cap-0-pop.png'")
+    assert lines[first + 1] == f"duration {cv.POP_SECONDS:.3f}" and lines[first + 2] == "file 'cap-0.png'"
+    full = cv.caption_image(["Run", "now"], 0, (232, 197, 71))
+    small = cv.popped(full)
+    assert small.size == full.size
+    assert small.getchannel("A").getbbox()[2] - small.getchannel("A").getbbox()[0] < \
+        full.getchannel("A").getbbox()[2] - full.getchannel("A").getbbox()[0]
