@@ -738,11 +738,16 @@ def audio_seconds(path: Path) -> float:
     return int(match[1]) * 3600 + int(match[2]) * 60 + float(match[3]) if match else 0.0
 
 
+DEAD_AIR_DB, DEAD_AIR_SECONDS = -50, 2.0  # quieter than this for this long counts as dead air
+
+
 def check_video(path: Path) -> list[str]:
     """Watch the finished video once before it's offered for approval, the way an editor would: too short for
-    TikTok's 1-minute payouts, no sound at all, or stretches of black screen. Returns the problems found."""
+    TikTok's 1-minute payouts, no sound at all, stretches of black screen, or dead air (viewers swipe away from
+    silence). Returns the problems found."""
     out = subprocess.run([ffmpeg(), "-hide_banner", "-i", str(path), "-vf", "blackdetect=d=1.0:pix_th=0.06",
-                          "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
+                          "-af", f"volumedetect,silencedetect=n={DEAD_AIR_DB}dB:d={DEAD_AIR_SECONDS}",
+                          "-f", "null", "-"], capture_output=True, text=True).stderr
     problems = []
     match = re.search(r"Duration: (\d+):(\d+):([\d.]+)", out)
     seconds = int(match[1]) * 3600 + int(match[2]) * 60 + float(match[3]) if match else 0.0
@@ -751,6 +756,10 @@ def check_video(path: Path) -> list[str]:
     loudest = re.search(r"max_volume: (-?[\d.]+|-inf) dB", out)
     if not loudest or loudest[1] == "-inf" or float(loudest[1]) < -50:
         problems.append("there's no sound")
+    else:
+        quiet = [float(d) for d in re.findall(r"silence_duration: ([\d.]+)", out)]
+        if quiet:
+            problems.append(f"{sum(quiet):.0f} seconds of dead air (silence of {DEAD_AIR_SECONDS:g}s or more)")
     black = sum(float(d) for d in re.findall(r"black_duration:([\d.]+)", out))
     if black >= 1.0:
         problems.append(f"{black:.0f} seconds of black screen")

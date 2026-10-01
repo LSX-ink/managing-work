@@ -992,6 +992,12 @@ def test_the_finished_video_is_checked_before_it_is_offered(tmp_path, monkeypatc
     cv.render_scene([lit], None, 1.5, tmp_path / "lit.mp4", hit="boom")
     monkeypatch.setattr(cv, "MIN_LENGTH", 1.0)
     assert cv.check_video(tmp_path / "lit.mp4") == []  # long enough, has a sound, no black
+    import subprocess
+    voice = tmp_path / "pause.m4a"  # half a second of voice, then three and a half seconds of nothing
+    subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "sine=f=440:d=0.6,apad=whole_dur=4", "-c:a", "aac",
+                    str(voice)], check=True, capture_output=True)
+    cv.render_scene([lit], voice, 4.0, tmp_path / "pause.mp4")
+    assert any("dead air" in p for p in cv.check_video(tmp_path / "pause.mp4"))
 
 
 def test_check_problems_are_shown_with_the_video(s, monkeypatch):
