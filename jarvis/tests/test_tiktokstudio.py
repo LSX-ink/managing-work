@@ -1259,3 +1259,39 @@ def test_silence_after_the_last_word_is_trimmed(tmp_path):
     cv.trim_tail(hush)  # nothing but silence: left as it was rather than emptied
     assert cv.audio_seconds(hush) >= 0.95
     assert not list(tmp_path.glob("*-trim*"))
+
+
+def test_silence_before_the_first_word_is_trimmed_and_the_words_move_with_it(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    voice = tmp_path / "v.mp3"
+    cv.run(["-f", "lavfi", "-i", "sine=f=300:d=1", "-af", "adelay=700:all=1", str(voice)])  # 0.7s of air first
+    lead = cv.trim_head(voice)
+    assert 0.55 < lead < 0.75 and cv.audio_seconds(voice) < 1.3
+    words = [(0.72, 1.1, "Run"), (1.2, 1.6, "now"), (0.1, 0.3, "uh")]
+    cv.shift_words(words, lead)
+    assert words[0][0] < 0.2 and words[1][1] == pytest.approx(1.6 - lead) and words[2][:2] == (0.0, 0.0)
+    assert not list(tmp_path.glob("*-head*"))
+
+
+def test_caption_timings_follow_the_trimmed_voice(s, tmp_path, monkeypatch):
+    timings = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal"):
+        target.write_bytes(b"voice")
+        words.append((0.6, 0.9, "Hello"))
+        return True
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", narrate)
+    monkeypatch.setattr(cv, "trim_head", lambda voice: 0.5)
+    monkeypatch.setattr(cv, "trim_tail", lambda voice: None)
+    monkeypatch.setattr(cv, "audio_seconds", lambda voice: 2.0)
+    monkeypatch.setattr(cv, "caption_track", lambda timed, *a, **k: timings.append(timed))
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    account = {**cs.load(s)["accounts"][0], "captions": True}
+    asyncio.run(cv.make(None, None, s, account, tmp_path, script=cv.parse_script(SCRIPT)))
+    assert timings and all(t == [(pytest.approx(0.1), pytest.approx(0.4), "Hello")] for t in timings)
