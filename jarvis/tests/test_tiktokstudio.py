@@ -1180,3 +1180,19 @@ def test_a_failed_picture_stops_the_voice_fetches(s, tmp_path, monkeypatch):
         await asyncio.sleep(0.3)
     asyncio.run(go())
     assert finished == []
+
+
+def test_the_voice_gets_a_studio_polish(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    from PIL import Image
+    still, voice = tmp_path / "s.png", tmp_path / "v.m4a"
+    Image.new("RGB", (cv.W, cv.H), (10, 10, 10)).save(still)
+    cv.run(["-f", "lavfi", "-i", "sine=f=220:d=1", "-c:a", "aac", str(voice)])
+    for kw in ({}, {"hit": "boom"}):  # with and without a sound effect, the polished voice still renders
+        cv.render_scene([still], voice, 1.0, tmp_path / "s.mp4", **kw)
+        assert cv.audio_seconds(tmp_path / "s.mp4") >= 0.99
+    seen = []
+    monkeypatch.setattr(cv, "run", lambda args: seen.append(" ".join(args)))
+    cv.render_scene([still], voice, 1.0, tmp_path / "a.mp4")
+    cv.render_scene([still], None, 1.0, tmp_path / "b.mp4")  # silence needs no polish
+    assert cv.VOICE_POLISH in seen[0] and cv.VOICE_POLISH not in seen[1]
