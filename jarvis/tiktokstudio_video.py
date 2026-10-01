@@ -811,6 +811,12 @@ LOOP_SECONDS = 0.8
 LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # ends at zoom 1, where scene 1 starts
 
 
+# the voice gets a light studio polish: rumble cut, a little presence so it cuts through on a phone speaker,
+# and gentle compression so quiet words aren't lost under the music
+VOICE_POLISH = ("highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=3,"
+                "acompressor=threshold=0.125:ratio=3:attack=5:release=80:makeup=1.5")
+
+
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False) -> None:
@@ -846,13 +852,14 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         video = "[vo]"
     look = f"{HIT_LOOKS[hit]}," if hit in HIT_LOOKS else (f"fade=t=in:st=0:d={DIP_SECONDS}," if dip else "")
     chains.append(f"{video}{look}format=yuv420p[v]")
+    polish = f"{VOICE_POLISH}," if audio else ""
     if hit in HITS or whoosh:
         effect = f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH
         inputs += ["-f", "lavfi", "-i", effect]
-        chains.append(f"[{k}:a]aresample=44100,aformat=channel_layouts=stereo[vo1];"
+        chains.append(f"[{k}:a]{polish}aresample=44100,aformat=channel_layouts=stereo[vo1];"
                       f"[vo1][{k + 1 + bool(captions)}:a]amix=inputs=2:duration=first:normalize=0,apad[a]")
     else:
-        chains.append(f"[{k}:a]apad,aresample=44100[a]")
+        chains.append(f"[{k}:a]{polish}apad,aresample=44100[a]")
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
          "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
          "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-ac", "2", str(out)])
