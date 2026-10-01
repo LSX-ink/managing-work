@@ -956,6 +956,13 @@ def join(parts: list[Path], out: Path) -> None:
     listing.unlink(missing_ok=True)
 
 
+async def picture_or_retry(http, description: str, style: str, seed: int):
+    """A scene's main picture, asked for once more (a fresh seed) the moment it fails, so one slow failure
+    doesn't hold every other scene back for a second round."""
+    return (await fetch_picture(http, description, style, seed)
+            or await fetch_picture(http, description, style, seed + 13))
+
+
 async def make(client, http: httpx.AsyncClient, settings: Settings, account: dict, folder: Path,
                idea: str = "", recent: list[str] | None = None, script: dict | None = None,
                best: list[str] | None = None, taste: str = "", part: int = 1, variety: str = "") -> dict:
@@ -982,12 +989,9 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     voicing = asyncio.ensure_future(asyncio.gather(*(voice_for(i, scene) for i, scene in enumerate(scenes))))
     try:
         pictures, closeups = await asyncio.gather(
-            asyncio.gather(*(fetch_picture(http, who + s["picture"], account["style"], seed) for s in scenes)),
+            asyncio.gather(*(picture_or_retry(http, who + s["picture"], account["style"], seed) for s in scenes)),
             asyncio.gather(*(fetch_picture(http, who + s["closeup"], account["style"], seed + 7)
                              if s.get("closeup") else _none() for s in scenes)))
-        retried = await asyncio.gather(*(fetch_picture(http, who + s["picture"], account["style"], seed + 13)
-                                         if p is None else _none() for s, p in zip(scenes, pictures)))
-        pictures = [p or r for p, r in zip(pictures, retried)]
         missing = sum(p is None for p in pictures)
         pictures, closeups = fill_gaps(list(pictures), list(closeups))
         captions = captions_on(account)

@@ -644,8 +644,9 @@ def test_a_failed_picture_is_fetched_again(s, tmp_path, monkeypatch):
     seeds = []
 
     async def flaky(http, description, style, seed, size=(1024, 1024)):
-        seeds.append(seed)
-        return Image.new("RGB", (64, 64)) if len(seeds) > 2 else None
+        seeds.append((description, seed))
+        await asyncio.sleep(0.05 if len(seeds) == 1 else 0)  # the first scene's picture is slow to fail
+        return Image.new("RGB", (64, 64)) if sum(d == description for d, _ in seeds) > 1 else None
 
     async def no_voice(*a, **k):
         return False
@@ -655,7 +656,10 @@ def test_a_failed_picture_is_fetched_again(s, tmp_path, monkeypatch):
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     out = asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=cv.parse_script(SCRIPT)))
-    assert out["missing_pictures"] == 0 and len(seeds) == 4 and seeds[2] == seeds[0] + 13
+    assert out["missing_pictures"] == 0 and len(seeds) == 4
+    first, second = [[n for d, n in seeds if d == desc] for desc in dict.fromkeys(d for d, _ in seeds)]
+    assert first[1] == first[0] + 13 and second[1] == second[0] + 13
+    assert seeds[2][0] == seeds[1][0]  # the quick failure was retried straight away, not after the slow one
 
 
 def test_a_character_line_is_spoken_in_the_characters_voice(s, tmp_path, monkeypatch):
