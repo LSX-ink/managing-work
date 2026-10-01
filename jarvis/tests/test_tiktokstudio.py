@@ -1381,3 +1381,26 @@ def test_captions_cast_a_soft_shadow_below_the_words():
     below = [im.getpixel((x, bottom + 4)) for x in range(left, right)]
     assert any(p[3] > 0 and p[:3] == (0, 0, 0) for p in below)  # dark, see-through shade under the word
     assert all(p[3] < 255 for p in below)
+
+
+def test_full_screen_looks_ask_for_tall_pictures(s, tmp_path, monkeypatch):
+    sizes = []
+
+    async def picture(http, description, style, seed, size=(1024, 1024)):
+        sizes.append(size)
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    for style, want in (("cinematic", cv.TALL_PICTURE), ("drama", cv.TALL_PICTURE), ("noir", (1024, 1024))):
+        sizes.clear()
+        account = {**cs.load(s)["accounts"][0], "style": style}
+        asyncio.run(cv.make(None, None, s, account, tmp_path, script=cv.parse_script(SCRIPT)))
+        assert sizes and set(sizes) == {want}
+    w, h = cv.TALL_PICTURE
+    assert abs(w / h - cv.W / cv.H) < 0.01 and w * h <= 1024 * 1024 * 1.3
