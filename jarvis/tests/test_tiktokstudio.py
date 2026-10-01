@@ -1196,3 +1196,18 @@ def test_the_voice_gets_a_studio_polish(tmp_path, monkeypatch):
     cv.render_scene([still], voice, 1.0, tmp_path / "a.mp4")
     cv.render_scene([still], None, 1.0, tmp_path / "b.mp4")  # silence needs no polish
     assert cv.VOICE_POLISH in seen[0] and cv.VOICE_POLISH not in seen[1]
+
+
+def test_in_between_audio_keeps_a_high_bitrate_and_only_the_finish_is_squeezed(tmp_path, monkeypatch):
+    from PIL import Image
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (10, 10, 10)).save(still)
+    seen = []
+    monkeypatch.setattr(cv, "run", lambda args: seen.append(args[args.index("-b:a") + 1]))
+    monkeypatch.setattr(cv, "audio_seconds", lambda path: 5.0)
+    cv.render_scene([still], None, 1.0, tmp_path / "a.mp4")
+    cv.add_ambience(tmp_path / "a.mp4", next(iter(cv.AMBIENCE)), tmp_path / "b.mp4")
+    cv.add_music(tmp_path / "b.mp4", tmp_path / "track.mp3", tmp_path / "c.mp4")
+    cv.normalise(tmp_path / "c.mp4", tmp_path / "d.mp4")
+    assert seen == [cv.WORK_AUDIO] * 3 + [cv.FINAL_AUDIO]
+    assert int(cv.WORK_AUDIO[:-1]) > int(cv.FINAL_AUDIO[:-1]) >= 160
