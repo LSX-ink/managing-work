@@ -1126,6 +1126,10 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     except Exception as exc:  # the check is a safety net; never lose a finished video over it
         print(f"[jarvis] Quality check skipped: {exc}", flush=True)
         checks = []
+    silent = [str(i + 1) for i, v in enumerate(voices) if v[0] is None]
+    if silent:  # the voice service failed even after a retry: say which scenes, so they're checked before posting
+        checks.append(f"no voice on scene{'s' if len(silent) > 1 else ''} {', '.join(silent)} "
+                      "(the voice service failed; remake it)")
     (work / "scene0.png").replace(video.with_suffix(".png"))  # the cover picture
     for f in work.iterdir():
         f.unlink(missing_ok=True)
