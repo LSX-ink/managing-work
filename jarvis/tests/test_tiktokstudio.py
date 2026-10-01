@@ -979,6 +979,15 @@ def test_a_boom_flashes_white_and_a_glitch_splits_the_colours(tmp_path):
     assert sum(early.mean) > sum(late.mean) + 5  # the glitch only lasts a moment
 
 
+def test_the_notes_give_the_videos_length_and_size(tmp_path, monkeypatch):
+    video = tmp_path / "v.mp4"
+    video.write_bytes(b"x" * 2_500_000)
+    monkeypatch.setattr(cv, "audio_seconds", lambda path: 64.4)
+    assert cv.video_facts(video) == "1:04, 2.5 MB"
+    monkeypatch.setattr(cv, "audio_seconds", lambda path: 0.0)
+    assert cv.video_facts(video) == "" and cv.video_facts(tmp_path / "gone.mp4") == ""
+
+
 def test_the_finished_video_is_checked_before_it_is_offered(tmp_path, monkeypatch):
     pytest.importorskip("imageio_ffmpeg")
     from PIL import Image
