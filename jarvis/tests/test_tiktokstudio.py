@@ -672,6 +672,7 @@ def test_a_character_line_is_spoken_in_the_characters_voice(s, tmp_path, monkeyp
         voices.append(voice)
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "VOICE_TRIES", 1)  # these voices fail on purpose; count each scene once
     monkeypatch.setattr(cv, "narrate", narrate)
     monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
@@ -756,6 +757,7 @@ def test_named_characters_keep_their_voice_across_videos(s, tmp_path, monkeypatc
         voices.append(voice)
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "VOICE_TRIES", 1)  # these voices fail on purpose; count each scene once
     monkeypatch.setattr(cv, "narrate", narrate)
     monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
@@ -1304,3 +1306,32 @@ def test_spare_time_and_pauses_follow_each_scenes_pace():
     long = cv.fit_to_length([20.0, 20.0, 20.0], paces=["fast", "normal", "slow"])  # no spare time: only the breath
     assert long[0] == pytest.approx(20.2, abs=0.05) and long[2] == pytest.approx(20.6, abs=0.05)
     assert cv.fit_to_length([4.0, 4.0], paces=["weird", "normal"])[0] > 4.0  # an unknown pace counts as normal
+
+
+def test_a_dropped_voice_is_asked_for_once_more(s, tmp_path, monkeypatch):
+    calls = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def flaky(http, settings, text, voice, target, words=None, pace="normal"):
+        calls[text] = calls.get(text, 0) + 1
+        words.append((0.0, 0.2, "half"))  # a failed try's half-timings must not leak into the retry
+        if text.startswith("The") and calls[text] == 1:
+            return False
+        target.write_bytes(b"voice")
+        return True
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", flaky)
+    monkeypatch.setattr(cv, "trim_head", lambda voice: 0.0)
+    monkeypatch.setattr(cv, "trim_tail", lambda voice: None)
+    monkeypatch.setattr(cv, "audio_seconds", lambda voice: 2.0)
+    audio = []
+    monkeypatch.setattr(cv, "render_scene", lambda stills, a, seconds, out, *r: (audio.append(a), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    scenes = [{"narration": "The phone buzzed."}, {"narration": "Nobody answered."}]
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
+    asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script))
+    assert calls == {"The phone buzzed.": 2, "Nobody answered.": 1}
+    assert all(a is not None for a in audio)  # both scenes ended up voiced
