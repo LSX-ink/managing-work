@@ -739,6 +739,19 @@ def audio_seconds(path: Path) -> float:
     return int(match[1]) * 3600 + int(match[2]) * 60 + float(match[3]) if match else 0.0
 
 
+def video_facts(path: Path) -> str:
+    """The finished video's length and file size for its notes, e.g. "1:04, 38.2 MB" ('' if it can't be read),
+    so it's clear at a glance it clears TikTok's 1-minute mark and how big an upload it is."""
+    try:
+        seconds, size = audio_seconds(path), path.stat().st_size
+    except Exception:
+        return ""
+    if seconds <= 0:
+        return ""
+    whole = round(seconds)
+    return f"{whole // 60}:{whole % 60:02d}, {size / 1_000_000:.1f} MB"
+
+
 DEAD_AIR_DB, DEAD_AIR_SECONDS = -50, 2.0  # quieter than this for this long counts as dead air
 
 
@@ -1231,6 +1244,9 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                   + (f" (beat the first draft: \"{script['old_hook']}\")" if script.get("old_hook") else ""), ""]
     if script.get("retention_fix"):
         lines += [f"Retention pass: {script['retention_fix']}", ""]
+    facts = video_facts(video)
+    if facts:
+        lines += [f"Length: {facts}", ""]
     lines += [f"Quality check: {'; '.join(checks) if checks else 'passed'}", ""]
     if grade:
         lines += [f"Colour grade: {grade} (from the mood; set the account's grade to change it)", ""]
