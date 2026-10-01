@@ -168,18 +168,21 @@ def test_timer_time_and_timesheet(s):
     assert kind(started) == "timer" and "Acme" in started
     assert kind(wk(s, action="timer_status")) == "timer"
     data = st.time_data(s)
-    data["running"]["started"] = (datetime.now() - timedelta(hours=2)).isoformat(timespec="seconds")
+    started = datetime.now() - timedelta(hours=2)
+    day = started.date()  # just after midnight this is yesterday, so the week and month are read from it
+    data["running"]["started"] = started.isoformat(timespec="seconds")
     st.save(s, st.TIME, data)
     assert "Logged 2h 00m on Logo for Acme" in wk(s, action="timer_stop")
     assert wk(s, action="timer_stop") == "No freelance timer is running."
     assert wk(s, action="timer_status") == "No freelance timer is running."
-    assert "Logged 1h 30m" in wk(s, action="time_log", client="Zed", project="Admin", hours=1.5, billable=False)
-    sheet = wk(s, action="timesheet")
+    assert "Logged 1h 30m" in wk(s, action="time_log", client="Zed", project="Admin", hours=1.5, billable=False,
+                              date=day.isoformat())
+    sheet = wk(s, action="timesheet", week=day.isoformat())
     assert kind(sheet) == "freelance-timesheet" and sheet.card["data"]["total"] == 3.5
     assert len(sheet.card["data"]["rows"]) == 2 and len(sheet.card["data"]["days"]) == 7
     with pytest.raises(ValueError):
-        wk(s, action="timesheet", week="last")
-    summary = wk(s, action="time_summary")
+        wk(s, action="timesheet", week=(day - timedelta(days=7)).isoformat())
+    summary = wk(s, action="time_summary", month=day.strftime("%Y-%m"))
     assert kind(summary) == "table" and summary.card["rows"][0][:2] == ["Acme", "2"]
 
 

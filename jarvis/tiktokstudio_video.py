@@ -957,32 +957,6 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     seed = random.randint(1, 10**6)
     who = f"{script['character']}. " if script.get("character") else ""
     scenes = script["scenes"]
-    pictures = await asyncio.gather(*(fetch_picture(http, who + s["picture"], account["style"], seed) for s in scenes))
-    closeups = await asyncio.gather(*(fetch_picture(http, who + s["closeup"], account["style"], seed + 7)
-                                      if s.get("closeup") else _none() for s in scenes))
-    retried = await asyncio.gather(*(fetch_picture(http, who + s["picture"], account["style"], seed + 13)
-                                     if p is None else _none() for s, p in zip(scenes, pictures)))
-    pictures = [p or r for p, r in zip(pictures, retried)]
-    missing = sum(p is None for p in pictures)
-    pictures, closeups = fill_gaps(list(pictures), list(closeups))
-    captions = captions_on(account)
-    accent = ac.hex_colour(account.get("accent"), "#e8c547")
-    shots = []
-    for i, (scene, picture, closeup) in enumerate(zip(scenes, pictures, closeups)):
-        shown = {**scene, "captions": captions}
-        opener = script.get("cover", "") if i == 0 else ""
-
-        def draw_still(pic, path):
-            still_image = with_hook_text(frame(pic, account, script, shown), opener, accent, account.get("style", ""))
-            with_part_badge(still_image, part, accent).save(path)
-        still = work / f"scene{i}.png"
-        await asyncio.to_thread(draw_still, picture or blank_picture(), still)
-        mine = [still]
-        if closeup is not None:
-            second = work / f"scene{i}b.png"
-            await asyncio.to_thread(draw_still, closeup, second)
-            mine.append(second)
-        shots.append(mine)
     gate = asyncio.Semaphore(VOICE_JOBS)
 
     async def voice_for(i, scene):  # every scene's voice is fetched at once (a few at a time), not one after another
@@ -993,7 +967,40 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                                       scene.get("pace", "normal"))
         seconds = await asyncio.to_thread(audio_seconds, voice) if has_voice else 0
         return (voice, seconds, words) if seconds > 0.3 else (None, reading_seconds(scene["narration"]), [])
-    voices = list(await asyncio.gather(*(voice_for(i, scene) for i, scene in enumerate(scenes))))
+    # voices, pictures and close-ups are all fetched at the same time: none of them waits for another
+    voicing = asyncio.ensure_future(asyncio.gather(*(voice_for(i, scene) for i, scene in enumerate(scenes))))
+    try:
+        pictures, closeups = await asyncio.gather(
+            asyncio.gather(*(fetch_picture(http, who + s["picture"], account["style"], seed) for s in scenes)),
+            asyncio.gather(*(fetch_picture(http, who + s["closeup"], account["style"], seed + 7)
+                             if s.get("closeup") else _none() for s in scenes)))
+        retried = await asyncio.gather(*(fetch_picture(http, who + s["picture"], account["style"], seed + 13)
+                                         if p is None else _none() for s, p in zip(scenes, pictures)))
+        pictures = [p or r for p, r in zip(pictures, retried)]
+        missing = sum(p is None for p in pictures)
+        pictures, closeups = fill_gaps(list(pictures), list(closeups))
+        captions = captions_on(account)
+        accent = ac.hex_colour(account.get("accent"), "#e8c547")
+        shots = []
+        for i, (scene, picture, closeup) in enumerate(zip(scenes, pictures, closeups)):
+            shown = {**scene, "captions": captions}
+            opener = script.get("cover", "") if i == 0 else ""
+
+            def draw_still(pic, path):
+                still_image = with_hook_text(frame(pic, account, script, shown), opener, accent, account.get("style", ""))
+                with_part_badge(still_image, part, accent).save(path)
+            still = work / f"scene{i}.png"
+            await asyncio.to_thread(draw_still, picture or blank_picture(), still)
+            mine = [still]
+            if closeup is not None:
+                second = work / f"scene{i}b.png"
+                await asyncio.to_thread(draw_still, closeup, second)
+                mine.append(second)
+            shots.append(mine)
+        voices = list(await voicing)
+    except BaseException:
+        voicing.cancel()  # a failed picture or still must not leave voice fetches running
+        raise
     lengths = fit_to_length([v[1] for v in voices])
     parts, hits, jobs = [], 0, []
     for i, (mine, (voice, spoken, words), seconds) in enumerate(zip(shots, voices, lengths)):
