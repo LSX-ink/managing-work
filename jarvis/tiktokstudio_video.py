@@ -1017,13 +1017,16 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         voicing.cancel()  # a failed picture or still must not leave voice fetches running
         raise
     lengths = fit_to_length([v[1] for v in voices])
+    async def track_for(i, spoken, words, seconds):
+        if not captions:
+            return None
+        timed = words or estimate_words(scenes[i]["narration"], spoken)
+        return await asyncio.to_thread(caption_track, timed, seconds, accent, work, f"cap{i}", scenes[i].get("punch", []))
+    # every scene's caption pictures are drawn side by side rather than one scene after another
+    tracks = await asyncio.gather(*(track_for(i, spoken, words, seconds)
+                                    for i, ((_, spoken, words), seconds) in enumerate(zip(voices, lengths))))
     parts, hits, jobs = [], 0, []
-    for i, (mine, (voice, spoken, words), seconds) in enumerate(zip(shots, voices, lengths)):
-        track = None
-        if captions:
-            timed = words or estimate_words(scenes[i]["narration"], spoken)
-            track = await asyncio.to_thread(caption_track, timed, seconds, accent, work, f"cap{i}",
-                                            scenes[i].get("punch", []))
+    for i, (mine, (voice, spoken, words), seconds, track) in enumerate(zip(shots, voices, lengths, tracks)):
         part = work / f"scene{i}.mp4"
         loop_to = shots[0][0] if i == len(shots) - 1 and i > 0 and account.get("loop", True) is not False else None
         sfx = account.get("sfx", True) is not False

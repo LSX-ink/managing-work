@@ -1215,3 +1215,35 @@ def test_in_between_audio_keeps_a_high_bitrate_and_only_the_finish_is_squeezed(t
     cv.normalise(tmp_path / "c.mp4", tmp_path / "d.mp4")
     assert seen == [cv.WORK_AUDIO] * 3 + [cv.FINAL_AUDIO]
     assert int(cv.WORK_AUDIO[:-1]) > int(cv.FINAL_AUDIO[:-1]) >= 160
+
+
+def test_caption_pictures_for_every_scene_are_drawn_side_by_side(s, tmp_path, monkeypatch):
+    import threading
+    import time
+    lock, live, most, given = threading.Lock(), [0], [0], []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+
+    def track(timed, seconds, accent, work, name, punch=()):
+        with lock:
+            live[0] += 1
+            most[0] = max(most[0], live[0])
+        time.sleep(0.1)
+        with lock:
+            live[0] -= 1
+        return work / f"{name}.txt"
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "caption_track", track)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, captions=None, *a: (
+        given.append((out.name, captions.name)), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    account = {**cs.load(s)["accounts"][0], "captions": True}
+    asyncio.run(cv.make(None, None, s, account, tmp_path, script=cv.parse_script(SCRIPT)))
+    assert most[0] > 1
+    assert sorted(given) == [("scene0.mp4", "cap0.txt"), ("scene1.mp4", "cap1.txt")]
