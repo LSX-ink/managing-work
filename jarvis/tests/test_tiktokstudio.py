@@ -1247,3 +1247,15 @@ def test_caption_pictures_for_every_scene_are_drawn_side_by_side(s, tmp_path, mo
     asyncio.run(cv.make(None, None, s, account, tmp_path, script=cv.parse_script(SCRIPT)))
     assert most[0] > 1
     assert sorted(given) == [("scene0.mp4", "cap0.txt"), ("scene1.mp4", "cap1.txt")]
+
+
+def test_silence_after_the_last_word_is_trimmed(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    voice, hush = tmp_path / "v.mp3", tmp_path / "h.mp3"
+    cv.run(["-f", "lavfi", "-i", "sine=f=300:d=1", "-af", "apad=pad_dur=1.2", str(voice)])  # 1s of speech, 1.2s of air
+    cv.trim_tail(voice)
+    assert 0.95 < cv.audio_seconds(voice) < 1.4
+    cv.run(["-f", "lavfi", "-i", "anullsrc=r=24000:cl=mono", "-t", "1", str(hush)])
+    cv.trim_tail(hush)  # nothing but silence: left as it was rather than emptied
+    assert cv.audio_seconds(hush) >= 0.95
+    assert not list(tmp_path.glob("*-trim*"))

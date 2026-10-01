@@ -727,6 +727,21 @@ def run(args: list[str]) -> None:
         raise RuntimeError(f"ffmpeg failed: {done.stderr[-400:]}")
 
 
+# the voice service leaves up to a second of silence after the last word; cut it back to a short breath so the
+# pause between scenes is the one we choose (fit_to_length's gap), not dead air that makes viewers swipe
+TAIL_TRIM = "areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.12,areverse"
+
+
+def trim_tail(voice: Path) -> None:
+    """Trim the silence after the last spoken word, in place. Word timings are untouched (only the end moves)."""
+    out = voice.with_name(f"{voice.stem}-trim{voice.suffix}")
+    run(["-i", str(voice), "-af", TAIL_TRIM, str(out)])
+    if audio_seconds(out) > 0.3:  # never swap in an empty file
+        out.replace(voice)
+    else:
+        out.unlink(missing_ok=True)
+
+
 def fit_to_length(voiced: list[float], length: float = MIN_LENGTH, gap: float = 0.35) -> list[float]:
     """Seconds per scene: each narration plus a short pause, and if that comes to under a minute the spare time is
     shared out so each picture holds a little longer. Longer stories keep their natural length."""
@@ -983,6 +998,11 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         async with gate:
             has_voice = await narrate(http, settings, scene["narration"], speaks, voice, words,
                                       scene.get("pace", "normal"))
+        if has_voice:
+            try:
+                await asyncio.to_thread(trim_tail, voice)
+            except Exception as exc:  # keep the untrimmed voice
+                print(f"[jarvis] Voice trim skipped: {exc}", flush=True)
         seconds = await asyncio.to_thread(audio_seconds, voice) if has_voice else 0
         return (voice, seconds, words) if seconds > 0.3 else (None, reading_seconds(scene["narration"]), [])
     # voices, pictures and close-ups are all fetched at the same time: none of them waits for another
