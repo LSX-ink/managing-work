@@ -940,6 +940,11 @@ VOICE_POLISH = ("highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=3,deesser=i=0.4,"
                 "acompressor=threshold=0.125:ratio=3:attack=5:release=80:makeup=1.5")
 
 
+# x264 with its "auto-variance" adaptive quantisation set to favour dark, flat areas: smooth gradients (night skies,
+# the vignette's falloff, AI art's soft backgrounds) keep their bits instead of breaking into visible bands
+VIDEO_CODEC = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-x264-params", "aq-mode=3"]
+
+
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False) -> None:
@@ -984,7 +989,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     else:
         chains.append(f"[{k}:a]{polish}apad,aresample=44100[a]")
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
-         "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+         "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-r", str(FPS), *VIDEO_CODEC,
          "-c:a", "aac", "-b:a", WORK_AUDIO, "-ar", "44100", "-ac", "2", str(out)])
 
 

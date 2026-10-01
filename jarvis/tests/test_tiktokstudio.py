@@ -1051,7 +1051,8 @@ def test_pictures_are_sharpened_after_scaling_up(tmp_path, monkeypatch):
     for x in range(0, cv.W, 12):
         draw.rectangle([x, 0, x + 5, cv.H], fill=(200, 200, 200))
     im.filter(ImageFilter.GaussianBlur(1.5)).save(still)
-    monkeypatch.setattr(cv, "VIGNETTE", "")  # measured on its own
+    monkeypatch.setattr(cv, "VIGNETTE", "")  # measured on its own, with x264's plain bit spreading so the
+    monkeypatch.setattr(cv, "VIDEO_CODEC", cv.VIDEO_CODEC[:6])  # encoder's own choices don't blur the comparison
 
     def edges(name):
         cv.render_scene([still], None, 0.3, tmp_path / f"{name}.mp4")
@@ -1264,6 +1265,17 @@ def test_the_voice_gets_a_studio_polish(tmp_path, monkeypatch):
     cv.render_scene([still], voice, 1.0, tmp_path / "a.mp4")
     cv.render_scene([still], None, 1.0, tmp_path / "b.mp4")  # silence needs no polish
     assert cv.VOICE_POLISH in seen[0] and cv.VOICE_POLISH not in seen[1]
+
+
+def test_scenes_are_encoded_to_keep_dark_gradients_smooth(tmp_path, monkeypatch):
+    from PIL import Image
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (10, 10, 10)).save(still)
+    seen = []
+    monkeypatch.setattr(cv, "run", seen.append)
+    cv.render_scene([still], None, 1.0, tmp_path / "a.mp4")
+    args = seen[0]
+    assert args[args.index("-c:v") + 1] == "libx264" and "aq-mode=3" in args[args.index("-x264-params") + 1]
 
 
 def test_in_between_audio_keeps_a_high_bitrate_and_only_the_finish_is_squeezed(tmp_path, monkeypatch):
