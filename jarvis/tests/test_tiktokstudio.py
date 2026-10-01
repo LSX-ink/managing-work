@@ -1335,3 +1335,27 @@ def test_a_dropped_voice_is_asked_for_once_more(s, tmp_path, monkeypatch):
     asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script))
     assert calls == {"The phone buzzed.": 2, "Nobody answered.": 1}
     assert all(a is not None for a in audio)  # both scenes ended up voiced
+
+
+def test_scenes_left_without_a_voice_are_named_in_the_checks(s, tmp_path, monkeypatch):
+    async def no_picture(*a, **k):
+        return None
+
+    async def half(http, settings, text, voice, target, words=None, pace="normal"):
+        if text.startswith("The"):
+            return False
+        target.write_bytes(b"voice")
+        return True
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", half)
+    monkeypatch.setattr(cv, "trim_head", lambda voice: 0.0)
+    monkeypatch.setattr(cv, "trim_tail", lambda voice: None)
+    monkeypatch.setattr(cv, "audio_seconds", lambda voice: 2.0)
+    monkeypatch.setattr(cv, "check_video", lambda video: [])
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    scenes = [{"narration": "Nobody answered."}, {"narration": "The phone buzzed."}, {"narration": "Nothing moved."}]
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
+    out = asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script))
+    assert out["checks"] == ["no voice on scene 2 (the voice service failed; remake it)"]
