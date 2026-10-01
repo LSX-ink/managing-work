@@ -447,9 +447,15 @@ def test_clipzz_makes_a_credited_portrait_video(s, monkeypatch):
     made = []
     monkeypatch.setattr(clips, "portrait", lambda source, layer, out: (made.append(layer), out.write_bytes(b"p")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "check_video", lambda path: ["12 seconds of black screen"])
+    monkeypatch.setattr(cv, "video_facts", lambda path: "1:02, 30.0 MB")
     creator._ctx.update(client=object())
     asyncio.run(creator.make_in_background(s, [("Clipzz", "", None)]))
     v = cs.load(s)["videos"][-1]
+    assert v["checks"] == ["12 seconds of black screen"]  # watched before it's offered, like the studio's videos
+    assert "Check before posting: 12 seconds of black screen" in v["notes"]
+    notes = next(cs.work_folder(s, "TikTok", "Clipzz").glob("*.md")).read_text(encoding="utf-8")
+    assert "Length: 1:02, 30.0 MB" in notes and "Quality check: 12 seconds of black screen" in notes
     assert v["status"] == "ready" and "kai" in v["caption"] and "credit" in v["caption"] and "twitch" in v["hashtags"]
     assert v["keyword"] == "new" and len(made) == 2
     assert cs.account(cs.load(s), "Clipzz")["used_clips"] == ["c1", "c2"]

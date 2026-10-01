@@ -246,7 +246,9 @@ async def make_clips(settings: Settings, data: dict, account: dict, folder, repl
     cs.save(settings, fresh)
     return {"status": "ready", "title": result["title"], "caption": result["caption"], "hashtags": result["hashtags"],
             "keyword": era, "file": cs.relative(settings, result["path"]), "story": "",
-            "hook": result.get("hook", ""), "notes": result.get("notes", ""), "clip_ids": result["clip_ids"]}
+            "hook": result.get("hook", ""), "clip_ids": result["clip_ids"], "checks": result.get("checks", []),
+            "notes": result.get("notes", "")
+            + (f". Check before posting: {'; '.join(result['checks'])}" if result.get("checks") else "")}
 
 
 def best_titles(data: dict, account: str, n: int = 5) -> list[str]:
