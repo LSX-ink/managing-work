@@ -1036,6 +1036,7 @@ def test_pictures_are_sharpened_after_scaling_up(tmp_path, monkeypatch):
     for x in range(0, cv.W, 12):
         draw.rectangle([x, 0, x + 5, cv.H], fill=(200, 200, 200))
     im.filter(ImageFilter.GaussianBlur(1.5)).save(still)
+    monkeypatch.setattr(cv, "VIGNETTE", "")  # measured on its own
 
     def edges(name):
         cv.render_scene([still], None, 0.3, tmp_path / f"{name}.mp4")
@@ -1045,6 +1046,26 @@ def test_pictures_are_sharpened_after_scaling_up(tmp_path, monkeypatch):
     sharp = edges("sharp")
     monkeypatch.setattr(cv, "SHARPEN", "")
     assert sharp > edges("soft") * 1.1
+
+
+def test_a_soft_vignette_darkens_the_corners(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (160, 160, 160)).save(still)
+
+    def frame(name):
+        cv.render_scene([still], None, 0.3, tmp_path / f"{name}.mp4")
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / f"{name}.mp4"), "-frames:v", "1",
+                        str(tmp_path / f"{name}.png")], check=True, capture_output=True)
+        return Image.open(tmp_path / f"{name}.png").convert("L")
+    shaded = frame("shaded")
+    corner, middle = shaded.getpixel((20, 20)), shaded.getpixel((cv.W // 2, cv.H // 2))
+    assert corner < middle - 20 and middle > 140  # dark corners, the middle left as it was
+    monkeypatch.setattr(cv, "VIGNETTE", "")
+    plain = frame("plain")
+    assert abs(plain.getpixel((20, 20)) - plain.getpixel((cv.W // 2, cv.H // 2))) < 5
 
 
 def test_captions_stay_clear_of_tiktoks_buttons_and_caption_text():
