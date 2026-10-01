@@ -285,6 +285,12 @@ async def make(http, settings, account: dict, folder: Path, era: str, client=Non
         video, n = folder / f"{title} ({n}).mp4", n + 1
     await asyncio.to_thread(cv.join, parts, work / "joined.mp4")
     (work / "joined.mp4").replace(video)
+    try:  # watched once like the studio's own videos: too short, silent, black or dead air
+        checks = await asyncio.to_thread(cv.check_video, video)
+    except Exception as exc:
+        print(f"[jarvis] Quality check skipped: {exc}", flush=True)
+        checks = []
+    facts = await asyncio.to_thread(cv.video_facts, video)
     for f in work.iterdir():
         f.unlink(missing_ok=True)
     work.rmdir()
@@ -293,9 +299,13 @@ async def make(http, settings, account: dict, folder: Path, era: str, client=Non
     caption = (f"{hook} 🎮 {cut}Clips from {', '.join(names)} on {' and '.join(sites)} (all credit to {credits}). "
                "Follow for daily clips!")
     tags = [*(s.lower() for s in sites), "streamer", "clips", "viral", *[re.sub(r"\W", "", n).lower() for n in names[:2]]]
-    video.with_suffix(".md").write_text(f"# {hook}\n\n{caption}\n\n" + " ".join(f"#{t}" for t in tags) + "\n\n## Clips\n\n"
+    facts_line = f"Length: {facts}\n\n" if facts else ""
+    check_line = f"Quality check: {'; '.join(checks) if checks else 'passed'}\n\n"
+    video.with_suffix(".md").write_text(f"# {hook}\n\n{caption}\n\n" + " ".join(f"#{t}" for t in tags) + "\n\n"
+                                        + facts_line + check_line + "## Clips\n\n"
                                         + "\n".join(f"- {c['title']} ({c['broadcaster_name']}, {c.get('view_count', 0):,} views): {c['url']}"
                                                     for c in chosen) + "\n", encoding="utf-8")
     notes = f"{era} clips of {', '.join(names)}" + (", extended cut" if extended else "") + f", {total:.0f}s"
     return {"title": hook, "caption": caption, "hashtags": tags, "keyword": era, "path": video, "hook": hook,
-            "notes": notes, "scenes": [{"narration": c["title"]} for c in chosen], "clip_ids": [c["id"] for c in chosen]}
+            "notes": notes, "scenes": [{"narration": c["title"]} for c in chosen], "clip_ids": [c["id"] for c in chosen],
+            "checks": checks}
