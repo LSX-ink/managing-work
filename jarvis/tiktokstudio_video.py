@@ -765,13 +765,23 @@ def shift_words(words: list, by: float) -> None:
     words[:] = [(max(0.0, a - by), max(0.0, b - by), w) for a, b, w in words]
 
 
-def fit_to_length(voiced: list[float], length: float = MIN_LENGTH, gap: float = 0.35) -> list[float]:
+# the breath after each scene and its share of any spare time follow the scene's pace: a fast scene snaps to the
+# next, a slow one lingers on its picture, so padding a short story out to a minute doesn't flatten its rhythm
+PACE_GAPS = {"fast": 0.2, "normal": 0.35, "slow": 0.6}
+PACE_HOLD = {"fast": 0.5, "normal": 1.0, "slow": 1.6}
+
+
+def fit_to_length(voiced: list[float], length: float = MIN_LENGTH, gap: float = 0.35,
+                  paces: list[str] | None = None) -> list[float]:
     """Seconds per scene: each narration plus a short pause, and if that comes to under a minute the spare time is
-    shared out so each picture holds a little longer. Longer stories keep their natural length."""
-    base = [v + gap for v in voiced]
+    shared out so each picture holds a little longer (slow scenes more, fast ones less). Longer stories keep their
+    natural length."""
+    paces = paces or ["normal"] * len(voiced)
+    base = [v + (PACE_GAPS.get(p, gap) if p != "normal" else gap) for v, p in zip(voiced, paces)]
     spare = length - sum(base)
     if spare > 0:
-        base = [b + spare / len(base) for b in base]
+        weights = [PACE_HOLD.get(p, 1.0) for p in paces]
+        base = [b + spare * w / sum(weights) for b, w in zip(base, weights)]
     frames = [round(b * FPS) for b in base]
     if spare > 0:
         frames[-1] += round(length * FPS) - sum(frames)
@@ -1060,7 +1070,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     except BaseException:
         voicing.cancel()  # a failed picture or still must not leave voice fetches running
         raise
-    lengths = fit_to_length([v[1] for v in voices])
+    lengths = fit_to_length([v[1] for v in voices], paces=[sc.get("pace", "normal") for sc in scenes])
     async def track_for(i, spoken, words, seconds):
         if not captions:
             return None
