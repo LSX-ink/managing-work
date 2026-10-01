@@ -1295,3 +1295,12 @@ def test_caption_timings_follow_the_trimmed_voice(s, tmp_path, monkeypatch):
     account = {**cs.load(s)["accounts"][0], "captions": True}
     asyncio.run(cv.make(None, None, s, account, tmp_path, script=cv.parse_script(SCRIPT)))
     assert timings and all(t == [(pytest.approx(0.1), pytest.approx(0.4), "Hello")] for t in timings)
+
+
+def test_spare_time_and_pauses_follow_each_scenes_pace():
+    fast, normal, slow = cv.fit_to_length([4.0, 4.0, 4.0], paces=["fast", "normal", "slow"])
+    assert fast < normal < slow and fast + normal + slow == pytest.approx(cv.MIN_LENGTH, abs=0.05)
+    assert cv.fit_to_length([4.0] * 3) == cv.fit_to_length([4.0] * 3, paces=["normal"] * 3)  # unchanged without paces
+    long = cv.fit_to_length([20.0, 20.0, 20.0], paces=["fast", "normal", "slow"])  # no spare time: only the breath
+    assert long[0] == pytest.approx(20.2, abs=0.05) and long[2] == pytest.approx(20.6, abs=0.05)
+    assert cv.fit_to_length([4.0, 4.0], paces=["weird", "normal"])[0] > 4.0  # an unknown pace counts as normal
