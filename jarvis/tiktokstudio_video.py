@@ -831,8 +831,8 @@ LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # e
 WORK_AUDIO, FINAL_AUDIO = "320k", "192k"
 
 # the voice gets a light studio polish: rumble cut, a little presence so it cuts through on a phone speaker,
-# and gentle compression so quiet words aren't lost under the music
-VOICE_POLISH = ("highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=3,"
+# a de-esser so that lift doesn't make the "s" sounds hiss, and gentle compression so quiet words aren't lost
+VOICE_POLISH = ("highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=3,deesser=i=0.4,"
                 "acompressor=threshold=0.125:ratio=3:attack=5:release=80:makeup=1.5")
 
 
