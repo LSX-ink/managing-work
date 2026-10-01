@@ -1137,3 +1137,46 @@ def test_scene_voices_are_fetched_side_by_side_but_kept_in_order(s, tmp_path, mo
     asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=script))
     assert 1 < most[0] <= cv.VOICE_JOBS
     assert sorted(seconds) == [("scene0.mp4", "scene0.mp3"), ("scene1.mp4", "scene1.mp3"), ("scene2.mp4", "scene2.mp3")]
+
+
+def test_voices_and_pictures_are_fetched_at_the_same_time(s, tmp_path, monkeypatch):
+    busy, overlap = {"voice": 0}, []
+
+    async def picture(*a, **k):
+        await asyncio.sleep(0.01)
+        overlap.append(busy["voice"] > 0)  # a voice is still being fetched while this picture arrives
+        return None
+
+    async def narrate(*a, **k):
+        busy["voice"] += 1
+        await asyncio.sleep(0.05)
+        busy["voice"] -= 1
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", picture)
+    monkeypatch.setattr(cv, "narrate", narrate)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    asyncio.run(cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=cv.parse_script(SCRIPT)))
+    assert any(overlap)
+
+
+def test_a_failed_picture_stops_the_voice_fetches(s, tmp_path, monkeypatch):
+    finished = []
+
+    async def broken(*a, **k):
+        raise RuntimeError("picture service down")
+
+    async def narrate(*a, **k):
+        await asyncio.sleep(0.2)
+        finished.append(1)
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", broken)
+    monkeypatch.setattr(cv, "narrate", narrate)
+
+    async def go():
+        with pytest.raises(RuntimeError):
+            await cv.make(None, None, s, cs.load(s)["accounts"][0], tmp_path, script=cv.parse_script(SCRIPT))
+        await asyncio.sleep(0.3)
+    asyncio.run(go())
+    assert finished == []
