@@ -811,6 +811,10 @@ LOOP_SECONDS = 0.8
 LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # ends at zoom 1, where scene 1 starts
 
 
+# the sound is re-encoded once per step (scene, room tone, music, loudness); the in-between steps keep a high
+# bitrate so the voice doesn't pick up a little more AAC fizz at every step, and only the finished video is squeezed
+WORK_AUDIO, FINAL_AUDIO = "320k", "192k"
+
 # the voice gets a light studio polish: rumble cut, a little presence so it cuts through on a phone speaker,
 # and gentle compression so quiet words aren't lost under the music
 VOICE_POLISH = ("highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=3,"
@@ -862,7 +866,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         chains.append(f"[{k}:a]{polish}apad,aresample=44100[a]")
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
          "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-         "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-ac", "2", str(out)])
+         "-c:a", "aac", "-b:a", WORK_AUDIO, "-ar", "44100", "-ac", "2", str(out)])
 
 
 def music_for(folder: Path, mood: str = "") -> Path | None:
@@ -893,7 +897,7 @@ def add_music(video: Path, track: Path, out: Path) -> None:
          "[m][v1]sidechaincompress=threshold=0.02:ratio=10:attack=15:release=350[duck];"
          f"[duck]afade=t=out:st={max(0.0, seconds - 2.5):.2f}:d=2.5[bed];"
          "[v2][bed]amix=inputs=2:duration=first:normalize=0[a]",
-         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", f"{seconds:.3f}",
+         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", WORK_AUDIO, "-t", f"{seconds:.3f}",
          "-movflags", "+faststart", str(out)])
 
 
@@ -914,7 +918,7 @@ def add_ambience(video: Path, kind: str, out: Path) -> None:
          "-filter_complex",
          f"[1:a]afade=t=in:d=1.5,afade=t=out:st={max(0.0, seconds - 2):.2f}:d=2[amb];"
          "[0:a][amb]amix=inputs=2:duration=first:normalize=0[a]",
-         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", f"{seconds:.3f}",
+         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", WORK_AUDIO, "-t", f"{seconds:.3f}",
          "-movflags", "+faststart", str(out)])
 
 
@@ -925,7 +929,7 @@ def normalise(video: Path, out: Path) -> None:
     """Level the finished mix to TikTok's loudness, so the voice is as loud as the videos around it in the feed
     (a quiet video gets swiped), without clipping. The picture is copied, not re-encoded."""
     run(["-i", str(video), "-af", f"{LOUDNESS},aresample=44100", "-map", "0:v", "-map", "0:a", "-c:v", "copy",
-         "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(out)])
+         "-c:a", "aac", "-b:a", FINAL_AUDIO, "-movflags", "+faststart", str(out)])
 
 
 VOICE_JOBS = 3  # scene voices fetched side by side (gentle on the voice service, much quicker than one by one)
