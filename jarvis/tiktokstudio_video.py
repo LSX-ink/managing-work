@@ -672,6 +672,18 @@ def with_shadow(im: Image.Image) -> Image.Image:
     return Image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(SHADOW_BLUR)), im)
 
 
+POP_SECONDS, POP_SCALE = 2 / FPS, 0.86
+
+
+def popped(image: Image.Image) -> Image.Image:
+    """The caption shrunk a little about its centre: shown for a couple of frames before the full size, it makes
+    each new line snap onto the screen the way TikTok's own captions do."""
+    small = image.resize((round(image.width * POP_SCALE), round(image.height * POP_SCALE)), Image.LANCZOS)
+    canvas = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    canvas.paste(small, ((image.width - small.width) // 2, (image.height - small.height) // 2))
+    return canvas
+
+
 def caption_track(words: list[tuple[float, float, str]], seconds: float, accent, work: Path, tag: str,
                   punch=()) -> Path | None:
     """A list of caption images with how long each shows, for ffmpeg's concat reader; None when there's nothing to say."""
@@ -691,7 +703,13 @@ def caption_track(words: list[tuple[float, float, str]], seconds: float, accent,
             if until <= t:
                 continue
             path = work / f"{tag}-{n}.png"
-            caption_image([w[2] for w in line], i, accent, punch).save(path)
+            image = caption_image([w[2] for w in line], i, accent, punch)
+            image.save(path)
+            if i == 0 and until - t > 3 * POP_SECONDS:  # a fresh line pops in: two frames a touch smaller first
+                pop = work / f"{tag}-{n}-pop.png"
+                popped(image).save(pop)
+                entries.append((pop, POP_SECONDS))
+                t += POP_SECONDS
             entries.append((path, until - t))
             t, n = until, n + 1
     if not n:
