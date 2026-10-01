@@ -512,6 +512,17 @@ def with_part_badge(im: Image.Image, part: int, accent) -> Image.Image:
 FRAMES = {"drama": drama_frame, "noir": noir_frame, "explainer": explainer_frame, "cinematic": cinematic_frame}
 
 
+# full-screen looks fill the whole 9:16 phone screen, so their pictures are asked for tall (same pixel budget as
+# a square): the whole composition shows, sharper, instead of a square cropped to its middle and blown up 1.9x.
+# The card looks (noir, explainer) frame a square picture, so they keep asking for squares.
+TALL_PICTURE = (864, 1536)
+TALL_STYLES = ("cinematic", "drama")
+
+
+def picture_size(account: dict) -> tuple[int, int]:
+    return TALL_PICTURE if account.get("style") in TALL_STYLES else (1024, 1024)
+
+
 def frame(picture: Image.Image, account: dict, script: dict, scene: dict) -> Image.Image:
     return FRAMES.get(account.get("style"), noir_frame)(picture, account, script, scene)
 
@@ -1023,11 +1034,11 @@ def join(parts: list[Path], out: Path) -> None:
     listing.unlink(missing_ok=True)
 
 
-async def picture_or_retry(http, description: str, style: str, seed: int):
+async def picture_or_retry(http, description: str, style: str, seed: int, size=(1024, 1024)):
     """A scene's main picture, asked for once more (a fresh seed) the moment it fails, so one slow failure
     doesn't hold every other scene back for a second round."""
-    return (await fetch_picture(http, description, style, seed)
-            or await fetch_picture(http, description, style, seed + 13))
+    return (await fetch_picture(http, description, style, seed, size=size)
+            or await fetch_picture(http, description, style, seed + 13, size=size))
 
 
 async def make(client, http: httpx.AsyncClient, settings: Settings, account: dict, folder: Path,
@@ -1062,12 +1073,14 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                 print(f"[jarvis] Voice trim skipped: {exc}", flush=True)
         seconds = await asyncio.to_thread(audio_seconds, voice) if has_voice else 0
         return (voice, seconds, words) if seconds > 0.3 else (None, reading_seconds(scene["narration"]), [])
+    shape = picture_size(account)
     # voices, pictures and close-ups are all fetched at the same time: none of them waits for another
     voicing = asyncio.ensure_future(asyncio.gather(*(voice_for(i, scene) for i, scene in enumerate(scenes))))
     try:
         pictures, closeups = await asyncio.gather(
-            asyncio.gather(*(picture_or_retry(http, who + s["picture"], account["style"], seed) for s in scenes)),
-            asyncio.gather(*(fetch_picture(http, who + s["closeup"], account["style"], seed + 7)
+            asyncio.gather(*(picture_or_retry(http, who + s["picture"], account["style"], seed, size=shape)
+                             for s in scenes)),
+            asyncio.gather(*(fetch_picture(http, who + s["closeup"], account["style"], seed + 7, size=shape)
                              if s.get("closeup") else _none() for s in scenes)))
         missing = sum(p is None for p in pictures)
         pictures, closeups = fill_gaps(list(pictures), list(closeups))
