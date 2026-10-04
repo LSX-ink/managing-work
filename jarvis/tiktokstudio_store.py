@@ -62,6 +62,8 @@ STARTERS = [
                                     "before and after the clip", "style": "clips", "format": "clips", "per_day": 3,
      "streamers": NEON, "min_views": 100_000, "extend": 30},
 ]
+LORE = "lowkey.lore"  # the one page still making videos (the others are off until the user sets them up)
+SWITCH_OFF_OTHERS = True
 # Starters added after someone's studio already existed get added once, by name.
 LATER_STARTERS = {"Clipzz", "n3on.vault"}
 
@@ -110,6 +112,7 @@ def new_account(name: str, **fields) -> dict:
             "min_views": max(0, int(fields.get("min_views") or 0)),  # clip accounts: only clips with this many views
             "extend": max(0, min(int(fields.get("extend") or 0), 120)),  # seconds added before and after each clip
             "used_clips": list(fields.get("used_clips") or [])[-3000:],
+            "off": fields.get("off") is True,  # switched off: no daily videos, sequels or new videos at all
             "taste": fields.get("taste") if isinstance(fields.get("taste"), dict) else {"liked": [], "rejected": []}}
 
 
@@ -130,6 +133,10 @@ def load(settings: Settings) -> dict:
                 data["accounts"].append(new_account(**starter))
             added.add(starter["name"])
     data["starters_added"] = sorted(added)
+    if SWITCH_OFF_OTHERS and not data.get("lore_only"):  # the user, 4 Oct: stop every page but lowkey.lore until they make a page for it
+        for a in data["accounts"]:
+            a["off"] = a.get("name", "").lower() != LORE
+        data["lore_only"] = True
     return data
 
 

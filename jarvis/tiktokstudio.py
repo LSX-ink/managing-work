@@ -70,7 +70,9 @@ def sequels_due(data: dict) -> list[dict]:
     for v in data["videos"]:
         first = v.get("series_of", v["id"])
         part = v.get("part", 1)
-        if v.get("status") not in ("posted", "approved") or part >= LAST_PART or _is_clips(data, v):
+        account = cs.find_account(data, v.get("account"))
+        if v.get("status") not in ("posted", "approved") or part >= LAST_PART or _is_clips(data, v) or (
+                account and account.get("off")):
             continue
         later = [w for w in data["videos"] if w.get("series_of") == first and w.get("part", 1) > part]
         if later:
@@ -107,6 +109,9 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
                    replaces: dict | None = None, script: dict | None = None) -> dict:
     data = cs.load(settings)
     account = cs.account(data, account_name)
+    if account.get("off"):
+        raise ValueError(f"{account['name']} is switched off, so it makes no videos. Say 'switch {account['name']} "
+                         "on' once its page is ready.")
     vid = {"id": cs.new_id(), "account": account["name"], "day": date.today().isoformat(), "status": "making",
            "title": "Being made", "made_at": time.strftime("%Y-%m-%d %H:%M"), "part": 1, "views": 0}
     if sequel_of:
@@ -342,6 +347,8 @@ def clips_blocked(settings: Settings, account: dict) -> str:
 def todays_jobs(settings: Settings, data: dict, today: date) -> list[tuple[str, str, None]]:
     jobs = []
     for a in data["accounts"]:
+        if a.get("off"):
+            continue  # switched off until the user sets that page up
         fails = sum(1 for v in data["videos"] if v.get("account") == a["name"] and v.get("day") == today.isoformat()
                     and v.get("status") == "failed")
         missing = a.get("per_day", 3) - cs.made_today(data, a["name"], today)
@@ -496,6 +503,7 @@ def studio_card(settings: Settings, data: dict, focus: str = "") -> dict:
             row["src"] = f"/screen/file?path={screen.quote(v['file'])}"
         videos.append(row)
     accounts = [{"name": a["name"], "style": a["style"], "format": a["format"], "per_day": a.get("per_day", 3),
+                 "off": bool(a.get("off")),
                  "theme": a["theme"], "connected": tiktok.connected(settings, a["name"]),
                  "lessons": bool((a.get("lessons") or {}).get("brief"))} for a in data["accounts"]]
     return screen.card("creator-studio", "TikTok studio", "creator-studio",
@@ -535,7 +543,8 @@ def studio(settings: Settings) -> screen.Shown:
 
 # ---- accounts ----------------------------------------------------------------------------------------------
 
-FIELDS = ("theme", "style", "format", "series", "per_day", "voice", "accent", "streamers", "category", "min_views", "extend")
+FIELDS = ("theme", "style", "format", "series", "per_day", "voice", "accent", "streamers", "category", "min_views", "extend",
+          "off")
 
 
 def add_account(settings: Settings, args: dict) -> str:
@@ -567,7 +576,8 @@ def update_account(settings: Settings, args: dict) -> str:
             tokens[a["name"]] = tokens.pop(old)
             tiktok.save_tokens(settings, tokens)
     cs.save(settings, data)
-    return f"Updated {a['name']}: {a['theme']}; {a['style']} look; {a['per_day']} a day."
+    return (f"Updated {a['name']}: {a['theme']}; {a['style']} look; {a['per_day']} a day"
+            + ("; switched off, so it makes no videos." if a.get("off") else "."))
 
 
 def remove_account(settings: Settings, args: dict) -> str:
@@ -635,7 +645,9 @@ def tool_definitions() -> list[dict]:
                        "only from streamers who allow clipping (allows_clipping). n3on.vault is N3on's clip page "
                        "(Kick, and Twitch when set up): clips with 100k+ views, each extended by about 30 seconds "
                        "before and after from the stream. update_account "
-                       "(account, new_name or any field). remove_account (account, confirmed). name_ideas (theme) for "
+                       "(account, new_name or any field; off true switches an account off so it makes no videos at "
+                       "all, off false switches it back on: 'switch karma.receipts on'). Only lowkey.lore is on "
+                       "until the user sets the other pages up. remove_account (account, confirmed). name_ideas (theme) for "
                        "flashy Gen Z account names. profile_kit (account) makes a profile picture and a bio. trends (account, refresh) shows this "
                        "week's TikTok trends for its niche (checked daily before the first video and used in every "
                        "script, with the account's best-performing videos) so you can plan what to post next. connect (account) gives the TikTok login link. setup explains "
@@ -673,6 +685,7 @@ def tool_definitions() -> list[dict]:
                 "category": {"type": "string", "description": "Clip accounts: Twitch category, e.g. Just Chatting."},
                 "min_views": {"type": "integer", "description": "Clip accounts: only clips with at least this many views."},
                 "extend": {"type": "integer", "description": "Clip accounts: seconds of the stream added before and after each clip (0 = plain clips)."},
+                "off": {"type": "boolean", "description": "update_account: true switches the account off (no videos), false back on."},
                 "confirmed": {"type": "boolean"},
                 "refresh": {"type": "boolean", "description": "trends or lessons: check again now."},
             },
@@ -729,7 +742,7 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
         return set_views(settings, args.get("video"), args.get("views") or 0)
     if action == "accounts":
         data = cs.load(settings)
-        rows = [[a["name"], a["style"], a["format"], str(a.get("per_day", 3)),
+        rows = [[a["name"], a["style"], a["format"], "off" if a.get("off") else str(a.get("per_day", 3)),
                  "yes" if tiktok.connected(settings, a["name"]) else "no"] for a in data["accounts"]]
         return screen.Shown(f"Alfred runs {len(rows)} account{'s' if len(rows) != 1 else ''}: "
                             + ", ".join(r[0] for r in rows) + ".",

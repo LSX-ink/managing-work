@@ -26,8 +26,9 @@ def s(tmp_path):
 
 
 @pytest.fixture(autouse=True)
-def idle_studio():
+def idle_studio(monkeypatch):
     creator._ctx.update(client=None, http=None, announce=None, making=False, views_at=0.0, pending=[])
+    monkeypatch.setattr(cs, "SWITCH_OFF_OTHERS", False)  # these tests use every page; the switch-off has its own tests
     yield
 
 
@@ -1590,3 +1591,17 @@ def test_a_fresh_caption_line_pops_in_smaller_for_two_frames(tmp_path):
     assert small.size == full.size
     assert small.getchannel("A").getbbox()[2] - small.getchannel("A").getbbox()[0] < \
         full.getchannel("A").getbbox()[2] - full.getchannel("A").getbbox()[0]
+
+
+def test_every_page_but_lowkey_lore_is_switched_off_until_the_user_sets_it_up(s, monkeypatch):
+    monkeypatch.setattr(cs, "SWITCH_OFF_OTHERS", True)
+    data = cs.load(s)
+    assert [a["name"] for a in data["accounts"] if not a["off"]] == ["lowkey.lore"]
+    cs.save(s, data)
+    assert [j[0] for j in creator.todays_jobs(s, cs.load(s), date.today())] == ["lowkey.lore"] * 3
+    with pytest.raises(ValueError, match="switched off"):
+        asyncio.run(creator.make_one(s, "karma.receipts"))
+    assert "switched off" in creator.update_account(s, {"account": "karma.receipts", "off": True})
+    creator.update_account(s, {"account": "karma.receipts", "off": False})  # the user switches a page back on
+    assert {j[0] for j in creator.todays_jobs(s, cs.load(s), date.today())} == {"lowkey.lore", "karma.receipts"}
+    assert not cs.find_account(cs.load(s), "karma.receipts")["off"]  # and it stays on: the switch-off runs once
