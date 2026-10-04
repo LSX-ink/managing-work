@@ -355,6 +355,9 @@ class Brain:
                                            if m["role"] == "assistant" and not isinstance(m["content"], str))))
             if reply and not user_text.startswith("[activate]"):
                 await asyncio.to_thread(save_carry_over, self.settings, self.messages[start]["content"], reply)
+        except asyncio.CancelledError:  # you said cancel: forget the half-finished turn so history stays valid
+            del self.messages[start:]
+            raise
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive
             print(f"[jarvis] Error: {exc!r}", flush=True)
             del self.messages[start:]

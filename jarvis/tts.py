@@ -38,7 +38,7 @@ def split_sentences(text: str, limit: int = CHUNK_CHARS) -> list[str]:
     return chunks
 
 
-async def _voice(http: httpx.AsyncClient, settings: Settings, chunk: str) -> bytes | None:
+async def _voice(http: httpx.AsyncClient, settings: Settings, chunk: str, model: str = "") -> bytes | None:
     """One chunk from ElevenLabs, or None when it fails (offline, slow, out of credit)."""
     try:
         resp = await http.post(
@@ -46,7 +46,7 @@ async def _voice(http: httpx.AsyncClient, settings: Settings, chunk: str) -> byt
             headers={"xi-api-key": settings.elevenlabs_api_key, "Accept": "audio/mpeg"},
             json={
                 "text": chunk,
-                "model_id": elevenlabs_model(settings),
+                "model_id": model or elevenlabs_model(settings),
                 "voice_settings": {"stability": 0.5, "similarity_boost": 0.8},
             },
             timeout=VOICE_TIMEOUT,
@@ -73,6 +73,14 @@ async def synthesize(http: httpx.AsyncClient, settings: Settings, text: str) -> 
     return bytes(audio)
 
 
+def live_model(settings: Settings) -> str:
+    """Alfred's own replies use ElevenLabs' fastest model (Flash), so the first words come sooner.
+    ELEVENLABS_MODEL still wins when it is set; other uses (videos) keep elevenlabs_model()."""
+    if settings.elevenlabs_model:
+        return settings.elevenlabs_model
+    return "eleven_flash_v2_5" if settings.lang_code in TURBO_LANGS else "eleven_v3"
+
+
 def speaking_parts(text: str) -> list[str]:
     """The opening sentence on its own, so the voice starts quickly, then the rest in normal-sized chunks."""
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
@@ -95,7 +103,7 @@ async def stream(http: httpx.AsyncClient, settings: Settings, text: str):
         return
     parts = speaking_parts(text)
     for i, part in enumerate(parts):
-        audio = await _voice(http, settings, part)
+        audio = await _voice(http, settings, part, live_model(settings))
         if audio is None:
             yield " ".join(parts[i:]), None
             return

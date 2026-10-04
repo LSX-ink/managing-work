@@ -570,14 +570,24 @@ async def websocket(ws: WebSocket):
             else:
                 print("  (on a break: ignored until called by name)", flush=True)
 
+    current: dict = {"task": None, "cancelled": False}  # the turn running now, so "cancel" can stop it
+
     async def worker() -> None:
         # One failed turn must never stop the next: without "done" the page waits forever and stops listening.
         while True:
             msg = await inbox.get()
             try:
-                await turn(msg)
+                current["task"] = asyncio.create_task(turn(msg))
+                await current["task"]
             except asyncio.CancelledError:
-                raise
+                if not current["cancelled"]:
+                    raise  # the page closed
+                current["cancelled"] = False
+                print("  (cancelled)", flush=True)
+                try:
+                    await ws.send_json({"type": "note", "text": "Cancelled."})
+                except Exception:
+                    return
             except Exception as exc:
                 print(f"[jarvis] Turn failed: {exc!r}", flush=True)
                 try:
@@ -600,6 +610,17 @@ async def websocket(ws: WebSocket):
             msg = await ws.receive_json()
             if msg.get("type") == "dismiss":
                 await dismiss_alert(ws.app, msg.get("id"))
+            elif msg.get("type") == "cancel":
+                dropped = 0
+                while not inbox.empty():  # anything said while he was busy goes too
+                    inbox.get_nowait()
+                    dropped += 1
+                if current["task"] and not current["task"].done():
+                    current["cancelled"] = True
+                    current["task"].cancel()
+                elif dropped:  # it hadn't started yet, so nothing else will tell the page it's over
+                    await ws.send_json({"type": "note", "text": "Cancelled."})
+                    await ws.send_json({"type": "done"})
             elif msg.get("type") == "confirm_reply":
                 fut = pending.get(msg.get("id"))
                 if fut and not fut.done():

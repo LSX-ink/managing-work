@@ -133,7 +133,8 @@ const queue = [];
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 let listening = false;
-let stopper = null;    // listens for "stop" while Jarvis speaks
+let stopper = null;
+let nowSaying = '';    // what Alfred is saying now, lower case without punctuation (see the stop listener)    // listens for "stop" while Jarvis speaks
 let lastSpokeAt = 0;   // when Jarvis last finished speaking (follow-ups need no name)
 const FOLLOW_UP_MS = 20000;
 const STOP_WORDS = /^(?:(?:ok(?:ay)?|alfred|jarvis|hey alfred|hey jarvis),? )?(?:stop|stop talking|quiet|be quiet|shush|hush|enough|that's enough|shut up|hold on|wait|wait a (?:sec|second|moment)|pause|cancel|never ?mind|ok(?:ay)? thanks|thanks that's (?:it|all)|got it)(?:,? (?:alfred|jarvis))?[.!]?$/i;
@@ -428,6 +429,7 @@ function playNext() {
         return;
     }
     speaking = true;
+    nowSaying = String(msg.speak || msg.text || '').toLowerCase().replace(/[.!,]/g, '');
     // access.js: captions. Later parts of one answer were already captioned with the first part.
     if (!msg.part) document.dispatchEvent(new CustomEvent('jarvis:speak', { detail: { text: msg.text || '' } }));
     stopListening();
@@ -565,7 +567,9 @@ function startStopper() {
         stopper.interimResults = true;
         stopper.onresult = (event) => {
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (STOP_WORDS.test(event.results[i][0].transcript.trim())) {
+                const said = event.results[i][0].transcript.trim();
+                // The mic can hear Alfred's own voice: "Got it." in his answer must not cut him off.
+                if (STOP_WORDS.test(said) && !nowSaying.includes(said.toLowerCase().replace(/[.!,]/g, ''))) {
                     skipSpeech();
                     return;
                 }
@@ -619,6 +623,10 @@ orb.addEventListener('click', () => {
         skipSpeech();  // tap while speaking: skip the rest of what Jarvis is saying
         return;
     }
+    if (busy) {
+        cancelTurn();  // tap while thinking: stop working on it
+        return;
+    }
     paused = !paused;
     if (paused) {
         stopListening();
@@ -626,6 +634,20 @@ orb.addEventListener('click', () => {
     } else {
         maybeListen();
     }
+});
+
+// Stop what Alfred is working on (tap the orb while he thinks, or press Esc). He says "Cancelled." and listens.
+function cancelTurn() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'cancel' }));
+    confirmBox.hidden = true;
+    queue.length = 0;
+    if (speaking) skipSpeech();
+}
+addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !started) return;
+    if (speaking) skipSpeech();
+    else if (busy) cancelTurn();
 });
 
 // mic-help.js "TRY AGAIN": listen again once the microphone has been fixed.
