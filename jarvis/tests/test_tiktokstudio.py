@@ -1298,6 +1298,25 @@ def test_the_voice_gets_a_studio_polish(tmp_path, monkeypatch):
     assert cv.VOICE_POLISH in seen[0] and cv.VOICE_POLISH not in seen[1]
 
 
+def test_scene_sound_fades_at_the_cuts_so_joins_never_click(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    import array
+    import subprocess
+    from PIL import Image
+    still, tone = tmp_path / "s.png", tmp_path / "tone.m4a"
+    Image.new("RGB", (cv.W, cv.H), (90, 90, 90)).save(still)
+    subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "sine=f=440:d=3,volume=0.8", str(tone)],
+                   check=True, capture_output=True)
+    cv.render_scene([still], tone, 2.0, tmp_path / "s.mp4")  # the voice is still sounding at the cut
+    raw = subprocess.run([cv.ffmpeg(), "-i", str(tmp_path / "s.mp4"), "-ac", "1", "-f", "s16le", "-"],
+                         capture_output=True, check=True).stdout
+    samples = array.array("h", raw)
+    loudest = max(abs(v) for v in samples[len(samples) // 3: 2 * len(samples) // 3])
+    assert loudest > 3000
+    assert max(abs(v) for v in samples[-900:]) < loudest * 0.1  # faded right down at the cut, not chopped off
+    assert max(abs(v) for v in samples[:100]) < loudest * 0.5  # and eased in at the start
+
+
 def test_scenes_are_encoded_to_keep_dark_gradients_smooth(tmp_path, monkeypatch):
     from PIL import Image
     still = tmp_path / "s.png"
