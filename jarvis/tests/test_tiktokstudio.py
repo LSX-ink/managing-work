@@ -1188,7 +1188,7 @@ def test_slow_scenes_rise_out_of_black(s, tmp_path, monkeypatch):
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
     monkeypatch.setattr(cv, "narrate", no_voice)
-    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (dips.append((a[1], a[-1])), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (dips.append((a[1], a[7])), out.write_bytes(b"mp4")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     monkeypatch.setattr(cv, "check_video", lambda path: [])
@@ -1683,3 +1683,15 @@ def test_a_three_shot_scene_lasts_exactly_as_long(tmp_path):
         stills.append(tmp_path / f"{i}.png")
     cv.render_scene(stills, None, 3.0, tmp_path / "three.mp4")
     assert abs(cv.audio_seconds(tmp_path / "three.mp4") - 3.0) < 0.1
+
+
+def test_lore_scenes_have_living_film_texture_so_a_still_never_looks_frozen(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    from PIL import Image
+    monkeypatch.setattr(cv, "MIN_LENGTH", 1.0)
+    Image.new("RGB", (cv.W, cv.H), (90, 110, 140)).save(tmp_path / "still.png")
+    for name, atmosphere in (("plain", ""), ("film", "film")):
+        cv.render_scene([tmp_path / "still.png"], None, 4.0, tmp_path / f"{name}.mp4", atmosphere=atmosphere)
+    assert any("frozen still" in p for p in cv.check_video(tmp_path / "plain.mp4"))  # a flat still sits dead
+    assert not any("frozen still" in p for p in cv.check_video(tmp_path / "film.mp4"))  # the grain keeps it alive
+    assert cv.STYLE_ATMOSPHERE["lore"] == "film"
