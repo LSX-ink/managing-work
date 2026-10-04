@@ -19,9 +19,23 @@
 
     const state = () => (['listening', 'thinking', 'speaking'].find((s) => orb.classList.contains(s)) || 'idle');
 
+    // Canvas sizes are measured only when they change: measuring every frame makes the browser redo the
+    // page layout 30 times a second, which shows as stutter on a busy HUD.
+    const sizes = new WeakMap();
+    const watcher = window.ResizeObserver && new ResizeObserver((entries) => {
+        entries.forEach((e) => sizes.set(e.target, { width: e.contentRect.width, height: e.contentRect.height }));
+    });
     function fitCanvas(canvas) {
         const dpr = window.devicePixelRatio || 1;
-        const { width, height } = canvas.getBoundingClientRect();
+        let size = sizes.get(canvas);
+        if (!size) {
+            const r = canvas.getBoundingClientRect();
+            size = { width: r.width, height: r.height };
+            sizes.set(canvas, size);
+            if (watcher) watcher.observe(canvas);
+            else requestAnimationFrame(() => sizes.delete(canvas));   // no ResizeObserver: measure each frame as before
+        }
+        const { width, height } = size;
         if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
             canvas.width = Math.round(width * dpr);
             canvas.height = Math.round(height * dpr);
@@ -231,7 +245,9 @@
     let lastFrame = 0;
     function frame(t) {
         requestAnimationFrame(frame);   // first, so one bad frame can't stop the animation
-        if (t - lastFrame < 30) return;   // about 30 fps is smooth for the wolf, radar and wave, at half the work
+        // About 30 fps is smooth for the wolf, radar and wave, at half the work. The slack keeps every other
+        // frame on a 60 Hz screen even when the browser's timing wobbles, so the motion doesn't judder.
+        if (t - lastFrame < 26) return;
         lastFrame = t;
         drawSphere(t);
         drawRadar(t);

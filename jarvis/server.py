@@ -9,6 +9,7 @@ import base64
 import hashlib
 import hmac
 import html
+import ipaddress
 import itertools
 import time
 from contextlib import asynccontextmanager
@@ -44,6 +45,8 @@ EMAIL_TTL = 60  # seconds the HUD email counter reuses a count
 CONFIRM_TIMEOUT = 120  # seconds to approve mouse/keyboard actions before they are declined
 SESSION_COOKIE = "jarvis_session"
 SESSION_DAYS = 30
+LOGIN_TRIES = 5  # wrong passwords in a row before that address has to wait
+LOGIN_LOCK = 600  # seconds it waits
 MAX_ALERTS = 30  # notifications kept for the page
 
 
@@ -71,6 +74,37 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
+
+
+# ---- security --------------------------------------------------------------
+
+SECURITY_HEADERS = {
+    "X-Frame-Options": "SAMEORIGIN",  # no other site can show Alfred inside its page and trick clicks on "Allow"
+    "Content-Security-Policy": "frame-ancestors 'self'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+}
+
+
+def allowed_host(host: str | None) -> bool:
+    """Only answer requests addressed to this PC or the private phone link.
+
+    A web page can point a name it owns at 127.0.0.1 ("DNS rebinding") and then talk to Alfred as if it were
+    his own page. Such names always have a dot, so plain IP addresses, single-word PC names, localhost and
+    the Tailscale phone link (*.ts.net) are safe; anything else must be listed in JARVIS_ALLOWED_HOSTS.
+    """
+    if not host:
+        return True  # very old clients send none; the browser always does
+    name = urlparse(f"//{host}").hostname or ""
+    name = name.lower().rstrip(".")
+    if name == "localhost" or name.endswith(".localhost") or name.endswith(".ts.net") or "." not in name:
+        return True
+    try:
+        ipaddress.ip_address(name)
+        return True
+    except ValueError:
+        pass
+    return name in settings.allowed_hosts
 
 
 @app.middleware("http")
@@ -172,15 +206,52 @@ async def require_password(request: Request, call_next):
     return Response("Log in first.", status_code=401)
 
 
+# Added last, so it runs first: every answer, the login page included, gets the headers and host check.
+@app.middleware("http")
+async def security(request: Request, call_next):
+    if not allowed_host(request.headers.get("host")):
+        return Response("Unknown address. Open Alfred at http://localhost instead, or add this name to "
+                        "JARVIS_ALLOWED_HOSTS in .env.", status_code=421)
+    response = await call_next(request)
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
+
+
+_login_fails: dict[str, list[float]] = {}  # address -> times of recent wrong passwords
+
+
+def login_address(request: Request) -> str:
+    """Who is trying: the phone link passes the real address on, everything else is the PC itself."""
+    forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    return forwarded or (request.client.host if request.client else "?")
+
+
+def login_locked(address: str, now: float) -> int:
+    """Seconds left before `address` may try again (0 when it may)."""
+    recent = [t for t in _login_fails.get(address, []) if now - t < LOGIN_LOCK]
+    _login_fails[address] = recent
+    if len(recent) < LOGIN_TRIES:
+        return 0
+    return int(LOGIN_LOCK - (now - recent[-LOGIN_TRIES])) + 1
+
+
 @app.post("/login")
 async def login(request: Request):
-    password = parse_qs((await request.body()).decode()).get("password", [""])[0]
+    address = login_address(request)
+    if wait := login_locked(address, time.time()):
+        return login_page(f"Too many wrong passwords. Try again in {wait // 60 + 1} minutes.", status=429)
+    password = parse_qs((await request.body()).decode(errors="replace")).get("password", [""])[0]
     if not settings.password or not hmac.compare_digest(password.encode(), settings.password.encode()):
+        _login_fails.setdefault(address, []).append(time.time())
+        print(f"[jarvis] Wrong password from {address}", flush=True)
         await asyncio.sleep(1)  # slows down guessing
         return login_page("Wrong password.", status=401)
+    _login_fails.pop(address, None)
     response = RedirectResponse("/", status_code=303)
+    https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
     response.set_cookie(SESSION_COOKIE, session_token(), max_age=SESSION_DAYS * 86400,
-                        httponly=True, samesite="strict")
+                        httponly=True, samesite="strict", secure=https)
     return response
 
 
@@ -443,7 +514,7 @@ def same_origin(ws: WebSocket) -> bool:
 
 @app.websocket("/ws")
 async def websocket(ws: WebSocket):
-    if not same_origin(ws) or not logged_in(ws.cookies) or (via_phone_link(ws) and not settings.password):
+    if not allowed_host(ws.headers.get("host")) or not same_origin(ws) or not logged_in(ws.cookies) or (via_phone_link(ws) and not settings.password):
         await ws.close(code=1008)
         return
     await ws.accept()
@@ -452,15 +523,24 @@ async def websocket(ws: WebSocket):
     next_id = itertools.count(1)
 
     async def speak(text: str, quiet: bool = False) -> None:
-        """Say text aloud; quiet leaves it out of the transcript (notifications show it instead)."""
+        """Say text aloud; quiet leaves it out of the transcript (notifications show it instead).
+
+        Each part is sent as soon as its voice is ready, so Alfred starts talking after the first sentence
+        instead of waiting for the whole answer to be voiced. The first message carries the full text for
+        the transcript; the rest are marked as parts of it.
+        """
         print(f"  Jarvis: {text}", flush=True)
-        audio = await tts.synthesize(http, settings, text)
-        await ws.send_json({
-            "type": "say",
-            "text": text,
-            "audio": base64.b64encode(audio).decode() if audio else "",
-            "quiet": quiet,
-        })
+        first = True
+        async for part, audio in tts.stream(http, settings, text):
+            await ws.send_json({
+                "type": "say",
+                "text": text if first else part,
+                "speak": part,
+                "audio": base64.b64encode(audio).decode() if audio else "",
+                "quiet": quiet or not first,
+                "part": not first,
+            })
+            first = False
 
     async def confirm(steps: list[str]) -> str:
         """Ask the page to approve mouse/keyboard actions; no answer in time counts as no."""
@@ -477,19 +557,35 @@ async def websocket(ws: WebSocket):
     brain = Brain(settings, ws.app.state.client, http, confirm=confirm, page=ws.send_json)
     inbox: asyncio.Queue = asyncio.Queue()
 
+    async def turn(msg: dict) -> None:
+        if msg.get("type") == "activate":
+            timers.on_break = False  # clicking the orb ends a break too
+            await brain.activate(speak)
+        elif text := str(msg.get("text", "")).strip():
+            print(f"  You:    {text}", flush=True)
+            if timers.wakes_from_break(settings, text):
+                await brain.handle(text, speak)
+            else:
+                print("  (on a break: ignored until called by name)", flush=True)
+
     async def worker() -> None:
+        # One failed turn must never stop the next: without "done" the page waits forever and stops listening.
         while True:
             msg = await inbox.get()
-            if msg.get("type") == "activate":
-                timers.on_break = False  # clicking the orb ends a break too
-                await brain.activate(speak)
-            elif text := str(msg.get("text", "")).strip():
-                print(f"  You:    {text}", flush=True)
-                if timers.wakes_from_break(settings, text):
-                    await brain.handle(text, speak)
-                else:
-                    print("  (on a break: ignored until called by name)", flush=True)
-            await ws.send_json({"type": "done"})
+            try:
+                await turn(msg)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                print(f"[jarvis] Turn failed: {exc!r}", flush=True)
+                try:
+                    await ws.send_json({"type": "note", "text": "Sorry, that went wrong. Please say it again."})
+                except Exception:
+                    return  # the page has gone
+            try:
+                await ws.send_json({"type": "done"})
+            except Exception:
+                return  # the page has gone
 
     task = asyncio.create_task(worker())
     ws.app.state.pages[id(ws)] = (ws, speak, brain)

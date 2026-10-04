@@ -21,6 +21,7 @@ const STRINGS = {
         listeningWake: 'Say "{name}" to talk to me…',
         paused: 'Paused. Click the orb to resume.',
         micBlocked: 'Microphone blocked. You can still type below.',
+        heardNoName: 'Heard "{text}". Say "{name}" first to talk to me.',
         noRecognition: 'Voice input needs Chrome or Edge. Type below instead.',
         noVoice: 'Your browser has no voice for this language. Set ELEVENLABS_API_KEY to hear replies.',
         placeholder: '…or type to {name}',
@@ -47,6 +48,7 @@ const STRINGS = {
         listeningWake: 'Sê "{name}" om met my te praat…',
         paused: 'Onderbreek. Klik op die bol om voort te gaan.',
         micBlocked: 'Mikrofoon geblokkeer. Jy kan steeds hieronder tik.',
+        heardNoName: 'Gehoor "{text}". Sê eers "{name}" om met my te praat.',
         noRecognition: 'Steminvoer werk net in Chrome of Edge. Tik eerder hieronder.',
         noVoice: 'Jou blaaier het geen Afrikaanse stem nie. Stel ELEVENLABS_API_KEY om antwoorde te hoor.',
         placeholder: '…of tik vir {name}',
@@ -229,12 +231,23 @@ function chime() {
     } catch (e) { /* no audio */ }
 }
 
+// If a turn's "done" never arrives (a lost message), listen again rather than stay deaf for good.
+const BUSY_LIMIT_MS = 90000;
+let busySince = 0;
+setInterval(() => {
+    if (busy && confirmBox.hidden && !speaking && !queue.length && Date.now() - busySince > BUSY_LIMIT_MS) {
+        busy = false;
+        maybeListen();
+    }
+}, 5000);
+
 function connect(onOpen) {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     ws = new WebSocket(`${proto}://${location.host}/ws`);
     ws.onopen = onOpen;
     ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
+        busySince = Date.now();   // still working on it
         if (msg.type === 'say') {
             if (!msg.quiet) addLine('jarvis', msg.text);
             queue.push(msg);
@@ -278,6 +291,7 @@ function connect(onOpen) {
 function send(payload) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     busy = true;
+    busySince = Date.now();
     stopListening();
     setState('thinking', t('thinking'));
     ws.send(JSON.stringify(payload));
@@ -400,11 +414,13 @@ function playNext() {
         return;
     }
     speaking = true;
-    document.dispatchEvent(new CustomEvent('jarvis:speak', { detail: { text: msg.text || '' } }));  // access.js: captions
+    // access.js: captions. Later parts of one answer were already captioned with the first part.
+    if (!msg.part) document.dispatchEvent(new CustomEvent('jarvis:speak', { detail: { text: msg.text || '' } }));
     stopListening();
     setState('speaking');
     startStopper();
-    const finish = () => { speaking = false; lastSpokeAt = Date.now(); stopStopper(); playNext(); };
+    // The "stop" listener keeps running between parts of one answer, so the mic isn't switched off and on.
+    const finish = () => { speaking = false; lastSpokeAt = Date.now(); if (!queue.length) stopStopper(); playNext(); };
 
     if (msg.audio) {
         const bytes = Uint8Array.from(atob(msg.audio), (c) => c.charCodeAt(0));
@@ -418,7 +434,7 @@ function playNext() {
         const voice = pickVoice();
         const prefs = voicePrefs();
         if (!voice && speechSynthesis.getVoices().length) statusEl.textContent = t('noVoice');
-        const chunks = speechChunks(msg.text);
+        const chunks = speechChunks(msg.speak || msg.text);
         let done = false;
         const once = () => { if (!done) { done = true; finish(); } };
         chunks.forEach((part, i) => {
@@ -442,6 +458,14 @@ function playNext() {
 
 // ---- Speech input -----------------------------------------------------------
 
+// Only one recogniser may hold the microphone at a time: the main one, or the "stop" listener while Alfred
+// speaks. Each starts only after the other has fully ended, otherwise Chrome cuts one off and the mic seems dead.
+let recActive = false;      // main recogniser started and not yet ended
+let heardSomething = false; // this listening session heard speech
+let quickEnds = 0;          // sessions in a row that ended at once with nothing heard: back off, don't spin
+let netFails = 0;           // "network" errors in a row: the browser's listening service is unreachable
+let startedAt = 0;
+
 if (Recognition) {
     recognition = new Recognition();
     recognition.continuous = false;
@@ -449,8 +473,12 @@ if (Recognition) {
     recognition.onresult = (event) => {
         const result = event.results[event.results.length - 1];
         const text = result[0].transcript.trim();
+        heardSomething = true;
+        netFails = 0;
         if (result.isFinal && text && wakeOnly && !calledByName(text) && Date.now() - lastSpokeAt > FOLLOW_UP_MS) {
-            return;  // not for Jarvis: he waits to be called by name
+            // Not for Jarvis: he waits to be called by name. Show what was heard so the mic clearly works.
+            statusEl.textContent = t('heardNoName').replace('{text}', text.length > 40 ? `${text.slice(0, 40)}…` : text);
+            return;
         }
         if (result.isFinal && text) {
             addLine('user', text);
@@ -458,15 +486,21 @@ if (Recognition) {
         }
     };
     recognition.onend = () => {
+        recActive = false;
         listening = false;
-        setTimeout(maybeListen, 250);
+        if (speaking) { startStopper(); return; }
+        // Ended almost at once without hearing anything: wait longer each time instead of flickering.
+        quickEnds = !heardSomething && Date.now() - startedAt < 1500 ? quickEnds + 1 : 0;
+        setTimeout(maybeListen, quickEnds > 2 ? Math.min(8000, 500 * 2 ** (quickEnds - 2)) : 150);
     };
     recognition.onerror = (event) => {
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            paused = true;
-            setState('idle', t('micBlocked'));
-            document.dispatchEvent(new CustomEvent('jarvis:mic-blocked', { detail: { error: event.error } }));   // mic-help.js says how to fix it
-        }
+        const err = event.error;
+        if (err === 'no-speech' || err === 'aborted') return;   // normal: silence, or we stopped it
+        if (err === 'network' && ++netFails < 3) return;        // a blip: try again (onend backs off)
+        // The microphone is blocked, missing, busy, or the listening service is unreachable: say how to fix it.
+        paused = true;
+        setState('idle', t('micBlocked'));
+        document.dispatchEvent(new CustomEvent('jarvis:mic-blocked', { detail: { error: err } }));   // mic-help.js says how to fix it
     };
 }
 
@@ -476,17 +510,22 @@ function maybeListen() {
         setState('idle', t('noRecognition'));
         return;
     }
+    if (recActive || (stopper && stopper.running)) return;   // the other one's onend calls back here
     try {
         recognition.lang = config.speechLang;
         recognition.start();
+        recActive = true;
         listening = true;
+        heardSomething = false;
+        startedAt = Date.now();
         setState('listening', t(wakeOnly ? 'listeningWake' : 'listening'));
     } catch (e) { /* already started */ }
 }
 
 // While Jarvis speaks, a second recogniser listens only for "stop", "quiet", "that's enough"…
 function startStopper() {
-    if (!Recognition || paused || !started) return;
+    if (!Recognition || paused || !started || !speaking) return;
+    if (recActive) return;   // the main recogniser is still letting go of the mic; its onend calls back here
     if (!stopper) {
         stopper = new Recognition();
         stopper.continuous = true;
@@ -499,7 +538,11 @@ function startStopper() {
                 }
             }
         };
-        stopper.onend = () => { stopper.running = false; if (speaking) setTimeout(startStopper, 200); };
+        stopper.onend = () => {
+            stopper.running = false;
+            if (speaking) setTimeout(startStopper, 200);
+            else maybeListen();   // Alfred finished while it was letting go: listen now
+        };
         stopper.onerror = () => {};
     }
     if (stopper.running) return;
@@ -511,8 +554,8 @@ function startStopper() {
 }
 
 function stopStopper() {
+    // running stays true until onend, so the main recogniser waits for the mic to be free
     if (stopper && stopper.running) stopper.abort();
-    if (stopper) stopper.running = false;
 }
 
 // Stop talking now and drop anything still queued.
@@ -555,6 +598,8 @@ orb.addEventListener('click', () => {
 // mic-help.js "TRY AGAIN": listen again once the microphone has been fixed.
 document.addEventListener('jarvis:mic-retry', () => {
     paused = false;
+    netFails = 0;
+    quickEnds = 0;
     if (started) maybeListen();
 });
 
