@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 import time
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -17,7 +18,7 @@ import reminders
 import tools
 from config import Settings
 
-Speak = Callable[[str], Awaitable[None]]
+Speak = Callable[..., Awaitable[None]]  # speak(text, quiet=False, join=False)
 # Shown a list of planned mouse/keyboard actions; returns "allow", "allow_all" or "deny".
 Confirm = Callable[[list[str]], Awaitable[str]]
 
@@ -226,6 +227,45 @@ def prune_images(messages: list[dict], keep: int = MAX_IMAGES_KEPT, keep_documen
             container[i] = {"type": "text", "text": note}
 
 
+class SentenceSplitter:
+    """Cuts streamed text into speakable pieces: the first sentence alone (so the voice starts quickly),
+    then pieces of a few sentences, so the voice service isn't called for every short phrase."""
+
+    FIRST_MIN = 12
+    LATER_MIN = 120
+
+    def __init__(self) -> None:
+        self.buffer = ""
+        self.sent_any = False
+
+    def feed(self, text: str) -> list[str]:
+        self.buffer += text
+        out = []
+        while True:
+            cut = self._cut()
+            if cut is None:
+                return out
+            piece, self.buffer = self.buffer[:cut].strip(), self.buffer[cut:]
+            if piece:
+                out.append(piece)
+                self.sent_any = True
+
+    def _cut(self) -> int | None:
+        need = self.LATER_MIN if self.sent_any else self.FIRST_MIN
+        for match in re.finditer(r"[.!?…][\"')\]]*(?=\s)", self.buffer):
+            end = match.end()
+            if end >= need:
+                return end
+        return None
+
+    def flush(self) -> list[str]:
+        piece, self.buffer = self.buffer.strip(), ""
+        if piece:
+            self.sent_any = True
+            return [piece]
+        return []
+
+
 def spoken_text(content) -> str:
     return " ".join(b.text.strip() for b in content if b.type == "text" and b.text.strip())
 
@@ -326,7 +366,7 @@ class Brain:
         start = len(self.messages) - 1
         for _ in range(MAX_TOOL_ROUNDS):
             prune_images(self.messages)
-            response = await self.client.beta.messages.create(messages=self.messages, **opts)
+            response, spoken = await self._respond(opts, speak)
 
             if response.stop_reason == "refusal":
                 del self.messages[start:]  # drop the whole declined turn so history stays valid
@@ -335,7 +375,7 @@ class Brain:
 
             self.messages.append({"role": "assistant", "content": response.content})
             text = spoken_text(response.content)
-            if text:
+            if text and not spoken:
                 await speak(text)
 
             if response.stop_reason == "pause_turn":
@@ -351,6 +391,44 @@ class Brain:
             self.messages.append({"role": "user", "content": [by_id[c.id] for c in calls]})
 
         await speak(line(self.settings, "loop"))
+
+    async def _respond(self, opts: dict, speak: Speak):
+        """One reply from Claude. Streamed when the client can, so Alfred says his first sentence while the
+        rest is still being written; each sentence is voiced in the background as soon as it is complete.
+        Returns (response, whether its text was already spoken)."""
+        api = self.client.beta.messages
+        if not hasattr(api, "stream"):
+            return await api.create(messages=self.messages, **opts), False
+        said: asyncio.Queue = asyncio.Queue()
+        first = True
+
+        async def speaker() -> None:
+            nonlocal first
+            while (sentence := await said.get()) is not None:
+                if first:
+                    await speak(sentence)
+                    first = False
+                else:
+                    await speak(sentence, join=True)  # same transcript line as the first sentence
+
+        task = asyncio.create_task(speaker())
+        splitter = SentenceSplitter()
+        try:
+            async with api.stream(messages=self.messages, **opts) as stream:
+                async for event in stream:
+                    if event.type == "text":
+                        for sentence in splitter.feed(event.text):
+                            said.put_nowait(sentence)
+                    elif event.type == "content_block_stop":
+                        for sentence in splitter.flush():
+                            said.put_nowait(sentence)
+                response = await stream.get_final_message()
+            for sentence in splitter.flush():
+                said.put_nowait(sentence)
+        finally:
+            said.put_nowait(None)
+            await task
+        return response, not first or not spoken_text(response.content)
 
     async def _tool_result(self, call) -> dict:
         print(f"  tool: {call.name} {call.input}", flush=True)
