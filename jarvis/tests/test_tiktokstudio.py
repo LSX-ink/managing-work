@@ -59,7 +59,7 @@ def add_video(s, **fields):
 def test_starts_with_flashy_accounts_in_the_looks_the_user_liked(s):
     data = cs.load(s)
     assert [a["name"] for a in data["accounts"]] == ["lowkey.lore", "mindglitch.fyi", "karma.receipts", "Clipzz", "n3on.vault"]
-    assert [a["style"] for a in data["accounts"]] == ["noir", "explainer", "drama", "clips", "clips"]
+    assert [a["style"] for a in data["accounts"]] == ["lore", "explainer", "drama", "clips", "clips"]
     assert [a["per_day"] for a in data["accounts"]] == [3, 3, 3, 5, 3]
 
 
@@ -87,7 +87,7 @@ def test_add_rename_and_remove_accounts(s):
     studio(s, action="remove_account", account="spooky.szn", confirmed=True)
     assert cs.find_account(cs.load(s), "spooky.szn") is None
     shown = studio(s, action="accounts")
-    assert shown.card["rows"][0][:2] == ["lowkey.lore", "noir"] and shown.card["rows"][0][4] == "no"
+    assert shown.card["rows"][0][:2] == ["lowkey.lore", "lore"] and shown.card["rows"][0][4] == "no"
 
 
 def test_name_ideas_asks_for_gen_z_names(s):
@@ -702,7 +702,7 @@ def test_a_character_line_is_spoken_in_the_characters_voice(s, tmp_path, monkeyp
     async def no_picture(*a, **k):
         return None
 
-    async def narrate(http, settings, text, voice, target, words=None, pace="normal"):
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal", narrator=""):
         voices.append(voice)
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
@@ -787,7 +787,7 @@ def test_named_characters_keep_their_voice_across_videos(s, tmp_path, monkeypatc
     async def no_picture(*a, **k):
         return None
 
-    async def narrate(http, settings, text, voice, target, words=None, pace="normal"):
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal", narrator=""):
         voices.append(voice)
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
@@ -1269,7 +1269,7 @@ def test_scene_voices_are_fetched_side_by_side_but_kept_in_order(s, tmp_path, mo
     async def no_picture(*a, **k):
         return None
 
-    async def narrate(http, settings, text, voice, target, words=None, pace="normal"):
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal", narrator=""):
         live[0] += 1
         most[0] = max(most[0], live[0])
         await asyncio.sleep(0.05 if text.startswith("The") else 0.01)  # the first scene's voice is the slowest
@@ -1456,7 +1456,7 @@ def test_caption_timings_follow_the_trimmed_voice(s, tmp_path, monkeypatch):
     async def no_picture(*a, **k):
         return None
 
-    async def narrate(http, settings, text, voice, target, words=None, pace="normal"):
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal", narrator=""):
         target.write_bytes(b"voice")
         words.append((0.6, 0.9, "Hello"))
         return True
@@ -1489,7 +1489,7 @@ def test_a_dropped_voice_is_asked_for_once_more(s, tmp_path, monkeypatch):
     async def no_picture(*a, **k):
         return None
 
-    async def flaky(http, settings, text, voice, target, words=None, pace="normal"):
+    async def flaky(http, settings, text, voice, target, words=None, pace="normal", narrator=""):
         calls[text] = calls.get(text, 0) + 1
         words.append((0.0, 0.2, "half"))  # a failed try's half-timings must not leak into the retry
         if text.startswith("The") and calls[text] == 1:
@@ -1516,7 +1516,7 @@ def test_scenes_left_without_a_voice_are_named_in_the_checks(s, tmp_path, monkey
     async def no_picture(*a, **k):
         return None
 
-    async def half(http, settings, text, voice, target, words=None, pace="normal"):
+    async def half(http, settings, text, voice, target, words=None, pace="normal", narrator=""):
         if text.startswith("The"):
             return False
         target.write_bytes(b"voice")
@@ -1605,3 +1605,81 @@ def test_every_page_but_lowkey_lore_is_switched_off_until_the_user_sets_it_up(s,
     creator.update_account(s, {"account": "karma.receipts", "off": False})  # the user switches a page back on
     assert {j[0] for j in creator.todays_jobs(s, cs.load(s), date.today())} == {"lowkey.lore", "karma.receipts"}
     assert not cs.find_account(cs.load(s), "karma.receipts")["off"]  # and it stays on: the switch-off runs once
+
+
+def test_lore_gets_the_full_screen_detailed_look_once(s, monkeypatch):
+    monkeypatch.setattr(cs, "SWITCH_OFF_OTHERS", True)
+    path = Path(s.memory_dir)
+    data = cs.load(s)
+    data["accounts"][0]["style"] = "noir"  # how every existing studio has it
+    data.pop("lore_look")
+    cs.save(s, data)
+    lore = cs.load(s)["accounts"][0]
+    assert lore["name"] == "lowkey.lore" and lore["style"] == "lore"
+    assert cv.picture_size(lore) == (cv.W, cv.H)  # full phone resolution, so detail survives the zoom
+    assert "hyper-detailed" in cv.LOOKS["lore"] and cv.FRAMES["lore"] is cv.cinematic_frame
+    fresh = cs.load(s)
+    fresh["accounts"][0]["style"] = "noir"  # the user picks the old card again later: it stays their choice
+    cs.save(s, fresh)
+    assert cs.load(s)["accounts"][0]["style"] == "noir"
+    assert path.exists()
+
+
+def test_lore_scenes_get_a_third_shot_and_the_storyteller_voice(s, tmp_path, monkeypatch):
+    from PIL import Image
+    asked, voices, rendered = [], [], []
+
+    async def picture(http, description, style, seed, size=(1024, 1024)):
+        asked.append((description, size))
+        return Image.new("RGB", (64, 64))
+
+    async def narrate(http, settings, text, voice, target, words=None, pace="normal", narrator=""):
+        voices.append(voice or narrator)
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", picture)
+    monkeypatch.setattr(cv, "narrate", narrate)
+    monkeypatch.setattr(cv, "VOICE_TRIES", 1)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (rendered.append(list(stills)),
+                                                                                     out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    scenes = [{"narration": "She pressed play.", "picture": "a phone", "closeup": "her thumb", "detail": "rain on glass"},
+              {"narration": "It said her name.", "picture": "a kitchen", "closeup": "a mug"}]
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
+    lore = cs.load(s)["accounts"][0]
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert [len(r) for r in rendered] == [3, 2]  # the picture changes every couple of seconds
+    assert {size for _, size in asked} == {(cv.W, cv.H)} and len(asked) == 5
+    assert voices == ["en-US-AndrewMultilingualNeural"] * 2
+    rendered.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "cinematic"}, tmp_path, script=script))
+    assert [len(r) for r in rendered] == [2, 2]  # other looks keep two shots
+
+
+def test_an_unknown_narrator_falls_back_to_the_default_voice(s, tmp_path, monkeypatch):
+    import edge_tts
+    tried = []
+
+    class Talk:
+        def __init__(self, text, voice, **k):
+            tried.append(voice)
+            self.voice = voice
+
+        async def stream(self):
+            if self.voice != cv.DEFAULT_VOICE:
+                raise ValueError("No such voice")
+            yield {"type": "audio", "data": b"mp3"}
+    monkeypatch.setattr(edge_tts, "Communicate", Talk)
+    assert asyncio.run(cv.narrate(None, s, "Hello.", "", tmp_path / "v.mp3", [], narrator="en-XX-NobodyNeural"))
+    assert tried == ["en-XX-NobodyNeural", cv.DEFAULT_VOICE]
+
+
+def test_a_three_shot_scene_lasts_exactly_as_long(tmp_path):
+    pytest.importorskip("imageio_ffmpeg")
+    from PIL import Image
+    stills = []
+    for i, colour in enumerate(((200, 40, 40), (40, 200, 40), (40, 40, 200))):
+        Image.new("RGB", (cv.W, cv.H), colour).save(tmp_path / f"{i}.png")
+        stills.append(tmp_path / f"{i}.png")
+    cv.render_scene(stills, None, 3.0, tmp_path / "three.mp4")
+    assert abs(cv.audio_seconds(tmp_path / "three.mp4") - 3.0) < 0.1

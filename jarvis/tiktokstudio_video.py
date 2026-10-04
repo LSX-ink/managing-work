@@ -52,7 +52,13 @@ LOOKS = {
     "drama": ("photorealistic cinematic still, expressive emotional faces, luxury home or everyday setting, "
               "natural light, shot on a phone, vertical, no text"),
     "cinematic": "cinematic film still, dramatic lighting, rich colour, vertical composition, no text",
+    "lore": ("hyper-detailed cinematic film still, photorealistic, moody low-key lighting, deep teal shadows and warm "
+             "amber highlights, volumetric light, rain or haze in the air, sharp focus on the subject, intricate "
+             "textures, shot on 35mm anamorphic lens, shallow depth of field, vertical 9:16 composition, no text"),
 }
+# Each look's narrator when the account names none: lore's is a warm, natural storyteller, far less robotic than
+# the older voices (it falls back to DEFAULT_VOICE if the voice service doesn't know it).
+STYLE_VOICES = {"lore": "en-US-AndrewMultilingualNeural"}
 SCRIPT_PROMPT = """You are Alfred, the author and director of the TikTok account @{name}: a master storyteller with a
 wild imagination, and one of the best short-form video makers on TikTok.
 The account's theme: {theme}
@@ -102,6 +108,9 @@ Rules:
   shows the same person. Leave it empty if there is no recurring person.
 - "picture" is the main shot of the scene and "closeup" a second, different shot of the same moment (a detail,
   hands, an object, the eyes, another angle), each 10 to 25 words, for an image generator. No text in pictures.
+  "detail" is an optional third shot (a wide establishing shot, an insert of a clue, a reaction): give one on most
+  scenes, so the picture changes every 2 seconds and nobody gets bored. Describe every shot like a film still: the
+  light, the setting, textures and the emotion on the face, never a vague summary.
 - "pace" for each scene is how Alfred reads it, like a voice actor: "slow" for reveals, dread and the last line,
   "fast" for panic, chases and escalating lists, "normal" otherwise. Vary it; most scenes are normal.
 - "speaker" for each scene is "narrator", or, when the whole scene is one character saying a line out loud (a
@@ -133,7 +142,7 @@ Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
   "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "...", "voice_type": "woman"}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
-  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "pace": "normal", "speaker": "narrator", "punch": ["..."], "hit": "none"}}]}}"""
+  "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "detail": "...", "pace": "normal", "speaker": "narrator", "punch": ["..."], "hit": "none"}}]}}"""
 
 EDITOR_PROMPT = """You are the toughest short-form story editor on TikTok. A writer was given this brief:
 
@@ -254,6 +263,7 @@ def parse_script(text: str) -> dict:
                     "narration": cs.clean(s.get("narration") or s.get("text"), 400),
                     "picture": cs.clean(s.get("picture") or s.get("text"), 300),
                     "closeup": cs.clean(s.get("closeup"), 300),
+                    "detail": cs.clean(s.get("detail"), 300),
                     "pace": str(s.get("pace") or "").lower() if str(s.get("pace") or "").lower() in PACES else "normal",
                     "speaker": cs.clean(s.get("speaker"), 40).lower() or "narrator",
                     "punch": punch_words(s.get("punch")),
@@ -510,17 +520,22 @@ def with_part_badge(im: Image.Image, part: int, accent) -> Image.Image:
     return im
 
 
-FRAMES = {"drama": drama_frame, "noir": noir_frame, "explainer": explainer_frame, "cinematic": cinematic_frame}
+FRAMES = {"drama": drama_frame, "noir": noir_frame, "explainer": explainer_frame, "cinematic": cinematic_frame,
+          "lore": cinematic_frame}
 
 
 # full-screen looks fill the whole 9:16 phone screen, so their pictures are asked for tall (same pixel budget as
 # a square): the whole composition shows, sharper, instead of a square cropped to its middle and blown up 1.9x.
 # The card looks (noir, explainer) frame a square picture, so they keep asking for squares.
 TALL_PICTURE = (864, 1536)
-TALL_STYLES = ("cinematic", "drama")
+TALL_STYLES = ("cinematic", "drama", "lore")
+FULL_HD_STYLES = ("lore",)
+THREE_SHOT_STYLES = ("lore",)  # a third shot per scene: the picture changes about every 2 seconds  # asked for at the phone's full 1080x1920, so fine detail survives the zoom
 
 
 def picture_size(account: dict) -> tuple[int, int]:
+    if account.get("style") in FULL_HD_STYLES:
+        return (W, H)
     return TALL_PICTURE if account.get("style") in TALL_STYLES else (1024, 1024)
 
 
@@ -534,31 +549,35 @@ PACES = {"slow": "-6%", "normal": "+6%", "fast": "+16%"}  # the free voice's spe
 
 
 async def narrate(http: httpx.AsyncClient, settings: Settings, text: str, voice: str, target: Path,
-                  words: list | None = None, pace: str = "normal") -> bool:
+                  words: list | None = None, pace: str = "normal", narrator: str = "") -> bool:
     """Save the narration as an MP3; False when no voice is available. With the free voice, words (if given) is
     filled with (start, end, word) timings in seconds, for the captions."""
     audio = await tts.synthesize(http, settings, text) if settings.elevenlabs_api_key and not voice else None
     if audio:
         target.write_bytes(audio)
         return True
-    try:
-        import edge_tts
-        name = voice or settings.creator_voice or DEFAULT_VOICE
+    name = voice or narrator or settings.creator_voice or DEFAULT_VOICE  # an account's own voice wins
+    for attempt in dict.fromkeys([name, DEFAULT_VOICE]):  # a voice the service doesn't know falls back to the default
         try:
-            talk = edge_tts.Communicate(text, name, rate=PACES.get(pace, "+6%"), boundary="WordBoundary")
-        except TypeError:  # an older edge-tts without word timings
-            talk = edge_tts.Communicate(text, name, rate=PACES.get(pace, "+6%"))
-        with open(target, "wb") as out:
-            async for chunk in talk.stream():
-                if chunk.get("type") == "audio":
-                    out.write(chunk["data"])
-                elif chunk.get("type") == "WordBoundary" and words is not None:
-                    start = chunk["offset"] / 1e7
-                    words.append((start, start + chunk["duration"] / 1e7, chunk["text"]))
-        return target.exists() and target.stat().st_size > 0
-    except Exception as exc:  # no internet, or edge-tts missing
-        print(f"[jarvis] Story voice failed: {exc}", flush=True)
-        return False
+            import edge_tts
+            try:
+                talk = edge_tts.Communicate(text, attempt, rate=PACES.get(pace, "+6%"), boundary="WordBoundary")
+            except TypeError:  # an older edge-tts without word timings
+                talk = edge_tts.Communicate(text, attempt, rate=PACES.get(pace, "+6%"))
+            if words is not None:
+                words.clear()
+            with open(target, "wb") as out:
+                async for chunk in talk.stream():
+                    if chunk.get("type") == "audio":
+                        out.write(chunk["data"])
+                    elif chunk.get("type") == "WordBoundary" and words is not None:
+                        start = chunk["offset"] / 1e7
+                        words.append((start, start + chunk["duration"] / 1e7, chunk["text"]))
+            if target.exists() and target.stat().st_size > 0:
+                return True
+        except Exception as exc:  # no internet, edge-tts missing, or an unknown voice
+            print(f"[jarvis] Story voice {attempt} failed: {exc}", flush=True)
+    return False
 
 
 # ---- 4b. captions ------------------------------------------------------------------------------------------
@@ -979,7 +998,9 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     (with a white flash or a colour-split glitch, HIT_LOOKS). pace sets how fast the camera pushes."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
-    split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)]
+    split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)] if len(
+        stills) == 2 else [round(frames * 0.4), round(frames * 0.3), frames - round(frames * 0.4) - round(frames * 0.3)]
+    stills = stills[:3]
     motions = [MOTIONS[(move + i) % len(MOTIONS)] for i in range(len(stills))]
     if loop_to is not None:
         tail = max(1, round(LOOP_SECONDS * FPS))
@@ -1158,7 +1179,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             for _ in range(VOICE_TRIES):  # the free voice service drops the odd request; one retry saves a silent scene
                 words.clear()
                 has_voice = await narrate(http, settings, scene["narration"], speaks, voice, words,
-                                          scene.get("pace", "normal"))
+                                          scene.get("pace", "normal"), narrator=STYLE_VOICES.get(account.get("style"), ""))
                 if has_voice:
                     break
         if has_voice:
@@ -1173,17 +1194,20 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     # voices, pictures and close-ups are all fetched at the same time: none of them waits for another
     voicing = asyncio.ensure_future(asyncio.gather(*(voice_for(i, scene) for i, scene in enumerate(scenes))))
     try:
-        pictures, closeups = await asyncio.gather(
+        pictures, closeups, details = await asyncio.gather(
             asyncio.gather(*(picture_or_retry(http, who + s["picture"], account["style"], seed, size=shape)
                              for s in scenes)),
             asyncio.gather(*(fetch_picture(http, who + s["closeup"], account["style"], seed + 7, size=shape)
-                             if s.get("closeup") else _none() for s in scenes)))
+                             if s.get("closeup") else _none() for s in scenes)),
+            asyncio.gather(*(fetch_picture(http, who + s["detail"], account["style"], seed + 13, size=shape)
+                             if s.get("detail") and account.get("style") in THREE_SHOT_STYLES else _none()
+                             for s in scenes)))
         missing = sum(p is None for p in pictures)
         pictures, closeups = fill_gaps(list(pictures), list(closeups))
         captions = captions_on(account)
         accent = ac.hex_colour(account.get("accent"), "#e8c547")
         shots = []
-        for i, (scene, picture, closeup) in enumerate(zip(scenes, pictures, closeups)):
+        for i, (scene, picture, closeup, detail) in enumerate(zip(scenes, pictures, closeups, details)):
             shown = {**scene, "captions": captions}
             opener = script.get("cover", "") if i == 0 else ""
 
@@ -1197,6 +1221,10 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                 second = work / f"scene{i}b.png"
                 await asyncio.to_thread(draw_still, closeup, second)
                 mine.append(second)
+            if detail is not None:
+                third = work / f"scene{i}c.png"
+                await asyncio.to_thread(draw_still, detail, third)
+                mine.append(third)
             shots.append(mine)
         voices = list(await voicing)
     except BaseException:
