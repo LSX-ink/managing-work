@@ -387,6 +387,42 @@ def test_trends_are_checked_daily_and_fed_into_the_script(s):
     assert "POV hooks" in prompt and "The Last Voicemail (82,000 views)" in prompt and "Old one" in prompt
 
 
+def test_viral_lore_tiktoks_are_studied_every_few_days_and_steer_the_script(s, monkeypatch):
+    client = FakeClient([("", "pause_turn"), ("Open on the answer, then rewind (videos with 400k likes).", "end_turn"),
+                         (SCRIPT, "end_turn")])
+    creator._ctx["client"] = client
+    try:
+        shown = studio(s, action="viral", account="lowkey.lore")
+        assert "Open on the answer" in shown.card["text"] and "Make one using this" in str(shown.card)
+        ask = client.calls[0]["messages"][0]["content"]
+        assert "50,000 or more likes" in ask and cs.STYLES["lore"] in ask  # the account's own style
+        assert client.calls[0]["tools"][0]["name"] == "web_search" and len(client.calls) == 2  # carried on after the pause
+        studio(s, action="viral", account="lowkey.lore")
+        assert len(client.calls) == 2  # kept for a few days, not searched every video
+        account = cs.account(cs.load(s), "lowkey.lore")
+        asyncio.run(cv.write_script(client, s, account))
+        prompt = client.calls[2]["messages"][0]["content"]
+        assert "50,000+ likes" in prompt and "Open on the answer, then rewind" in prompt
+        assert "Make viewers think" in prompt and "comment their theories" in prompt
+        data = cs.load(s)  # an old playbook is studied again
+        cs.account(data, "lowkey.lore")["viral"]["day"] = "2000-01-01"
+        cs.save(s, data)
+        client.replies.append(("Fresh playbook.", "end_turn"))
+        assert asyncio.run(creator.ensure_viral(s, "lowkey.lore"))["brief"] == "Fresh playbook."
+        async def broken(*a, **k):
+            raise RuntimeError("no web search")
+        monkeypatch.setattr(cv, "study_viral", broken)  # a failed study keeps the last playbook
+        assert asyncio.run(creator.ensure_viral(s, "lowkey.lore", force=True))["brief"] == "Fresh playbook."
+    finally:
+        creator._ctx["client"] = None
+
+
+def test_a_script_without_a_viral_study_still_gets_written():
+    prompt = cv.SCRIPT_PROMPT.format(**{k: "x" for k in ("taste", "bible", "name", "theme", "format", "series", "look",
+                                     "recent", "best", "trends", "idea", "variety", "lessons", "viral")})
+    assert "borrow the techniques, never the stories" in prompt
+
+
 # ---- clip accounts (Clipzz) -------------------------------------------------------------------------------
 
 import tiktokstudio_clips as clips  # noqa: E402
@@ -624,7 +660,7 @@ def test_lessons_from_view_counts_feed_the_writer(s):
         assert len(client.calls) == 1  # once a day
         account = cs.account(cs.load(s), "lowkey.lore")
         prompt = cv.SCRIPT_PROMPT.format(**{k: "" for k in ("taste", "bible", "name", "theme", "format", "series",
-                                         "look", "recent", "best", "trends", "idea", "variety")}, lessons=account["lessons"]["brief"])
+                                         "look", "recent", "best", "trends", "idea", "variety", "viral")}, lessons=account["lessons"]["brief"])
         assert "view counts say works (follow these lessons): Open on a named person" in prompt
     finally:
         creator._ctx["client"] = None
@@ -974,6 +1010,7 @@ def test_a_draft_script_is_read_first_then_filmed_exactly(s, monkeypatch):
     monkeypatch.setattr(cv, "make", fake_make)
     monkeypatch.setattr(creator, "ensure_trends", nothing)
     monkeypatch.setattr(creator, "ensure_lessons", nothing)
+    monkeypatch.setattr(creator, "ensure_viral", nothing)
     creator._ctx.update(client=object())
     text = asyncio.run(creator.run_tool("tiktok_studio", {"action": "draft_script", "account": "lowkey.lore"}, s))
     assert "The Last Voicemail" in text and "editor 8/10" in text and "sound: boom" in text and "film it" in text
