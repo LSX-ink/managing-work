@@ -754,16 +754,17 @@ def video_facts(path: Path) -> str:
 
 DEAD_AIR_DB, DEAD_AIR_SECONDS = -50, 2.0  # quieter than this for this long counts as dead air
 FREEZE_SECONDS = 3.0  # a picture that doesn't change at all for this long reads as a stalled video
+LATE_START_SECONDS = 0.8  # silence this long at the very start loses the viewers who decide in the first second
 DIM_LUMA = 45  # average brightness (16 = black, 235 = white) below this looks murky on a phone screen
 
 
 def check_video(path: Path) -> list[str]:
     """Watch the finished video once before it's offered for approval, the way an editor would: too short for
     TikTok's 1-minute payouts, no sound at all, stretches of black screen, a picture frozen still, a picture too dark
-    overall, or dead air (viewers swipe away from silence, from a picture that looks stuck and from murk). Returns the problems found."""
+    overall, a silent opening, or dead air (viewers swipe away from silence, from a picture that looks stuck and from murk). Returns the problems found."""
     out = subprocess.run([ffmpeg(), "-hide_banner", "-i", str(path), "-vf", f"blackdetect=d=1.0:pix_th=0.06,freezedetect=n=0.001:d={FREEZE_SECONDS},"
                           "signalstats,metadata=mode=print:key=lavfi.signalstats.YAVG",
-                          "-af", f"volumedetect,silencedetect=n={DEAD_AIR_DB}dB:d={DEAD_AIR_SECONDS}",
+                          "-af", f"volumedetect,silencedetect=n={DEAD_AIR_DB}dB:d={min(LATE_START_SECONDS, DEAD_AIR_SECONDS)}",
                           "-f", "null", "-"], capture_output=True, text=True).stderr
     problems = []
     match = re.search(r"Duration: (\d+):(\d+):([\d.]+)", out)
@@ -774,7 +775,11 @@ def check_video(path: Path) -> list[str]:
     if not loudest or loudest[1] == "-inf" or float(loudest[1]) < -50:
         problems.append("there's no sound")
     else:
-        quiet = [float(d) for d in re.findall(r"silence_duration: ([\d.]+)", out)]
+        gaps = [(float(a), float(d)) for a, d in re.findall(
+            r"silence_start: (-?[\d.]+).*?silence_duration: ([\d.]+)", out, re.S)]
+        if gaps and gaps[0][0] <= 0.05:
+            problems.append(f"the first {gaps[0][1]:.1f} seconds are silent; start the voice straight away to hook viewers")
+        quiet = [d for _, d in gaps if d >= DEAD_AIR_SECONDS]
         if quiet:
             problems.append(f"{sum(quiet):.0f} seconds of dead air (silence of {DEAD_AIR_SECONDS:g}s or more)")
     black = sum(float(d) for d in re.findall(r"black_duration:([\d.]+)", out))

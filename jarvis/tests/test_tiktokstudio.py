@@ -1045,6 +1045,20 @@ def test_a_murky_dark_picture_is_flagged_but_a_bright_one_is_not(tmp_path, monke
     assert cv.check_video(tmp_path / "bright.mp4") == []
 
 
+def test_a_silent_opening_is_flagged_so_the_hook_lands_straight_away(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    monkeypatch.setattr(cv, "MIN_LENGTH", 1.0)
+    for name, sound in (("late", "sine=f=440:d=2,adelay=1200,apad=whole_dur=4"), ("prompt", "sine=f=440:d=4")):
+        subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "testsrc2=s=320x240:r=30:d=4", "-f", "lavfi", "-i",
+                        sound, "-t", "4", "-pix_fmt", "yuv420p", str(tmp_path / f"{name}.mp4")], check=True,
+                       capture_output=True)
+    late = cv.check_video(tmp_path / "late.mp4")
+    assert any("first 1.2 seconds are silent" in p for p in late)
+    assert not any("dead air" in p for p in late)  # a short pause isn't dead air
+    assert cv.check_video(tmp_path / "prompt.mp4") == []
+
+
 def test_the_finished_video_is_checked_before_it_is_offered(tmp_path, monkeypatch):
     pytest.importorskip("imageio_ffmpeg")
     from PIL import Image
