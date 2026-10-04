@@ -146,6 +146,34 @@ def unread_count(settings: Settings) -> int:
     return int(found.group(1))
 
 
+def email_problem(settings: Settings, exc: Exception) -> tuple[str, str]:
+    """Why an email check failed, as (short HUD label, plain-words fix). Never shows the password."""
+    raw = str(exc)
+    low = raw.lower()
+    host = settings.email_imap_host
+    if "application-specific password" in low or "app password" in low:
+        return ("NEEDS APP PASSWORD", "Your mail account wants an app password, not your normal password. "
+                "For Gmail make one at https://myaccount.google.com/apppasswords (needs 2-Step Verification) "
+                "and put it in JARVIS_EMAIL_APP_PASSWORD in .env.")
+    if "imap" in low and ("disabled" in low or "not enabled" in low):
+        return ("IMAP IS OFF", "IMAP is switched off for this mail account. Turn it on in your email's "
+                "settings (Gmail: Settings, See all settings, Forwarding and POP/IMAP, Enable IMAP).")
+    if "web browser" in low or "webloginrequired" in low:
+        return ("SIGN IN ON THE WEB", "Your mail provider blocked the login until you sign in once in a web "
+                "browser. Sign in to your email on the web, then Jarvis will try again by himself.")
+    if isinstance(exc, imaplib.IMAP4.error) or "authenticat" in low or "invalid credentials" in low or "login" in low:
+        if "outlook" in host or "office365" in host:
+            return ("LOGIN REFUSED", "Outlook and Hotmail no longer let apps log in with a password over IMAP. "
+                    "Use a Gmail address in JARVIS_EMAIL_ADDRESS (with an app password) instead.")
+        return ("WRONG PASSWORD", f"The mail server refused the login for {settings.email_address}. Check "
+                "JARVIS_EMAIL_ADDRESS and JARVIS_EMAIL_APP_PASSWORD in .env. For Gmail the password must be a "
+                "16-letter app password from https://myaccount.google.com/apppasswords, not your normal one.")
+    if isinstance(exc, (OSError, TimeoutError)):
+        return ("NO CONNECTION", f"Jarvis couldn't reach the mail server {host}. Check the internet "
+                "connection, and that JARVIS_EMAIL_IMAP_HOST in .env is right (or leave it empty).")
+    return ("CHECK FAILED", f"The email check failed: {raw}")
+
+
 def recent_deliveries(settings: Settings, days: int = 3) -> str:
     """Delivery emails from the last few days, for the check_deliveries tool."""
     found = []
@@ -162,6 +190,7 @@ def recent_deliveries(settings: Settings, days: int = 3) -> str:
 async def watch_email(settings: Settings, announce: Announce) -> None:
     """Announce delivery emails that arrive while Jarvis is running."""
     last_uid = None
+    last_problem = None
     while True:
         try:
             mails = await asyncio.to_thread(fetch_mail, settings, 1, last_uid or 0)
@@ -173,8 +202,13 @@ async def watch_email(settings: Settings, announce: Announce) -> None:
                     last_uid = max(last_uid, mail.uid)
                     if text := email_line(settings, mail):
                         await announce(text, "email")
-        except Exception as exc:  # bad password, no network: say so in the console and keep trying
-            print(f"[jarvis] Email check failed: {exc}", flush=True)
+        except Exception as exc:  # bad password, no network: say so in the console (once) and keep trying
+            fix = email_problem(settings, exc)[1]
+            if fix != last_problem:
+                print(f"[jarvis] Email check failed. {fix}", flush=True)
+            last_problem = fix
+        else:
+            last_problem = None
         await asyncio.sleep(settings.email_check_seconds)
 
 
