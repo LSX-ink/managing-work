@@ -144,13 +144,16 @@ Rules:
   extra clue that gets people arguing their theories in the comments (under 150 characters).
 - ambience: the quiet sound of the story's world under the voice: "rain", "wind", "city", "room", "night" or
   "none" (for explainers and anything without a place).
+- teaser: the number of one later scene (3 or later) whose picture flashes on screen for under a second before
+  the first line, like the biggest lore videos that open on the answer and then rewind: the most striking,
+  most puzzling moment, never the twist itself, so viewers have to stay to see how it gets there. 0 for none.
 - mood: 2 or 3 words for the backing music (for example "tense slow piano", "eerie ambient", "upbeat hype").
 - sound: one trending TikTok sound from the trends above that fits this story (name and artist), or a style of
   sound to search for if none fits. The user adds it in the TikTok app when posting.
 
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
-  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none",
+  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none", "teaser": 0,
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "...", "voice_type": "woman"}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "detail": "...", "pace": "normal", "speaker": "narrator", "punch": ["..."], "hit": "none"}}]}}"""
 
@@ -290,6 +293,7 @@ def parse_script(text: str) -> dict:
         "pinned_comment": cs.clean(data.get("pinned_comment"), 200),
         "sound": cs.clean(data.get("sound"), 200),
         "score": _score(data.get("score")),
+        "teaser": _teaser(data.get("teaser")),
         "bible": data.get("bible") if isinstance(data.get("bible"), dict) else {},
         "scenes": [{"text": cs.clean(s.get("text") or s.get("narration"), 120),
                     "narration": cs.clean(s.get("narration") or s.get("text"), 400),
@@ -303,6 +307,13 @@ def parse_script(text: str) -> dict:
                     else ""}
                    for s in scenes[:14]],
     }
+
+
+def _teaser(value) -> int:
+    try:
+        return max(0, min(14, int(value)))
+    except (TypeError, ValueError):
+        return 0
 
 
 def _score(value) -> int:
@@ -344,7 +355,7 @@ async def edit_script(client, settings: Settings, brief: str, draft: dict) -> di
         return draft  # the editor cut too much
     edited["character"] = edited["character"] or draft["character"]
     edited["bible"] = edited["bible"] or draft["bible"]
-    for key in ("cover", "mood", "sound", "pinned_comment", "ambience"):
+    for key in ("cover", "mood", "sound", "pinned_comment", "ambience", "teaser"):
         edited[key] = edited[key] or draft[key]
     return edited
 
@@ -1005,6 +1016,12 @@ MAX_HITS = 3
 # The loop: the last scene ends on a short, slow settle into the video's very first frame, so when TikTok replays
 # it the cut back to the start is seamless and the video feels like it never ended (rewatches push it out further).
 LOOP_SECONDS = 0.8
+
+# The flash-forward: lore videos open on a split-second flash of a later, puzzling moment, then the story starts, so
+# the viewer has seen where it's going and stays to find out how it gets there (the "open on the answer" trick).
+TEASER_SECONDS = 0.6
+TEASER_STYLES = ("lore",)
+TEASER_MOTION = ("1.25-0.15*on/{n}", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # a quick pull back out of the moment
 LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # ends at zoom 1, where scene 1 starts
 
 
@@ -1029,18 +1046,22 @@ EDGE_FADE = f",afade=t=in:d={EDGE_SECONDS},afade=t=out:st={{out:.3f}}:d={EDGE_SE
 
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
-                 grade: str = "", dip: bool = False, atmosphere: str = "") -> None:
+                 grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
     in place of the swish, and a boom or glitch shakes the camera as it lands
-    (with a white flash or a colour-split glitch, HIT_LOOKS). pace sets how fast the camera pushes."""
+    (with a white flash or a colour-split glitch, HIT_LOOKS). pace sets how fast the camera pushes. teaser (the first
+    scene only) flashes that later picture for TEASER_SECONDS before the scene's own shots, inside its length."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)] if len(
         stills) == 2 else [round(frames * 0.4), round(frames * 0.3), frames - round(frames * 0.4) - round(frames * 0.3)]
     stills = stills[:3]
     motions = [MOTIONS[(move + i) % len(MOTIONS)] for i in range(len(stills))]
+    if teaser is not None and split[0] > 1:
+        flash = min(round(TEASER_SECONDS * FPS), split[0] // 2)  # never more than half the first shot
+        stills, split, motions = [teaser, *stills], [flash, split[0] - flash, *split[1:]], [TEASER_MOTION, *motions]
     if loop_to is not None:
         tail = max(1, round(LOOP_SECONDS * FPS))
         stills, split, motions = [*stills, loop_to], [*split, tail], [*motions, LOOP_MOTION]
@@ -1279,6 +1300,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     tracks = await asyncio.gather(*(track_for(i, spoken, words, seconds)
                                     for i, ((_, spoken, words), seconds) in enumerate(zip(voices, lengths))))
     parts, hits, jobs = [], 0, []
+    tease = script.get("teaser", 0)
+    teaser = shots[tease - 1][0] if account.get("style") in TEASER_STYLES and 3 <= tease <= len(shots) else None
     for i, (mine, (voice, spoken, words), seconds, track) in enumerate(zip(shots, voices, lengths, tracks)):
         part = work / f"scene{i}.mp4"
         loop_to = shots[0][0] if i == len(shots) - 1 and i > 0 and account.get("loop", True) is not False else None
@@ -1287,7 +1310,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         hits += bool(hit)
         pace = scenes[i].get("pace", "normal")
         jobs.append((mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
-                     pace, grade, i > 0 and pace == "slow" and not hit, STYLE_ATMOSPHERE.get(account.get("style"), "")))
+                     pace, grade, i > 0 and pace == "slow" and not hit, STYLE_ATMOSPHERE.get(account.get("style"), ""),
+                     teaser if i == 0 else None))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")

@@ -1732,3 +1732,46 @@ def test_lore_scenes_have_living_film_texture_so_a_still_never_looks_frozen(tmp_
     assert any("frozen still" in p for p in cv.check_video(tmp_path / "plain.mp4"))  # a flat still sits dead
     assert not any("frozen still" in p for p in cv.check_video(tmp_path / "film.mp4"))  # the grain keeps it alive
     assert cv.STYLE_ATMOSPHERE["lore"] == "film"
+
+
+def test_lore_opens_on_a_flash_of_a_later_moment(s, tmp_path, monkeypatch):
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "teaser": "3"}))
+    assert script["teaser"] == 3 and cv.parse_script(SCRIPT)["teaser"] == 0
+    script["scenes"] = [dict(script["scenes"][i % 2]) for i in range(4)]
+    teasers = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        teasers.__setitem__(a[1], (a[9], [Path(x).name for x in stills])), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert Path(teasers[0][0]).name == "scene2.png" and all(teasers[i][0] is None for i in (1, 2, 3))
+    teasers.clear()  # another look gets no flash
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert teasers[0][0] is None
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image
+    flash, main = tmp_path / "flash.png", tmp_path / "main.png"
+    Image.new("RGB", (cv.W, cv.H), (220, 30, 30)).save(flash)
+    Image.new("RGB", (cv.W, cv.H), (30, 30, 220)).save(main)
+    cv.render_scene([main], None, 2.0, tmp_path / "t.mp4", teaser=flash)
+
+    def colour(n):
+        out = tmp_path / f"f{n}.png"
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / "t.mp4"), "-vf", f"select=eq(n\\,{n})", "-frames:v", "1",
+                        str(out)], check=True, capture_output=True)
+        return Image.open(out).convert("RGB").getpixel((cv.W // 2, cv.H // 2))
+    first, after = colour(1), colour(round(cv.TEASER_SECONDS * cv.FPS) + 3)
+    assert first[0] > first[2] and after[2] > after[0]  # the flash, then the scene's own shot
+    assert abs(cv.audio_seconds(tmp_path / "t.mp4") - 2.0) < 0.15  # inside the scene's length, not added on
