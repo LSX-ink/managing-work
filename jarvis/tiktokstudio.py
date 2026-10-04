@@ -130,6 +130,7 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
             return await _finish(settings, vid["id"], await make_clips(settings, data, account, folder, replaces))
         await ensure_trends(settings, account["name"])
         await ensure_lessons(settings, account["name"])
+        await ensure_viral(settings, account["name"])
         account = cs.account(cs.load(settings), account["name"])
         result = await cv.make(_ctx["client"], _ctx["http"], settings, account, folder, idea, recent,
                                best=best_titles(data, account["name"]), taste=cs.taste_summary(account),
@@ -166,6 +167,7 @@ async def draft_script(settings: Settings, account_name: str, idea: str = "") ->
         raise ValueError(f"{account['name']} posts stream clips, so there's no script to write.")
     await ensure_trends(settings, account["name"])
     await ensure_lessons(settings, account["name"])
+    await ensure_viral(settings, account["name"])
     data = cs.load(settings)
     account = cs.account(data, account["name"])
     recent = [v["title"] for v in data["videos"] if v.get("account") == account["name"] and v.get("status") != "making"]
@@ -281,6 +283,31 @@ async def ensure_trends(settings: Settings, account_name: str, force: bool = Fal
         account["trends"] = trends = {"day": date.today().isoformat(), "brief": brief}
         cs.save(settings, data)
     return trends
+
+
+async def ensure_viral(settings: Settings, account_name: str, force: bool = False) -> dict:
+    """Every few days, study the most-liked TikToks (50k+ likes) in the account's style and keep a playbook of the
+    techniques that hold viewers and make them think; every script borrows from it."""
+    data = cs.load(settings)
+    account = cs.account(data, account_name)
+    viral = account.get("viral") or {}
+    if not force and viral.get("day"):
+        try:
+            if (date.today() - date.fromisoformat(viral["day"])).days < cv.VIRAL_DAYS:
+                return viral
+        except ValueError:
+            pass  # a mangled day: study again
+    try:
+        brief = await cv.study_viral(_ctx["client"], settings, account)
+    except Exception as exc:  # no web search today: the last playbook still stands
+        print(f"[jarvis] Viral study for {account_name}: {exc}", flush=True)
+        return viral
+    if brief:
+        data = cs.load(settings)
+        account = cs.account(data, account_name)
+        account["viral"] = viral = {"day": date.today().isoformat(), "brief": brief}
+        cs.save(settings, data)
+    return viral
 
 
 LESSONS_AFTER = 4  # videos with views before there's anything to learn
@@ -619,7 +646,7 @@ async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -
 
 ACTIONS = ["studio", "make_video", "approve", "reject", "skip", "pause", "resume", "set_views", "accounts", "add_account", "update_account",
            "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup", "bible", "lessons",
-           "draft_script"]
+           "draft_script", "viral"]
 
 
 def tool_definitions() -> list[dict]:
@@ -655,7 +682,10 @@ def tool_definitions() -> list[dict]:
                        "characters (with their fixed looks), world and open story threads, which every new video "
                        "builds on so series stay consistent. lessons (account, refresh) shows what the account's view "
                        "counts say works (what its best videos share), learnt daily once 4 videos have views and "
-                       "followed by every new script.",
+                       "followed by every new script. viral (account, refresh) shows what Alfred learnt from studying the most-liked "
+                       "TikToks (50k+ likes) in the account's style: the hooks, pacing and endings that keep people "
+                       "watching and thinking (studied every few days and used in every script): 'what do the big "
+                       "lore videos do', 'study viral lore TikToks'.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -687,7 +717,7 @@ def tool_definitions() -> list[dict]:
                 "extend": {"type": "integer", "description": "Clip accounts: seconds of the stream added before and after each clip (0 = plain clips)."},
                 "off": {"type": "boolean", "description": "update_account: true switches the account off (no videos), false back on."},
                 "confirmed": {"type": "boolean"},
-                "refresh": {"type": "boolean", "description": "trends or lessons: check again now."},
+                "refresh": {"type": "boolean", "description": "trends, lessons or viral: check again now."},
             },
             "required": ["action"],
             "additionalProperties": False,
@@ -769,6 +799,17 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
                             screen.card("text", f"Trends: @{account['name']}", f"creator-trends-{account['name']}",
                                         text=text, buttons=[{"label": "Make one from this",
                                                              "say": f"Make a TikTok video now for {account['name']} using this week's trends."}]))
+    if action == "viral":
+        if _ctx["client"] is None:
+            raise ValueError("The studio isn't running; restart Alfred.")
+        account = cs.account(cs.load(settings), args.get("account"))
+        viral = await ensure_viral(settings, account["name"], force=bool(args.get("refresh")))
+        text = viral.get("brief") or "I couldn't study the big videos just now; I'll try again before the next one."
+        return screen.Shown(f"What the most-liked TikToks in {account['name']}'s style do. INSTRUCTION for Alfred: sum "
+                            "it up in two sentences and say which technique the next video will use.",
+                            screen.card("text", f"Viral playbook: @{account['name']}", f"creator-viral-{account['name']}",
+                                        text=text, buttons=[{"label": "Make one using this",
+                                                             "say": f"Make a TikTok video now for {account['name']} using the viral playbook."}]))
     if action == "lessons":
         if _ctx["client"] is None:
             raise ValueError("The studio isn't running; restart Alfred.")

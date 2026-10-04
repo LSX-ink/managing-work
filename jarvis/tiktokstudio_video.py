@@ -73,6 +73,8 @@ What this account's own view counts say works (follow these lessons): {lessons}
 Your last few videos on this account (make today's clearly different from them: another mood, another kind of
 opening line, another setting and point of view; a sequel keeps its story but still changes the mood or angle): {variety}
 What's trending on TikTok for this niche right now (ride these where they fit, never copy anyone): {trends}
+How the biggest videos in this style work (lore-style TikToks with 50,000+ likes, studied for what makes people
+stay, rewatch and argue in the comments; borrow the techniques, never the stories or the words): {viral}
 Story bible for this account (its recurring world: bring characters back where they fit, keep their looks
 exactly the same, pay off or deepen open threads, and add new ones freely):
 {bible}
@@ -98,6 +100,14 @@ Storytelling:
   rewatch feels new and people comment their theories.
 - Write for the ear: short sentences, varied rhythm, present tense for stories, no filler, no cliches
   ("little did she know", "and that's when everything changed").
+
+Make viewers think:
+- Plant one small, fair clue early that most people miss the first time and that the twist proves right, so a
+  rewatch rewards them.
+- Leave one question honestly open at the end (who, why, or what happens next) that has more than one good answer,
+  so people argue their theory in the comments instead of just reacting.
+- Once in the middle, turn it on the viewer for a second ("you've done this too"), so the story is about them.
+- The caption's question asks for their theory or what they'd do, never "did you like it".
 
 Rules:
 - 10 to 14 scenes. Each scene has one short on-screen line (under 12 words) and the narration Alfred reads
@@ -205,19 +215,41 @@ engagement (first-line styles, series, lengths, posting times), and 3 trending s
 short plain-text brief (under 1200 characters) Alfred can use to plan the next videos. No links, no preamble."""
 
 
-async def research_trends(client, settings: Settings, account: dict) -> str:
-    """A short brief of this week's TikTok trends in the account's niche, found with Claude's web search."""
+VIRAL_PROMPT = """Search the web for TikTok videos with 50,000 or more likes in the same style as this account: {theme}.
+Look at {look}
+Find 5 to 8 of the most-liked recent ones in this style (lore, mysteries, unsolved stories, eerie history, dark
+what-ifs) and study how they hold people: the exact kind of first line and first 2 seconds, how they re-hook in
+the middle, the pacing and length, the narration voice, the on-screen text, the pictures and editing, and how they
+end so viewers think, rewatch and comment their theories. Then reply with a plain-text playbook (under 1500
+characters) of 6 to 10 concrete techniques Alfred should copy the method of, never the story, each one line, with
+roughly how many likes the videos using it had. No links, no creator names, no preamble."""
+
+VIRAL_DAYS = 3  # how often the viral study is redone: the top videos in a niche change slowly, and searches cost
+
+
+async def study_viral(client, settings: Settings, account: dict) -> str:
+    """A playbook of what the most-liked TikToks in this account's style do, found with Claude's web search."""
+    return await _search_brief(client, settings, VIRAL_PROMPT.format(
+        theme=account["theme"], look=cs.STYLES.get(account.get("style"), "")), 2000)
+
+
+async def _search_brief(client, settings: Settings, prompt: str, limit: int) -> str:
     import brain
     new_web = settings.model.startswith(brain._NEW_WEB_TOOLS)
     tool = {"type": "web_search_20260209" if new_web else "web_search_20250305", "name": "web_search", "max_uses": 5}
-    messages = [{"role": "user", "content": TRENDS_PROMPT.format(theme=account["theme"])}]
+    messages = [{"role": "user", "content": prompt}]
     for _ in range(3):  # a long search can pause; carry on where it stopped
         reply = await client.messages.create(model=settings.model, max_tokens=3000, messages=messages, tools=[tool])
         if reply.stop_reason != "pause_turn":
             break
         messages = [*messages, {"role": "assistant", "content": reply.content}]
     text = "".join(getattr(b, "text", "") for b in reply.content if getattr(b, "type", "") == "text")
-    return cs.clean(text, 1500)
+    return cs.clean(text, limit)
+
+
+async def research_trends(client, settings: Settings, account: dict) -> str:
+    """A short brief of this week's TikTok trends in the account's niche, found with Claude's web search."""
+    return await _search_brief(client, settings, TRENDS_PROMPT.format(theme=account["theme"]), 1500)
 
 
 async def learn_lessons(client, settings: Settings, account: dict, videos: list[dict]) -> str:
@@ -290,6 +322,7 @@ async def write_script(client, settings: Settings, account: dict, idea: str = ""
         best="; ".join(best or []) or "no view counts yet",
         trends=(account.get("trends") or {}).get("brief") or "not checked yet; use what you know works",
         lessons=(account.get("lessons") or {}).get("brief") or "not enough views yet",
+        viral=(account.get("viral") or {}).get("brief") or "not studied yet; use what you know the biggest lore videos do",
         idea=f"Today's idea from the user: {idea}" if idea else "Pick today's idea yourself.")
     reply = await client.messages.create(model=settings.model, max_tokens=6000,
                                          messages=[{"role": "user", "content": prompt}])
