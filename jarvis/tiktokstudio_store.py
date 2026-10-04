@@ -18,6 +18,7 @@ FILE = "creator.json"
 MAX_ACCOUNTS = 12
 MAX_VIDEOS = 400  # oldest finished videos drop off the list (their files stay)
 STYLES = {
+    "lore": "full-screen, richly detailed cinematic colour scenes, three shots a scene, a real storyteller's voice",
     "noir": "black-and-white card: a moody photo on a centred card, small title and author line underneath",
     "explainer": "black explainer: a coloured keyword at the top, a simple drawn figure in the middle, dark background",
     "drama": "realistic full-screen scenes with a bold headline in a white box, like viral AI drama stories",
@@ -48,7 +49,7 @@ NEON = [{"name": "n3on", "platform": "kick", "allows_clipping": True},
 # Two accounts to start from, in the looks of the pages the user liked. Rename or change them freely.
 STARTERS = [
     {"name": "lowkey.lore", "theme": "dark, moody short stories with a twist: love, loss, late nights and secrets",
-     "style": "noir", "format": "story", "series": ["Midnight Tapes", "Unsent Letters", "Last Voicemail"]},
+     "style": "lore", "format": "story", "series": ["Midnight Tapes", "Unsent Letters", "Last Voicemail"]},
     {"name": "mindglitch.fyi", "theme": "psychology and human behaviour: what your habits, names and moods say "
                                         "about you, told kindly and simply",
      "style": "explainer", "format": "facts", "series": ["Letter Psychology", "Birth Months", "Signs You're"]},
@@ -137,6 +138,11 @@ def load(settings: Settings) -> dict:
         for a in data["accounts"]:
             a["off"] = a.get("name", "").lower() != LORE
         data["lore_only"] = True
+    if not data.get("lore_look"):  # the old small black-and-white card bored viewers; lore gets the full-screen look
+        for a in data["accounts"]:
+            if a.get("name", "").lower() == LORE and a.get("style") == "noir":
+                a["style"] = "lore"
+        data["lore_look"] = True
     return data
 
 
