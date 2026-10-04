@@ -1793,3 +1793,51 @@ def test_lore_opens_on_a_flash_of_a_later_moment(s, tmp_path, monkeypatch):
     first, after = colour(1), colour(round(cv.TEASER_SECONDS * cv.FPS) + 3)
     assert first[0] > first[2] and after[2] > after[0]  # the flash, then the scene's own shot
     assert abs(cv.audio_seconds(tmp_path / "t.mp4") - 2.0) < 0.15  # inside the scene's length, not added on
+
+
+def test_a_tension_riser_builds_into_a_lore_reveal(s, tmp_path, monkeypatch):
+    script = cv.parse_script(SCRIPT)
+    base = script["scenes"][0]
+    script["scenes"] = [dict(base), dict(base, hit="boom"), dict(base), dict(base, hit="glitch"), dict(base),
+                        dict(base, hit="sting"), dict(base), dict(base, hit="boom")]  # the 4th hit is over MAX_HITS
+    risers = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        risers.__setitem__(a[1], (a[4], a[11])), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert [risers[i][1] for i in range(8)] == [True, False, False, False, True, False, False, False]
+    assert [risers[i][0] for i in range(8)] == ["", "boom", "", "glitch", "", "sting", "", ""]
+    risers.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "sfx": False}, tmp_path, script=script))
+    assert not any(r for _, r in risers.values())  # sound effects off: no riser either
+    risers.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert not any(r for _, r in risers.values())
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (10, 10, 10)).save(still)
+    cv.render_scene([still], None, 4.0, tmp_path / "r.mp4", riser=True)
+    cv.render_scene([still], None, 4.0, tmp_path / "q.mp4", riser=True, whoosh=True)
+
+    def loudness(video, start, length):
+        got = subprocess.run([cv.ffmpeg(), "-ss", str(start), "-t", str(length), "-i", str(video), "-af", "volumedetect",
+                              "-f", "null", "-"], capture_output=True, text=True).stderr
+        return float(got.split("mean_volume:")[1].split("dB")[0])
+    for video in ("r.mp4", "q.mp4"):
+        assert abs(cv.audio_seconds(tmp_path / video) - 4.0) < 0.15
+        assert loudness(tmp_path / video, 3.3, 0.5) > loudness(tmp_path / video, 2.0, 0.5) + 6  # it swells to the cut
+    assert loudness(tmp_path / "r.mp4", 0.2, 1.0) < -60  # silent before the swell starts
