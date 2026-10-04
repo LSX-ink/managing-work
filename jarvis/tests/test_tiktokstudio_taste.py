@@ -25,8 +25,9 @@ def s(tmp_path):
 
 
 @pytest.fixture(autouse=True)
-def idle_studio():
+def idle_studio(monkeypatch):
     creator._ctx.update(client=None, http=None, announce=None, making=False, views_at=0.0, pending=[])
+    monkeypatch.setattr(cs, "SWITCH_OFF_OTHERS", False)  # these tests use every page; the switch-off has its own tests
     yield
 
 
