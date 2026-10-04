@@ -1386,6 +1386,24 @@ def test_the_voice_gets_a_studio_polish(tmp_path, monkeypatch):
     assert cv.VOICE_POLISH in seen[0] and cv.VOICE_POLISH not in seen[1]
 
 
+def test_lore_is_told_in_a_warm_storyteller_voice(s, tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    from PIL import Image
+    still, voice = tmp_path / "s.png", tmp_path / "v.m4a"
+    Image.new("RGB", (cv.W, cv.H), (10, 10, 10)).save(still)
+    cv.run(["-f", "lavfi", "-i", "sine=f=140:d=1", "-c:a", "aac", str(voice)])
+    cv.render_scene([still], voice, 1.0, tmp_path / "warm.mp4", tone="storyteller")  # ffmpeg takes the tone
+    assert cv.audio_seconds(tmp_path / "warm.mp4") >= 0.99
+    seen = []
+    monkeypatch.setattr(cv, "run", lambda args: seen.append(" ".join(args)))
+    cv.render_scene([still], voice, 1.0, tmp_path / "a.mp4", tone="storyteller")
+    cv.render_scene([still], voice, 1.0, tmp_path / "b.mp4")
+    cv.render_scene([still], None, 1.0, tmp_path / "c.mp4", tone="storyteller")  # silence gets nothing
+    tone = cv.VOICE_TONES["storyteller"]
+    assert tone in seen[0] and tone not in seen[1] and tone not in seen[2]
+    assert cv.STYLE_VOICE_TONE["lore"] == "storyteller" and cs.account(cs.load(s), "lowkey.lore")["style"] == "lore"
+
+
 def test_scene_sound_fades_at_the_cuts_so_joins_never_click(tmp_path):
     pytest.importorskip("imageio_ffmpeg")
     import array

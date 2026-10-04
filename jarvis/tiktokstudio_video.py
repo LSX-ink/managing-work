@@ -1033,6 +1033,11 @@ WORK_AUDIO, FINAL_AUDIO = "320k", "192k"
 # a de-esser so that lift doesn't make the "s" sounds hiss, and gentle compression so quiet words aren't lost
 VOICE_POLISH = ("highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=3,deesser=i=0.4,"
                 "acompressor=threshold=0.125:ratio=3:attack=5:release=80:makeup=1.5")
+# a style's own narrator sound on top of the polish. "storyteller" is the late-night lore voice: warmer and fuller in
+# the chest, the hiss rolled off, and a faint small-room echo, so it sounds like someone telling you a story in the
+# dark rather than a text-to-speech read
+VOICE_TONES = {"storyteller": "equalizer=f=140:t=q:w=1:g=3,equalizer=f=8000:t=h:w=3000:g=-2,aecho=0.85:0.5:35:0.1"}
+STYLE_VOICE_TONE = {"lore": "storyteller"}
 
 
 # x264 with its "auto-variance" adaptive quantisation set to favour dark, flat areas: smooth gradients (night skies,
@@ -1046,7 +1051,8 @@ EDGE_FADE = f",afade=t=in:d={EDGE_SECONDS},afade=t=out:st={{out:.3f}}:d={EDGE_SE
 
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
-                 grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None) -> None:
+                 grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
+                 tone: str = "") -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1085,7 +1091,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         video = "[vo]"
     look = f"{HIT_LOOKS[hit]}," if hit in HIT_LOOKS else (f"fade=t=in:st=0:d={DIP_SECONDS}," if dip else "")
     chains.append(f"{video}{look}format=yuv420p[v]")
-    polish = f"{VOICE_POLISH}," if audio else ""
+    polish = f"{VOICE_POLISH},{VOICE_TONES[tone] + ',' if tone in VOICE_TONES else ''}" if audio else ""
     edges = EDGE_FADE.format(out=max(0.0, frames / FPS - EDGE_SECONDS))
     if hit in HITS or whoosh:
         effect = f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH
@@ -1311,7 +1317,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         pace = scenes[i].get("pace", "normal")
         jobs.append((mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
                      pace, grade, i > 0 and pace == "slow" and not hit, STYLE_ATMOSPHERE.get(account.get("style"), ""),
-                     teaser if i == 0 else None))
+                     teaser if i == 0 else None, STYLE_VOICE_TONE.get(account.get("style"), "")))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
