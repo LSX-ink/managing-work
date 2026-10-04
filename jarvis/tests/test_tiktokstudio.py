@@ -1188,7 +1188,7 @@ def test_slow_scenes_rise_out_of_black(s, tmp_path, monkeypatch):
         return False
     monkeypatch.setattr(cv, "fetch_picture", no_picture)
     monkeypatch.setattr(cv, "narrate", no_voice)
-    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (dips.append((a[1], a[-1])), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (dips.append((a[1], a[7])), out.write_bytes(b"mp4")))
     monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     monkeypatch.setattr(cv, "check_video", lambda path: [])
