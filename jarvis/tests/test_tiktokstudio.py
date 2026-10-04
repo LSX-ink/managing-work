@@ -1019,6 +1019,19 @@ def test_the_notes_give_the_videos_length_and_size(tmp_path, monkeypatch):
     assert cv.video_facts(video) == "" and cv.video_facts(tmp_path / "gone.mp4") == ""
 
 
+def test_a_picture_frozen_still_is_flagged_but_a_moving_one_is_not(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    monkeypatch.setattr(cv, "MIN_LENGTH", 1.0)
+    moving, stuck = tmp_path / "moving.mp4", tmp_path / "stuck.mp4"
+    subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "testsrc2=s=320x240:r=30:d=5", "-f", "lavfi", "-i",
+                    "sine=f=440:d=5", "-shortest", "-pix_fmt", "yuv420p", str(moving)], check=True, capture_output=True)
+    subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "color=c=0x7850c8:s=320x240:r=30:d=5", "-f", "lavfi", "-i",
+                    "sine=f=440:d=5", "-shortest", "-pix_fmt", "yuv420p", str(stuck)], check=True, capture_output=True)
+    assert cv.check_video(moving) == []
+    assert any("frozen still" in p for p in cv.check_video(stuck))
+
+
 def test_the_finished_video_is_checked_before_it_is_offered(tmp_path, monkeypatch):
     pytest.importorskip("imageio_ffmpeg")
     from PIL import Image
