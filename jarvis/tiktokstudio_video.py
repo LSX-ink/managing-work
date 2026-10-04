@@ -753,13 +753,14 @@ def video_facts(path: Path) -> str:
 
 
 DEAD_AIR_DB, DEAD_AIR_SECONDS = -50, 2.0  # quieter than this for this long counts as dead air
+FREEZE_SECONDS = 3.0  # a picture that doesn't change at all for this long reads as a stalled video
 
 
 def check_video(path: Path) -> list[str]:
     """Watch the finished video once before it's offered for approval, the way an editor would: too short for
-    TikTok's 1-minute payouts, no sound at all, stretches of black screen, or dead air (viewers swipe away from
-    silence). Returns the problems found."""
-    out = subprocess.run([ffmpeg(), "-hide_banner", "-i", str(path), "-vf", "blackdetect=d=1.0:pix_th=0.06",
+    TikTok's 1-minute payouts, no sound at all, stretches of black screen, a picture frozen still, or dead air
+    (viewers swipe away from silence and from a picture that looks stuck). Returns the problems found."""
+    out = subprocess.run([ffmpeg(), "-hide_banner", "-i", str(path), "-vf", f"blackdetect=d=1.0:pix_th=0.06,freezedetect=n=0.001:d={FREEZE_SECONDS}",
                           "-af", f"volumedetect,silencedetect=n={DEAD_AIR_DB}dB:d={DEAD_AIR_SECONDS}",
                           "-f", "null", "-"], capture_output=True, text=True).stderr
     problems = []
@@ -777,6 +778,12 @@ def check_video(path: Path) -> list[str]:
     black = sum(float(d) for d in re.findall(r"black_duration:([\d.]+)", out))
     if black >= 1.0:
         problems.append(f"{black:.0f} seconds of black screen")
+    starts = [float(t) for t in re.findall(r"freeze_start: ([\d.]+)", out)]
+    still = sum(float(d) for d in re.findall(r"freeze_duration: ([\d.]+)", out))
+    if len(starts) > len(re.findall(r"freeze_end:", out)):  # still frozen when the video ends
+        still += max(0.0, seconds - starts[-1])
+    if still:
+        problems.append(f"{still:.0f} seconds where the picture is frozen still ({FREEZE_SECONDS:g}s or more)")
     return problems
 
 
