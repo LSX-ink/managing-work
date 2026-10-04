@@ -225,7 +225,7 @@ With email set up, "Alfred, anything important in my email today?" gets a summar
 
 ### Filing emails automatically
 
-With your email set up (see Deliveries below), say "Alfred, save every payslip email from VGC into my HS2 folder". He files matching emails from the last four months straight away and then every new one as it arrives: each attachment (the payslip PDF) and the email text, named by the date the email was sent, e.g. `VGC Payslip 2025-09-27.pdf`. A folder that doesn't exist is created (it shows as a star). Ask "what email rules do I have?" or "stop filing VGC emails". Your inbox is only read, never changed.
+With your email set up (see Deliveries below), say "Alfred, save every payslip email from VGC into my HS2 folder". He files every matching email already in your inbox straight away (up to ten years back) and then every new one within a few minutes of it arriving: each attachment (the payslip PDF) and the email text, named by the date the email was sent, e.g. `VGC Payslip 2025-09-27.pdf`. A folder that doesn't exist is created (it shows as a star). Ask "what email rules do I have?" or "stop filing VGC emails". Your inbox is only read, never changed.
 
 ### New abilities
 

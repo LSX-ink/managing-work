@@ -19,7 +19,7 @@ from pathlib import Path
 import memory
 from config import Settings
 
-CATCH_UP_DAYS = 120  # a new rule files matching emails from this far back
+CATCH_UP_DAYS = 3650  # a new rule files every matching email from this far back (about ten years)
 
 
 def rules_path(settings: Settings) -> Path:
@@ -132,7 +132,7 @@ def run_once(settings: Settings, days: int = 2) -> list[Path]:
         imap.select("INBOX", readonly=True)
         for rule in active:
             _, data = imap.uid("search", None, "SINCE", since, "FROM", f'"{rule["from"]}"')
-            uids = data[0].split()[-200:]
+            uids = data[0].split()[-600:]  # a weekly payslip for over ten years
             if not uids:
                 continue
             _, heads = imap.uid("fetch", b",".join(uids), "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT MESSAGE-ID)])")
@@ -185,7 +185,7 @@ def tool_definitions() -> list[dict]:
         {
             "name": "add_email_rule",
             "description": "Automatically save emails from a sender (optionally only ones whose subject has certain "
-                           "words) into a memory folder, from now on and going back a few months. Attachments and "
+                           "words) into a memory folder, from now on and every older one already in the inbox. Attachments and "
                            "the email text are saved, named with the given name plus the date the email was sent. "
                            "A folder that doesn't exist yet is created.",
             "input_schema": {
@@ -231,7 +231,7 @@ async def run_tool(name: str, args: dict, settings: Settings) -> str:
             saved = await asyncio.to_thread(run_once, settings, CATCH_UP_DAYS)
         except Exception as exc:
             return done + "But filing the older emails failed: " + explain(settings, exc)
-        return done + f"Filed {len(saved)} item{'s' if len(saved) != 1 else ''} from the last {CATCH_UP_DAYS} days now."
+        return done + f"Filed {len(saved)} item{'s' if len(saved) != 1 else ''} from the inbox so far."
     if name == "list_email_rules":
         found = rules(settings)
         if not found:
