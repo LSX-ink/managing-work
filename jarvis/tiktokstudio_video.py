@@ -919,6 +919,12 @@ SHARPEN = "unsharp=5:5:0.7:5:5:0.0"
 # A soft vignette that darkens the corners a touch, pulling the eye to the middle of the frame where the subject
 # and the captions are (applied under the captions, so they stay clean white).
 VIGNETTE = "vignette=angle=PI/7"
+# A living film texture for looks that should feel like a movie, not a slideshow: grain that moves every frame and
+# light that breathes very gently, so even a still picture never reads as frozen (under the captions, which stay clean).
+ATMOSPHERES = {
+    "film": "noise=alls=9:allf=t+u,eq=eval=frame:brightness='0.018*sin(2*PI*t*0.6)'",
+}
+STYLE_ATMOSPHERE = {"lore": "film"}
 
 
 # A colour grade for the whole video, picked from the script's mood, so a horror story looks cold and a memory
@@ -990,7 +996,7 @@ EDGE_FADE = f",afade=t=in:d={EDGE_SECONDS},afade=t=out:st={{out:.3f}}:d={EDGE_SE
 
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
-                 grade: str = "", dip: bool = False) -> None:
+                 grade: str = "", dip: bool = False, atmosphere: str = "") -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1015,7 +1021,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                       f"x='{x.format(n=max(1, n))}':y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},"
                       f"setpts=PTS-STARTPTS,setsar=1{shake}[s{i}]")
     k = len(stills)
-    graded = "".join(f",{f}" for f in (SHARPEN, GRADES.get(grade, ""), VIGNETTE) if f)
+    graded = "".join(f",{f}" for f in (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, "")) if f)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0{graded}[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
     video = "[vc]"
@@ -1248,7 +1254,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         hits += bool(hit)
         pace = scenes[i].get("pace", "normal")
         jobs.append((mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
-                     pace, grade, i > 0 and pace == "slow" and not hit))
+                     pace, grade, i > 0 and pace == "slow" and not hit, STYLE_ATMOSPHERE.get(account.get("style"), "")))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
