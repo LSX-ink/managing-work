@@ -247,3 +247,62 @@ def test_emails_endpoint(monkeypatch, inbox):
         assert client.get("/emails").json() == {"unread": None}
         monkeypatch.setattr(server, "settings", SETTINGS)
         assert client.get("/emails").json() == {"unread": 1}
+
+
+@pytest.mark.parametrize(
+    "exc, short",
+    [
+        (alerts.imaplib.IMAP4.error("b'[AUTHENTICATIONFAILED] Invalid credentials (Failure)'"), "WRONG PASSWORD"),
+        (alerts.imaplib.IMAP4.error("b'[ALERT] Application-specific password required'"), "NEEDS APP PASSWORD"),
+        (alerts.imaplib.IMAP4.error("b'[ALERT] Your account is not enabled for IMAP use.'"), "IMAP IS OFF"),
+        (alerts.imaplib.IMAP4.error("b'[ALERT] Please log in via your web browser'"), "SIGN IN ON THE WEB"),
+        (OSError("[Errno 11001] getaddrinfo failed"), "NO CONNECTION"),
+        (ValueError("odd reply"), "CHECK FAILED"),
+    ],
+)
+def test_email_problem_in_plain_words(exc, short):
+    label, fix = alerts.email_problem(SETTINGS, exc)
+    assert label == short
+    assert "abcd" not in fix  # never shows the password
+
+
+def test_email_problem_outlook_login():
+    outlook = Settings(email_address="me@hotmail.co.uk", email_app_password="x", email_imap_host="")
+    assert "Outlook" in alerts.email_problem(outlook, alerts.imaplib.IMAP4.error("LOGIN failed."))[1]
+
+
+def test_emails_endpoint_explains_failure_and_waits(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    from fastapi.testclient import TestClient
+
+    import server
+
+    logins = []
+
+    def refuse(settings):
+        logins.append(1)
+        raise alerts.imaplib.IMAP4.error("b'[AUTHENTICATIONFAILED] Invalid credentials (Failure)'")
+
+    monkeypatch.setattr(alerts, "unread_count", refuse)
+    monkeypatch.setattr(server, "_emails", {"at": 0.0, "unread": None, "problem": None})
+    with TestClient(server.app) as client:
+        monkeypatch.setattr(server, "settings", SETTINGS)
+        data = client.get("/emails").json()
+        assert data["error"] == "WRONG PASSWORD" and "apppasswords" in data["fix"]
+        client.get("/emails")
+    assert len(logins) == 1  # a refused login isn't retried on every refresh
+
+
+async def test_watch_email_says_a_problem_once(monkeypatch, capsys):
+    calls = []
+
+    def refuse(settings, days, after):
+        calls.append(1)
+        if len(calls) == 3:
+            raise asyncio.CancelledError
+        raise alerts.imaplib.IMAP4.error("b'[AUTHENTICATIONFAILED] Invalid credentials (Failure)'")
+
+    monkeypatch.setattr(alerts, "fetch_mail", refuse)
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(alerts.watch_email(SETTINGS, None), 2)
+    assert capsys.readouterr().out.count("Email check failed") == 1

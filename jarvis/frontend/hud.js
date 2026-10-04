@@ -216,11 +216,15 @@
     async function loadEmails() {
         try {
             const data = await (await fetch('/emails')).json();
-            if (data.unread === null || data.unread === undefined) {
-                $('hud-emails').textContent = data.error ? 'CHECK FAILED' : 'NOT SET UP';
+            const el = $('hud-emails');
+            if (data.error) {
+                el.textContent = data.error;   // e.g. WRONG PASSWORD; hover for how to fix it
+            } else if (data.unread === null || data.unread === undefined) {
+                el.textContent = 'NOT SET UP';
             } else {
-                $('hud-emails').textContent = `${data.unread} UNREAD`;
+                el.textContent = `${data.unread} UNREAD`;
             }
+            el.title = data.fix || '';
         } catch (e) { /* keep the last count */ }
     }
 

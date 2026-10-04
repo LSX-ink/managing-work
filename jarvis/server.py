@@ -206,7 +206,7 @@ async def client_config():
 
 
 _weather: dict = {"at": 0.0, "text": ""}
-_emails: dict = {"at": 0.0, "unread": None}
+_emails: dict = {"at": 0.0, "unread": None, "problem": None}
 
 
 @app.get("/weather")
@@ -230,12 +230,17 @@ async def emails():
     if not settings.email_enabled:
         return {"unread": None}
     now = asyncio.get_running_loop().time()
-    if _emails["unread"] is None or now - _emails["at"] > EMAIL_TTL:
+    # Failures are cached too: retrying a wrong password on every refresh can get the account locked.
+    if _emails["at"] == 0.0 or now - _emails["at"] > EMAIL_TTL:
+        _emails["at"] = now
         try:
             _emails["unread"] = await asyncio.to_thread(alerts.unread_count, settings)
-            _emails["at"] = now
+            _emails["problem"] = None
         except Exception as exc:
-            return {"unread": _emails["unread"], "error": str(exc)}
+            _emails["problem"] = alerts.email_problem(settings, exc)
+    if _emails.get("problem"):
+        short, fix = _emails["problem"]
+        return {"unread": _emails["unread"], "error": short, "fix": fix}
     return {"unread": _emails["unread"]}
 
 
