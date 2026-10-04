@@ -1032,6 +1032,19 @@ def test_a_picture_frozen_still_is_flagged_but_a_moving_one_is_not(tmp_path, mon
     assert any("frozen still" in p for p in cv.check_video(stuck))
 
 
+def test_a_murky_dark_picture_is_flagged_but_a_bright_one_is_not(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    monkeypatch.setattr(cv, "MIN_LENGTH", 1.0)
+    monkeypatch.setattr(cv, "FREEZE_SECONDS", 60.0)
+    for name, colour in (("murky", "0x1c1c1c"), ("bright", "0x7850c8")):
+        subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", f"color=c={colour}:s=320x240:r=30:d=2", "-f", "lavfi",
+                        "-i", "sine=f=440:d=2", "-shortest", "-pix_fmt", "yuv420p", str(tmp_path / f"{name}.mp4")],
+                       check=True, capture_output=True)
+    assert any("very dark" in p for p in cv.check_video(tmp_path / "murky.mp4"))
+    assert cv.check_video(tmp_path / "bright.mp4") == []
+
+
 def test_the_finished_video_is_checked_before_it_is_offered(tmp_path, monkeypatch):
     pytest.importorskip("imageio_ffmpeg")
     from PIL import Image

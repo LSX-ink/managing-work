@@ -754,13 +754,15 @@ def video_facts(path: Path) -> str:
 
 DEAD_AIR_DB, DEAD_AIR_SECONDS = -50, 2.0  # quieter than this for this long counts as dead air
 FREEZE_SECONDS = 3.0  # a picture that doesn't change at all for this long reads as a stalled video
+DIM_LUMA = 45  # average brightness (16 = black, 235 = white) below this looks murky on a phone screen
 
 
 def check_video(path: Path) -> list[str]:
     """Watch the finished video once before it's offered for approval, the way an editor would: too short for
-    TikTok's 1-minute payouts, no sound at all, stretches of black screen, a picture frozen still, or dead air
-    (viewers swipe away from silence and from a picture that looks stuck). Returns the problems found."""
-    out = subprocess.run([ffmpeg(), "-hide_banner", "-i", str(path), "-vf", f"blackdetect=d=1.0:pix_th=0.06,freezedetect=n=0.001:d={FREEZE_SECONDS}",
+    TikTok's 1-minute payouts, no sound at all, stretches of black screen, a picture frozen still, a picture too dark
+    overall, or dead air (viewers swipe away from silence, from a picture that looks stuck and from murk). Returns the problems found."""
+    out = subprocess.run([ffmpeg(), "-hide_banner", "-i", str(path), "-vf", f"blackdetect=d=1.0:pix_th=0.06,freezedetect=n=0.001:d={FREEZE_SECONDS},"
+                          "signalstats,metadata=mode=print:key=lavfi.signalstats.YAVG",
                           "-af", f"volumedetect,silencedetect=n={DEAD_AIR_DB}dB:d={DEAD_AIR_SECONDS}",
                           "-f", "null", "-"], capture_output=True, text=True).stderr
     problems = []
@@ -782,6 +784,9 @@ def check_video(path: Path) -> list[str]:
     still = sum(float(d) for d in re.findall(r"freeze_duration: ([\d.]+)", out))
     if len(starts) > len(re.findall(r"freeze_end:", out)):  # still frozen when the video ends
         still += max(0.0, seconds - starts[-1])
+    luma = [float(v) for v in re.findall(r"signalstats\.YAVG=([\d.]+)", out)]
+    if luma and sum(luma) / len(luma) < DIM_LUMA and black < seconds / 2:
+        problems.append("the picture is very dark overall; brighten it so it doesn't look murky on a phone")
     if still:
         problems.append(f"{still:.0f} seconds where the picture is frozen still ({FREEZE_SECONDS:g}s or more)")
     return problems
