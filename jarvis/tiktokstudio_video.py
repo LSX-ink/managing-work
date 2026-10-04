@@ -945,6 +945,10 @@ VOICE_POLISH = ("highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=3,deesser=i=0.4,"
 VIDEO_CODEC = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-x264-params", "aq-mode=3"]
 
 
+EDGE_SECONDS = 0.015
+EDGE_FADE = f",afade=t=in:d={EDGE_SECONDS},afade=t=out:st={{out:.3f}}:d={EDGE_SECONDS}"
+
+
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False) -> None:
@@ -981,13 +985,14 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     look = f"{HIT_LOOKS[hit]}," if hit in HIT_LOOKS else (f"fade=t=in:st=0:d={DIP_SECONDS}," if dip else "")
     chains.append(f"{video}{look}format=yuv420p[v]")
     polish = f"{VOICE_POLISH}," if audio else ""
+    edges = EDGE_FADE.format(out=max(0.0, frames / FPS - EDGE_SECONDS))
     if hit in HITS or whoosh:
         effect = f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH
         inputs += ["-f", "lavfi", "-i", effect]
         chains.append(f"[{k}:a]{polish}aresample=44100,aformat=channel_layouts=stereo[vo1];"
-                      f"[vo1][{k + 1 + bool(captions)}:a]amix=inputs=2:duration=first:normalize=0,apad[a]")
+                      f"[vo1][{k + 1 + bool(captions)}:a]amix=inputs=2:duration=first:normalize=0,apad{edges}[a]")
     else:
-        chains.append(f"[{k}:a]{polish}apad,aresample=44100[a]")
+        chains.append(f"[{k}:a]{polish}apad,aresample=44100{edges}[a]")
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
          "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-r", str(FPS), *VIDEO_CODEC,
          "-c:a", "aac", "-b:a", WORK_AUDIO, "-ar", "44100", "-ac", "2", str(out)])
