@@ -136,7 +136,11 @@ let listening = false;
 let stopper = null;    // listens for "stop" while Jarvis speaks
 let lastSpokeAt = 0;   // when Jarvis last finished speaking (follow-ups need no name)
 const FOLLOW_UP_MS = 20000;
-const STOP_WORDS = /^(?:(?:ok(?:ay)?|alfred|jarvis) )?(?:stop|quiet|be quiet|shush|hush|enough|that's enough|shut up)(?: (?:alfred|jarvis))?[.!]?$/i;
+const STOP_WORDS = /^(?:(?:ok(?:ay)?|alfred|jarvis|hey alfred|hey jarvis),? )?(?:stop|stop talking|quiet|be quiet|shush|hush|enough|that's enough|shut up|hold on|wait|wait a (?:sec|second|moment)|pause|cancel|never ?mind|ok(?:ay)? thanks|thanks that's (?:it|all)|got it)(?:,? (?:alfred|jarvis))?[.!]?$/i;
+// Listening carries on through short pauses, so a long request isn't cut off mid-thought; it ends after this
+// much silence. Phones keep the browser's own short sessions (their long sessions repeat words).
+const LONG_LISTEN = !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const END_SILENCE_MS = 1100;
 let wakeOnly = null;   // only answer when called by name; null until /config arrives
 try { const w = localStorage.getItem('jarvis-wake'); if (w !== null) wakeOnly = w === 'on'; } catch (e) { /* private window */ }
 
@@ -163,6 +167,15 @@ function addLine(who, text) {
     transcript.appendChild(div);
     transcript.scrollTop = transcript.scrollHeight;
     document.dispatchEvent(new CustomEvent('jarvis:line', { detail: { who, text } }));  // access.js: captions, screen reader
+}
+
+// The next sentence of a streamed answer goes on the same line as the first.
+function joinLine(text) {
+    const last = transcript.lastElementChild;
+    if (!last || last.className !== 'jarvis') { addLine('jarvis', text); return; }
+    last.textContent += ` ${text}`;
+    transcript.scrollTop = transcript.scrollHeight;
+    document.dispatchEvent(new CustomEvent('jarvis:line', { detail: { who: 'jarvis', text, joined: true } }));
 }
 
 // Where the chat sits: a corner ("bottom-left" etc.) or the centre column. Remembered in this browser.
@@ -249,7 +262,8 @@ function connect(onOpen) {
         const msg = JSON.parse(event.data);
         busySince = Date.now();   // still working on it
         if (msg.type === 'say') {
-            if (!msg.quiet) addLine('jarvis', msg.text);
+            if (msg.join) joinLine(msg.text);
+            else if (!msg.quiet) addLine('jarvis', msg.text);
             queue.push(msg);
             playNext();
         } else if (msg.type === 'alerts') {
@@ -465,29 +479,48 @@ let heardSomething = false; // this listening session heard speech
 let quickEnds = 0;          // sessions in a row that ended at once with nothing heard: back off, don't spin
 let netFails = 0;           // "network" errors in a row: the browser's listening service is unreachable
 let startedAt = 0;
+let heardText = '';         // the finished words of what you're saying now
+let discardHeard = false;   // listening was cut off on purpose (Alfred started talking, you typed)
+let endTimer = null;
+
+// One whole thing you said: send it to Alfred, unless he waits for his name and it wasn't used.
+function heard(text) {
+    if (wakeOnly && !calledByName(text) && Date.now() - lastSpokeAt > FOLLOW_UP_MS) {
+        // Not for Jarvis. Show what was heard so the mic clearly works.
+        statusEl.textContent = t('heardNoName').replace('{text}', text.length > 40 ? `${text.slice(0, 40)}…` : text);
+        return;
+    }
+    addLine('user', text);
+    send({ text });
+}
 
 if (Recognition) {
     recognition = new Recognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = LONG_LISTEN;
+    recognition.interimResults = true;   // show the words as you say them
     recognition.onresult = (event) => {
-        const result = event.results[event.results.length - 1];
-        const text = result[0].transcript.trim();
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const r = event.results[i];
+            if (r.isFinal) heardText = `${heardText} ${r[0].transcript}`.trim();
+            else interim += r[0].transcript;
+        }
         heardSomething = true;
         netFails = 0;
-        if (result.isFinal && text && wakeOnly && !calledByName(text) && Date.now() - lastSpokeAt > FOLLOW_UP_MS) {
-            // Not for Jarvis: he waits to be called by name. Show what was heard so the mic clearly works.
-            statusEl.textContent = t('heardNoName').replace('{text}', text.length > 40 ? `${text.slice(0, 40)}…` : text);
-            return;
-        }
-        if (result.isFinal && text) {
-            addLine('user', text);
-            send({ text });
-        }
+        const live = `${heardText} ${interim}`.trim();
+        if (live) statusEl.textContent = `“${live.length > 70 ? `…${live.slice(-70)}` : live}”`;
+        clearTimeout(endTimer);
+        // Still mid-word: give a little longer before deciding you've finished.
+        if (LONG_LISTEN) endTimer = setTimeout(() => { try { recognition.stop(); } catch (e) { /* ended */ } }, interim ? END_SILENCE_MS * 1.6 : END_SILENCE_MS);
     };
     recognition.onend = () => {
         recActive = false;
         listening = false;
+        clearTimeout(endTimer);
+        const text = discardHeard ? '' : heardText.trim();
+        heardText = '';
+        discardHeard = false;
+        if (text) heard(text);
         if (speaking) { startStopper(); return; }
         // Ended almost at once without hearing anything: wait longer each time instead of flickering.
         quickEnds = !heardSomething && Date.now() - startedAt < 1500 ? quickEnds + 1 : 0;
@@ -570,7 +603,7 @@ function skipSpeech() {
 }
 
 function stopListening() {
-    if (listening && recognition) recognition.abort();
+    if (listening && recognition) { discardHeard = true; recognition.abort(); }
     listening = false;
 }
 

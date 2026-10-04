@@ -522,8 +522,9 @@ async def websocket(ws: WebSocket):
     pending: dict[int, asyncio.Future] = {}
     next_id = itertools.count(1)
 
-    async def speak(text: str, quiet: bool = False) -> None:
-        """Say text aloud; quiet leaves it out of the transcript (notifications show it instead).
+    async def speak(text: str, quiet: bool = False, join: bool = False) -> None:
+        """Say text aloud; quiet leaves it out of the transcript (notifications show it instead), and join
+        adds it to Alfred's last transcript line (the next sentence of a streamed answer).
 
         Each part is sent as soon as its voice is ready, so Alfred starts talking after the first sentence
         instead of waiting for the whole answer to be voiced. The first message carries the full text for
@@ -539,6 +540,7 @@ async def websocket(ws: WebSocket):
                 "audio": base64.b64encode(audio).decode() if audio else "",
                 "quiet": quiet or not first,
                 "part": not first,
+                "join": join and first,
             })
             first = False
 
