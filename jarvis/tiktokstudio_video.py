@@ -777,6 +777,9 @@ def check_video(path: Path) -> list[str]:
     else:
         gaps = [(float(a), float(d)) for a, d in re.findall(
             r"silence_start: (-?[\d.]+).*?silence_duration: ([\d.]+)", out, re.S)]
+        opened = [float(a) for a in re.findall(r"silence_start: (-?[\d.]+)", out)]
+        if len(opened) > len(gaps):  # still silent when the video ends, so ffmpeg never closes the gap
+            gaps.append((opened[-1], max(0.0, seconds - opened[-1])))
         if gaps and gaps[0][0] <= 0.05:
             problems.append(f"the first {gaps[0][1]:.1f} seconds are silent; start the voice straight away to hook viewers")
         quiet = [d for _, d in gaps if d >= DEAD_AIR_SECONDS]

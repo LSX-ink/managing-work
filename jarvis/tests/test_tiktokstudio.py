@@ -1059,6 +1059,16 @@ def test_a_silent_opening_is_flagged_so_the_hook_lands_straight_away(tmp_path, m
     assert cv.check_video(tmp_path / "prompt.mp4") == []
 
 
+def test_silence_running_to_the_very_end_still_counts_as_dead_air(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    monkeypatch.setattr(cv, "MIN_LENGTH", 1.0)
+    subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "testsrc2=s=320x240:r=30:d=6", "-f", "lavfi", "-i",
+                    "sine=f=440:d=2,apad=whole_dur=6", "-t", "6", "-pix_fmt", "yuv420p", str(tmp_path / "trail.mp4")],
+                   check=True, capture_output=True)
+    assert any("4 seconds of dead air" in p for p in cv.check_video(tmp_path / "trail.mp4"))
+
+
 def test_the_finished_video_is_checked_before_it_is_offered(tmp_path, monkeypatch):
     pytest.importorskip("imageio_ffmpeg")
     from PIL import Image
