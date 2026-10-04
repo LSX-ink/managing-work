@@ -1012,6 +1012,14 @@ HITS = {
 }
 MAX_HITS = 3
 
+# The riser: big lore videos build tension into a reveal with a low swell that grows under the last seconds of the
+# scene before it, so the boom lands harder. Only before a boom or sting, and only for the styles that use it.
+RISER_SECONDS = 2.5
+RISER_HITS = ("boom", "sting")
+RISER_STYLES = ("lore",)
+RISER = ("anoisesrc=d={d}:c=pink:a=0.5:r=44100,highpass=f=300,lowpass=f=3000,"
+         "afade=t=in:st=0:d={d}:curve=exp,volume=0.35,aformat=channel_layouts=stereo,adelay={delay}|{delay}")
+
 
 # The loop: the last scene ends on a short, slow settle into the video's very first frame, so when TikTok replays
 # it the cut back to the start is seamless and the video feels like it never ended (rewatches push it out further).
@@ -1052,7 +1060,7 @@ EDGE_FADE = f",afade=t=in:d={EDGE_SECONDS},afade=t=out:st={{out:.3f}}:d={EDGE_SE
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
-                 tone: str = "") -> None:
+                 tone: str = "", riser: bool = False) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1093,11 +1101,19 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     chains.append(f"{video}{look}format=yuv420p[v]")
     polish = f"{VOICE_POLISH},{VOICE_TONES[tone] + ',' if tone in VOICE_TONES else ''}" if audio else ""
     edges = EDGE_FADE.format(out=max(0.0, frames / FPS - EDGE_SECONDS))
-    if hit in HITS or whoosh:
-        effect = f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH
-        inputs += ["-f", "lavfi", "-i", effect]
-        chains.append(f"[{k}:a]{polish}aresample=44100,aformat=channel_layouts=stereo[vo1];"
-                      f"[vo1][{k + 1 + bool(captions)}:a]amix=inputs=2:duration=first:normalize=0,apad{edges}[a]")
+    effects = [f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH] if (
+        hit in HITS or whoosh) else []
+    if riser:
+        swell = min(RISER_SECONDS, frames / FPS)
+        effects.append(RISER.format(d=swell, delay=round((frames / FPS - swell) * 1000)))
+    if effects:
+        first = k + 1 + bool(captions)
+        for effect in effects:
+            inputs += ["-f", "lavfi", "-i", effect]
+        # the voice is padded to the scene's full length first, so an effect near the end (the riser) isn't cut off
+        chains.append(f"[{k}:a]{polish}aresample=44100,aformat=channel_layouts=stereo,apad,atrim=0:{frames / FPS:.3f}[vo1];"
+                      f"[vo1]{''.join(f'[{first + j}:a]' for j in range(len(effects)))}amix=inputs={1 + len(effects)}:"
+                      f"duration=first:normalize=0,apad{edges}[a]")
     else:
         chains.append(f"[{k}:a]{polish}apad,aresample=44100{edges}[a]")
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
@@ -1305,19 +1321,22 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     # every scene's caption pictures are drawn side by side rather than one scene after another
     tracks = await asyncio.gather(*(track_for(i, spoken, words, seconds)
                                     for i, ((_, spoken, words), seconds) in enumerate(zip(voices, lengths))))
-    parts, hits, jobs = [], 0, []
+    parts, jobs = [], []
+    sfx = account.get("sfx", True) is not False
+    played = []  # each scene's sound effect, at most MAX_HITS a video, worked out first so a riser can lead into one
+    for scene in scenes:
+        played.append(scene.get("hit", "") if sfx and sum(map(bool, played)) < MAX_HITS else "")
     tease = script.get("teaser", 0)
     teaser = shots[tease - 1][0] if account.get("style") in TEASER_STYLES and 3 <= tease <= len(shots) else None
     for i, (mine, (voice, spoken, words), seconds, track) in enumerate(zip(shots, voices, lengths, tracks)):
         part = work / f"scene{i}.mp4"
         loop_to = shots[0][0] if i == len(shots) - 1 and i > 0 and account.get("loop", True) is not False else None
-        sfx = account.get("sfx", True) is not False
-        hit = scenes[i].get("hit", "") if sfx and hits < MAX_HITS else ""
-        hits += bool(hit)
+        hit = played[i]
         pace = scenes[i].get("pace", "normal")
         jobs.append((mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
                      pace, grade, i > 0 and pace == "slow" and not hit, STYLE_ATMOSPHERE.get(account.get("style"), ""),
-                     teaser if i == 0 else None, STYLE_VOICE_TONE.get(account.get("style"), "")))
+                     teaser if i == 0 else None, STYLE_VOICE_TONE.get(account.get("style"), ""),
+                     account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
