@@ -24,6 +24,8 @@ const STRINGS = {
         micBlocked: 'Microphone blocked. You can still type below.',
         heardNoName: 'Heard "{text}". Say "{name}" first to talk to me.',
         yes: 'Yes? I\'m listening…',
+        waitName: 'I\'ll only answer when you say "{name}".',
+        listenAll: 'Listening to everything again.',
         volume: 'Volume',
         speed: 'Speaking speed',
         noRecognition: 'Voice input needs Chrome or Edge. Type below instead.',
@@ -55,6 +57,8 @@ const STRINGS = {
         micBlocked: 'Mikrofoon geblokkeer. Jy kan steeds hieronder tik.',
         heardNoName: 'Gehoor "{text}". Sê eers "{name}" om met my te praat.',
         yes: 'Ja? Ek luister…',
+        waitName: 'Ek antwoord net as jy "{name}" sê.',
+        listenAll: 'Ek luister weer na alles.',
         volume: 'Volume',
         speed: 'Praatspoed',
         noRecognition: 'Steminvoer werk net in Chrome of Edge. Tik eerder hieronder.',
@@ -616,12 +620,29 @@ const QUICK = [
     [/^(?:quieter|softer|volume down|turn (?:it |yourself )?down|a bit quieter|quieter please|not so loud)$/, 'volume', -0.2],
     [/^(?:talk|speak) (?:a bit )?faster$|^speed up$|^faster$/, 'rate', 0.1],
     [/^(?:talk|speak) (?:a bit )?slower$|^slow down$|^slower$/, 'rate', -0.1],
+    [/^(?:go to sleep|wait for (?:your|my) name|only (?:listen|answer) (?:for|to|when i say) your name|only when i say your name|name only)$/, 'wake', 1],
+    [/^(?:wake up|listen to everything|answer everything|always listen|you don't need your name|no name needed)$/, 'wake', -1],
+    [/^(?:stop listening|mic off|microphone off|mute (?:the )?mic(?:rophone)?|turn (?:the |your )?mic(?:rophone)? off)$/, 'mic', -1],
 ];
 function quickCommand(text) {
     const said = text.toLowerCase().replace(/^(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )/, '').replace(/[.!?,]+$/g, '').trim();
     const hit = QUICK.find(([re]) => re.test(said));
     if (!hit) return false;
     const [, what, step] = hit;
+    if (what === 'mic') {
+        stopListening();
+        paused = true;
+        setState('idle', t('paused'));   // a tap on the orb turns it back on
+        readyTone();
+        return true;
+    }
+    if (what === 'wake') {
+        setWakeOnly(step > 0);
+        statusEl.textContent = t(step > 0 ? 'waitName' : 'listenAll');
+        lastSpokeAt = step > 0 ? 0 : Date.now();   // from now on, the name is needed straight away
+        readyTone();
+        return true;
+    }
     if (what === 'volume') {
         const v = Math.min(1, Math.max(0.2, +(voiceVolume() + step).toFixed(2)));
         try { localStorage.setItem('alfred-volume', String(v)); } catch { /* private window */ }
