@@ -1391,7 +1391,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                              if s.get("detail") and account.get("style") in THREE_SHOT_STYLES else _none()
                              for s in scenes)))
         missing = sum(p is None for p in pictures)
-        pictures, closeups = fill_gaps(list(pictures), list(closeups))
+        pictures, closeups, details = fill_gaps(list(pictures), list(closeups), list(details))
         captions = captions_on(account)
         accent = ac.hex_colour(account.get("accent"), "#e8c547")
         shots = []
@@ -1516,21 +1516,26 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             "music": track.name if track else ""}
 
 
-def fill_gaps(pictures: list, closeups: list) -> tuple[list, list]:
-    """Scenes whose picture never came: use the scene's own close-up, else a mirrored, tighter crop of the nearest
-    scene's picture, so a video never cuts to a blank gradient while other pictures exist."""
+def fill_gaps(pictures: list, closeups: list, details: list | None = None) -> tuple:
+    """Scenes whose picture never came: use the scene's own close-up or detail shot (it shows that very moment),
+    else a mirrored, tighter crop of the nearest scene's picture, so a video never cuts to a blank gradient while
+    other pictures exist. Returns (pictures, closeups), plus details when they were given."""
+    spare = details if details is not None else [None] * len(pictures)
     for i, picture in enumerate(pictures):
         if picture is not None:
             continue
         if closeups[i] is not None:
             pictures[i], closeups[i] = closeups[i], None
             continue
+        if spare[i] is not None:
+            pictures[i], spare[i] = spare[i], None
+            continue
         near = sorted((abs(j - i), j) for j, p in enumerate(pictures) if p is not None and j != i)
         if near:
             src = pictures[near[0][1]]
             w, h = src.size
             pictures[i] = ImageOps.mirror(src.crop((w // 8, h // 8, w - w // 8, h - h // 8)).resize((w, h)))
-    return pictures, closeups
+    return (pictures, closeups) if details is None else (pictures, closeups, spare)
 
 
 async def _none():
