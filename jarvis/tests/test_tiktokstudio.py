@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 import asyncio
 import json
 import time
@@ -473,9 +474,17 @@ def allow(s, account, *names, platform="twitch", ok=True):
     cs.save(s, data)
 
 
+def compilation(s, account):
+    """The classic clip account: joined viewer clips, no moments cut from streams."""
+    data = cs.load(s)
+    cs.account(data, account).update(continue_at=0, stream_min_views=0)
+    cs.save(s, data)
+
+
 def test_clipzz_makes_a_credited_portrait_video(s, monkeypatch):
     s = replace(s, twitch_client_id="id", twitch_client_secret="sec")
     allow(s, "Clipzz", "kai")
+    compilation(s, "Clipzz")
 
     async def fake_top(http, settings, era, streamers, category):
         return [clip(1, "kai", 40, 900), clip(2, "kai", 30, 800)]
@@ -1956,3 +1965,85 @@ async def test_a_script_that_never_parses_is_saved_and_explained_plainly(tmp_pat
         await cv._script_reply(client, replace(Settings(), memory_dir=str(tmp_path)), "write it")
     saved = list((tmp_path / "TikTok" / "broken-scripts").glob("*.txt"))
     assert saved and "no script today" in saved[0].read_text(encoding="utf-8")
+
+
+def test_clipzz_cuts_one_moment_and_the_next_minute_follows_at_200k_unlabelled(s, monkeypatch):
+    s = replace(s, twitch_client_id="id", twitch_client_secret="sec")
+    allow(s, "Clipzz", "kai")
+    data = cs.load(s)
+    a = cs.account(data, "Clipzz")
+    assert (a["min_views"], a["stream_min_views"], a["continue_at"]) == (0, 200_000, 200_000)
+    a["off"] = False
+    cs.save(s, data)
+
+    stream = "https://www.twitch.tv/videos/9"
+    moment = {**clip(1, "kai", 25, 300_000), "vod": (stream, 600.0, 3600.0), "stream_views": 900_000}
+    small = {**clip(3, "kai", 25, 900_000), "vod": ("https://www.twitch.tv/videos/8", 50.0, 3600.0), "stream_views": 1000}
+
+    async def fake_top(http, settings, era, streamers, category):
+        return [small, clip(2, "kai", 20, 50_000), moment]  # small's stream had too few views; clip 2 has no stream
+    monkeypatch.setattr(twitch, "top_clips", fake_top)
+    cuts = []
+
+    def fake_download(url, target, section=None):
+        cuts.append((url, section))
+        return (target.with_suffix(".mp4").write_bytes(b"c"), target.with_suffix(".mp4"))[1]
+    monkeypatch.setattr(clips, "download", fake_download)
+    monkeypatch.setattr(clips, "portrait", lambda source, layer, out: out.write_bytes(b"p"))
+    monkeypatch.setattr(clips, "level", lambda part: None)
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    monkeypatch.setattr(cv, "video_facts", lambda path: "1:02")
+
+    async def hook_reply(**kwargs):
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text='"Part 2: he really said it (2)"')])
+    creator._ctx.update(client=SimpleNamespace(messages=SimpleNamespace(create=hook_reply)))
+
+    asyncio.run(creator.make_in_background(s, [("Clipzz", "", None)]))
+    first = cs.load(s)["videos"][-1]
+    assert first["status"] == "ready" and cuts == [(stream, (597.0, 659.0))]  # 3s lead-in, a minute of the stream
+    assert first["moment"]["end"] == 659.0 and "stream watched 900,000 times" in first["notes"]
+
+    data = cs.load(s)
+    data["videos"][-1].update(status="posted", views=150_000)
+    cs.save(s, data)
+    assert creator.continuations_due(cs.load(s)) == []  # under 200k: nothing yet
+    data["videos"][-1]["views"] = 250_000
+    cs.save(s, data)
+    due = creator.continuations_due(cs.load(s))
+    assert [v["id"] for v in due] == [first["id"]]
+
+    asyncio.run(creator.make_in_background(s, [("Clipzz", "", due[0])]))
+    nxt = cs.load(s)["videos"][-1]
+    assert cuts[-1] == (stream, (659.0, 721.0))  # the very next minute of the stream
+    assert nxt["status"] == "ready" and nxt["continues"] == first["id"] and nxt.get("part", 1) == 1
+    for text in (nxt["title"], nxt["caption"], nxt["hook"]):
+        assert "part" not in text.lower() and "(2)" not in text
+    assert creator.continuations_due(cs.load(s)) == []  # one follow-on per video; it must earn 200k itself
+
+
+def test_a_moment_never_runs_past_the_end_of_its_stream():
+    assert clips.moment_window(100.0, 3600.0) == (100.0, 162.0)
+    assert clips.moment_window(3560.0, 3600.0) is None  # under a minute left
+    assert clips.standalone("Part 3: the rematch (2)") == "the rematch"
+
+
+def test_a_moment_many_viewers_clipped_beats_one_big_clip():
+    stream, other = ("https://twitch.tv/videos/1", 10.0, 0.0), ("https://twitch.tv/videos/2", 10.0, 0.0)
+    found = asyncio.run(clips.find_moments([
+        {**clip(1, views=50_000), "vod": (stream[0], 1000.0, 0.0)},
+        {**clip(2, views=40_000), "vod": (stream[0], 1020.0, 0.0)},  # same moment, another viewer
+        {**clip(3, views=30_000), "vod": (stream[0], 1045.0, 0.0)},
+        {**clip(4, views=100_000), "vod": (other[0], 500.0, 0.0)},  # one big clip alone
+        {**clip(5, views=10_000), "vod": (stream[0], 3000.0, 0.0)},  # a separate moment, same stream
+    ], {}))
+    top = found[0]
+    assert top["moment_clips"] == 3 and top["vod"][1] == 1000.0 and top["id"] == "c1"
+    assert [m["moment_clips"] for m in found] == [3, 1, 1] and len(found) == 3
+
+
+def test_a_rejected_moment_only_rules_out_that_stretch_of_the_stream():
+    used = {clips.moment_key("https://twitch.tv/videos/1", 997.0)}
+    assert clips.overlaps("https://twitch.tv/videos/1", 1050.0, used)
+    assert not clips.overlaps("https://twitch.tv/videos/1", 3000.0, used)  # the rest of the stream is fine
+    assert not clips.overlaps("https://twitch.tv/videos/2", 997.0, used)

@@ -160,6 +160,9 @@ def test_only_streamers_who_allow_clipping_are_clipped(s):
 def test_clips_from_streamers_not_allowed_never_reach_a_video(s, monkeypatch):
     s = replace(s, twitch_client_id="id", twitch_client_secret="sec")
     allow(s, "Clipzz", "kai")
+    data = cs.load(s)
+    cs.account(data, "Clipzz").update(continue_at=0, stream_min_views=0)  # joined viewer clips, not stream moments
+    cs.save(s, data)
 
     async def fake_top(http, settings, era, streamers, category):
         assert streamers == ["kai"]

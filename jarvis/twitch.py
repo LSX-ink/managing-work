@@ -64,6 +64,23 @@ async def user_ids(http: httpx.AsyncClient, settings: Settings, logins: list[str
     return {u["login"]: u["id"] for u in found}
 
 
+async def video_views(http: httpx.AsyncClient, settings: Settings, ids: list[str]) -> dict[str, int]:
+    """{video id: total views} for past streams (VODs). Streams Twitch has deleted are simply missing."""
+    ids = list(dict.fromkeys(str(i) for i in ids if i))[:100]
+    if not ids:
+        return {}
+    try:
+        found = await get(http, settings, "videos", [("id", i) for i in ids])
+    except ValueError:  # one deleted stream can fail the whole batch: ask one by one
+        found = []
+        for i in ids[:20]:
+            try:
+                found += await get(http, settings, "videos", {"id": i})
+            except ValueError:
+                pass
+    return {str(v["id"]): int(v.get("view_count") or 0) for v in found if v.get("id")}
+
+
 async def game_id(http: httpx.AsyncClient, settings: Settings, name: str) -> str:
     found = await get(http, settings, "games", {"name": name})
     if not found:
