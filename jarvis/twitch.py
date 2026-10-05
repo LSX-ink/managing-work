@@ -6,6 +6,7 @@ Alfred signs in as the app itself (no Twitch login needed) and only reads public
 """
 
 import random
+import re
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -62,6 +63,29 @@ async def user_ids(http: httpx.AsyncClient, settings: Settings, logins: list[str
         return {}
     found = await get(http, settings, "users", [("login", name.lower().lstrip("@")) for name in logins[:100]])
     return {u["login"]: u["id"] for u in found}
+
+
+def seconds(duration: str) -> float:
+    """Twitch's video length, e.g. '3h8m33s', in seconds (0 when it can't be read)."""
+    parts = re.findall(r"(\d+)([hms])", str(duration or ""))
+    return float(sum(int(n) * {"h": 3600, "m": 60, "s": 1}[u] for n, u in parts))
+
+
+async def video_views(http: httpx.AsyncClient, settings: Settings, ids: list[str]) -> dict[str, tuple[int, float]]:
+    """{video id: (total views, length in seconds)} for past streams (VODs). Deleted streams are simply missing."""
+    ids = list(dict.fromkeys(str(i) for i in ids if i))[:100]
+    if not ids:
+        return {}
+    try:
+        found = await get(http, settings, "videos", [("id", i) for i in ids])
+    except ValueError:  # one deleted stream can fail the whole batch: ask one by one
+        found = []
+        for i in ids[:20]:
+            try:
+                found += await get(http, settings, "videos", {"id": i})
+            except ValueError:
+                pass
+    return {str(v["id"]): (int(v.get("view_count") or 0), seconds(v.get("duration"))) for v in found if v.get("id")}
 
 
 async def game_id(http: httpx.AsyncClient, settings: Settings, name: str) -> str:

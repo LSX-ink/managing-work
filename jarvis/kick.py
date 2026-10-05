@@ -61,6 +61,14 @@ def clip_row(c: dict, slug: str) -> dict:
             "livestream_id": str(c.get("livestream_id") or ""), "thumbnail_url": c.get("thumbnail_url")}
 
 
+def vod_views(clip: dict, vods: list[dict]) -> int:
+    """Total views of the past stream the clip came from, or 0 when Kick doesn't say."""
+    for v in vods:
+        if str(v.get("id")) == clip.get("livestream_id"):
+            return int((v.get("video") or {}).get("views") or v.get("views") or 0)
+    return 0
+
+
 def vod_offset(clip: dict, vods: list[dict]) -> tuple[str, float, float] | None:
     """(stream url, where the clip starts in it, the stream's length) when the clip's stream is still up, else None."""
     start = when(clip.get("started_at"))

@@ -58,7 +58,8 @@ STARTERS = [
                                         "that invites a comment (like Type amen)",
      "style": "drama", "format": "story", "series": ["Karma Hit Different", "They Didn't Know", "Plot Twist"]},
     {"name": "Clipzz", "theme": "the most viral Twitch streamer moments, from old classics to this week's",
-     "style": "clips", "format": "clips", "per_day": 5, "category": "Just Chatting"},
+     "style": "clips", "format": "clips", "per_day": 5, "category": "Just Chatting",
+     "stream_min_views": 200_000, "continue_at": 200_000},
     {"name": "n3on.vault", "theme": "N3on's most viral stream moments, each one extended with what happened just "
                                     "before and after the clip", "style": "clips", "format": "clips", "per_day": 3,
      "streamers": NEON, "min_views": 100_000, "extend": 30},
@@ -112,6 +113,10 @@ def new_account(name: str, **fields) -> dict:
             "category": clean(fields.get("category"), 60) or "Just Chatting",
             "min_views": max(0, int(fields.get("min_views") or 0)),  # clip accounts: only clips with this many views
             "extend": max(0, min(int(fields.get("extend") or 0), 120)),  # seconds added before and after each clip
+            # clip accounts: one moment a minute long; at this many views the next minute follows (0 = off)
+            "continue_at": max(0, int(fields.get("continue_at") or 0)),
+            # moment videos: only from past streams with at least this many views (0 = any stream)
+            "stream_min_views": max(0, int(fields.get("stream_min_views") or 0)),
             "used_clips": list(fields.get("used_clips") or [])[-3000:],
             "off": fields.get("off") is True,  # switched off: no daily videos, sequels or new videos at all
             "taste": fields.get("taste") if isinstance(fields.get("taste"), dict) else {"liked": [], "rejected": []}}
@@ -138,6 +143,11 @@ def load(settings: Settings) -> dict:
         for a in data["accounts"]:
             a["off"] = a.get("name", "").lower() != LORE
         data["lore_only"] = True
+    if not data.get("clipzz_moments"):  # the user, 5 Oct (#188): a minute cut from a 200k+ view stream, not a
+        for a in data["accounts"]:      # reposted clip; the next minute follows when a video passes 200k views
+            if a.get("name", "").lower() == "clipzz":
+                a["min_views"], a["stream_min_views"], a["continue_at"] = 0, 200_000, 200_000
+        data["clipzz_moments"] = True
     if not data.get("lore_look"):  # the old small black-and-white card bored viewers; lore gets the full-screen look
         for a in data["accounts"]:
             if a.get("name", "").lower() == LORE and a.get("style") == "noir":

@@ -82,6 +82,22 @@ def sequels_due(data: dict) -> list[dict]:
     return due
 
 
+def continuations_due(data: dict) -> list[dict]:
+    """Posted moment videos on clip accounts whose own views passed the account's continue_at, with no follow-on
+    yet: each earns the next minute of the same stream. A follow-on that misses the mark ends the run."""
+    due = []
+    for v in data["videos"]:
+        account = cs.find_account(data, v.get("account"))
+        bar = (account or {}).get("continue_at") or 0
+        follow = [w for w in data["videos"] if w.get("continues") == v["id"]]
+        tried_enough = any(w.get("status") != "failed" for w in follow) or len(follow) >= 2  # a failed cut gets one retry
+        if (not bar or not v.get("moment") or account.get("off") or v.get("status") not in ("posted", "approved")
+                or v.get("views", 0) < bar or tried_enough):
+            continue
+        due.append(v)
+    return due
+
+
 def sequel_idea(data: dict, latest: dict) -> str:
     first = latest.get("series_of", latest["id"])
     parts = sorted((w for w in data["videos"] if w.get("series_of", w["id"]) == first), key=lambda w: w.get("part", 1))
@@ -114,7 +130,9 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
                          "on' once its page is ready.")
     vid = {"id": cs.new_id(), "account": account["name"], "day": date.today().isoformat(), "status": "making",
            "title": "Being made", "made_at": time.strftime("%Y-%m-%d %H:%M"), "part": 1, "views": 0}
-    if sequel_of:
+    if sequel_of and account["format"] == "clips":
+        vid["continues"] = sequel_of["id"]  # the next minute of the same moment, never labelled as a part
+    elif sequel_of:
         vid["part"] = sequel_of.get("part", 1) + 1
         vid["series_of"] = sequel_of.get("series_of", sequel_of["id"])
         idea = sequel_idea(data, sequel_of)
@@ -127,7 +145,8 @@ async def make_one(settings: Settings, account_name: str, idea: str = "", sequel
     try:
         folder = cs.work_folder(settings, "TikTok", account["name"])
         if account["format"] == "clips":
-            return await _finish(settings, vid["id"], await make_clips(settings, data, account, folder, replaces))
+            return await _finish(settings, vid["id"], await make_clips(settings, data, account, folder, replaces,
+                                                                       continues=sequel_of))
         await ensure_trends(settings, account["name"])
         await ensure_lessons(settings, account["name"])
         await ensure_viral(settings, account["name"])
@@ -239,20 +258,28 @@ async def _finish(settings: Settings, video_id: str, update: dict) -> dict:
     return vid
 
 
-async def make_clips(settings: Settings, data: dict, account: dict, folder, replaces: dict | None = None) -> dict:
-    """A clip video: new viral clips and old viral ones take turns through the day."""
+async def make_clips(settings: Settings, data: dict, account: dict, folder, replaces: dict | None = None,
+                     continues: dict | None = None) -> dict:
+    """A clip video: new viral clips and old viral ones take turns through the day; or, with continues, the next
+    minute of an earlier moment video's stream."""
     era = "new" if cs.made_today(data, account["name"]) % 2 else "old"
     try:
-        result = await clips.make(_ctx["http"], settings, account, folder, era, _ctx["client"], replaces)
+        if continues:
+            result = await clips.make_continuation(settings, account, folder, continues, _ctx["client"])
+        else:
+            result = await clips.make(_ctx["http"], settings, account, folder, era, _ctx["client"], replaces,
+                                      best=best_titles(data, account["name"]))
     except Exception as exc:
         print(f"[jarvis] Clip video failed: {exc}", flush=True)
         return {"status": "failed", "error": str(exc)[:300]}
     fresh = cs.load(settings)
     a = cs.account(fresh, account["name"])
-    a["used_clips"] = (a.get("used_clips") or [])[-clips.MAX_USED:] + result["clip_ids"]
+    a["used_clips"] = (a.get("used_clips") or [])[-clips.MAX_USED:] + [i for i in result["clip_ids"]
+                                                                        if i not in (a.get("used_clips") or [])]
     cs.save(settings, fresh)
     return {"status": "ready", "title": result["title"], "caption": result["caption"], "hashtags": result["hashtags"],
-            "keyword": era, "file": cs.relative(settings, result["path"]), "story": "",
+            "keyword": result.get("keyword") or era, "file": cs.relative(settings, result["path"]), "story": "",
+            "moment": result.get("moment"),
             "hook": result.get("hook", ""), "clip_ids": result["clip_ids"], "checks": result.get("checks", []),
             "notes": result.get("notes", "")
             + (f". Check before posting: {'; '.join(result['checks'])}" if result.get("checks") else "")}
@@ -262,7 +289,8 @@ def best_titles(data: dict, account: str, n: int = 5) -> list[str]:
     """This account's most-viewed videos, e.g. 'The Last Voicemail (82,000 views)'."""
     seen = sorted((v for v in data["videos"] if v.get("account") == account and v.get("views")),
                   key=lambda v: v["views"], reverse=True)[:n]
-    return [f"{v['title']} ({v['views']:,} views)" for v in seen]
+    return [f"{v['title']} ({v['views']:,} views" + (f"; {v['notes'].split('. Check before posting')[0]}"
+                                                    if v.get("moment") and v.get("notes") else "") + ")" for v in seen]
 
 
 async def ensure_trends(settings: Settings, account_name: str, force: bool = False) -> dict:
@@ -418,7 +446,9 @@ async def watch(settings: Settings) -> None:
                     _ctx["views_at"] = time.time()
                     await refresh_views(settings)
                 data = cs.load(settings)
-                jobs = [] if data.get("paused") else [(v["account"], "", v) for v in sequels_due(data)] + todays_jobs(settings, data, date.today())
+                jobs = [] if data.get("paused") else ([(v["account"], "", v) for v in sequels_due(data)]
+                                                      + [(v["account"], "", v) for v in continuations_due(data)]
+                                                      + todays_jobs(settings, data, date.today()))
                 if jobs:
                     await make_in_background(settings, jobs)
         except Exception as exc:
@@ -492,6 +522,12 @@ def set_views(settings: Settings, ref: str, views) -> str:
     if v.get("status") == "ready":
         v["status"] = "approved"  # it's clearly out there
     cs.save(settings, data)
+    account = cs.find_account(data, v.get("account")) or {}
+    if v.get("moment") and account.get("continue_at"):  # a clip moment: the next minute follows, never a "part"
+        bar = account["continue_at"]
+        if v["views"] >= bar:
+            return f"Noted {v['views']:,} views on '{v['title']}'. That earns the next minute of the stream; I'll cut it shortly."
+        return f"Noted {v['views']:,} views. The next minute of that stream follows at {bar:,}."
     part = v.get("part", 1)
     need = views_needed(part)
     if part >= LAST_PART:
@@ -571,7 +607,7 @@ def studio(settings: Settings) -> screen.Shown:
 # ---- accounts ----------------------------------------------------------------------------------------------
 
 FIELDS = ("theme", "style", "format", "series", "per_day", "voice", "accent", "streamers", "category", "min_views", "extend",
-          "off")
+          "continue_at", "stream_min_views", "off")
 
 
 def add_account(settings: Settings, args: dict) -> str:
@@ -667,9 +703,13 @@ def tool_definitions() -> list[dict]:
                        "100k more another part up to part 5, which ends on a shocking cliffhanger. accounts lists "
                        "them. add_account (account name, theme, style noir/explainer/drama/cinematic, format "
                        "story/facts/clips, series, per_day, voice e.g. en-GB-RyanNeural, accent colour; clip accounts: "
-                       "streamers, category, min_views, extend). Clip accounts like Clipzz post viral Twitch or Kick "
+                       "streamers, category, min_views, extend, continue_at). Clip accounts like Clipzz post viral Twitch or Kick "
                        "clips, old and new, filling the phone screen, a minute or more, the streamer credited, and "
-                       "only from streamers who allow clipping (allows_clipping). n3on.vault is N3on's clip page "
+                       "only from streamers who allow clipping (allows_clipping). Clipzz makes moment videos: it "
+                       "finds a viral moment in a past stream with 200k+ views (old streams are fine) and cuts a "
+                       "minute of the stream itself from where the moment kicks off, never reposting a clip; when a posted one passes 200k "
+                       "views the next minute of the same stream follows by itself as an unlabelled video (no 'part "
+                       "2'), and keeps going while each passes 200k. n3on.vault is N3on's clip page "
                        "(Kick, and Twitch when set up): clips with 100k+ views, each extended by about 30 seconds "
                        "before and after from the stream. update_account "
                        "(account, new_name or any field; off true switches an account off so it makes no videos at "
@@ -715,6 +755,12 @@ def tool_definitions() -> list[dict]:
                 "category": {"type": "string", "description": "Clip accounts: Twitch category, e.g. Just Chatting."},
                 "min_views": {"type": "integer", "description": "Clip accounts: only clips with at least this many views."},
                 "extend": {"type": "integer", "description": "Clip accounts: seconds of the stream added before and after each clip (0 = plain clips)."},
+                "continue_at": {"type": "integer", "description": "Clip accounts: make moment videos (one moment, a minute "
+                                "from where it kicks off) and, when a posted one passes this many views, release the "
+                                "next minute of the same stream as a new unlabelled video, for as long as each passes "
+                                "it (0 = off). Clipzz: 200000."},
+                "stream_min_views": {"type": "integer", "description": "Clip accounts with continue_at: only cut moments "
+                                     "from past streams with at least this many views (Clipzz: 200000)."},
                 "off": {"type": "boolean", "description": "update_account: true switches the account off (no videos), false back on."},
                 "confirmed": {"type": "boolean"},
                 "refresh": {"type": "boolean", "description": "trends, lessons or viral: check again now."},
