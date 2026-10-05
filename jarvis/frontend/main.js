@@ -22,6 +22,7 @@ const STRINGS = {
         paused: 'Paused. Click the orb to resume.',
         micBlocked: 'Microphone blocked. You can still type below.',
         heardNoName: 'Heard "{text}". Say "{name}" first to talk to me.',
+        yes: 'Yes? I\'m listening…',
         noRecognition: 'Voice input needs Chrome or Edge. Type below instead.',
         noVoice: 'Your browser has no voice for this language. Set ELEVENLABS_API_KEY to hear replies.',
         placeholder: '…or type to {name}',
@@ -49,6 +50,7 @@ const STRINGS = {
         paused: 'Onderbreek. Klik op die bol om voort te gaan.',
         micBlocked: 'Mikrofoon geblokkeer. Jy kan steeds hieronder tik.',
         heardNoName: 'Gehoor "{text}". Sê eers "{name}" om met my te praat.',
+        yes: 'Ja? Ek luister…',
         noRecognition: 'Steminvoer werk net in Chrome of Edge. Tik eerder hieronder.',
         noVoice: 'Jou blaaier het geen Afrikaanse stem nie. Stel ELEVENLABS_API_KEY om antwoorde te hoor.',
         placeholder: '…of tik vir {name}',
@@ -151,9 +153,24 @@ function setWakeOnly(on) {
     if (listening) setState('listening', t(wakeOnly ? 'listeningWake' : 'listening'));
 }
 
+// What speech recognition often writes when you say his name.
+const NAME_SOUNDALIKES = ['alfred', 'alfie', 'alf', 'al fred', 'alfred\'s', 'elfred', 'alford', 'offred',
+    'jarvis', 'jervis', 'jarvas', 'travis', 'service'];
+function namePattern() {
+    const names = [config.name.toLowerCase(), ...NAME_SOUNDALIKES].map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    return new RegExp(`\\b(?:hey |ok |okay )?(?:${names.join('|')})\\b`, 'i');
+}
 function calledByName(text) {
-    const names = [config.name, 'jarvis', 'alfred'].map((n) => n.toLowerCase());
-    return names.some((n) => new RegExp(`\\b${n}\\b`, 'i').test(text));
+    // "travis" and "service" only count at the very start, where you'd say his name
+    const p = namePattern();
+    const m = text.match(p);
+    if (!m) return false;
+    return !/^(?:travis|service)$/i.test(m[0].replace(/^(?:hey|ok|okay) /i, '')) || m.index === 0;
+}
+// Just his name and nothing else ("Alfred?"): he answers at once with a soft tone and listens.
+function onlyName(text) {
+    const rest = text.replace(namePattern(), '').replace(/[\s.,!?]+/g, '');
+    return calledByName(text) && rest === '';
 }
 
 function setState(state, text = '') {
@@ -225,6 +242,39 @@ document.addEventListener('jarvis:line', (e) => {
     chatToggle.setAttribute('aria-expanded', String(!min));
 }
 
+// A soft rising tone: "yes, I'm listening".
+function readyTone() {
+    try {
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audio.createOscillator(), gain = audio.createGain();
+        osc.frequency.setValueAtTime(520, audio.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audio.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.0001, audio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.2, audio.currentTime + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.25);
+        osc.connect(gain).connect(audio.destination);
+        osc.start();
+        osc.stop(audio.currentTime + 0.27);
+        setTimeout(() => audio.close(), 600);
+    } catch (e) { /* no audio */ }
+}
+
+// Keep the screen on while Alfred is awake: a sleeping screen (above all on a phone) stops the microphone.
+let wakeLock = null;
+async function keepScreenOn() {
+    if (!('wakeLock' in navigator) || document.hidden || wakeLock) return;
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) { /* not allowed (battery saver): carry on */ }
+}
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !started) return;
+    keepScreenOn();
+    if (!ws || ws.readyState === WebSocket.CLOSED) reconnectNow();
+    else maybeListen();   // back on the page: listen again straight away
+});
+
 // ---- WebSocket --------------------------------------------------------------
 
 // A timer's chime: three soft rising beeps, made in the browser (no sound file needed).
@@ -258,7 +308,6 @@ setInterval(() => {
 function connect(onOpen) {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     ws = new WebSocket(`${proto}://${location.host}/ws`);
-    ws.onopen = onOpen;
     ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         busySince = Date.now();   // still working on it
@@ -295,13 +344,26 @@ function connect(onOpen) {
             maybeListen();
         }
     };
+    ws.onopen = () => { reconnectDelay = 1000; onOpen && onOpen(); };
     ws.onclose = () => {
         busy = false;
         confirmBox.hidden = true;
         setState('idle', t('reconnecting'));
-        setTimeout(() => connect(() => { setState('idle', ''); maybeListen(); }), 2000);
+        // Try again quickly at first, then less often, so a PC that's restarting Alfred isn't hammered.
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(reconnectNow, reconnectDelay);
+        reconnectDelay = Math.min(15000, reconnectDelay * 2);
     };
 }
+
+let reconnectDelay = 1000;
+let reconnectTimer = null;
+function reconnectNow() {
+    clearTimeout(reconnectTimer);
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+    connect(() => { setState('idle', ''); maybeListen(); });
+}
+addEventListener('online', () => { if (started) reconnectNow(); });   // the network is back: don't wait
 
 function send(payload) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -487,6 +549,12 @@ let endTimer = null;
 
 // One whole thing you said: send it to Alfred, unless he waits for his name and it wasn't used.
 function heard(text) {
+    if (onlyName(text)) {
+        lastSpokeAt = Date.now();          // the next thing you say needs no name
+        readyTone();
+        statusEl.textContent = t('yes');
+        return;
+    }
     if (wakeOnly && !calledByName(text) && Date.now() - lastSpokeAt > FOLLOW_UP_MS) {
         // Not for Jarvis. Show what was heard so the mic clearly works.
         statusEl.textContent = t('heardNoName').replace('{text}', text.length > 40 ? `${text.slice(0, 40)}…` : text);
@@ -616,6 +684,7 @@ function stopListening() {
 orb.addEventListener('click', () => {
     if (!started) {
         started = true;
+        keepScreenOn();
         connect(() => send({ type: 'activate' }));
         return;
     }
