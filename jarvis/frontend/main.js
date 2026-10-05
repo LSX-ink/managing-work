@@ -23,6 +23,8 @@ const STRINGS = {
         micBlocked: 'Microphone blocked. You can still type below.',
         heardNoName: 'Heard "{text}". Say "{name}" first to talk to me.',
         yes: 'Yes? I\'m listening…',
+        volume: 'Volume',
+        speed: 'Speaking speed',
         noRecognition: 'Voice input needs Chrome or Edge. Type below instead.',
         noVoice: 'Your browser has no voice for this language. Set ELEVENLABS_API_KEY to hear replies.',
         placeholder: '…or type to {name}',
@@ -51,6 +53,8 @@ const STRINGS = {
         micBlocked: 'Mikrofoon geblokkeer. Jy kan steeds hieronder tik.',
         heardNoName: 'Gehoor "{text}". Sê eers "{name}" om met my te praat.',
         yes: 'Ja? Ek luister…',
+        volume: 'Volume',
+        speed: 'Praatspoed',
         noRecognition: 'Steminvoer werk net in Chrome of Edge. Tik eerder hieronder.',
         noVoice: 'Jou blaaier het geen Afrikaanse stem nie. Stel ELEVENLABS_API_KEY om antwoorde te hoor.',
         placeholder: '…of tik vir {name}',
@@ -508,7 +512,8 @@ function playNext() {
         const bytes = Uint8Array.from(atob(msg.audio), (c) => c.charCodeAt(0));
         const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
         const audio = new Audio(url);
-        audio.playbackRate = speechRate();
+        audio.playbackRate = Math.min(2, Math.max(0.5, speechRate() * savedRate()));   // "talk faster" works on every voice
+        audio.volume = voiceVolume();
         currentAudio = audio;
         audio.onended = audio.onerror = () => { URL.revokeObjectURL(url); finish(); };
         audio.play().catch(finish);
@@ -525,6 +530,7 @@ function playNext() {
             if (voice) utterance.voice = voice;
             utterance.rate = Math.min(2, Math.max(0.3, (Number(prefs.rate) || 1) * speechRate()));
             utterance.pitch = Number(prefs.pitch) || 1;
+            utterance.volume = voiceVolume();
             if (i === chunks.length - 1) utterance.onend = once;
             utterance.onerror = (e) => {
                 if (e.error === 'interrupted' || e.error === 'canceled') return;  // "stop" handles its own state
@@ -551,6 +557,42 @@ let heardText = '';         // the finished words of what you're saying now
 let discardHeard = false;   // listening was cut off on purpose (Alfred started talking, you typed)
 let endTimer = null;
 
+// Volume and speed by voice, done here at once without asking Claude: "louder", "quieter", "talk faster"...
+// Speed you chose ("talk faster", the voice picker); ElevenLabs voices start at their natural pace.
+function savedRate() {
+    try { return Number((JSON.parse(localStorage.getItem('alfred-voice') || '{}') || {}).rate) || 1; } catch { return 1; }
+}
+function voiceVolume() {
+    try { const v = Number(localStorage.getItem('alfred-volume')); return v > 0 && v <= 1 ? v : 1; } catch { return 1; }
+}
+const QUICK = [
+    [/^(?:louder|speak up|volume up|turn (?:it |yourself )?up|a bit louder|louder please)$/, 'volume', 0.2],
+    [/^(?:quieter|softer|volume down|turn (?:it |yourself )?down|a bit quieter|quieter please|not so loud)$/, 'volume', -0.2],
+    [/^(?:talk|speak) (?:a bit )?faster$|^speed up$|^faster$/, 'rate', 0.1],
+    [/^(?:talk|speak) (?:a bit )?slower$|^slow down$|^slower$/, 'rate', -0.1],
+];
+function quickCommand(text) {
+    const said = text.toLowerCase().replace(/^(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )/, '').replace(/[.!?,]+$/g, '').trim();
+    const hit = QUICK.find(([re]) => re.test(said));
+    if (!hit) return false;
+    const [, what, step] = hit;
+    if (what === 'volume') {
+        const v = Math.min(1, Math.max(0.2, +(voiceVolume() + step).toFixed(2)));
+        try { localStorage.setItem('alfred-volume', String(v)); } catch { /* private window */ }
+        statusEl.textContent = `${t('volume')} ${Math.round(v * 100)}%`;
+    } else {
+        const prefs = voicePrefs();
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem('alfred-voice') || '{}') || {}; } catch { /* private window */ }
+        saved.rate = Math.min(1.6, Math.max(0.6, +((Number(prefs.rate) || 1) + step).toFixed(2)));
+        try { localStorage.setItem('alfred-voice', JSON.stringify(saved)); } catch { /* private window */ }
+        statusEl.textContent = `${t('speed')} ${Math.round(saved.rate * 100)}%`;
+    }
+    lastSpokeAt = Date.now();   // follow-ups ("louder") still need no name
+    readyTone();
+    return true;
+}
+
 // "Say that again": replay Alfred's last answer straight away, without asking Claude.
 let lastAnswer = [];
 const REPEAT = /^(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )?(?:say that again|repeat that|repeat|can you repeat that|what did you say|pardon|come again|sorry what|say again)(?:,? (?:alfred|jarvis|please))*[.?!]?$/i;
@@ -564,7 +606,9 @@ function repeatLast() {
 // One whole thing you said: send it to Alfred, unless he waits for his name and it wasn't used.
 function heard(text) {
     const recent = Date.now() - lastSpokeAt < FOLLOW_UP_MS;
-    if (REPEAT.test(text.trim()) && (recent || !wakeOnly || calledByName(text)) && repeatLast()) return;
+    const forMe = recent || !wakeOnly || calledByName(text);
+    if (REPEAT.test(text.trim()) && forMe && repeatLast()) return;
+    if (forMe && quickCommand(text)) return;
     if (onlyName(text)) {
         lastSpokeAt = Date.now();          // the next thing you say needs no name
         readyTone();

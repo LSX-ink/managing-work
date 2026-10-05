@@ -51,3 +51,22 @@ def test_say_that_again_is_recognised():
     run = subprocess.run(["node", "-e", REPEAT_SCRIPT, str(MAIN), json.dumps(texts)],
                          capture_output=True, text=True, check=True)
     assert json.loads(run.stdout) == [True, True, True, True, False, False]
+
+
+QUICK_SCRIPT = """
+const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const a = src.indexOf('const QUICK = ['), b = src.indexOf('];', a) + 2;
+eval(src.slice(a, b).replace('const QUICK', 'globalThis.QUICK'));
+const kind = (t) => { const said = t.toLowerCase().replace(/^(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )/, '').replace(/[.!?,]+$/g, '').trim();
+                      const hit = QUICK.find(([re]) => re.test(said)); return hit ? hit[1] + (hit[2] > 0 ? '+' : '-') : null; };
+console.log(JSON.stringify(JSON.parse(process.argv[2]).map(kind)));
+"""
+
+
+@pytest.mark.skipif(not shutil.which("node"), reason="needs node")
+def test_volume_and_speed_by_voice_are_instant():
+    texts = ["Louder", "Alfred, quieter please.", "talk faster", "slow down", "turn it up",
+             "turn on the lights", "louder music in the kitchen"]
+    run = subprocess.run(["node", "-e", QUICK_SCRIPT, str(MAIN), json.dumps(texts)],
+                         capture_output=True, text=True, check=True)
+    assert json.loads(run.stdout) == ["volume+", "volume-", "rate+", "rate-", "volume+", None, None]
