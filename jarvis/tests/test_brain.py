@@ -252,3 +252,49 @@ def test_alfred_is_told_the_name_of_every_ability_he_can_load():
     deferred = [t["name"] for t in options["tools"] if t.get("defer_loading")]
     assert deferred and all(name in options["system"] for name in deferred)
     assert "Never tell the user you can't" in options["system"]
+
+
+def test_alfred_is_taught_to_solve_problems_on_his_own():
+    prompt = brain.system_prompt(SETTINGS)
+    assert "How you solve problems on your own" in prompt
+    assert "take a different route" in prompt and "Never claim something happened" in prompt
+
+
+async def test_a_failing_tool_gets_recovery_advice_more_thought_and_a_warning_on_repeats(monkeypatch):
+    async def broken(name, args, *rest):
+        raise ValueError("no such city")
+
+    monkeypatch.setattr(brain.tools, "run_tool", broken)
+    client = FakeClient(
+        reply("tool_use", tool_use("get_weather", {"city": "Jozi"})),
+        reply("tool_use", tool_use("get_weather", {"city": "Jozi"}, id="toolu_2")),
+        reply("end_turn", text("Johannesburg is sunny, sir.")),
+    )
+    said = await run(Brain(SETTINGS, client, http=None), "Weather in Jozi?")
+
+    first = client.requests[1]["messages"][-1]["content"][0]
+    second = client.requests[2]["messages"][-1]["content"][0]
+    assert first["is_error"] and brain.RETRY_ADVICE in first["content"]
+    assert "failed twice" in second["content"]
+    assert client.requests[0]["output_config"]["effort"] == "low"
+    assert client.requests[1]["output_config"]["effort"] == "medium"  # stuck: think harder
+    assert said == ["Johannesburg is sunny, sir."]
+
+
+async def test_running_out_of_steps_reports_progress_instead_of_a_canned_line(monkeypatch):
+    async def ok(name, args, *rest):
+        return "done"
+
+    monkeypatch.setattr(brain.tools, "run_tool", ok)
+    monkeypatch.setattr(brain, "MAX_TOOL_ROUNDS", 2)
+    client = FakeClient(
+        reply("tool_use", tool_use("get_tasks", {})),
+        reply("tool_use", tool_use("get_tasks", {}, id="toolu_2")),
+        reply("end_turn", text("I've checked your list twice; the sorting is still to do.")),
+    )
+    said = await run(Brain(SETTINGS, client, http=None), "Sort my whole life out")
+
+    wrap = client.requests[2]
+    assert wrap["tool_choice"] == {"type": "none"}
+    assert "used every step" in wrap["messages"][-1]["content"][-1]["text"]
+    assert said == ["I've checked your list twice; the sorting is still to do."]
