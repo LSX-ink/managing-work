@@ -325,6 +325,41 @@ class SentenceSplitter:
         return []
 
 
+_DOING = [  # tool name start -> what the page shows while it runs
+    (("get_weather",), "Checking the weather"),
+    (("web_search", "search_web"), "Searching the web"),
+    (("look_at_screen", "screenshot"), "Looking at the screen"),
+    (("computer",), "Using the PC"),
+    (("check_", "get_", "read_", "list_", "show_"), "Checking"),
+    (("search_", "find_", "lookup_", "look_up_"), "Searching"),
+    (("add_", "save_", "create_", "new_", "log_", "record_"), "Saving"),
+    (("open_", "play_", "launch_"), "Opening"),
+    (("set_", "update_", "change_", "edit_", "move_", "rename_"), "Updating"),
+    (("delete_", "remove_", "clear_"), "Removing"),
+]
+
+
+def doing_line(names: list[str]) -> str:
+    """'Checking calendar…' style line for the status bar, so a long job doesn't look frozen."""
+    parts = []
+    for name in names:
+        for starts, verb in _DOING:
+            hit = next((s for s in starts if name.startswith(s)), None)
+            if hit is None:
+                continue
+            rest = name[len(hit):].replace("_", " ").strip() if hit.endswith("_") else ""
+            parts.append(f"{verb} {rest}".strip())
+            break
+        else:
+            parts.append(f"Working on {name.replace('_', ' ')}")
+    unique = list(dict.fromkeys(parts))
+    if len(unique) <= 2:
+        text = " and ".join([unique[0]] + [u[0].lower() + u[1:] for u in unique[1:]])
+    else:
+        text = f"{unique[0]} and {len(unique) - 1} more"
+    return f"{text}…"
+
+
 def spoken_text(content) -> str:
     return " ".join(b.text.strip() for b in content if b.type == "text" and b.text.strip())
 
@@ -449,6 +484,7 @@ class Brain:
                 return
 
             calls = [b for b in response.content if b.type == "tool_use"]
+            await self._show_doing(calls)
             screen_calls = [c for c in calls if getattr(c, "toolset_name", None) == computer.TOOLSET]
             other = [c for c in calls if c not in screen_calls]
             by_id = dict(zip((c.id for c in other), await asyncio.gather(*(self._tool_result(c) for c in other))))
@@ -459,6 +495,14 @@ class Brain:
                 opts = {**opts, "output_config": {**opts["output_config"], "effort": STUCK_EFFORT[effort]}}
 
         await self._wrap_up(opts, speak)
+
+    async def _show_doing(self, calls) -> None:
+        if not self.page or not calls:
+            return
+        try:
+            await self.page({"type": "status", "text": doing_line([c.name for c in calls])})
+        except Exception:  # noqa: BLE001 - a status line is never worth failing a turn over
+            pass
 
     async def _wrap_up(self, opts: dict, speak: Speak) -> None:
         """Out of steps: rather than a canned apology, say what got done and what's left."""
