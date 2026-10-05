@@ -1956,3 +1956,15 @@ async def test_a_script_that_never_parses_is_saved_and_explained_plainly(tmp_pat
         await cv._script_reply(client, replace(Settings(), memory_dir=str(tmp_path)), "write it")
     saved = list((tmp_path / "TikTok" / "broken-scripts").glob("*.txt"))
     assert saved and "no script today" in saved[0].read_text(encoding="utf-8")
+
+
+def test_the_opening_scenes_hold_the_least_so_the_video_starts_fast():
+    held = cv.fit_to_length([4.0] * 10)
+    assert held[0] == pytest.approx(4.35, abs=1 / cv.FPS)  # the hook keeps its own length: no padding at all
+    assert held[1] < held[2] < held[3] and held[3] == pytest.approx(held[8], abs=0.1)  # then it eases off
+    assert sum(held) == pytest.approx(cv.MIN_LENGTH)
+    slow = cv.fit_to_length([4.0] * 10, paces=["slow"] * 10)  # pace still decides the rest
+    assert slow[0] == pytest.approx(4.6, abs=1 / cv.FPS) and slow[3] > slow[1] > slow[0]
+    few = cv.fit_to_length([4.0] * 4)  # too few scenes to hold the opening back: it would stretch the rest absurdly
+    assert max(few) - min(few) < 0.1 and sum(few) == pytest.approx(cv.MIN_LENGTH)
+    assert cv.fit_to_length([20.0] * 5)[0] == pytest.approx(20.35, abs=1 / cv.FPS)  # no spare time: nothing changes
