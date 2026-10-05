@@ -245,3 +245,10 @@ def test_failed_calls_name_what_the_user_can_fix():
     assert brain.error_key(status(anthropic.InternalServerError, 529)) == "busy"
     assert brain.error_key(RuntimeError("no key")) == "error"
     assert set(brain.LINES["af"]) == set(brain.LINES["en"])
+
+
+def test_alfred_is_told_the_name_of_every_ability_he_can_load():
+    options = brain.request_options(replace(SETTINGS, model="claude-opus-5"))
+    deferred = [t["name"] for t in options["tools"] if t.get("defer_loading")]
+    assert deferred and all(name in options["system"] for name in deferred)
+    assert "Never tell the user you can't" in options["system"]
