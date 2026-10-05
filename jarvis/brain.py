@@ -33,12 +33,15 @@ LINES = {
     "en": {
         "refusal": "I'm afraid that's not something I can help with.",
         "error": "Something went wrong on my end. Do try again.",
+        "no_credit": "My Claude credit has run out, so I can't think until it's topped up. Add credit at "
+                     "console dot anthropic dot com, under Billing.",
         "loop": "I seem to be going round in circles. Let's try that another way.",
         "declined": "The user declined these actions. Do not retry them; ask what they would like instead.",
     },
     "af": {
         "refusal": "Ek is bevrees dis nie iets waarmee ek kan help nie.",
         "error": "Iets het aan my kant skeefgeloop. Probeer asseblief weer.",
+        "no_credit": "My Claude-krediet is op. Voeg krediet by op console dot anthropic dot com, onder Billing.",
         "loop": "Dit lyk of ek in sirkels draai. Kom ons probeer dit anders.",
         "declined": "The user declined these actions. Do not retry them; ask what they would like instead.",
     },
@@ -361,7 +364,8 @@ class Brain:
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive
             print(f"[jarvis] Error: {exc!r}", flush=True)
             del self.messages[start:]
-            await speak(line(self.settings, "error"))
+            # an empty account is the one failure only the user can fix, so say exactly what's wrong
+            await speak(line(self.settings, "no_credit" if "credit balance is too low" in str(exc) else "error"))
         self.messages = trim_history(self.messages)
 
     async def _run(self, speak: Speak) -> None:
