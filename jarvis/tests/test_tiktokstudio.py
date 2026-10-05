@@ -1937,3 +1937,22 @@ async def test_an_unreadable_script_gets_a_fixed_copy_before_failing():
     client = SimpleNamespace(messages=SimpleNamespace(create=create))
     script = await cv._script_reply(client, Settings(), "write it")
     assert script["title"] == "T" and "doesn't parse" in sent[1][-1]["content"]
+
+
+async def test_a_script_that_never_parses_is_saved_and_explained_plainly(tmp_path):
+    from dataclasses import replace
+    from types import SimpleNamespace
+
+    import pytest
+
+    import tiktokstudio_video as cv
+    from config import Settings
+
+    async def create(**kwargs):
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text="sorry, no script today")])
+
+    client = SimpleNamespace(messages=SimpleNamespace(create=create))
+    with pytest.raises(ValueError, match="couldn't read it back"):
+        await cv._script_reply(client, replace(Settings(), memory_dir=str(tmp_path)), "write it")
+    saved = list((tmp_path / "TikTok" / "broken-scripts").glob("*.txt"))
+    assert saved and "no script today" in saved[0].read_text(encoding="utf-8")

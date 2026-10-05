@@ -25,6 +25,7 @@ import math
 import random
 import re
 import subprocess
+import time
 from pathlib import Path
 from urllib.parse import quote
 
@@ -279,7 +280,11 @@ def loads_lenient(text: str):
         return json.loads(text[start:end + 1], strict=False)  # strict=False allows raw line breaks in strings
     except ValueError:
         pass
-    import json_repair  # handles stray quotes, missing commas and truncated output
+    try:
+        import json_repair  # handles stray quotes, missing commas and truncated output
+    except ImportError:
+        raise ValueError("The script's JSON is broken and the repair tool isn't installed: run "
+                         ".venv\\Scripts\\python.exe -m pip install -r requirements.txt, then restart Alfred.") from None
     data = json_repair.loads(text[start:])
     if not isinstance(data, dict) or not data:
         raise ValueError("The script's JSON couldn't be repaired.")
@@ -355,6 +360,18 @@ async def write_script(client, settings: Settings, account: dict, idea: str = ""
     return await fix_retention(client, settings, await pick_hook(client, settings, edited))
 
 
+def _keep_broken(settings: Settings, text: str) -> None:
+    """Saves an unreadable script reply (Memory/TikTok/broken-scripts) so the fault can be looked at later."""
+    try:
+        folder = Path(settings.memory_dir) / "TikTok" / "broken-scripts"
+        folder.mkdir(parents=True, exist_ok=True)
+        for old in sorted(folder.glob("*.txt"))[:-19]:  # keep the newest 20
+            old.unlink()
+        (folder / f"{time.strftime('%Y-%m-%d %H-%M-%S')}.txt").write_text(text or "(empty reply)", encoding="utf-8")
+    except OSError:
+        pass
+
+
 async def _script_reply(client, settings: Settings, prompt: str) -> dict:
     """Writes the script; when the JSON can't be read even after repair, Claude gets one go at fixing it,
     then the script is written afresh, before giving up."""
@@ -367,6 +384,7 @@ async def _script_reply(client, settings: Settings, prompt: str) -> dict:
             return parse_script(text)
         except ValueError as exc:
             error = exc
+            _keep_broken(settings, text)
             print(f"[jarvis] Script JSON unreadable ({exc}); asking for a fixed copy", flush=True)
         try:
             fixed = await client.messages.create(model=settings.model, max_tokens=8000, messages=[
@@ -379,7 +397,8 @@ async def _script_reply(client, settings: Settings, prompt: str) -> dict:
             return parse_script("".join(getattr(b, "text", "") for b in fixed.content))
         except ValueError as exc:
             error = exc
-    raise ValueError(f"The script kept coming back unreadable: {error}")
+    raise ValueError("I wrote the script four times but couldn't read it back, so nothing was filmed. Try again, "
+                     f"perhaps with a different idea. (Last fault: {error})")
 
 
 async def edit_script(client, settings: Settings, brief: str, draft: dict) -> dict:
