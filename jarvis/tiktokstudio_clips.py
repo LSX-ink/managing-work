@@ -126,7 +126,7 @@ async def choose(client, settings, account: dict, clips: list[dict], replaces: d
         reply = await client.messages.create(model=settings.model, max_tokens=800,
                                              messages=[{"role": "user", "content": prompt}])
         text = "".join(getattr(b, "text", "") for b in reply.content)
-        data = json.loads(re.search(r"\{.*\}", text, re.S).group(0))
+        data = cv.loads_lenient(text)
     except Exception as exc:  # Claude is busy: fall back to most-viewed first
         print(f"[jarvis] Clip choice: {exc}", flush=True)
         return clips, ""
