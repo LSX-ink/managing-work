@@ -101,3 +101,21 @@ async def test_elevenlabs_failing_hands_the_rest_to_the_browser_voice():
 
     async with httpx.AsyncClient() as http:
         assert [p async for p in tts.stream(http, Settings(elevenlabs_api_key=""), "Hi.")] == [("Hi.", None)]
+
+
+def test_the_page_can_check_the_line_is_alive_mid_turn(server, monkeypatch):
+    import asyncio
+
+    async def slow(self, text, speak):
+        await asyncio.sleep(30)
+
+    monkeypatch.setattr(server.Brain, "handle", slow)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws", headers={"origin": "http://testserver"}) as ws:
+            ws.receive_json()  # alerts
+            ws.send_json({"text": "research everything"})
+            ws.send_json({"type": "ping"})
+            assert ws.receive_json() == {"type": "pong"}  # answered even while he's busy
+            ws.send_json({"type": "cancel"})
+            assert ws.receive_json() == {"type": "note", "text": "Cancelled."}
+            assert ws.receive_json() == {"type": "done"}

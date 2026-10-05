@@ -70,3 +70,61 @@ def test_volume_and_speed_by_voice_are_instant():
     run = subprocess.run(["node", "-e", QUICK_SCRIPT, str(MAIN), json.dumps(texts)],
                          capture_output=True, text=True, check=True)
     assert json.loads(run.stdout) == ["volume+", "volume-", "rate+", "rate-", "volume+", None, None]
+
+
+LINE_SCRIPT = """
+const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const a = src.indexOf('function connect(onOpen)'), b = src.indexOf('function send(payload)');
+const code = src.slice(a, src.indexOf('\\n}\\n', b) + 3);
+const sockets = [];
+class WebSocket {
+    constructor(url) { this.url = url; this.readyState = 0; this.sent = []; sockets.push(this); }
+    send(data) { this.sent.push(JSON.parse(data)); }
+    close() { this.readyState = 3; }
+    open() { this.readyState = 1; this.onopen(); }
+    reply(msg) { this.onmessage({ data: JSON.stringify(msg) }); }
+}
+Object.assign(WebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 });
+let ticks = [], timers = [];
+const setInterval = (fn) => ticks.push(fn);
+const setTimeout = (fn) => { timers.push(fn); return timers.length; };
+const clearTimeout = () => {};
+const addEventListener = () => {};
+const location = { protocol: 'http:', host: 'pc:8340' };
+const statusEl = {}, confirmBox = { hidden: true };
+let ws = null, busy = false, started = true, speaking = false, queue = [], lastAnswer = [];
+const t = (k) => k, setState = (s, text) => { statusEl.textContent = text; };
+const stopListening = () => {}, maybeListen = () => {};
+eval(code);
+const out = {};
+// Said while the line is down: held, then sent the moment it reconnects.
+send({ text: 'what time is it' });
+out.held = statusEl.textContent;
+sockets[0].open();
+out.sentOnOpen = [...sockets[0].sent];
+// A line that looks open but answers nothing is dropped and redialled.
+const check = ticks[ticks.length - 1];
+check();
+out.pinged = sockets[0].sent.at(-1).type;
+sockets[0].reply({ type: 'pong' });
+check();
+out.aliveAfterPong = ws === sockets[0];
+check();
+out.droppedWhenSilent = ws === null && statusEl.textContent === 'reconnecting';
+timers.at(-1)();
+out.redialled = sockets.length;
+console.log(JSON.stringify(out));
+"""
+
+
+@pytest.mark.skipif(not shutil.which("node"), reason="needs node")
+def test_words_survive_a_dropped_line_and_dead_lines_are_redialled():
+    run = subprocess.run(["node", "-e", LINE_SCRIPT, str(MAIN)], capture_output=True, text=True, check=True)
+    assert json.loads(run.stdout) == {
+        "held": "willSend",
+        "sentOnOpen": [{"text": "what time is it"}],
+        "pinged": "ping",
+        "aliveAfterPong": True,
+        "droppedWhenSilent": True,
+        "redialled": 2,
+    }
