@@ -1,6 +1,7 @@
 """Text-to-speech via ElevenLabs. Without an API key the browser's built-in voice is used instead."""
 
 import re
+from collections import OrderedDict
 
 import httpx
 
@@ -8,6 +9,8 @@ from config import Settings
 
 CHUNK_CHARS = 400
 FIRST_PART_MIN = 12  # a first sentence shorter than this ("Right.") is kept with the next one
+CACHE_ITEMS = 300  # short lines Alfred says often ("One moment, sir.") are voiced once and replayed instantly
+CACHE_MAX_CHARS = 160
 VOICE_TIMEOUT = 15  # seconds to wait for ElevenLabs before the browser voice takes over
 
 # Languages the fast Turbo v2.5 model speaks; anything else (e.g. Afrikaans) goes to Eleven v3.
@@ -60,6 +63,24 @@ async def _voice(http: httpx.AsyncClient, settings: Settings, chunk: str, model:
     return resp.content
 
 
+_cache: OrderedDict = OrderedDict()
+
+
+async def _live_voice(http: httpx.AsyncClient, settings: Settings, part: str) -> bytes | None:
+    """Like _voice for Alfred's own replies, remembering short lines so repeats cost no wait."""
+    model = live_model(settings)
+    key = (settings.elevenlabs_voice_id, model, part.strip().lower())
+    if key in _cache:
+        _cache.move_to_end(key)
+        return _cache[key]
+    audio = await _voice(http, settings, part, model)
+    if audio and len(part) <= CACHE_MAX_CHARS:
+        _cache[key] = audio
+        while len(_cache) > CACHE_ITEMS:
+            _cache.popitem(last=False)
+    return audio
+
+
 async def synthesize(http: httpx.AsyncClient, settings: Settings, text: str) -> bytes | None:
     """MP3 audio for `text`, or None when ElevenLabs is not configured or fails."""
     if not settings.elevenlabs_api_key or not text.strip():
@@ -103,7 +124,7 @@ async def stream(http: httpx.AsyncClient, settings: Settings, text: str):
         return
     parts = speaking_parts(text)
     for i, part in enumerate(parts):
-        audio = await _voice(http, settings, part, live_model(settings))
+        audio = await _live_voice(http, settings, part)
         if audio is None:
             yield " ".join(parts[i:]), None
             return
