@@ -2136,3 +2136,38 @@ def test_the_music_drops_out_just_before_a_lore_reveal(s, tmp_path, monkeypatch)
                               "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
         return float(re.search(r"mean_volume: (-?[\d.]+|-inf)", out).group(1))
     assert loud(2.1) < loud(1.0) - 20 and loud(2.8) > loud(2.1) + 20
+
+
+def test_the_planted_clue_flashes_back_as_the_twist_lands(s, tmp_path, monkeypatch):
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "clue": "2"}))
+    assert script["clue"] == 2 and cv.parse_script(SCRIPT)["clue"] == 0
+    assert "clue" in cv.SCRIPT_PROMPT
+    shots = [["a0", "b0"], ["a1", "b1"], ["a2"], ["a3"], ["a4"]]
+    assert cv.clue_flashback(shots, 2, ["", "", "sting", "boom", "boom"]) == {3: "b1"}  # its closeup, first boom after
+    assert cv.clue_flashback(shots, 3, ["boom", "", "", "", "boom"]) == {4: "a2"}  # no closeup: the main shot
+    assert cv.clue_flashback(shots, 4, ["boom", "", "", "", ""]) == {}  # no reveal after the clue
+    assert cv.clue_flashback(shots, 0, ["", "boom"]) == {} and cv.clue_flashback(shots, 9, ["", "boom"]) == {}
+    script["scenes"] = [dict(script["scenes"][i % 2]) for i in range(4)]
+    script["scenes"][3]["hit"] = "boom"
+    seen = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.__setitem__(a[1], (a[9], [Path(x).name for x in stills])), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    clue_shots = seen[1][1]
+    assert Path(seen[3][0]).name == clue_shots[min(1, len(clue_shots) - 1)]
+    assert all(seen[i][0] is None for i in (0, 1, 2))
+    seen.clear()  # another look gets no flashback
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert seen[3][0] is None

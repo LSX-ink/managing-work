@@ -148,13 +148,16 @@ Rules:
 - teaser: the number of one later scene (3 or later) whose picture flashes on screen for under a second before
   the first line, like the biggest lore videos that open on the answer and then rewind: the most striking,
   most puzzling moment, never the twist itself, so viewers have to stay to see how it gets there. 0 for none.
+- clue: the number of the scene that plants the small clue the twist proves right. As the twist lands, that
+  scene's closeup flashes back on screen for a split second, so viewers realise it was there all along and rewatch
+  to catch it. 0 if there is no planted clue.
 - mood: 2 or 3 words for the backing music (for example "tense slow piano", "eerie ambient", "upbeat hype").
 - sound: one trending TikTok sound from the trends above that fits this story (name and artist), or a style of
   sound to search for if none fits. The user adds it in the TikTok app when posting.
 
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
-  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none", "teaser": 0,
+  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none", "teaser": 0, "clue": 0,
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "...", "voice_type": "woman"}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "detail": "...", "pace": "normal", "speaker": "narrator", "punch": ["..."], "hit": "none"}}]}}"""
 
@@ -314,6 +317,7 @@ def parse_script(text: str) -> dict:
         "sound": cs.clean(data.get("sound"), 200),
         "score": _score(data.get("score")),
         "teaser": _teaser(data.get("teaser")),
+        "clue": _teaser(data.get("clue")),
         "bible": data.get("bible") if isinstance(data.get("bible"), dict) else {},
         "scenes": [{"text": cs.clean(s.get("text") or s.get("narration"), 120),
                     "narration": cs.clean(s.get("narration") or s.get("text"), 400),
@@ -415,7 +419,7 @@ async def edit_script(client, settings: Settings, brief: str, draft: dict) -> di
         return draft  # the editor cut too much
     edited["character"] = edited["character"] or draft["character"]
     edited["bible"] = edited["bible"] or draft["bible"]
-    for key in ("cover", "mood", "sound", "pinned_comment", "ambience", "teaser"):
+    for key in ("cover", "mood", "sound", "pinned_comment", "ambience", "teaser", "clue"):
         edited[key] = edited[key] or draft[key]
     return edited
 
@@ -1140,6 +1144,22 @@ EDGE_SECONDS = 0.015
 EDGE_FADE = f",afade=t=in:d={EDGE_SECONDS},afade=t=out:st={{out:.3f}}:d={EDGE_SECONDS}"
 
 
+# Lore viewers love the moment a twist proves a clue they saw earlier: as the reveal (the first "boom" after the
+# planted clue) lands, the clue scene's closeup flashes back for the same split second as the opening teaser.
+CLUE_STYLES = ("lore",)
+
+
+def clue_flashback(shots: list, clue: int, played: list) -> dict:
+    """{scene index: the still to flash at its start}: the clue scene's closeup, at the first boom after it."""
+    if not 1 <= clue <= len(shots):
+        return {}
+    twist = next((i for i in range(clue, len(shots)) if i < len(played) and played[i] == "boom"), None)
+    if twist is None:
+        return {}
+    clue_shots = shots[clue - 1]
+    return {twist: clue_shots[1] if len(clue_shots) > 1 else clue_shots[0]}
+
+
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
@@ -1148,8 +1168,9 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
     in place of the swish, and a boom or glitch shakes the camera as it lands
-    (with a white flash or a colour-split glitch, HIT_LOOKS). pace sets how fast the camera pushes. teaser (the first
-    scene only) flashes that later picture for TEASER_SECONDS before the scene's own shots, inside its length."""
+    (with a white flash or a colour-split glitch, HIT_LOOKS). pace sets how fast the camera pushes. teaser flashes
+    another picture for TEASER_SECONDS before the scene's own shots, inside its length: a later moment on the first
+    scene, or the planted clue on the twist scene."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)] if len(
@@ -1459,6 +1480,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     for scene in scenes:
         played.append(scene.get("hit", "") if sfx and sum(map(bool, played)) < MAX_HITS else "")
     tease = script.get("teaser", 0)
+    flashback = clue_flashback(shots, script.get("clue", 0), played) if account.get("style") in CLUE_STYLES else {}
     teaser = shots[tease - 1][0] if account.get("style") in TEASER_STYLES and 3 <= tease <= len(shots) else None
     for i, (mine, (voice, spoken, words), seconds, track) in enumerate(zip(shots, voices, lengths, tracks)):
         part = work / f"scene{i}.mp4"
@@ -1467,7 +1489,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         pace = scenes[i].get("pace", "normal")
         jobs.append((mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
                      pace, grade, i > 0 and pace == "slow" and not hit, STYLE_ATMOSPHERE.get(account.get("style"), ""),
-                     teaser if i == 0 else None, STYLE_VOICE_TONE.get(account.get("style"), ""),
+                     teaser if i == 0 else flashback.get(i), STYLE_VOICE_TONE.get(account.get("style"), ""),
                      account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS))
         parts.append(part)
     await render_all(jobs)
