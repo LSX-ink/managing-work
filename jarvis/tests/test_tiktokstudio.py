@@ -1908,3 +1908,32 @@ def test_blank_or_wrong_shape_pictures_are_asked_for_again():
         return httpx.Response(200, content=png(blank), headers={"content-type": "image/png"})
     assert asyncio.run(cv.fetch_picture(httpx.AsyncClient(transport=httpx.MockTransport(always_blank)), "a door",
                                         "lore", 1, size=(1080, 1920))) is None  # then the scene's own fallbacks take over
+
+
+def test_broken_script_json_is_repaired_not_fatal():
+    import tiktokstudio_video as cv
+
+    raw = ('Here you go:\n{"title": "The lighthouse", "scenes": [{"narration": "She whispered "stay" and left."}, '
+           '{"narration": "Nobody\nanswered."}, {"narration": "The light came on anyway."}],')
+    script = cv.parse_script(raw)
+    assert script["title"] == "The lighthouse" and len(script["scenes"]) == 3
+    assert '"stay"' in script["scenes"][0]["narration"]
+
+
+async def test_an_unreadable_script_gets_a_fixed_copy_before_failing():
+    from types import SimpleNamespace
+
+    import tiktokstudio_video as cv
+    from config import Settings
+
+    good = '{"title": "T", "scenes": [{"narration": "One."}, {"narration": "Two."}]}'
+    replies = ["no json here at all", good]
+    sent = []
+
+    async def create(**kwargs):
+        sent.append(kwargs["messages"])
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text=replies.pop(0))])
+
+    client = SimpleNamespace(messages=SimpleNamespace(create=create))
+    script = await cv._script_reply(client, Settings(), "write it")
+    assert script["title"] == "T" and "doesn't parse" in sent[1][-1]["content"]
