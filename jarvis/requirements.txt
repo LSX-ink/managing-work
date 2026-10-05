@@ -11,6 +11,7 @@ pyautogui>=0.9.54
 # TikTok studio: the story narrator's free voices and ffmpeg for cutting the videos
 edge-tts>=7.0
 imageio-ffmpeg>=0.5
+json-repair>=0.30  # mends the odd broken script JSON
 # Clip accounts: download Twitch clips
 yt-dlp>=2025.1.1
 # Kick clips (n3on.vault): lets yt-dlp reach kick.com like a normal browser

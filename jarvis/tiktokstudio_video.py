@@ -268,12 +268,27 @@ async def learn_lessons(client, settings: Settings, account: dict, videos: list[
 
 # ---- 1. script ---------------------------------------------------------------------------------------------
 
+def loads_lenient(text: str):
+    """JSON from Claude's reply, repaired when it's slightly broken: an unescaped quote or a line break inside a
+    line of narration, a trailing comma, or a reply cut off near the end. Raises ValueError when nothing usable."""
+    start = (text or "").find("{")
+    if start < 0:
+        raise ValueError("The script came back without any JSON.")
+    end = text.rfind("}")
+    try:
+        return json.loads(text[start:end + 1], strict=False)  # strict=False allows raw line breaks in strings
+    except ValueError:
+        pass
+    import json_repair  # handles stray quotes, missing commas and truncated output
+    data = json_repair.loads(text[start:])
+    if not isinstance(data, dict) or not data:
+        raise ValueError("The script's JSON couldn't be repaired.")
+    return data
+
+
 def parse_script(text: str) -> dict:
     """The script JSON from Claude's reply (code fences and chatter around it are fine)."""
-    match = re.search(r"\{.*\}", text or "", re.S)
-    if not match:
-        raise ValueError("The script came back without any JSON.")
-    data = json.loads(match.group(0))
+    data = loads_lenient(text)
     scenes = [s for s in data.get("scenes") or [] if isinstance(s, dict) and cs.clean(s.get("narration") or s.get("text"))]
     if len(scenes) < 2:
         raise ValueError("The script needs at least two scenes.")
@@ -335,11 +350,36 @@ async def write_script(client, settings: Settings, account: dict, idea: str = ""
         lessons=(account.get("lessons") or {}).get("brief") or "not enough views yet",
         viral=(account.get("viral") or {}).get("brief") or "not studied yet; use what you know the biggest lore videos do",
         idea=f"Today's idea from the user: {idea}" if idea else "Pick today's idea yourself.")
-    reply = await client.messages.create(model=settings.model, max_tokens=6000,
-                                         messages=[{"role": "user", "content": prompt}])
-    draft = parse_script("".join(getattr(b, "text", "") for b in reply.content))
+    draft = await _script_reply(client, settings, prompt)
     edited = await edit_script(client, settings, prompt, draft)
     return await fix_retention(client, settings, await pick_hook(client, settings, edited))
+
+
+async def _script_reply(client, settings: Settings, prompt: str) -> dict:
+    """Writes the script; when the JSON can't be read even after repair, Claude gets one go at fixing it,
+    then the script is written afresh, before giving up."""
+    error = None
+    for _ in range(2):
+        reply = await client.messages.create(model=settings.model, max_tokens=8000,
+                                             messages=[{"role": "user", "content": prompt}])
+        text = "".join(getattr(b, "text", "") for b in reply.content)
+        try:
+            return parse_script(text)
+        except ValueError as exc:
+            error = exc
+            print(f"[jarvis] Script JSON unreadable ({exc}); asking for a fixed copy", flush=True)
+        try:
+            fixed = await client.messages.create(model=settings.model, max_tokens=8000, messages=[
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": text or "{}"},
+                {"role": "user", "content": f"That JSON doesn't parse ({error}). Send the same script again as "
+                                            "valid JSON only: escape every double quote inside text with a "
+                                            "backslash, no line breaks inside strings, and nothing before or "
+                                            "after the JSON."}])
+            return parse_script("".join(getattr(b, "text", "") for b in fixed.content))
+        except ValueError as exc:
+            error = exc
+    raise ValueError(f"The script kept coming back unreadable: {error}")
 
 
 async def edit_script(client, settings: Settings, brief: str, draft: dict) -> dict:
@@ -368,7 +408,7 @@ async def pick_hook(client, settings: Settings, script: dict) -> dict:
             {"role": "user", "content": HOOK_PROMPT.format(first=first, second=second, script=json.dumps(
                 [s["narration"] for s in script["scenes"]], ensure_ascii=False))}])
         match = re.search(r"\{.*\}", "".join(getattr(b, "text", "") for b in reply.content), re.S)
-        data = json.loads(match.group(0)) if match else {}
+        data = loads_lenient(match.group(0)) if match else {}
     except Exception as exc:  # the API, or JSON that didn't parse: the current hook stands
         print(f"[jarvis] Hook test skipped: {exc}", flush=True)
         return script
@@ -394,7 +434,7 @@ async def fix_retention(client, settings: Settings, script: dict) -> dict:
         reply = await client.messages.create(model=settings.model, max_tokens=1500, messages=[
             {"role": "user", "content": RETENTION_PROMPT.format(scenes=rows)}])
         match = re.search(r"\{.*\}", "".join(getattr(b, "text", "") for b in reply.content), re.S)
-        data = json.loads(match.group(0)) if match else {}
+        data = loads_lenient(match.group(0)) if match else {}
         weakest = int(data.get("weakest"))
     except Exception as exc:  # the API, or JSON that didn't parse: the script stands
         print(f"[jarvis] Retention pass skipped: {exc}", flush=True)
