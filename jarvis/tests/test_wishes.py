@@ -47,3 +47,19 @@ def test_without_a_token_opens_the_issue_page(monkeypatch, local_log):
     assert url.path == "/me/repo/issues/new"
     q = parse_qs(url.query)
     assert q["title"] == ["Set timers"] and q["labels"] == ["alfred-wish"] and "please" in q["body"][0]
+
+
+def test_requests_say_which_version_of_alfred_filed_them(tmp_path):
+    import wishes
+    from config import Settings
+
+    git = tmp_path / ".git"
+    (git / "refs" / "heads").mkdir(parents=True)
+    (git / "HEAD").write_text("ref: refs/heads/main\n")
+    (git / "refs" / "heads" / "main").write_text("5fa93c54789f996841544e3e486bce76a16c0859\n")
+    assert wishes.code_version(tmp_path) == "5fa93c5"
+    (git / "refs" / "heads" / "main").unlink()
+    (git / "packed-refs").write_text("# pack-refs\n1234567890abcdef refs/heads/main\n")
+    assert wishes.code_version(tmp_path) == "1234567"
+    assert wishes.code_version(tmp_path / "nowhere") == "unknown"
+    assert "running version" in wishes.issue_body(Settings(), "Make it fly")

@@ -354,7 +354,8 @@ async def write_script(client, settings: Settings, account: dict, idea: str = ""
         trends=(account.get("trends") or {}).get("brief") or "not checked yet; use what you know works",
         lessons=(account.get("lessons") or {}).get("brief") or "not enough views yet",
         viral=(account.get("viral") or {}).get("brief") or "not studied yet; use what you know the biggest lore videos do",
-        idea=f"Today's idea from the user: {idea}" if idea else "Pick today's idea yourself.")
+        idea=(f"Today's idea from the user: {idea}. Where it sets a length, style or wording rule (e.g. 'six lines', "
+              "'no dashes'), follow it over the defaults in this brief.") if idea else "Pick today's idea yourself.")
     draft = await _script_reply(client, settings, prompt)
     edited = await edit_script(client, settings, prompt, draft)
     return await fix_retention(client, settings, await pick_hook(client, settings, edited))

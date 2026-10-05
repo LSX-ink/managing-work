@@ -38,9 +38,30 @@ def tool_definition() -> dict:
     }
 
 
+def code_version(repo=ROOT.parent) -> str:
+    """The commit this copy of Jarvis was started from (read from .git, no git needed), or "unknown"."""
+    try:
+        head = (repo / ".git" / "HEAD").read_text(encoding="utf-8").strip()
+        if not head.startswith("ref: "):
+            return head[:7]
+        ref = head[5:]
+        loose = repo / ".git" / ref
+        if loose.exists():
+            return loose.read_text(encoding="utf-8").strip()[:7]
+        for row in (repo / ".git" / "packed-refs").read_text(encoding="utf-8").splitlines():
+            if row.endswith(" " + ref):
+                return row[:7]
+    except OSError:
+        pass
+    return "unknown"
+
+
+RUNNING_VERSION = code_version()  # read once at start-up: a later git pull only counts after a restart
+
+
 def issue_body(settings: Settings, details: str) -> str:
-    return (f"{details.strip()}\n\n---\nAsked of {settings.persona.title()} on {time.strftime('%Y-%m-%d %H:%M')}. "
-            f"Filed by Jarvis's request_new_ability tool for Claude to build.")
+    return (f"{details.strip()}\n\n---\nAsked of {settings.persona.title()} on {time.strftime('%Y-%m-%d %H:%M')}, "
+            f"running version {RUNNING_VERSION}. Filed by Jarvis's request_new_ability tool for Claude to build.")
 
 
 def log_locally(title: str, details: str) -> None:
