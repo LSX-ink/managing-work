@@ -106,3 +106,17 @@ def test_station_view_through_alfred_pushes_a_card(s):
     assert asyncio.run(go()) == "Night mode at the bases."
     assert sent == [{"type": "popup", "card": {"kind": "station", "title": "Station", "id": "station-view",
                                                 "buttons": [], "data": {"action": "night"}}}]
+
+
+def test_video_making_and_the_ship_are_never_hidden_behind_tool_search():
+    from dataclasses import replace
+
+    import brain
+    import tiktokstudio
+    import tools
+    from config import Settings
+
+    assert {tiktokstudio, station} <= tools.ALWAYS_LOADED
+    loaded = {t["name"] for t in brain.request_options(replace(Settings(), model="claude-opus-5"))["tools"]
+              if "name" in t and not t.get("defer_loading")}
+    assert {"tiktok_studio", "station_view"} <= loaded
