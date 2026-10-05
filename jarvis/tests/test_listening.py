@@ -128,3 +128,12 @@ def test_words_survive_a_dropped_line_and_dead_lines_are_redialled():
         "droppedWhenSilent": True,
         "redialled": 2,
     }
+
+
+@pytest.mark.skipif(not shutil.which("node"), reason="needs node")
+def test_listening_mode_and_mic_off_by_voice_are_instant():
+    texts = ["Alfred, go to sleep.", "only listen for your name", "wake up", "Alfred listen to everything",
+             "stop listening", "mic off", "turn the mic off", "go to sleep mode on my laptop", "wake up at 7"]
+    run = subprocess.run(["node", "-e", QUICK_SCRIPT, str(MAIN), json.dumps(texts)],
+                         capture_output=True, text=True, check=True)
+    assert json.loads(run.stdout) == ["wake+", "wake+", "wake-", "wake-", "mic-", "mic-", "mic-", None, None]
