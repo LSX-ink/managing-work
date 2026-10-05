@@ -154,6 +154,15 @@ async def test_error_line_is_in_the_configured_language():
     assert b.messages == []
 
 
+async def test_an_empty_claude_account_is_named_out_loud():
+    async def broke(**kwargs):
+        raise RuntimeError("Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': "
+                           "'Your credit balance is too low to access the Anthropic API.'}}")
+    client = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=broke)))
+    said = await run(Brain(SETTINGS, client, http=None), "Make 2 TikTok videos")
+    assert said == [brain.LINES["en"]["no_credit"]] and "console dot anthropic" in said[0]
+
+
 def test_alfred_persona_changes_the_prompt():
     alfred = replace(SETTINGS, persona="alfred")
     prompt = brain.system_prompt(alfred)
