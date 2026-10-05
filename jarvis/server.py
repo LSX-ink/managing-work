@@ -608,7 +608,9 @@ async def websocket(ws: WebSocket):
         # Keep reading while a turn runs, so approval clicks reach the waiting turn.
         while True:
             msg = await ws.receive_json()
-            if msg.get("type") == "dismiss":
+            if msg.get("type") == "ping":  # the page checking the line is still alive
+                await ws.send_json({"type": "pong"})
+            elif msg.get("type") == "dismiss":
                 await dismiss_alert(ws.app, msg.get("id"))
             elif msg.get("type") == "cancel":
                 dropped = 0

@@ -16,6 +16,7 @@ const STRINGS = {
     en: {
         wake: 'Click the orb to wake {name}.',
         reconnecting: 'Connection lost. Reconnecting…',
+        willSend: 'Reconnecting… I\'ll answer that as soon as I\'m back.',
         thinking: 'Thinking…',
         listening: 'Listening…',
         listeningWake: 'Say "{name}" to talk to me…',
@@ -46,6 +47,7 @@ const STRINGS = {
     af: {
         wake: 'Klik op die bol om {name} wakker te maak.',
         reconnecting: 'Verbinding verloor. Koppel weer…',
+        willSend: 'Koppel weer… Ek antwoord sodra ek terug is.',
         thinking: 'Dink…',
         listening: 'Luister…',
         listeningWake: 'Sê "{name}" om met my te praat…',
@@ -314,6 +316,8 @@ function connect(onOpen) {
     ws = new WebSocket(`${proto}://${location.host}/ws`);
     ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
+        awaitingPong = false;
+        if (msg.type === 'pong') return;   // only proves the line is alive
         busySince = Date.now();   // still working on it
         if (msg.type === 'say') {
             if (msg.join || msg.part) lastAnswer.push(msg);
@@ -350,31 +354,71 @@ function connect(onOpen) {
             maybeListen();
         }
     };
-    ws.onopen = () => { reconnectDelay = 1000; onOpen && onOpen(); };
-    ws.onclose = () => {
-        busy = false;
-        confirmBox.hidden = true;
-        if (started) setState('idle', t('reconnecting'));
-        // Try again quickly at first, then less often, so a PC that's restarting Alfred isn't hammered.
-        clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(reconnectNow, reconnectDelay);
-        reconnectDelay = Math.min(15000, reconnectDelay * 2);
+    ws.onopen = () => {
+        reconnectDelay = 1000;
+        awaitingPong = false;
+        // Anything said while the line was down goes now, so it isn't lost.
+        const waiting = unsent.splice(0);
+        waiting.forEach(send);
+        onOpen && onOpen();
     };
+    ws.onclose = lostConnection;
 }
+
+function lostConnection() {
+    busy = false;
+    confirmBox.hidden = true;
+    if (started) setState('idle', t('reconnecting'));
+    // Try again quickly at first, then less often, so a PC that's restarting Alfred isn't hammered.
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(reconnectNow, reconnectDelay);
+    reconnectDelay = Math.min(15000, reconnectDelay * 2);
+}
+
+// A phone that changes Wi-Fi or mobile signal can leave the line looking open while nothing gets through.
+// Check it every 20 seconds; if the last check got no answer, drop it and reconnect at once.
+const PING_EVERY_MS = 20000;
+let awaitingPong = false;
+setInterval(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (awaitingPong) {
+        const dead = ws;
+        dead.onclose = null;
+        dead.onmessage = null;
+        try { dead.close(); } catch (_) { /* already gone */ }
+        ws = null;
+        reconnectDelay = 1000;
+        lostConnection();
+        return;
+    }
+    awaitingPong = true;
+    ws.send(JSON.stringify({ type: 'ping' }));
+}, PING_EVERY_MS);
+
+// What you said while the connection was down (at most a few things), sent when it comes back.
+const unsent = [];
 
 let reconnectDelay = 1000;
 let reconnectTimer = null;
 function reconnectNow() {
     clearTimeout(reconnectTimer);
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-    connect(() => { if (started) setState('idle', ''); maybeListen(); });
+    connect(() => { if (started && !busy) setState('idle', ''); maybeListen(); });
 }
 addEventListener('online', () => { if (started) reconnectNow(); });
 // Connect as soon as the page opens, so the first tap on the orb is answered without waiting for a connection.
 setTimeout(() => { if (!started && !ws) connect(null); }, 300);   // the network is back: don't wait
 
 function send(payload) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        if (payload.text) {
+            unsent.push(payload);
+            if (unsent.length > 3) unsent.shift();
+            statusEl.textContent = t('willSend');
+            reconnectNow();
+        }
+        return;
+    }
     busy = true;
     busySince = Date.now();
     stopListening();
