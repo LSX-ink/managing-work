@@ -52,7 +52,7 @@ MAX_ALERTS = 30  # notifications kept for the page
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.client = anthropic.AsyncAnthropic()
+    app.state.client = anthropic.AsyncAnthropic(max_retries=4)  # ride out short busy spells before giving up
     app.state.http = httpx.AsyncClient(timeout=30)
     app.state.pages = {}  # open pages: id(WebSocket) -> (WebSocket, its speak function, its Brain)
     app.state.alerts = []  # notifications shown on the page, newest last

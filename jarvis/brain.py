@@ -23,6 +23,8 @@ Speak = Callable[..., Awaitable[None]]  # speak(text, quiet=False, join=False)
 Confirm = Callable[[list[str]], Awaitable[str]]
 
 MAX_TOOL_ROUNDS = 30
+RETRY_ADVICE = "Read the error, fix the input and try again, or reach the goal another way."
+STUCK_EFFORT = {"low": "medium", "medium": "high"}  # think harder for the rest of a turn once a tool fails
 MAX_IMAGES_KEPT = 12
 MAX_DOCUMENTS_KEPT = 6
 MAX_TURNS_KEPT = 20
@@ -118,6 +120,18 @@ PERSONAS = {
 }
 
 
+PROBLEM_SOLVING = """How you solve problems on your own:
+- Work out what the user actually wants as the end result, not just the literal words, and deliver that result.
+- Don't ask a question when a sensible default exists: pick it, do the job, and mention the assumption in a few words. Ask only when a wrong guess would cost money, delete something or send something in their name.
+- For a request with several parts, do every part in this turn, one after another, and call independent tools at the same time.
+- Chain your abilities: look things up, then act on what you found, then show or save the result. Use a search, a calculator or a file instead of guessing.
+- If a tool fails, read the error, fix what you sent and try once more; if it fails again, take a different route (another tool, a web search, the screen, or a background helper) rather than giving up.
+- Never call the same tool with the same input after it has failed twice.
+- Check the result before saying it's done: read back what a tool returned, and say plainly what worked and what didn't. Never claim something happened that a tool didn't confirm.
+- When something is outside every ability you have, say what you can do instead, then use request_new_ability.
+- When you finish, offer one useful next step only if there's an obvious one."""
+
+
 def persona(settings: Settings) -> dict:
     return PERSONAS.get(settings.persona, PERSONAS["jarvis"])
 
@@ -147,6 +161,8 @@ Timers and reminders: use set_timer for "set a timer…" or "in 10 minutes", che
 Listening: the user can say "stop" or "quiet" while you speak to cut you off. If they ask you to only listen when they say your name (or to answer everything again), use listen_for_name.
 
 More abilities: making and posting TikTok videos (tiktok_studio) and the station and ship (station_view) are always loaded, so use them directly. Besides the tools you can see, you have many more that load on demand (games and quizzes, words and definitions, calculators and conversions, dates, birthdays and countdowns, news, air quality and other live info, home trackers such as meals, recipes, pantry, bins, bills, plants and diary, wellbeing logs, goals, workouts, flashcards, reading lists, and PC controls such as brightness, clipboard, Wi-Fi and windows). When no visible tool fits, search for one with tool_search_tool_bm25 using a few plain key words before saying you can't.
+
+{PROBLEM_SOLVING}
 
 Showing things: when the user asks to see or show something, or it's easier to read than hear (a list, a table, numbers over time, a file, a web page, a picture), pop it up on the Alfred screen with show_on_screen and just say a short line about it. Never open the web browser for this.
 
@@ -355,6 +371,7 @@ class Brain:
         self.confirm = confirm
         self._computer = pc_control  # created on first use; tests pass a fake
         self._allow_all = False  # "allow for this task": lasts until the user's next message
+        self._failures: dict[str, int] = {}  # failed tool calls this turn, to stop the same mistake repeating
         self.messages: list[dict] = load_carry_over(settings)  # picks up where the last session left off
         self._notes: list[str] = []  # announcements made since the user last spoke
 
@@ -389,6 +406,7 @@ class Brain:
         stamp = time.strftime("%A %d %B, %H:%M")
         start = len(self.messages)
         self._allow_all = False
+        self._failures = {}
         notes = "".join(f"(You announced at {n})\n" for n in self._notes)
         self._notes.clear()
         self.messages.append({"role": "user", "content": f"(Local time: {stamp})\n{notes}{user_text}"})
@@ -436,7 +454,31 @@ class Brain:
             by_id = dict(zip((c.id for c in other), await asyncio.gather(*(self._tool_result(c) for c in other))))
             by_id.update(await self._computer_results(screen_calls))
             self.messages.append({"role": "user", "content": [by_id[c.id] for c in calls]})
+            effort = opts.get("output_config", {}).get("effort")
+            if effort in STUCK_EFFORT and any(r.get("is_error") for r in by_id.values()):
+                opts = {**opts, "output_config": {**opts["output_config"], "effort": STUCK_EFFORT[effort]}}
 
+        await self._wrap_up(opts, speak)
+
+    async def _wrap_up(self, opts: dict, speak: Speak) -> None:
+        """Out of steps: rather than a canned apology, say what got done and what's left."""
+        last = self.messages[-1]
+        if last["role"] != "user" or not isinstance(last["content"], list):
+            await speak(line(self.settings, "loop"))
+            return
+        last["content"].append({"type": "text", "text": (
+            "(You've used every step for this request. Don't call any more tools: tell the user in one or two "
+            "sentences what you finished and what's still left, so they can ask you to carry on.)")})
+        try:
+            response, spoken = await self._respond({**opts, "tool_choice": {"type": "none"}}, speak)
+            self.messages.append({"role": "assistant", "content": response.content})
+            text = spoken_text(response.content)
+            if text and not spoken:
+                await speak(text)
+            if text:
+                return
+        except Exception as exc:
+            print(f"[jarvis] Wrap-up failed: {exc!r}", flush=True)
         await speak(line(self.settings, "loop"))
 
     async def _respond(self, opts: dict, speak: Speak):
@@ -484,7 +526,12 @@ class Brain:
             return {"type": "tool_result", "tool_use_id": call.id, "content": content}
         except Exception as exc:  # report any tool failure back to Claude rather than crash the turn
             print(f"  tool {call.name} failed: {exc!r}", flush=True)
-            return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {exc}", "is_error": True}
+            key = f"{call.name}:{json.dumps(call.input, sort_keys=True, default=str)}"
+            self._failures[key] = self._failures.get(key, 0) + 1
+            advice = (RETRY_ADVICE if self._failures[key] < 2 else
+                      "This exact call has now failed twice. Don't repeat it: take a different approach.")
+            return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {exc}\n{advice}",
+                    "is_error": True}
 
 
     async def _computer_results(self, calls) -> dict[str, dict]:
