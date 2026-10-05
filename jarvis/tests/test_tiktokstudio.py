@@ -716,6 +716,10 @@ def test_missing_pictures_are_retried_then_filled_from_other_shots():
     assert pictures[2] is not None and pictures[2].getpixel((5, 5)) == (0, 0, 200)  # the nearest scene, mirrored
     assert all(p is not None for p in pictures)
     assert cv.fill_gaps([None, None], [None, None]) == ([None, None], [None, None])  # nothing to borrow
+    c = Image.new("RGB", (64, 64), (0, 200, 0))
+    pictures, closeups, details = cv.fill_gaps([a, None, None], [None, None, None], [None, c, None])
+    assert pictures[1] is c and details[1] is None  # the scene's own detail shot beats a neighbour's crop
+    assert pictures[2].getpixel((5, 5)) == (0, 200, 0)  # and can itself be borrowed by the next scene
 
 
 def test_a_failed_picture_is_fetched_again(s, tmp_path, monkeypatch):
