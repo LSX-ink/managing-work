@@ -312,6 +312,8 @@ function connect(onOpen) {
         const msg = JSON.parse(event.data);
         busySince = Date.now();   // still working on it
         if (msg.type === 'say') {
+            if (msg.join || msg.part) lastAnswer.push(msg);
+            else lastAnswer = [msg];
             if (msg.join) joinLine(msg.text);
             else if (!msg.quiet) addLine('jarvis', msg.text);
             queue.push(msg);
@@ -348,7 +350,7 @@ function connect(onOpen) {
     ws.onclose = () => {
         busy = false;
         confirmBox.hidden = true;
-        setState('idle', t('reconnecting'));
+        if (started) setState('idle', t('reconnecting'));
         // Try again quickly at first, then less often, so a PC that's restarting Alfred isn't hammered.
         clearTimeout(reconnectTimer);
         reconnectTimer = setTimeout(reconnectNow, reconnectDelay);
@@ -361,9 +363,11 @@ let reconnectTimer = null;
 function reconnectNow() {
     clearTimeout(reconnectTimer);
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-    connect(() => { setState('idle', ''); maybeListen(); });
+    connect(() => { if (started) setState('idle', ''); maybeListen(); });
 }
-addEventListener('online', () => { if (started) reconnectNow(); });   // the network is back: don't wait
+addEventListener('online', () => { if (started) reconnectNow(); });
+// Connect as soon as the page opens, so the first tap on the orb is answered without waiting for a connection.
+setTimeout(() => { if (!started && !ws) connect(null); }, 300);   // the network is back: don't wait
 
 function send(payload) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -547,8 +551,20 @@ let heardText = '';         // the finished words of what you're saying now
 let discardHeard = false;   // listening was cut off on purpose (Alfred started talking, you typed)
 let endTimer = null;
 
+// "Say that again": replay Alfred's last answer straight away, without asking Claude.
+let lastAnswer = [];
+const REPEAT = /^(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )?(?:say that again|repeat that|repeat|can you repeat that|what did you say|pardon|come again|sorry what|say again)(?:,? (?:alfred|jarvis|please))*[.?!]?$/i;
+function repeatLast() {
+    if (!lastAnswer.length) return false;
+    lastAnswer.forEach((m) => queue.push({ ...m, part: true }));   // no new captions or transcript lines
+    playNext();
+    return true;
+}
+
 // One whole thing you said: send it to Alfred, unless he waits for his name and it wasn't used.
 function heard(text) {
+    const recent = Date.now() - lastSpokeAt < FOLLOW_UP_MS;
+    if (REPEAT.test(text.trim()) && (recent || !wakeOnly || calledByName(text)) && repeatLast()) return;
     if (onlyName(text)) {
         lastSpokeAt = Date.now();          // the next thing you say needs no name
         readyTone();
@@ -685,7 +701,9 @@ orb.addEventListener('click', () => {
     if (!started) {
         started = true;
         keepScreenOn();
-        connect(() => send({ type: 'activate' }));
+        if (ws && ws.readyState === WebSocket.OPEN) send({ type: 'activate' });   // already connected: no wait
+        else if (ws && ws.readyState === WebSocket.CONNECTING) ws.addEventListener('open', () => send({ type: 'activate' }), { once: true });
+        else connect(() => send({ type: 'activate' }));
         return;
     }
     if (speaking) {

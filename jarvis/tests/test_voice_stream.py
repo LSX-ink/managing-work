@@ -126,3 +126,21 @@ def test_saying_cancel_stops_a_long_turn(monkeypatch):
             ws.send_json({"type": "cancel"})
             assert ws.receive_json() == {"type": "note", "text": "Cancelled."}
             assert ws.receive_json() == {"type": "done"}
+
+
+async def test_short_lines_are_voiced_once_then_replayed_from_memory():
+    import httpx
+
+    import tts
+    tts._cache.clear()
+    calls = []
+
+    def answer(request):
+        calls.append(request)
+        return httpx.Response(200, content=b"MP3")
+
+    settings = Settings(elevenlabs_api_key="key")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(answer)) as http:
+        for _ in range(3):
+            assert [p async for p in tts.stream(http, settings, "One moment, sir.")] == [("One moment, sir.", b"MP3")]
+    assert len(calls) == 1

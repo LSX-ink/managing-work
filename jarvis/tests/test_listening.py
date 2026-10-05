@@ -34,3 +34,20 @@ def test_his_name_is_heard_even_when_misheard():
     run = subprocess.run(["node", "-e", SCRIPT, str(MAIN), json.dumps(list(cases))],
                          capture_output=True, text=True, check=True)
     assert json.loads(run.stdout) == cases
+
+
+REPEAT_SCRIPT = """
+const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const line = src.split('\\n').find((l) => l.startsWith('const REPEAT = '));
+eval(line.replace('const REPEAT', 'globalThis.REPEAT'));
+console.log(JSON.stringify(JSON.parse(process.argv[2]).map((t) => REPEAT.test(t))));
+"""
+
+
+@pytest.mark.skipif(not shutil.which("node"), reason="needs node")
+def test_say_that_again_is_recognised():
+    texts = ["Say that again", "Alfred, repeat that please", "what did you say?", "pardon",
+             "repeat my last order", "say hello to mum"]
+    run = subprocess.run(["node", "-e", REPEAT_SCRIPT, str(MAIN), json.dumps(texts)],
+                         capture_output=True, text=True, check=True)
+    assert json.loads(run.stdout) == [True, True, True, True, False, False]
