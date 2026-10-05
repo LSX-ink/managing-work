@@ -259,6 +259,31 @@ def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT) -> list[
     return messages[starts[-max_turns]:]
 
 
+_NAME = r"(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )?"
+_ASK_TIME = re.compile(_NAME + r"(?:what(?:'s| is) the time|what time is it|tell me the time|time please|the time)"
+                       r"(?: (?:now|please|right now))?(?:,? (?:alfred|jarvis|please))*[?.!]*$", re.I)
+_ASK_DATE = re.compile(_NAME + r"(?:what(?:'s| is) (?:the date|today's date|the date today)|what day is it|"
+                       r"what day is (?:it )?today|what's today)(?: today)?(?:,? (?:alfred|jarvis|please))*[?.!]*$", re.I)
+
+
+def _ordinal(n: int) -> str:
+    return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+
+
+def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
+    """The time or the date, answered on the spot: no need to wait for Claude for these."""
+    if not (settings.speech_lang or "en").lower().startswith("en"):
+        return None
+    said = text.strip()
+    now = now or time.localtime()
+    if _ASK_TIME.match(said):
+        hour = now.tm_hour % 12 or 12
+        return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
+    if _ASK_DATE.match(said):
+        return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
+    return None
+
+
 def time_of_day(hour: int | None = None) -> str:
     """'morning' before noon, 'afternoon' until 6 pm, else 'evening' (local time)."""
     hour = time.localtime().tm_hour if hour is None else hour
@@ -438,6 +463,10 @@ class Brain:
         self._notes.append(f"{time.strftime('%H:%M')} {text}")
 
     async def handle(self, user_text: str, speak: Speak) -> None:
+        if (quick := instant_answer(user_text, self.settings)) is not None:
+            self.messages += [{"role": "user", "content": user_text}, {"role": "assistant", "content": quick}]
+            await speak(quick)
+            return
         stamp = time.strftime("%A %d %B, %H:%M")
         start = len(self.messages)
         self._allow_all = False
