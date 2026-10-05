@@ -1841,3 +1841,40 @@ def test_a_tension_riser_builds_into_a_lore_reveal(s, tmp_path, monkeypatch):
         assert abs(cv.audio_seconds(tmp_path / video) - 4.0) < 0.15
         assert loudness(tmp_path / video, 3.3, 0.5) > loudness(tmp_path / video, 2.0, 0.5) + 6  # it swells to the cut
     assert loudness(tmp_path / "r.mp4", 0.2, 1.0) < -60  # silent before the swell starts
+
+
+def test_lore_gets_its_own_dark_score_when_no_track_is_dropped_in(s, tmp_path, monkeypatch):
+    assert cv.score_notes("tense slow piano") == cv.SCORE_NOTES["tense"] and cv.score_notes("") == cv.SCORE_NOTES["calm"]
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "mood": "eerie ambient"}))
+    scored = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    monkeypatch.setattr(cv, "audio_seconds", lambda path: 70.0)
+    monkeypatch.setattr(cv, "normalise", lambda a, b: b.write_bytes(a.read_bytes()))
+    monkeypatch.setattr(cv, "make_score", lambda seconds, mood, out: (scored.append((seconds, mood)), out.write_bytes(b"w")))
+    monkeypatch.setattr(cv, "add_music", lambda video, track, out: (scored.append(track.name), out.write_bytes(b"mp4")))
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert scored == [(70.0, "eerie ambient"), "score.wav"]
+    scored.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    asyncio.run(cv.make(None, None, s, {**lore, "music": False}, tmp_path, script=script))
+    assert scored == []  # other looks, or music switched off, stay as they were
+    mine = tmp_path / "mine.mp3"
+    monkeypatch.setattr(cv, "music_for", lambda *a: mine)
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert scored == ["mine.mp3"]  # a track the user dropped in always wins
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    cv.make_score(5.0, "tense", tmp_path / "score.wav")
+    assert cv.audio_seconds(tmp_path / "score.wav") > 5.0 + cv.MUSIC_SKIP  # never runs out and loops

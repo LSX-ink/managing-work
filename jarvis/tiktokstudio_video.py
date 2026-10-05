@@ -1160,6 +1160,29 @@ def add_music(video: Path, track: Path, out: Path) -> None:
          "-movflags", "+faststart", str(out)])
 
 
+# A score made by ffmpeg itself for the styles that need one, when the user hasn't dropped a track in a Music folder:
+# big lore videos never run on a bare voice. A slow, dark A-minor drone (root, octave, minor third, fifth), each upper
+# note breathing in and out at its own pace so it never sounds like a held organ key; tense moods add the flat
+# second for unease. It goes through add_music, so it ducks under the voice like any track.
+SCORE_STYLES = ("lore",)
+SCORE_NOTES = {"calm": (55, 110, 130.81, 164.81), "tense": (55, 110, 116.54, 130.81, 164.81)}
+TENSE_WORDS = ("tense", "dread", "eerie", "dark", "creepy", "suspense", "horror", "ominous", "uneasy")
+
+
+def score_notes(mood: str) -> tuple:
+    return SCORE_NOTES["tense" if any(w in (mood or "").lower() for w in TENSE_WORDS) else "calm"]
+
+
+def make_score(seconds: float, mood: str, out: Path) -> None:
+    notes = score_notes(mood)
+    voices = [f"0.3*sin(2*PI*{notes[0]}*t)"] + [
+        f"{0.16 / (1 + i * 0.3):.3f}*sin(2*PI*{f}*t)*(0.55+0.45*sin(2*PI*{0.03 + i * 0.017:.3f}*t+{i}))"
+        for i, f in enumerate(notes[1:])]
+    length = seconds + MUSIC_SKIP + 1  # longer than add_music can ever need, so it never loops with a click
+    run(["-f", "lavfi", "-i", f"aevalsrc='{'+'.join(voices)}':s=44100:d={length:.2f}",
+         "-af", "lowpass=f=1400,aecho=0.8:0.6:420:0.3,afade=t=in:d=3,volume=0.9", "-ac", "2", str(out)])
+
+
 # a quiet bed of room tone under the whole video, made by ffmpeg itself (no files needed): the scene's world
 AMBIENCE = {
     "rain": "anoisesrc=c=pink:a=0.5,highpass=f=400,lowpass=f=6000,volume=0.38",
@@ -1352,6 +1375,13 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         except Exception as exc:
             print(f"[jarvis] Ambience skipped: {exc}", flush=True)
     track = music_for(folder, script.get("mood", ""))
+    if track is None and account.get("style") in SCORE_STYLES and account.get("music", True) is not False:
+        try:
+            await asyncio.to_thread(make_score, audio_seconds(work / "joined.mp4"), script.get("mood", ""),
+                                    work / "score.wav")
+            track = work / "score.wav"
+        except Exception as exc:  # no score: the voice and room tone still carry it
+            print(f"[jarvis] Score skipped: {exc}", flush=True)
     if track:
         try:
             await asyncio.to_thread(add_music, work / "joined.mp4", track, work / "scored.mp4")
