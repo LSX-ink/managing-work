@@ -2047,3 +2047,30 @@ def test_a_rejected_moment_only_rules_out_that_stretch_of_the_stream():
     assert clips.overlaps("https://twitch.tv/videos/1", 1050.0, used)
     assert not clips.overlaps("https://twitch.tv/videos/1", 3000.0, used)  # the rest of the stream is fine
     assert not clips.overlaps("https://twitch.tv/videos/2", 997.0, used)
+
+
+def test_review_fixes_for_moment_videos(s):
+    stream = "https://twitch.tv/videos/1"
+    # a fresh moment can't share footage with a used stretch, and a follow-on can't re-cut one
+    used = [clips.moment_key(stream, 100.0, 162.0), clips.moment_key(stream, 221.0, 283.0)]
+    assert clips.overlaps(stream, 150.0, used) and not clips.overlaps(stream, 162.0, used, 221.0)
+    assert clips.overlaps(stream, 224.0, used, 286.0)
+    prev = {"id": "v1", "hook": "He snapped", "moment": {"vod": stream, "end": 162.0, "length": 0,
+                                                         "clip": {"broadcaster_name": "kai"}}}
+    with pytest.raises(ValueError, match="already in another video"):
+        asyncio.run(clips.make_continuation(s, {"used_clips": [clips.moment_key(stream, 200.0, 262.0)]},
+                                            Path(s.memory_dir), prev))
+    # without Claude a follow-on never repeats the earlier title
+    assert asyncio.run(clips.continuation_hook(None, s, prev)) == "kai didn't stop there"
+    # Twitch stream lengths are read, so a cut stops at the end of the stream
+    assert twitch.seconds("3h8m33s") == 11313.0 and twitch.seconds("") == 0.0
+
+
+def test_set_views_on_a_moment_video_talks_about_the_next_minute_not_parts(s):
+    data = cs.load(s)
+    data["videos"].append({"id": "v1", "account": "Clipzz", "title": "kai snapped", "status": "posted", "views": 0,
+                           "moment": {"vod": "x", "end": 60.0, "length": 0, "clip": {}}})
+    cs.save(s, data)
+    said = creator.set_views(s, "v1", "150k")
+    assert "200,000" in said and "part" not in said.lower()
+    assert "next minute" in creator.set_views(s, "v1", "210k")

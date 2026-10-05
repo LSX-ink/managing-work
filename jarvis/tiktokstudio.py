@@ -89,8 +89,10 @@ def continuations_due(data: dict) -> list[dict]:
     for v in data["videos"]:
         account = cs.find_account(data, v.get("account"))
         bar = (account or {}).get("continue_at") or 0
+        follow = [w for w in data["videos"] if w.get("continues") == v["id"]]
+        tried_enough = any(w.get("status") != "failed" for w in follow) or len(follow) >= 2  # a failed cut gets one retry
         if (not bar or not v.get("moment") or account.get("off") or v.get("status") not in ("posted", "approved")
-                or v.get("views", 0) < bar or any(w.get("continues") == v["id"] for w in data["videos"])):
+                or v.get("views", 0) < bar or tried_enough):
             continue
         due.append(v)
     return due
@@ -520,6 +522,12 @@ def set_views(settings: Settings, ref: str, views) -> str:
     if v.get("status") == "ready":
         v["status"] = "approved"  # it's clearly out there
     cs.save(settings, data)
+    account = cs.find_account(data, v.get("account")) or {}
+    if v.get("moment") and account.get("continue_at"):  # a clip moment: the next minute follows, never a "part"
+        bar = account["continue_at"]
+        if v["views"] >= bar:
+            return f"Noted {v['views']:,} views on '{v['title']}'. That earns the next minute of the stream; I'll cut it shortly."
+        return f"Noted {v['views']:,} views. The next minute of that stream follows at {bar:,}."
     part = v.get("part", 1)
     need = views_needed(part)
     if part >= LAST_PART:

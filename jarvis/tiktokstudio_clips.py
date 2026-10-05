@@ -36,7 +36,6 @@ import twitch
 MIN_SECONDS = 61.0
 MOMENT_SECONDS = 62.0  # a moment video: just over a minute of the stream
 LEAD_SECONDS = 3.0  # start a touch before the clip, so the moment isn't joined mid-sentence
-MOMENT_GAP = 120.0  # two moment videos from the same stream are at least this far apart
 PART_WORDS = re.compile(r"\b(?:part|pt\.?|episode|ep\.?)\s*\d+\b|\(\s*\d+\s*\)|\bcontinued\b|\bcont'?d\b", re.I)
 CONTINUE_PROMPT = """A TikTok clip of {streamer} went viral: "{title}". The next video shows the minute of the stream
 straight after it. Write one scroll-stopping hook for the top of that next video, under 12 words, no hashtags.
@@ -124,10 +123,12 @@ async def sources(http, settings, account: dict, era: str) -> list[dict]:
             problems.append(f"Twitch: {str(exc)[:160]}")
     if account.get("stream_min_views") and any(c.get("video_id") for c in found):
         try:  # moment videos only come from streams watched enough: ask Twitch how many views each stream had
-            views = await twitch.video_views(http, settings, [c["video_id"] for c in found if c.get("video_id")])
+            info = await twitch.video_views(http, settings, [c["video_id"] for c in found if c.get("video_id")])
             for c in found:
-                if c.get("video_id"):
-                    c["stream_views"] = views.get(str(c["video_id"]), 0)
+                if c.get("video_id") and str(c["video_id"]) in info:
+                    c["stream_views"], length = info[str(c["video_id"])]
+                    if c.get("vod") and length:  # so a cut never runs past the end of the stream
+                        c["vod"] = (c["vod"][0], c["vod"][1], length)
         except Exception as exc:
             print(f"[jarvis] Twitch stream views: {exc}", flush=True)
     if not found and problems:
@@ -296,20 +297,29 @@ def moment_record(clip: dict, vod: tuple, end: float) -> dict:
     return {"vod": vod[0], "end": end, "length": vod[2] or 0, "clip": {k: clip.get(k) for k in keep if clip.get(k) is not None}}
 
 
-def moment_key(vod_url: str, start: float) -> str:
+def moment_key(vod_url: str, start: float, end: float | None = None) -> str:
     """Kept in the account's used list, so the same stretch of a stream is never posted twice."""
-    return f"moment:{vod_url}@{int(start)}"
+    return f"moment:{vod_url}@{int(start)}-{int(end if end is not None else start + MOMENT_SECONDS)}"
 
 
-def overlaps(vod_url: str, start: float, used) -> bool:
-    for key in used:
-        if key.startswith(f"moment:{vod_url}@"):
+def used_stretches(vod_url: str, used) -> list[tuple[float, float]]:
+    """(start, end) of every stretch of this stream already made into a video."""
+    found = []
+    for key in used or ():
+        if str(key).startswith(f"moment:{vod_url}@"):
+            span = str(key).rsplit("@", 1)[1]
             try:
-                if abs(float(key.rsplit("@", 1)[1]) - start) < MOMENT_GAP:
-                    return True
+                a, _, b = span.partition("-")
+                found.append((float(a), float(b) if b else float(a) + MOMENT_SECONDS))
             except ValueError:
                 pass
-    return False
+    return found
+
+
+def overlaps(vod_url: str, start: float, used, end: float | None = None) -> bool:
+    """True when start..end (a minute by default) shares any footage with a stretch already used."""
+    end = start + MOMENT_SECONDS if end is None else end
+    return any(a < end and start < b for a, b in used_stretches(vod_url, used))
 
 
 async def stream_views(clip: dict, vod_lists: dict) -> int:
@@ -376,16 +386,15 @@ async def cut_moment(clips: list[dict], vod_lists: dict, work: Path, stream_min:
 
 async def continuation_hook(client, settings, prev: dict) -> str:
     clip = prev["moment"]["clip"]
-    fallback = standalone(prev.get("hook") or prev.get("title") or clip.get("title") or "") or \
-        f"{clip.get('broadcaster_name', 'This streamer')} didn't stop there"
+    fallback = f"{clip.get('broadcaster_name', 'This streamer')} didn't stop there"  # never the earlier title again
     if client is None:
         return fallback
     try:
         reply = await client.messages.create(model=settings.model, max_tokens=300, messages=[{"role": "user", "content":
             CONTINUE_PROMPT.format(streamer=clip.get("broadcaster_name", "a streamer"),
                                    title=prev.get("hook") or prev.get("title") or clip.get("title", ""))}])
-        hook = standalone(" ".join(getattr(b, "text", "") for b in reply.content).strip().strip('"'))
-        return hook[:90] or fallback
+        hook = standalone(" ".join(getattr(b, "text", "") for b in reply.content).strip().strip('"'))[:90]
+        return hook if hook and hook.lower() != str(prev.get("hook") or prev.get("title") or "").lower() else fallback
     except Exception as exc:
         print(f"[jarvis] Continuation hook: {exc}", flush=True)
         return fallback
@@ -397,6 +406,8 @@ async def make_continuation(settings, account: dict, folder: Path, prev: dict, c
     window = moment_window(float(moment.get("end") or 0), float(moment.get("length") or 0)) if moment.get("vod") else None
     if not window:
         raise ValueError("That moment's stream has no full minute left, so it ends here.")
+    if overlaps(moment["vod"], window[0], account.get("used_clips"), window[1]):
+        raise ValueError("The next minute of that stream is already in another video, so this moment ends here.")
     work = folder / f".{cs.new_id()}"
     work.mkdir(parents=True, exist_ok=True)
     try:
@@ -408,7 +419,7 @@ async def make_continuation(settings, account: dict, folder: Path, prev: dict, c
     hook = await continuation_hook(client, settings, prev)
     result = await _render(settings, folder, work, [(clip, path)], hook, prev.get("keyword") or "moment",
                            window[1] - window[0], 0, {**moment, "end": window[1]})
-    result["clip_ids"].append(moment_key(moment["vod"], window[0]))
+    result["clip_ids"].append(moment_key(moment["vod"], window[0], window[1]))
     return result
 
 
@@ -427,10 +438,13 @@ async def make(http, settings, account: dict, folder: Path, era: str, client=Non
     used = set(account.get("used_clips") or [])
     min_views, pad = account.get("min_views") or 0, account.get("extend") or 0
     found = viral(guard(await sources(http, settings, account, era), account), used, min_views)
-    for _ in range(3):  # nothing new enough: old viral moments are just as good, so try a few past weeks
-        if found:
-            break
-        found = viral(guard(await sources(http, settings, account, "old"), account), used, min_views)
+    if account.get("continue_at"):  # moment accounts: old viral moments are just as good, so try a few past weeks
+        for _ in range(3):
+            if found:
+                break
+            found = viral(guard(await sources(http, settings, account, "old"), account), used, min_views)
+    elif not found and era == "old":  # a quiet week; try another
+        found = viral(guard(await sources(http, settings, account, era), account), used, min_views)
     vod_lists: dict = {}
     if account.get("continue_at"):  # moment videos: rank whole moments, not single clips
         found = [m for m in await find_moments(found, vod_lists)
@@ -449,7 +463,7 @@ async def make(http, settings, account: dict, folder: Path, era: str, client=Non
         clip, path, total, moment = cut
         hook = hook or hook_line([clip])
         result = await _render(settings, folder, work, [(clip, path)], hook, era, total, 0, moment)
-        result["clip_ids"].append(moment_key(moment["vod"], moment["end"] - total))
+        result["clip_ids"].append(moment_key(moment["vod"], moment["end"] - total, moment["end"]))
         return result
     if pad:  # extended cuts: one moment is usually a minute and a half on its own
         for i, clip in enumerate(ordered[:MAX_CLIPS]):
@@ -465,7 +479,7 @@ async def make(http, settings, account: dict, folder: Path, era: str, client=Non
     if total < MIN_SECONDS:
         _clear(work)
         need = f" with {min_views:,}+ views" if min_views else ""
-        raise ValueError(f"I couldn't find enough unused viral clips{need}, new or old, to fill a minute.")
+        raise ValueError(f"I couldn't find enough fresh viral clips{need} to fill a minute.")
     hook = hook or hook_line([c for c, _ in sources_cut])
     return await _render(settings, folder, work, sources_cut, hook, era, total, extended, None)
 
@@ -487,8 +501,9 @@ async def _render(settings, folder: Path, work: Path, sources_cut: list, hook: s
     title = cs.slug(f"{names[0]} - {hook}"[:80])
     video = folder / f"{title}.mp4"
     n = 2
-    while video.exists():
-        video, n = folder / f"{title} ({n}).mp4", n + 1
+    while video.exists():  # a word, not "(2)": nothing about a video should read like a part number
+        word = ["again", "more", "still", "later", "after"][(n - 2) % 5] + ("" if n < 7 else " " + cs.new_id()[-4:])
+        video, n = folder / f"{title} - {word}.mp4", n + 1
     await asyncio.to_thread(cv.join, parts, work / "joined.mp4")
     (work / "joined.mp4").replace(video)
     try:  # watched once like the studio's own videos: too short, silent, black or dead air
