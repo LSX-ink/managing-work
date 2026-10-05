@@ -1878,3 +1878,33 @@ def test_lore_gets_its_own_dark_score_when_no_track_is_dropped_in(s, tmp_path, m
     pytest.importorskip("imageio_ffmpeg")
     cv.make_score(5.0, "tense", tmp_path / "score.wav")
     assert cv.audio_seconds(tmp_path / "score.wav") > 5.0 + cv.MUSIC_SKIP  # never runs out and loops
+
+
+def test_blank_or_wrong_shape_pictures_are_asked_for_again():
+    import io
+    import random as rnd
+    from PIL import Image
+
+    def png(im):
+        out = io.BytesIO()
+        im.save(out, "PNG")
+        return out.getvalue()
+    rnd.seed(1)
+    real = Image.new("RGB", (108, 192))
+    real.putdata([(rnd.randrange(256),) * 3 for _ in range(108 * 192)])
+    blank = Image.new("RGB", (108, 192), (12, 12, 12))
+    notice = real.resize((150, 150))  # a square "busy" card where a tall shot was asked for
+    assert cv.usable_picture(real, (1080, 1920)) and not cv.usable_picture(blank, (1080, 1920))
+    assert not cv.usable_picture(notice, (1080, 1920)) and cv.usable_picture(notice, (1024, 1024))
+    for first, retried in ((blank, True), (notice, True), (real, False)):
+        sent = [first, real]
+
+        def handler(request):
+            return httpx.Response(200, content=png(sent.pop(0)), headers={"content-type": "image/png"})
+        got = asyncio.run(cv.fetch_picture(httpx.AsyncClient(transport=httpx.MockTransport(handler)), "a door", "lore", 1,
+                                           size=(1080, 1920)))
+        assert got.size == real.size and (len(sent) == 0) == retried
+    def always_blank(request):
+        return httpx.Response(200, content=png(blank), headers={"content-type": "image/png"})
+    assert asyncio.run(cv.fetch_picture(httpx.AsyncClient(transport=httpx.MockTransport(always_blank)), "a door",
+                                        "lore", 1, size=(1080, 1920))) is None  # then the scene's own fallbacks take over
