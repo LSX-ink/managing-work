@@ -187,3 +187,33 @@ async def test_a_running_tool_shows_on_the_status_line(monkeypatch):
 
     await Brain(SETTINGS, ToolThenTextClient(), http=None, page=page).handle("Any tasks?", speak)
     assert {"type": "status", "text": "Checking tasks…"} in sent
+
+
+def test_the_time_and_date_are_answered_on_the_spot():
+    import time
+
+    from brain import instant_answer
+    now = time.strptime("2026-10-05 21:07", "%Y-%m-%d %H:%M")
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("Alfred, what time is it?", en, now) == "It's 9:07 pm."
+    assert instant_answer("What's the date?", en, now) == "It's Monday the 5th of October."
+    assert instant_answer("what time is it in Tokyo", en, now) is None  # Claude handles anything more
+    assert instant_answer("what time does the shop close", en, now) is None
+    assert instant_answer("what time is it", Settings(speech_lang="af-ZA"), now) is None
+
+
+async def test_an_instant_answer_skips_claude_but_stays_in_the_conversation():
+    class NoCalls:
+        beta = SimpleNamespace(messages=SimpleNamespace(create=None, stream=None))
+
+    said = []
+
+    async def speak(text, quiet=False, join=False):
+        said.append(text)
+
+    b = Brain(Settings(model="claude-opus-5", tasks_file="", enable_screen=False, speech_lang="en-GB"),
+              NoCalls(), http=None)
+    await b.handle("What time is it?", speak)
+    assert said and said[0].startswith("It's ")
+    assert b.messages[-2:] == [{"role": "user", "content": "What time is it?"},
+                               {"role": "assistant", "content": said[0]}]
