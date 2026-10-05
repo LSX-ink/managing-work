@@ -335,6 +335,8 @@ function connect(onOpen) {
             removeAlert(msg.id);
         } else if (msg.type === 'nowplaying') {
             showNowPlaying(msg);
+        } else if (msg.type === 'status') {
+            if (busy && !speaking && !queue.length) setState('thinking', msg.text);   // what he's doing right now
         } else if (msg.type === 'note') {
             addLine('jarvis', msg.text);  // shown, not spoken
         } else if (msg.type === 'chime') {

@@ -2074,3 +2074,14 @@ def test_set_views_on_a_moment_video_talks_about_the_next_minute_not_parts(s):
     said = creator.set_views(s, "v1", "150k")
     assert "200,000" in said and "part" not in said.lower()
     assert "next minute" in creator.set_views(s, "v1", "210k")
+
+def test_the_opening_scenes_hold_the_least_so_the_video_starts_fast():
+    held = cv.fit_to_length([4.0] * 10)
+    assert held[0] == pytest.approx(4.35, abs=1 / cv.FPS)  # the hook keeps its own length: no padding at all
+    assert held[1] < held[2] < held[3] and held[3] == pytest.approx(held[8], abs=0.1)  # then it eases off
+    assert sum(held) == pytest.approx(cv.MIN_LENGTH)
+    slow = cv.fit_to_length([4.0] * 10, paces=["slow"] * 10)  # pace still decides the rest
+    assert slow[0] == pytest.approx(4.6, abs=1 / cv.FPS) and slow[3] > slow[1] > slow[0]
+    few = cv.fit_to_length([4.0] * 4)  # too few scenes to hold the opening back: it would stretch the rest absurdly
+    assert max(few) - min(few) < 0.1 and sum(few) == pytest.approx(cv.MIN_LENGTH)
+    assert cv.fit_to_length([20.0] * 5)[0] == pytest.approx(20.35, abs=1 / cv.FPS)  # no spare time: nothing changes

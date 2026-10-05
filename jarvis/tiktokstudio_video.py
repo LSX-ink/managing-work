@@ -993,18 +993,23 @@ def shift_words(words: list, by: float) -> None:
 # next, a slow one lingers on its picture, so padding a short story out to a minute doesn't flatten its rhythm
 PACE_GAPS = {"fast": 0.2, "normal": 0.35, "slow": 0.6}
 PACE_HOLD = {"fast": 0.5, "normal": 1.0, "slow": 1.6}
+# The hook gets none of the spare time, and the two scenes after it only a little: the biggest videos move fastest at
+# the start, where people decide whether to swipe, and spend their slack later once the story has them.
+OPENING_HOLD = (0.0, 0.35, 0.6)
+OPENING_FROM = 6  # only on a full-length story: with a handful of scenes, holding the opening back stretches the rest
 
 
 def fit_to_length(voiced: list[float], length: float = MIN_LENGTH, gap: float = 0.35,
                   paces: list[str] | None = None) -> list[float]:
     """Seconds per scene: each narration plus a short pause, and if that comes to under a minute the spare time is
-    shared out so each picture holds a little longer (slow scenes more, fast ones less). Longer stories keep their
-    natural length."""
+    shared out so each picture holds a little longer (slow scenes more, fast ones less, and the opening scenes least
+    of all, so the video starts fast). Longer stories keep their natural length."""
     paces = paces or ["normal"] * len(voiced)
     base = [v + (PACE_GAPS.get(p, gap) if p != "normal" else gap) for v, p in zip(voiced, paces)]
     spare = length - sum(base)
     if spare > 0:
-        weights = [PACE_HOLD.get(p, 1.0) for p in paces]
+        opening = OPENING_HOLD if len(paces) >= OPENING_FROM else ()
+        weights = [PACE_HOLD.get(p, 1.0) * (opening[i] if i < len(opening) else 1.0) for i, p in enumerate(paces)]
         base = [b + spare * w / sum(weights) for b, w in zip(base, weights)]
     frames = [round(b * FPS) for b in base]
     if spare > 0:

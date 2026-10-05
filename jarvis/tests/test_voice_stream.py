@@ -144,3 +144,46 @@ async def test_short_lines_are_voiced_once_then_replayed_from_memory():
         for _ in range(3):
             assert [p async for p in tts.stream(http, settings, "One moment, sir.")] == [("One moment, sir.", b"MP3")]
     assert len(calls) == 1
+
+
+def test_the_page_is_told_what_alfred_is_doing():
+    from brain import doing_line
+    assert doing_line(["get_weather"]) == "Checking the weather…"
+    assert doing_line(["check_inbox"]) == "Checking inbox…"
+    assert doing_line(["add_reminder", "get_tasks"]) == "Saving reminder and checking tasks…"
+    assert doing_line(["get_a", "get_b", "get_c"]) == "Checking a and 2 more…"
+    assert doing_line(["listen_for_name"]) == "Working on listen for name…"
+
+
+class ToolThenTextClient:
+    """First asks for a tool, then answers."""
+
+    def __init__(self):
+        self.calls = 0
+        self.beta = SimpleNamespace(messages=SimpleNamespace(create=self._create))
+
+    async def _create(self, **kwargs):
+        self.calls += 1
+        if self.calls == 1:
+            return SimpleNamespace(stop_reason="tool_use", content=[
+                SimpleNamespace(type="tool_use", id="t1", name="get_tasks", input={})])
+        return SimpleNamespace(stop_reason="end_turn", content=[SimpleNamespace(type="text", text="All done, sir.")])
+
+
+async def test_a_running_tool_shows_on_the_status_line(monkeypatch):
+    import tools
+    sent = []
+
+    async def page(msg):
+        sent.append(msg)
+
+    async def fake_tool(name, args, *rest):
+        return "no tasks"
+
+    monkeypatch.setattr(tools, "run_tool", fake_tool)
+
+    async def speak(text, quiet=False, join=False):
+        pass
+
+    await Brain(SETTINGS, ToolThenTextClient(), http=None, page=page).handle("Any tasks?", speak)
+    assert {"type": "status", "text": "Checking tasks…"} in sent
