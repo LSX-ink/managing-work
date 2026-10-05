@@ -93,6 +93,8 @@ const addEventListener = () => {};
 const location = { protocol: 'http:', host: 'pc:8340' };
 const statusEl = {}, confirmBox = { hidden: true };
 let ws = null, busy = false, started = true, speaking = false, queue = [], lastAnswer = [];
+let bargeText = '';
+const addLine = () => {};
 const t = (k) => k, setState = (s, text) => { statusEl.textContent = text; };
 const stopListening = () => {}, maybeListen = () => {};
 eval(code);
@@ -137,3 +139,22 @@ def test_listening_mode_and_mic_off_by_voice_are_instant():
     run = subprocess.run(["node", "-e", QUICK_SCRIPT, str(MAIN), json.dumps(texts)],
                          capture_output=True, text=True, check=True)
     assert json.loads(run.stdout) == ["wake+", "wake+", "wake-", "wake-", "mic-", "mic-", "mic-", None, None]
+
+
+BARGE_SCRIPT = """
+const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const a = src.indexOf('const NAME_SOUNDALIKES'), b = src.indexOf('function onlyName');
+const config = { name: 'Alfred' };
+let nowSaying = 'the forecast for tomorrow says alfred will need a coat';
+eval(src.slice(a, src.indexOf('\\n}\\n', b) + 3) + ';globalThis.f = isBargeIn;');
+console.log(JSON.stringify(JSON.parse(process.argv[2]).map((t) => f(t))));
+"""
+
+
+@pytest.mark.skipif(not shutil.which("node"), reason="needs node")
+def test_saying_his_name_and_a_new_question_cuts_in():
+    texts = ["Alfred, what about Thursday?", "hey Alfred play some music", "Alfred", "Alfred stop",
+             "what about Thursday Alfred", "alfred will need a coat"]
+    run = subprocess.run(["node", "-e", BARGE_SCRIPT, str(MAIN), json.dumps(texts)],
+                         capture_output=True, text=True, check=True)
+    assert json.loads(run.stdout) == [True, True, False, False, False, False]
