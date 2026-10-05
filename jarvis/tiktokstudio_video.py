@@ -415,6 +415,21 @@ async def fix_retention(client, settings: Settings, script: dict) -> dict:
 
 # ---- 2. pictures -------------------------------------------------------------------------------------------
 
+FLAT_SPREAD = 4  # even a dark night shot varies more than this in brightness; a blank or solid fill (give or take
+# compression noise) doesn't
+SHAPE_SLACK = 0.1  # how far off the asked-for shape a picture may be before it's a "busy, try later" card
+
+
+def usable_picture(picture: Image.Image, size) -> bool:
+    """False for what the free picture service sends when it's struggling: a blank or solid-colour picture, or a
+    small square notice card in place of the tall shot asked for. Either would sit on screen for seconds."""
+    from PIL import ImageStat
+    want, got = size[0] / size[1], picture.width / picture.height
+    if abs(got - want) / want > SHAPE_SLACK:
+        return False
+    return max(ImageStat.Stat(picture.convert("L").resize((64, 64))).stddev) >= FLAT_SPREAD
+
+
 async def fetch_picture(http: httpx.AsyncClient, description: str, style: str, seed: int, size=(1024, 1024)) -> Image.Image | None:
     prompt = f"{description}. {LOOKS.get(style, LOOKS['cinematic'])}"
     url = PICTURE_URL.format(prompt=quote(prompt[:900]), w=size[0], h=size[1], seed=seed)
@@ -423,7 +438,10 @@ async def fetch_picture(http: httpx.AsyncClient, description: str, style: str, s
             resp = await http.get(url, timeout=120, follow_redirects=True)
             if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("image/"):
                 from io import BytesIO
-                return Image.open(BytesIO(resp.content)).convert("RGB")
+                picture = Image.open(BytesIO(resp.content)).convert("RGB")
+                if usable_picture(picture, size):
+                    return picture
+                print("[jarvis] Picture came back blank or the wrong shape; asking again", flush=True)
         except (httpx.HTTPError, OSError):
             pass
     return None
