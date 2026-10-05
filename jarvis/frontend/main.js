@@ -178,6 +178,15 @@ function calledByName(text) {
     return !/^(?:travis|service)$/i.test(m[0].replace(/^(?:hey|ok|okay) /i, '')) || m.index === 0;
 }
 // Just his name and nothing else ("Alfred?"): he answers at once with a soft tone and listens.
+// "Alfred, what about tomorrow?" while he's talking: starts with his name and asks something new.
+function isBargeIn(said) {
+    const m = said.match(namePattern());
+    if (!m || m.index !== 0) return false;
+    const rest = said.slice(m[0].length).replace(/^[\s,]+/, '');
+    if (rest.split(/\s+/).filter(Boolean).length < 2) return false;
+    return !nowSaying.includes(said.toLowerCase().replace(/[.!?,]/g, ''));   // not his own voice coming back
+}
+
 function onlyName(text) {
     const rest = text.replace(namePattern(), '').replace(/[\s.,!?]+/g, '');
     return calledByName(text) && rest === '';
@@ -357,6 +366,12 @@ function connect(onOpen) {
             showConfirm(msg);
         } else if (msg.type === 'done') {
             busy = false;
+            if (bargeText) {   // the old job is over: now ask what you said over him
+                const text = bargeText;
+                bargeText = '';
+                heard(text);
+                return;
+            }
             maybeListen();
         }
     };
@@ -373,6 +388,11 @@ function connect(onOpen) {
 
 function lostConnection() {
     busy = false;
+    if (bargeText) {   // what you said over him goes when the line is back
+        addLine('user', bargeText);
+        unsent.push({ text: bargeText });
+        bargeText = '';
+    }
     confirmBox.hidden = true;
     if (started) setState('idle', t('reconnecting'));
     // Try again quickly at first, then less often, so a PC that's restarting Alfred isn't hammered.
@@ -768,6 +788,10 @@ function startStopper() {
                     skipSpeech();
                     return;
                 }
+                if (event.results[i].isFinal && isBargeIn(said)) {
+                    interruptWith(said);
+                    return;
+                }
             }
         };
         stopper.onend = () => {
@@ -835,6 +859,18 @@ orb.addEventListener('click', () => {
 });
 
 // Stop what Alfred is working on (tap the orb while he thinks, or press Esc). He says "Cancelled." and listens.
+// Cut Alfred off and ask the new thing; if he's still working on the old one, cancel it first.
+let bargeText = '';
+function interruptWith(text) {
+    skipSpeech();
+    if (busy) {
+        bargeText = text;
+        cancelTurn();
+        return;
+    }
+    heard(text);
+}
+
 function cancelTurn() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ type: 'cancel' }));
