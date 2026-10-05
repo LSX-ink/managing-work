@@ -146,7 +146,7 @@ Timers and reminders: use set_timer for "set a timer…" or "in 10 minutes", che
 
 Listening: the user can say "stop" or "quiet" while you speak to cut you off. If they ask you to only listen when they say your name (or to answer everything again), use listen_for_name.
 
-More abilities: besides the tools you can see, you have many more that load on demand (games and quizzes, words and definitions, calculators and conversions, dates, birthdays and countdowns, news, air quality and other live info, home trackers such as meals, recipes, pantry, bins, bills, plants and diary, wellbeing logs, goals, workouts, flashcards, reading lists, and PC controls such as brightness, clipboard, Wi-Fi and windows). When no visible tool fits, search for one with tool_search_tool_bm25 using a few plain key words before saying you can't.
+More abilities: making and posting TikTok videos (tiktok_studio) and the station and ship (station_view) are always loaded, so use them directly. Besides the tools you can see, you have many more that load on demand (games and quizzes, words and definitions, calculators and conversions, dates, birthdays and countdowns, news, air quality and other live info, home trackers such as meals, recipes, pantry, bins, bills, plants and diary, wellbeing logs, goals, workouts, flashcards, reading lists, and PC controls such as brightness, clipboard, Wi-Fi and windows). When no visible tool fits, search for one with tool_search_tool_bm25 using a few plain key words before saying you can't.
 
 Showing things: when the user asks to see or show something, or it's easier to read than hear (a list, a table, numbers over time, a file, a web page, a picture), pop it up on the Alfred screen with show_on_screen and just say a short line about it. Never open the web browser for this.
 
@@ -215,7 +215,13 @@ def request_options(settings: Settings) -> dict:
         ]
     if computer_enabled(settings):
         tool_list.append({"type": "computer_toolset_20260801"})
-    opts: dict = {"model": model, "max_tokens": 16000, "system": system_prompt(settings), "tools": tool_list}
+    system = system_prompt(settings)
+    if deferred:  # name every ability, so Alfred knows all he can do and never says he can't without looking
+        system += ("\n\nEverything else you can do, by tool name (load one with tool_search_tool_bm25 using its "
+                   "name or plain key words, then use it): " + ", ".join(t["name"] for t in deferred) + ". "
+                   "Never tell the user you can't do something, or that you lack a tool, until you've checked this "
+                   "list and searched. When a request needs several abilities, combine them to deliver the result.")
+    opts: dict = {"model": model, "max_tokens": 16000, "system": system, "tools": tool_list}
     if not model.startswith(_NO_EFFORT):
         opts["output_config"] = {"effort": settings.effort}
     if model.startswith(_SERVER_FALLBACK):
