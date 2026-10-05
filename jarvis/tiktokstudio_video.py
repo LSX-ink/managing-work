@@ -1229,13 +1229,39 @@ def music_for(folder: Path, mood: str = "") -> Path | None:
 MUSIC_SKIP, MUSIC_SKIP_FROM = 12.0, 45.0
 
 
-def add_music(video: Path, track: Path, out: Path) -> None:
-    """Lay the track quietly under the voice, dipping further whenever Alfred speaks, and fade it out at the end."""
+# Big lore videos pull the music out from under the story just before the twist: a sudden half-second of silence
+# makes people look up from the comments, then the "boom" lands on nothing but the voice. The bed slides out over
+# DROP_FADE seconds, stays at DROP_LEVEL for the rest of the gap, and is back the moment the reveal scene starts.
+DROP_SECONDS, DROP_FADE, DROP_LEVEL = 0.7, 0.15, 0.05
+DROP_HITS = ("boom",)
+DROP_STYLES = ("lore",)
+
+
+def drop_gain(drops) -> str:
+    """The music's volume over time (an ffmpeg expression in t): 1, except in the gap before each drop time."""
+    if not drops:
+        return "1"
+    gaps = [f"(1-{1 - DROP_LEVEL:.2f}*clip((t-{at - DROP_SECONDS:.3f})/{DROP_FADE},0,1)*clip(({at:.3f}+0.05-t)/0.05,0,1))"
+            for at in drops if at >= DROP_SECONDS]
+    return "*".join(gaps) or "1"
+
+
+def drop_times(lengths, played) -> list[float]:
+    """When each reveal scene starts (its "boom"), from how long every scene before it runs."""
+    starts = [sum(lengths[:i]) for i in range(len(lengths))]
+    return [starts[i] for i, hit in enumerate(played[:len(lengths)]) if i > 0 and hit in DROP_HITS]
+
+
+def add_music(video: Path, track: Path, out: Path, drops=()) -> None:
+    """Lay the track quietly under the voice, dipping further whenever Alfred speaks, and fade it out at the end.
+    At each of drops (seconds into the video) the music falls silent for a moment first, so the reveal hits."""
     seconds = audio_seconds(video)
     skip = MUSIC_SKIP if audio_seconds(track) > MUSIC_SKIP_FROM else 0.0
     fade_in = "afade=t=in:d=0.4," if skip else ""
+    gain = drop_gain(drops)
+    drop = f",volume='{gain}':eval=frame" if gain != "1" else ""
     run(["-i", str(video), "-stream_loop", "-1", "-ss", f"{skip:.2f}", "-i", str(track), "-filter_complex",
-         f"[0:a]asplit[v1][v2];[1:a]aresample=44100,{fade_in}volume=0.25[m];"
+         f"[0:a]asplit[v1][v2];[1:a]aresample=44100,asetpts=N/SR/TB,{fade_in}volume=0.25{drop}[m];"
          "[m][v1]sidechaincompress=threshold=0.02:ratio=10:attack=15:release=350[duck];"
          f"[duck]afade=t=out:st={max(0.0, seconds - 2.5):.2f}:d=2.5[bed];"
          "[v2][bed]amix=inputs=2:duration=first:normalize=0[a]",
@@ -1467,7 +1493,10 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
             print(f"[jarvis] Score skipped: {exc}", flush=True)
     if track:
         try:
-            await asyncio.to_thread(add_music, work / "joined.mp4", track, work / "scored.mp4")
+            # the drops are timed from the rendered scenes, which include any teaser flash at the start
+            drops = (drop_times([audio_seconds(p) for p in parts], played)
+                     if account.get("style") in DROP_STYLES else [])
+            await asyncio.to_thread(add_music, work / "joined.mp4", track, work / "scored.mp4", drops)
             (work / "scored.mp4").replace(work / "joined.mp4")
         except Exception as exc:  # a track ffmpeg can't read: keep the voice-only cut
             print(f"[jarvis] Backing track skipped: {exc}", flush=True)

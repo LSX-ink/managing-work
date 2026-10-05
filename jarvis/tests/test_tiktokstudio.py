@@ -1874,7 +1874,7 @@ def test_lore_gets_its_own_dark_score_when_no_track_is_dropped_in(s, tmp_path, m
     monkeypatch.setattr(cv, "audio_seconds", lambda path: 70.0)
     monkeypatch.setattr(cv, "normalise", lambda a, b: b.write_bytes(a.read_bytes()))
     monkeypatch.setattr(cv, "make_score", lambda seconds, mood, out: (scored.append((seconds, mood)), out.write_bytes(b"w")))
-    monkeypatch.setattr(cv, "add_music", lambda video, track, out: (scored.append(track.name), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "add_music", lambda video, track, out, drops=(): (scored.append(track.name), out.write_bytes(b"mp4")))
     lore = cs.account(cs.load(s), "lowkey.lore")
     monkeypatch.setattr(cv, "music_for", lambda *a: None)
     asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
@@ -2089,3 +2089,50 @@ def test_the_opening_scenes_hold_the_least_so_the_video_starts_fast():
     few = cv.fit_to_length([4.0] * 4)  # too few scenes to hold the opening back: it would stretch the rest absurdly
     assert max(few) - min(few) < 0.1 and sum(few) == pytest.approx(cv.MIN_LENGTH)
     assert cv.fit_to_length([20.0] * 5)[0] == pytest.approx(20.35, abs=1 / cv.FPS)  # no spare time: nothing changes
+
+
+def test_the_music_drops_out_just_before_a_lore_reveal(s, tmp_path, monkeypatch):
+    assert cv.drop_times([3.0, 4.0, 5.0], ["", "", "boom"]) == [7.0]
+    assert cv.drop_times([3.0, 4.0], ["boom", "sting"]) == []  # the first scene has nothing before it to cut
+    assert cv.drop_gain([]) == "1" and cv.drop_gain([0.2]) == "1"  # too early for a gap: left alone
+    gain = cv.drop_gain([7.0])
+    level = lambda t: eval(gain.replace("clip", "c"), {"c": lambda x, lo, hi: min(hi, max(lo, x)), "t": t})
+    assert level(5.0) == 1 and level(6.9) == pytest.approx(cv.DROP_LEVEL) and level(7.1) == 1
+    script = json.loads(SCRIPT)
+    script["scenes"][1]["hit"] = "boom"
+    script = cv.parse_script(json.dumps(script))
+    seen = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    monkeypatch.setattr(cv, "audio_seconds", lambda path: 30.0)
+    monkeypatch.setattr(cv, "normalise", lambda a, b: b.write_bytes(a.read_bytes()))
+    monkeypatch.setattr(cv, "music_for", lambda *a: tmp_path / "song.mp3")
+    monkeypatch.setattr(cv, "add_music", lambda video, track, out, drops=(): (seen.append(list(drops)), out.write_bytes(b"m")))
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert seen == [[30.0], []]  # timed from the rendered scenes; other looks keep a steady bed
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import re
+    import subprocess
+    exe = cv.ffmpeg()
+    subprocess.run([exe, "-y", "-v", "error", "-f", "lavfi", "-i", "color=black:s=64x64:d=4", "-f", "lavfi", "-i",
+                    "anullsrc=r=44100:cl=stereo", "-t", "4", "-shortest", str(tmp_path / "v.mp4")], check=True)
+    subprocess.run([exe, "-y", "-v", "error", "-f", "lavfi", "-i", "sine=f=220:d=6", str(tmp_path / "t.wav")], check=True)
+    cv.add_music(tmp_path / "v.mp4", tmp_path / "t.wav", tmp_path / "o.mp4", [2.5])
+
+    def loud(start):
+        out = subprocess.run([exe, "-v", "info", "-ss", str(start), "-t", "0.3", "-i", str(tmp_path / "o.mp4"),
+                              "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
+        return float(re.search(r"mean_volume: (-?[\d.]+|-inf)", out).group(1))
+    assert loud(2.1) < loud(1.0) - 20 and loud(2.8) > loud(2.1) + 20
