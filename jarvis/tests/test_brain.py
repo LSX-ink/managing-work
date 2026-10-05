@@ -226,3 +226,22 @@ def test_old_documents_are_pruned():
     brain.prune_images(messages)
     kinds = [m["content"][0]["content"][0]["type"] for m in messages]
     assert kinds == ["text", "text"] + ["document"] * 6
+
+
+def test_failed_calls_name_what_the_user_can_fix():
+    import anthropic
+    import httpx
+
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+
+    def status(cls, code):
+        return cls("x", response=httpx.Response(code, request=request), body=None)
+
+    assert brain.error_key(TypeError("Could not resolve authentication method.")) == "no_key"
+    assert brain.error_key(status(anthropic.AuthenticationError, 401)) == "bad_key"
+    assert brain.error_key(anthropic.APIConnectionError(request=request)) == "no_connection"
+    assert brain.error_key(status(anthropic.NotFoundError, 404)) == "bad_model"
+    assert brain.error_key(status(anthropic.RateLimitError, 429)) == "busy"
+    assert brain.error_key(status(anthropic.InternalServerError, 529)) == "busy"
+    assert brain.error_key(RuntimeError("no key")) == "error"
+    assert set(brain.LINES["af"]) == set(brain.LINES["en"])

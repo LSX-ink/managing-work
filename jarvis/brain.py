@@ -35,6 +35,15 @@ LINES = {
         "error": "Something went wrong on my end. Do try again.",
         "no_credit": "My Claude credit has run out, so I can't think until it's topped up. Add credit at "
                      "console dot anthropic dot com, under Billing.",
+        "no_key": "I have no Claude API key, so I can't think. Put your key on the ANTHROPIC_API_KEY line in the "
+                  "dot env file, then restart me.",
+        "bad_key": "Claude turned down my API key. It may have been deleted, or copied with a piece missing. Make a "
+                   "new key at console dot anthropic dot com, put it in the dot env file, then restart me.",
+        "no_connection": "I can't reach Claude from this computer. Check the internet connection. On a work "
+                         "network, a firewall or proxy may be blocking api dot anthropic dot com.",
+        "busy": "Claude is busy or rate-limiting me just now. Give it a minute and try again.",
+        "bad_model": "Claude doesn't recognise the model in my settings, or this account can't use it. Check "
+                     "JARVIS_MODEL in the dot env file.",
         "loop": "I seem to be going round in circles. Let's try that another way.",
         "declined": "The user declined these actions. Do not retry them; ask what they would like instead.",
     },
@@ -42,6 +51,14 @@ LINES = {
         "refusal": "Ek is bevrees dis nie iets waarmee ek kan help nie.",
         "error": "Iets het aan my kant skeefgeloop. Probeer asseblief weer.",
         "no_credit": "My Claude-krediet is op. Voeg krediet by op console dot anthropic dot com, onder Billing.",
+        "no_key": "Ek het geen Claude API-sleutel nie. Sit jou sleutel op die ANTHROPIC_API_KEY-reël in die dot "
+                  "env-lêer en herbegin my.",
+        "bad_key": "Claude het my API-sleutel geweier. Maak 'n nuwe sleutel op console dot anthropic dot com, sit "
+                   "dit in die dot env-lêer en herbegin my.",
+        "no_connection": "Ek kan Claude nie van hierdie rekenaar af bereik nie. Kyk na die internet. Op 'n "
+                         "werknetwerk kan 'n firewall api dot anthropic dot com blokkeer.",
+        "busy": "Claude is nou besig. Wag 'n minuut en probeer weer.",
+        "bad_model": "Claude ken nie die model in my instellings nie. Kyk na JARVIS_MODEL in die dot env-lêer.",
         "loop": "Dit lyk of ek in sirkels draai. Kom ons probeer dit anders.",
         "declined": "The user declined these actions. Do not retry them; ask what they would like instead.",
     },
@@ -50,6 +67,23 @@ LINES = {
 
 def line(settings: Settings, key: str) -> str:
     return LINES.get(settings.lang_code, LINES["en"])[key]
+
+
+def error_key(exc: Exception) -> str:
+    """Which fixed line names a failed Claude call, so the user hears what to fix instead of a vague error."""
+    if "credit balance is too low" in str(exc):
+        return "no_credit"
+    if isinstance(exc, TypeError) and "authentication" in str(exc):  # the SDK's error for a missing key
+        return "no_key"
+    if isinstance(exc, (anthropic.AuthenticationError, anthropic.PermissionDeniedError)):
+        return "bad_key"
+    if isinstance(exc, anthropic.APIConnectionError):  # includes timeouts and blocked or inspected networks
+        return "no_connection"
+    if isinstance(exc, anthropic.NotFoundError):
+        return "bad_model"
+    if isinstance(exc, anthropic.RateLimitError) or getattr(exc, "status_code", 0) >= 500:
+        return "busy"
+    return "error"
 
 
 # Models that take the newer web tool versions (dynamic filtering) and `output_config.effort`.
@@ -364,8 +398,8 @@ class Brain:
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive
             print(f"[jarvis] Error: {exc!r}", flush=True)
             del self.messages[start:]
-            # an empty account is the one failure only the user can fix, so say exactly what's wrong
-            await speak(line(self.settings, "no_credit" if "credit balance is too low" in str(exc) else "error"))
+            # say what's wrong when it's something the user can fix (key, credit, network)
+            await speak(line(self.settings, error_key(exc)))
         self.messages = trim_history(self.messages)
 
     async def _run(self, speak: Speak) -> None:
