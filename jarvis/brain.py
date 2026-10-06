@@ -16,6 +16,7 @@ import agenda
 import alerts
 import computer
 import reminders
+import shopping
 import timers
 import tools
 from config import Settings
@@ -344,6 +345,36 @@ def _more_reminders(said: str, settings: Settings) -> str | None:
     return None
 
 
+_LIST = r"(?:the |my )?shopping list"
+_SHOP_ADD = re.compile(_NAME + r"(?:(?:can you |please )?(?:add|put) (?P<items>.+?) (?:to|on|onto) " + _LIST + r")" + _END, re.I)
+_SHOP_REMOVE = re.compile(_NAME + r"(?:(?:take|cross|tick) (?P<a>.+?) off " + _LIST +
+                          r"|(?:remove|delete) (?P<b>.+?) from " + _LIST + r")" + _END, re.I)
+_SHOP_READ = re.compile(_NAME + r"(?:what(?:'s| is) on " + _LIST + r"|(?:read|show|tell me) (?:me )?" + _LIST +
+                        r"|what do (?:I|we) need (?:to buy|from the shop(?:s)?))" + _END, re.I)
+
+
+def _spoken_items(said: str) -> list[str]:
+    """'milk, eggs and some bread' -> ['milk', 'eggs', 'some bread']."""
+    return [i.strip() for i in re.split(r",\s*(?:and\s+)?|\s+and\s+", said) if i.strip()]
+
+
+def _shopping_answer(said: str, settings: Settings) -> str | None:
+    """'Add milk and eggs to the shopping list', 'take milk off the shopping list', 'what's on the shopping list?'"""
+    try:
+        if m := _SHOP_ADD.match(said):
+            return shopping.add(settings, _spoken_items(m.group("items")))
+        if m := _SHOP_REMOVE.match(said):
+            return shopping.remove(settings, _spoken_items(m.group("a") or m.group("b")))
+    except ValueError as exc:
+        return str(exc)
+    if _SHOP_READ.match(said):
+        found = shopping.items(settings)
+        if not found:
+            return "The shopping list is empty."
+        return "On the list: " + (found[0] if len(found) == 1 else ", ".join(found[:-1]) + " and " + found[-1]) + "."
+    return None
+
+
 def _seconds(amount: str, unit: str) -> float:
     n = float(amount) if amount[0].isdigit() else _WORDS[amount.lower()]
     unit = unit.lower()
@@ -374,7 +405,7 @@ def _ordinal(n: int) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, plain timers and reminders, answered on the spot: no need to wait for Claude."""
+    """The time, the date, plain timers, reminders and the shopping list, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = text.strip()
@@ -384,7 +415,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
-    return _timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
+    return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
+            or _shopping_answer(said, settings))
 
 
 def time_of_day(hour: int | None = None) -> str:

@@ -272,3 +272,19 @@ def test_clock_reminders_and_listing_and_cancelling_are_instant(tmp_path):
     assert instant_answer("cancel the reminder about the bins", en) == "Cancelled: the bins."
     assert "the bins" not in instant_answer("any reminders?", en)
     assert instant_answer("cancel the reminder about the dentist", en).startswith("No reminder matches that.")
+
+
+def test_the_shopping_list_is_handled_instantly(tmp_path):
+    import shopping
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    assert instant_answer("what's on the shopping list?", en) == "The shopping list is empty."
+    assert instant_answer("Alfred, add milk, eggs and some bread to the shopping list please", en) == \
+        "Added milk, eggs, some bread. 3 items on the list."
+    assert instant_answer("put milk on my shopping list", en) == "Those are already on the list. 3 items on the list."
+    assert instant_answer("take eggs off the shopping list", en) == "Ticked off eggs. 2 left."
+    assert instant_answer("remove the cheese from my shopping list", en) == "None of those were on the list. 2 left."
+    assert instant_answer("What's on my shopping list, Alfred?", en) == "On the list: milk and some bread."
+    assert shopping.items(en) == ["milk", "some bread"]
+    assert instant_answer("add a meeting to my calendar", en) is None
+    assert instant_answer("clear the shopping list", en) is None  # emptying it stays with Claude
