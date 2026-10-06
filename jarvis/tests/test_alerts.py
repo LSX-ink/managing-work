@@ -156,7 +156,7 @@ def test_server_says_announcements_on_open_pages(monkeypatch):
 
     with TestClient(server.app) as client:
         with client.websocket_connect("/ws", headers={"origin": "http://testserver"}) as ws:
-            assert ws.receive_json() == {"type": "alerts", "items": []}
+            assert ws.receive_json() == {"type": "alerts", "items": [], "build": server.BUILD}
             client.portal.call(server.announce, server.app, "Sir, incoming call from Mum.", "call")
             alert = ws.receive_json()
             assert alert["type"] == "alert" and alert["kind"] == "call" and alert["text"] == "Sir, incoming call from Mum."

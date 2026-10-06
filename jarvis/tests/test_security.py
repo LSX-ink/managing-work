@@ -119,3 +119,15 @@ def test_the_page_can_check_the_line_is_alive_mid_turn(server, monkeypatch):
             ws.send_json({"type": "cancel"})
             assert ws.receive_json() == {"type": "note", "text": "Cancelled."}
             assert ws.receive_json() == {"type": "done"}
+
+
+def test_the_page_fingerprint_changes_only_when_its_files_change(server, tmp_path, monkeypatch):
+    (tmp_path / "main.js").write_text("one")
+    (tmp_path / "custom.css").write_text("mine")
+    monkeypatch.setattr(server, "FRONTEND", tmp_path)
+    first = server.frontend_build()
+    assert server.frontend_build() == first
+    (tmp_path / "custom.css").write_text("my new colours")  # personal styling doesn't force a reload
+    assert server.frontend_build() == first
+    (tmp_path / "main.js").write_text("two")
+    assert server.frontend_build() != first
