@@ -251,3 +251,24 @@ def test_remind_me_in_a_few_minutes_is_set_on_the_spot(tmp_path):
     assert sorted(r["text"] for r in reminders.load(en)) == ["check the oven", "stretch"]
     assert instant_answer("remind me tomorrow at 9 to call the bank", en) is None  # Claude works out the time
     assert instant_answer("remind me in 20 minutes", en) is None  # no "what": Claude asks
+
+
+def test_clock_reminders_and_listing_and_cancelling_are_instant(tmp_path):
+    import datetime as dt
+    import reminders
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    said = instant_answer("Alfred, remind me at 7 p.m. to call Mum", en)
+    assert said.startswith("I'll remind you ") and said.endswith(" at 19:00: call Mum.")
+    said = instant_answer("remind me tomorrow at 8:30am about the bins", en)
+    tomorrow = (dt.date.today() + dt.timedelta(days=1)).isoformat()
+    assert said == "I'll remind you tomorrow at 08:30: the bins."
+    assert instant_answer("remind me at 21:15 tomorrow to take my tablets", en).endswith("tomorrow at 21:15: take my tablets.")
+    assert {r["at"] for r in reminders.load(en) if r["text"] != "call Mum"} == {f"{tomorrow} 08:30", f"{tomorrow} 21:15"}
+    assert instant_answer("remind me at 13 pm to eat", en) == "That isn't a time I recognise."
+    assert instant_answer("remind me at 9 to call the bank", en) is None  # am or pm? Claude asks
+    listed = instant_answer("What reminders do I have, Alfred?", en)
+    assert listed.startswith("Reminders: ") and "call Mum" in listed and "the bins" in listed
+    assert instant_answer("cancel the reminder about the bins", en) == "Cancelled: the bins."
+    assert "the bins" not in instant_answer("any reminders?", en)
+    assert instant_answer("cancel the reminder about the dentist", en).startswith("No reminder matches that.")

@@ -304,6 +304,46 @@ def _reminder_answer(said: str, settings: Settings) -> str | None:
         return str(exc)
 
 
+_CLOCK = r"(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>a\.?m\.?|p\.?m\.?)|(?P<h24>[01]\d|2[0-3]):(?P<m24>[0-5]\d)"
+_DAY = r"(?:(?P<day>today|tonight|tomorrow) )?"
+_REMIND_AT = re.compile(_NAME + r"(?:remind me " + _DAY + r"at (?:" + _CLOCK + r")(?: (?P<day2>today|tonight|tomorrow))?"
+                        r" (?:to |that |about )(?P<what>.+?))" + _END, re.I)
+_LIST_REMINDERS = re.compile(_NAME + r"(?:what reminders (?:do I have|have I got|are (?:there|set))|what are my reminders|"
+                             r"(?:list|read|tell me) (?:all )?my reminders|(?:do I have )?any reminders)" + _END, re.I)
+_CANCEL_REMINDER = re.compile(_NAME + r"(?:cancel|delete|remove) (?:the |my )?reminder (?:to |about |for )(?P<words>.+?)" + _END, re.I)
+
+
+def _clock_reminder(m: re.Match, settings: Settings) -> str:
+    if m.group("h24"):
+        hour, minute = int(m.group("h24")), int(m.group("m24"))
+    else:
+        hour, minute = int(m.group("h")), int(m.group("m") or 0)
+        if not 1 <= hour <= 12 or minute > 59:
+            return "That isn't a time I recognise."
+        hour = hour % 12 + (12 if m.group("ap").lower().startswith("p") else 0)
+    now = dt.datetime.now().replace(second=0, microsecond=0)
+    at = now.replace(hour=hour, minute=minute)
+    day = (m.group("day") or m.group("day2") or "").lower()
+    if day == "tomorrow" or (not day and at <= now):  # "at 7 am" said in the evening means tomorrow
+        at += dt.timedelta(days=1)
+    try:
+        return reminders.add(settings, at.strftime("%Y-%m-%d %H:%M"), m.group("what").strip(),
+                             now=now).replace("remind them", "remind you")
+    except ValueError as exc:
+        return str(exc)
+
+
+def _more_reminders(said: str, settings: Settings) -> str | None:
+    """'Remind me at 7 pm to call Mum', 'what reminders do I have?' and 'cancel the reminder about the bins'."""
+    if m := _REMIND_AT.match(said):
+        return _clock_reminder(m, settings)
+    if _LIST_REMINDERS.match(said):
+        return reminders.listing(settings)
+    if m := _CANCEL_REMINDER.match(said):
+        return reminders.cancel(settings, m.group("words"))
+    return None
+
+
 def _seconds(amount: str, unit: str) -> float:
     n = float(amount) if amount[0].isdigit() else _WORDS[amount.lower()]
     unit = unit.lower()
@@ -334,7 +374,7 @@ def _ordinal(n: int) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, plain timers and 'remind me in …', answered on the spot: no need to wait for Claude."""
+    """The time, the date, plain timers and reminders, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = text.strip()
@@ -344,7 +384,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
-    return _timer_answer(said, settings) or _reminder_answer(said, settings)
+    return _timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
 
 
 def time_of_day(hour: int | None = None) -> str:
