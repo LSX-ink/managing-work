@@ -197,7 +197,7 @@ def test_the_time_and_date_are_answered_on_the_spot():
     en = Settings(speech_lang="en-GB")
     assert instant_answer("Alfred, what time is it?", en, now) == "It's 9:07 pm."
     assert instant_answer("What's the date?", en, now) == "It's Monday the 5th of October."
-    assert instant_answer("what time is it in Tokyo", en, now) is None  # Claude handles anything more
+    assert instant_answer("what time is it in Narnia", en, now) is None  # Claude handles anything more
     assert instant_answer("what time does the shop close", en, now) is None
     assert instant_answer("what time is it", Settings(speech_lang="af-ZA"), now) is None
 
@@ -316,3 +316,23 @@ def test_unit_conversions_are_instant():
     assert instant_answer("what is 3 cups in grams", en) is None  # needs the ingredient: Claude asks
     assert instant_answer("what is 10 pounds in euros", en) is None  # money goes to Claude
     assert instant_answer("how many people in London", en) is None
+
+
+def test_world_times_days_until_and_tomorrow_are_instant():
+    import re
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-06 21:07", "%Y-%m-%d %H:%M")
+    assert re.fullmatch(r"It's \d{1,2}:\d\d [ap]m(?: tomorrow| yesterday)? in Tokyo\.",
+                        instant_answer("What's the time in Tokyo?", en, now))
+    assert instant_answer("what time is it in Narnia", en, now) is None  # Claude looks it up
+    assert instant_answer("how many days until Christmas?", en, now) == \
+        "80 days until Christmas, on Friday the 25th of December."
+    assert instant_answer("how long till new year's eve", en, now) == \
+        "86 days until New Year's Eve, on Thursday the 31st of December."
+    assert instant_answer("how many days until Valentine's Day", en, now).startswith("131 days until Valentine's Day, on Sunday")
+    assert instant_answer("how many days until my birthday", en, now) is None
+    assert instant_answer("what's the date tomorrow", en, now) == "Tomorrow is Wednesday the 7th of October."
+    christmas = time.strptime("2026-12-25 09:00", "%Y-%m-%d %H:%M")
+    assert instant_answer("how many days until Christmas", en, christmas) == "Christmas is today!"
