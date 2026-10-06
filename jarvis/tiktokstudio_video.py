@@ -1108,6 +1108,22 @@ RISER = ("anoisesrc=d={d}:c=pink:a=0.5:r=44100,highpass=f=300,lowpass=f=3000,"
          "afade=t=in:st=0:d={d}:curve=exp,volume=0.35,aformat=channel_layouts=stereo,adelay={delay}|{delay}")
 
 
+# Rain stories get a storm: every few scenes, lightning flickers across the picture (a bright double flash) and the
+# thunder rolls in a moment later, the way it does in real life. It wakes up a long rainy scene without a cut.
+LIGHTNING = "eq=eval=frame:brightness='0.38*between(t,{at},{at}+0.07)+0.22*between(t,{at}+0.16,{at}+0.21)'"
+THUNDER = ("anoisesrc=d=2.6:c=brown:a=0.9:r=44100,lowpass=f=160,afade=t=in:d=0.12,afade=t=out:st=0.5:d=2.1,"
+           "volume=1.6,aformat=channel_layouts=stereo,adelay={delay}|{delay}")
+THUNDER_LAG, STORM_EVERY, STORM_AT = 0.6, 4, 0.4
+STORM_STYLES = ("lore",)
+
+
+def storm_times(lengths: list[float], played: list) -> dict:
+    """{scene index: seconds into it} for the lightning in a rain story: every STORM_EVERY scenes from the third, never
+    on a scene that already has its own sound effect, and early enough that the thunder fits before the cut."""
+    return {i: round(lengths[i] * STORM_AT, 3) for i in range(2, len(lengths), STORM_EVERY)
+            if not (i < len(played) and played[i]) and lengths[i] * STORM_AT + THUNDER_LAG < lengths[i]}
+
+
 # The loop: the last scene ends on a short, slow settle into the video's very first frame, so when TikTok replays
 # it the cut back to the start is seamless and the video feels like it never ended (rewatches push it out further).
 LOOP_SECONDS = 0.8
@@ -1208,7 +1224,8 @@ FOCUS_PULL = (f",split[fa{{i}}][fb{{i}}];[fa{{i}}]gblur=sigma={FOCUS_BLUR}[fz{{i
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
-                 tone: str = "", riser: bool = False, particles: tuple | None = None, focus: bool = False) -> None:
+                 tone: str = "", riser: bool = False, particles: tuple | None = None, focus: bool = False,
+                 storm: float | None = None) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1240,11 +1257,15 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                       f"x='{x.format(n=max(1, n))}':y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},"
                       f"setpts=PTS-STARTPTS,setsar=1{shake}" + (FOCUS_PULL.format(i=i) if i == pull else f"[s{i}]"))
     k = len(stills)
-    graded = "".join(f",{f}" for f in (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, "")) if f)
+    strike = LIGHTNING.format(at=storm) if storm is not None else ""
+    graded = "".join(f",{f}" for f in (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, ""), strike)
+                     if f)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0{graded}[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
     effects = [f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH] if (
         hit in HITS or whoosh) else []
+    if storm is not None:
+        effects.append(THUNDER.format(delay=round((storm + THUNDER_LAG) * 1000)))
     if riser:
         swell = min(RISER_SECONDS, frames / FPS)
         effects.append(RISER.format(d=swell, delay=round((frames / FPS - swell) * 1000)))
@@ -1554,6 +1575,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     weather = PARTICLES.get(script.get("ambience", ""), STILL_AIR) if account.get("style") in PARTICLE_STYLES else None
     particles = (await asyncio.to_thread(particle_tile, weather[0], work / "particles.png", random.randint(1, 10**6)),
                  weather[1]) if weather else None
+    storms = (storm_times(lengths, played) if account.get("style") in STORM_STYLES
+              and script.get("ambience") == "rain" else {})
     flashback = clue_flashback(shots, script.get("clue", 0), played) if account.get("style") in CLUE_STYLES else {}
     teaser = shots[tease - 1][0] if account.get("style") in TEASER_STYLES and 3 <= tease <= len(shots) else None
     for i, (mine, (voice, spoken, words), seconds, track) in enumerate(zip(shots, voices, lengths, tracks)):
@@ -1566,7 +1589,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                      teaser if i == 0 else flashback.get(i),
                      (STYLE_LAST_TONE if i == len(shots) - 1 and i > 0 else STYLE_VOICE_TONE).get(account.get("style"), ""),
                      account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS,
-                     particles, account.get("style") in FOCUS_STYLES))
+                     particles, account.get("style") in FOCUS_STYLES, storms.get(i)))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
