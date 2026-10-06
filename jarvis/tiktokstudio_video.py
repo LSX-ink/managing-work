@@ -1197,10 +1197,18 @@ def clue_flashback(shots: list, clue: int, played: list) -> dict:
     return {twist: clue_shots[1] if len(clue_shots) > 1 else clue_shots[0]}
 
 
+# Lore closeups open slightly soft and pull into focus over FOCUS_SECONDS, the way a camera operator racks focus onto
+# a detail: the eye follows it to the thing that matters, and the shot reads as filmed rather than a picture.
+FOCUS_SECONDS, FOCUS_BLUR = 0.45, 14
+FOCUS_STYLES = ("lore",)
+FOCUS_PULL = (f",split[fa{{i}}][fb{{i}}];[fa{{i}}]gblur=sigma={FOCUS_BLUR}[fz{{i}}];[fz{{i}}][fb{{i}}]blend="
+              f"all_expr='A*max(0,1-T/{FOCUS_SECONDS})+B*min(1,T/{FOCUS_SECONDS})'[s{{i}}]")
+
+
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
-                 tone: str = "", riser: bool = False, particles: tuple | None = None) -> None:
+                 tone: str = "", riser: bool = False, particles: tuple | None = None, focus: bool = False) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1214,9 +1222,11 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         stills) == 2 else [round(frames * 0.4), round(frames * 0.3), frames - round(frames * 0.4) - round(frames * 0.3)]
     stills = stills[:3]
     motions = [MOTIONS[(move + i) % len(MOTIONS)] for i in range(len(stills))]
+    pull = 1 if focus and len(stills) > 1 else None  # the closeup, the scene's second shot
     if teaser is not None and split[0] > 1:
         flash = min(round(TEASER_SECONDS * FPS), split[0] // 2)  # never more than half the first shot
         stills, split, motions = [teaser, *stills], [flash, split[0] - flash, *split[1:]], [TEASER_MOTION, *motions]
+        pull = pull and pull + 1
     if loop_to is not None:
         tail = max(1, round(LOOP_SECONDS * FPS))
         stills, split, motions = [*stills, loop_to], [*split, tail], [*motions, LOOP_MOTION]
@@ -1228,7 +1238,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         shake = SHAKE.format(w=int(W * 1.04), h=int(H * 1.04), W=W, H=H) if i == 0 and hit in SHAKE_HITS else ""
         chains.append(f"[{i}:v]scale={int(W * 1.2)}:{int(H * 1.2)},zoompan=z='{z.format(n=max(1, n), r=rate)}':d=1:"
                       f"x='{x.format(n=max(1, n))}':y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},"
-                      f"setpts=PTS-STARTPTS,setsar=1{shake}[s{i}]")
+                      f"setpts=PTS-STARTPTS,setsar=1{shake}" + (FOCUS_PULL.format(i=i) if i == pull else f"[s{i}]"))
     k = len(stills)
     graded = "".join(f",{f}" for f in (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, "")) if f)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0{graded}[vc]")
@@ -1556,7 +1566,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                      teaser if i == 0 else flashback.get(i),
                      (STYLE_LAST_TONE if i == len(shots) - 1 and i > 0 else STYLE_VOICE_TONE).get(account.get("style"), ""),
                      account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS,
-                     particles))
+                     particles, account.get("style") in FOCUS_STYLES))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")

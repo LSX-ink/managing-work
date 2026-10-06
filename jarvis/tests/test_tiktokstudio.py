@@ -2290,3 +2290,48 @@ def test_rain_or_dust_drifts_over_lore_pictures(s, tmp_path, monkeypatch):
     a, b = frame(12), frame(24)
     assert a.getextrema()[1] > 60 and a.tobytes() != b.tobytes()  # specks show, and they move
     assert abs(cv.audio_seconds(tmp_path / "p.mp4") - 1.0) < 0.15
+
+
+def test_lore_closeups_pull_into_focus(s, tmp_path, monkeypatch):
+    script = cv.parse_script(SCRIPT)
+    seen = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.append(a[13]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert seen == [True, True, False, False]
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image, ImageFilter, ImageStat
+    wide, close, flash = tmp_path / "w.png", tmp_path / "c.png", tmp_path / "f.png"
+    Image.new("RGB", (cv.W, cv.H), (40, 40, 40)).save(wide)
+    Image.new("RGB", (cv.W, cv.H), (200, 30, 30)).save(flash)
+    board = Image.new("RGB", (cv.W, cv.H), (0, 0, 0))
+    for y in range(0, cv.H, 40):
+        for x in range((y // 40) % 2 * 40, cv.W, 80):
+            board.paste((255, 255, 255), (x, y, x + 40, y + 40))
+    board.save(close)
+
+    def sharpness(video, n):
+        out = tmp_path / f"{video.stem}{n}.png"
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(video), "-vf", f"select=eq(n\\,{n})", "-frames:v", "1", str(out)],
+                       check=True, capture_output=True)
+        return ImageStat.Stat(Image.open(out).convert("L").filter(ImageFilter.FIND_EDGES)).stddev[0]
+    cv.render_scene([wide, close], None, 2.0, tmp_path / "pull.mp4", focus=True, teaser=flash)
+    cv.render_scene([wide, close], None, 2.0, tmp_path / "flat.mp4", teaser=flash)
+    start = round(2.0 * cv.FPS * 0.55) + 1  # the closeup's second frame
+    assert sharpness(tmp_path / "pull.mp4", start) < 0.6 * sharpness(tmp_path / "pull.mp4", start + 25)  # soft, then sharp
+    assert sharpness(tmp_path / "flat.mp4", start) > 0.8 * sharpness(tmp_path / "flat.mp4", start + 25)  # no pull: sharp
