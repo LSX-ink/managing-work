@@ -303,3 +303,16 @@ def test_simple_sums_are_worked_out_instantly():
     assert instant_answer("what is 5", en) is None
     assert instant_answer("what's 2 plus the weather", en) is None
     assert instant_answer("what is 2 plus 2 in French", en) is None
+
+
+def test_unit_conversions_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("What's 10 miles in km?", en) == "10 miles is 16.0934 km."
+    assert instant_answer("how many grams in 3 ounces", en) == "3 oz is 85.0486 g."
+    assert instant_answer("Alfred, what is 20 degrees in Fahrenheit", en) == "20 degrees Celsius is 68 degrees Fahrenheit."
+    assert instant_answer("how many feet in a mile", en) == "1 mile is 5,280 feet."
+    assert instant_answer("what is 75 kilos in stone", en) == "75 kg is 11.8105 stone."
+    assert instant_answer("what is 3 cups in grams", en) is None  # needs the ingredient: Claude asks
+    assert instant_answer("what is 10 pounds in euros", en) is None  # money goes to Claude
+    assert instant_answer("how many people in London", en) is None
