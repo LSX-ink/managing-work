@@ -2335,3 +2335,57 @@ def test_lore_closeups_pull_into_focus(s, tmp_path, monkeypatch):
     start = round(2.0 * cv.FPS * 0.55) + 1  # the closeup's second frame
     assert sharpness(tmp_path / "pull.mp4", start) < 0.6 * sharpness(tmp_path / "pull.mp4", start + 25)  # soft, then sharp
     assert sharpness(tmp_path / "flat.mp4", start) > 0.8 * sharpness(tmp_path / "flat.mp4", start + 25)  # no pull: sharp
+
+
+def test_rain_stories_get_lightning_and_thunder(s, tmp_path, monkeypatch):
+    lengths = [5.0] * 11
+    played = [""] * 11
+    played[6] = "boom"
+    assert cv.storm_times(lengths, played) == {2: 2.0, 10: 2.0}  # every 4th from the third, never over a hit
+    assert cv.storm_times([5.0, 5.0, 0.5], ["", "", ""]) == {}  # no room for the thunder before the cut
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "ambience": "rain"}))
+    script["scenes"] = [dict(script["scenes"][i % 2]) for i in range(4)]
+    seen = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.__setitem__(a[1], a[14]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "add_ambience", lambda video, kind, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "make_score", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert seen[2] is not None and all(seen[i] is None for i in (0, 1, 3))
+    seen.clear()  # a dry story, or another look: no storm
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script={**script, "ambience": "night"}))
+    assert set(seen.values()) == {None}
+    seen.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert set(seen.values()) == {None}
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import re
+    import subprocess
+    from PIL import Image, ImageStat
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (40, 40, 50)).save(still)
+    cv.render_scene([still], None, 2.0, tmp_path / "storm.mp4", storm=0.5)
+
+    def bright(n):
+        out = tmp_path / f"b{n}.png"
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / "storm.mp4"), "-vf", f"select=eq(n\\,{n})", "-frames:v",
+                        "1", str(out)], check=True, capture_output=True)
+        return ImageStat.Stat(Image.open(out).convert("L")).mean[0]
+    assert bright(round(0.52 * cv.FPS)) > bright(round(0.3 * cv.FPS)) + 40  # the flash
+    assert abs(bright(round(1.5 * cv.FPS)) - bright(round(0.3 * cv.FPS))) < 5  # and back to the scene
+    out = subprocess.run([cv.ffmpeg(), "-v", "info", "-ss", "1.2", "-t", "0.4", "-i", str(tmp_path / "storm.mp4"),
+                          "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
+    assert float(re.search(r"max_volume: (-?[\d.]+)", out).group(1)) > -40  # the thunder rolls in after it
