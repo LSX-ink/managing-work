@@ -13,6 +13,7 @@ import httpx
 
 import aboutyou
 import calcmaths
+import calcunits
 import agenda
 import alerts
 import computer
@@ -402,6 +403,32 @@ def _maths_answer(said: str) -> str | None:
     return f"That's {value}."
 
 
+_QTY = r"(?P<n>-?\d[\d,]*(?:\.\d+)?|" + _AMOUNT[1:-1] + r") ?(?P<a>[a-z°][a-z°23 .]{0,24}?)"
+_CONVERT = re.compile(_NAME + r"(?:(?:what(?:'s| is)|convert|change|how much is|how (?:long|far|heavy|big|hot|cold) is) )?"
+                      + _QTY + r" (?:in|to|into|in to) (?P<b>[a-z°][a-z°23 .]{0,24}?)" + _END, re.I)
+_HOW_MANY = re.compile(_NAME + r"how many (?P<b>[a-z°][a-z°23 .]{0,24}?) (?:is|are|in|make|makes|to) (?:a |an )?" + _QTY + _END, re.I)
+
+
+def _units_answer(said: str) -> str | None:
+    """'What's 10 miles in km?', 'how many grams in 3 ounces', '20 degrees in Fahrenheit': converted on the spot."""
+    m = _CONVERT.match(said) or _HOW_MANY.match(said)
+    if not m:
+        return None
+    n, a, b = m.group("n"), m.group("a").strip(" ."), m.group("b").strip(" .")
+    value = float(n.replace(",", "")) if n[-1].isdigit() else _WORDS[n.lower()]
+    temps = calcunits.TEMPERATURE
+    if a.lower() in ("degree", "degrees") and calcunits._key(b) in temps:  # "20 degrees in Fahrenheit"
+        a = "fahrenheit" if temps[calcunits._key(b)] != "°F" else "celsius"
+    try:
+        if not (calcunits._key(a) in temps and calcunits._key(b) in temps):
+            if calcunits.find(a)[0] != calcunits.find(b)[0]:
+                return None  # cups to grams and the like need the ingredient: Claude asks
+        said_back = calcunits.convert(value, a, b)
+    except ValueError:
+        return None  # a word that isn't a unit: not a conversion after all
+    return said_back.replace("°C", " degrees Celsius").replace("°F", " degrees Fahrenheit")
+
+
 def _seconds(amount: str, unit: str) -> float:
     n = float(amount) if amount[0].isdigit() else _WORDS[amount.lower()]
     unit = unit.lower()
@@ -432,7 +459,7 @@ def _ordinal(n: int) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, plain timers, reminders, the shopping list and simple sums, answered on the spot: no need to wait for Claude."""
+    """The time, the date, plain timers, reminders, the shopping list, simple sums and unit conversions, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = text.strip()
@@ -443,7 +470,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _maths_answer(said))
+            or _shopping_answer(said, settings) or _maths_answer(said)
+            or _units_answer(said))
 
 
 def time_of_day(hour: int | None = None) -> str:
