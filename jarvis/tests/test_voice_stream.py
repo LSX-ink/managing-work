@@ -238,3 +238,16 @@ async def test_plain_timers_are_set_checked_and_cancelled_on_the_spot():
         for t in timers.timers.values():
             t.task.cancel()
         timers.timers.clear()
+
+
+def test_remind_me_in_a_few_minutes_is_set_on_the_spot(tmp_path):
+    import reminders
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    said = instant_answer("Alfred, remind me in 20 minutes to check the oven please", en)
+    assert said.startswith("I'll remind you today at ") or said.startswith("I'll remind you tomorrow at ")
+    assert said.endswith(": check the oven.")
+    assert instant_answer("in 5 minutes remind me to stretch", en).endswith(": stretch.")
+    assert sorted(r["text"] for r in reminders.load(en)) == ["check the oven", "stretch"]
+    assert instant_answer("remind me tomorrow at 9 to call the bank", en) is None  # Claude works out the time
+    assert instant_answer("remind me in 20 minutes", en) is None  # no "what": Claude asks

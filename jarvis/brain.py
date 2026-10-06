@@ -1,6 +1,7 @@
 """Jarvis's brain: a Claude conversation with a manual tool-use loop."""
 
 import asyncio
+import datetime as dt
 import json
 import re
 import time
@@ -281,6 +282,28 @@ _CHECK_TIMER = re.compile(_NAME + r"(?:how long(?: is)? left(?: on (?:the|my) ti
 _CANCEL_TIMER = re.compile(_NAME + r"(?:cancel|stop|clear) (?:the |my )?timer" + _END, re.I)
 
 
+_LATER = _AMOUNT + r" (minutes?|mins?|hours?|hrs?)"
+_REMIND = re.compile(_NAME + r"(?:remind me (?:in|after) " + _LATER + r" (?:to |that |about )?(?P<a>.+?)"
+                     r"|in " + _LATER + r",? remind me (?:to |that |about )?(?P<b>.+?))" + _END, re.I)
+
+
+def _reminder_answer(said: str, settings: Settings) -> str | None:
+    """'Remind me in 20 minutes to check the oven': set straight away (anything fancier goes to Claude)."""
+    m = _REMIND.match(said)
+    if not m:
+        return None
+    amount, unit = (m.group(1), m.group(2)) if m.group("a") else (m.group(4), m.group(5))
+    what = (m.group("a") or m.group("b")).strip()
+    now = dt.datetime.now().replace(microsecond=0)
+    at = now + dt.timedelta(seconds=_seconds(amount, unit))
+    if at.second:  # reminders go by the minute: round up, never early
+        at += dt.timedelta(seconds=60 - at.second)
+    try:
+        return reminders.add(settings, at.strftime("%Y-%m-%d %H:%M"), what, now=now).replace("remind them", "remind you")
+    except ValueError as exc:
+        return str(exc)
+
+
 def _seconds(amount: str, unit: str) -> float:
     n = float(amount) if amount[0].isdigit() else _WORDS[amount.lower()]
     unit = unit.lower()
@@ -311,7 +334,7 @@ def _ordinal(n: int) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date and plain timers, answered on the spot: no need to wait for Claude for these."""
+    """The time, the date, plain timers and 'remind me in …', answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = text.strip()
@@ -321,7 +344,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
-    return _timer_answer(said, settings)
+    return _timer_answer(said, settings) or _reminder_answer(said, settings)
 
 
 def time_of_day(hour: int | None = None) -> str:
