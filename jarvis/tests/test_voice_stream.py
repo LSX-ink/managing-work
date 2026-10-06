@@ -288,3 +288,18 @@ def test_the_shopping_list_is_handled_instantly(tmp_path):
     assert shopping.items(en) == ["milk", "some bread"]
     assert instant_answer("add a meeting to my calendar", en) is None
     assert instant_answer("clear the shopping list", en) is None  # emptying it stays with Claude
+
+
+def test_simple_sums_are_worked_out_instantly():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("Alfred, what's 12 times 7?", en) == "That's 84."
+    assert instant_answer("what is 15% of 80", en) == "That's 12."
+    assert instant_answer("work out 100 divided by 3", en) == "That's 33.3333."
+    assert instant_answer("what is the square root of 144", en) == "That's 12."
+    assert instant_answer("how much is 1,200 plus 350 please", en) == "That's 1,550."
+    assert instant_answer("what's 7 squared", en) == "That's 49."
+    assert instant_answer("what's 5 divided by 0", en) == "You can't divide by zero."
+    assert instant_answer("what is 5", en) is None
+    assert instant_answer("what's 2 plus the weather", en) is None
+    assert instant_answer("what is 2 plus 2 in French", en) is None
