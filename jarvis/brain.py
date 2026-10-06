@@ -15,6 +15,7 @@ import agenda
 import alerts
 import computer
 import reminders
+import timers
 import tools
 from config import Settings
 
@@ -266,12 +267,51 @@ _ASK_DATE = re.compile(_NAME + r"(?:what(?:'s| is) (?:the date|today's date|the 
                        r"what day is (?:it )?today|what's today)(?: today)?(?:,? (?:alfred|jarvis|please))*[?.!]*$", re.I)
 
 
+_END = r"(?: please)?(?:,? (?:alfred|jarvis|please))*[?.!]*$"
+_WORDS = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+          "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "fifteen": 15, "twenty": 20, "thirty": 30, "forty": 40,
+          "forty five": 45, "forty-five": 45, "sixty": 60, "ninety": 90}
+_AMOUNT = r"(\d+(?:\.\d+)?|" + "|".join(sorted(map(re.escape, _WORDS), key=len, reverse=True)) + ")"
+_UNIT = r"(seconds?|secs?|minutes?|mins?|hours?|hrs?)"
+_SET_TIMER = re.compile(_NAME + r"(?:(?:can you |please )?(?:set|start) (?:a |the )?timer (?:for )?" + _AMOUNT + " " + _UNIT +
+                        r"|(?:set |start )?(?:a )?" + _AMOUNT + r"[ -]" + _UNIT.replace("s?", "") + r" timer"
+                        r"|timer (?:for )?" + _AMOUNT + " " + _UNIT + r"|(?:set |start )?(?:a )?timer for half an hour)" + _END, re.I)
+_CHECK_TIMER = re.compile(_NAME + r"(?:how long(?: is)? left(?: on (?:the|my) timers?)?|how(?:'s| is) (?:the|my) timer"
+                          r"(?: doing)?|check (?:the |my )?timers?|time left on (?:the|my) timer)" + _END, re.I)
+_CANCEL_TIMER = re.compile(_NAME + r"(?:cancel|stop|clear) (?:the |my )?timer" + _END, re.I)
+
+
+def _seconds(amount: str, unit: str) -> float:
+    n = float(amount) if amount[0].isdigit() else _WORDS[amount.lower()]
+    unit = unit.lower()
+    return n * (3600 if unit.startswith("h") else 60 if unit.startswith("m") else 1)
+
+
+def _timer_answer(said: str, settings: Settings) -> str | None:
+    if m := _SET_TIMER.match(said):
+        groups = [g for g in m.groups() if g]
+        seconds = 1800 if not groups else _seconds(groups[0], groups[1])
+        try:
+            return timers.set_timer(settings, seconds)
+        except ValueError as exc:
+            return str(exc)
+    if _CHECK_TIMER.match(said):
+        running = list(timers.timers.values())
+        if len(running) == 1:
+            left = timers.spoken(running[0].ends - time.monotonic())
+            return f"{left} left on the {'' if running[0].label == 'timer' else running[0].label + ' '}timer."
+        return timers.list_timers()
+    if _CANCEL_TIMER.match(said):
+        return timers.cancel_timer()
+    return None
+
+
 def _ordinal(n: int) -> str:
     return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time or the date, answered on the spot: no need to wait for Claude for these."""
+    """The time, the date and plain timers, answered on the spot: no need to wait for Claude for these."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = text.strip()
@@ -281,7 +321,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
-    return None
+    return _timer_answer(said, settings)
 
 
 def time_of_day(hour: int | None = None) -> str:

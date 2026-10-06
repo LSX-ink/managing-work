@@ -217,3 +217,24 @@ async def test_an_instant_answer_skips_claude_but_stays_in_the_conversation():
     assert said and said[0].startswith("It's ")
     assert b.messages[-2:] == [{"role": "user", "content": "What time is it?"},
                                {"role": "assistant", "content": said[0]}]
+
+
+async def test_plain_timers_are_set_checked_and_cancelled_on_the_spot():
+    import timers
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    timers.timers.clear()
+    try:
+        assert instant_answer("Alfred, set a timer for ten minutes please", en) == "Timer set for 10 minutes."
+        assert instant_answer("a five minute timer", en) == "Timer set for 5 minutes."  # replaces the first
+        assert instant_answer("How long left on my timer?", en).endswith("left on the timer.")
+        assert instant_answer("set a timer for half an hour", en) == "Timer set for 30 minutes."
+        assert instant_answer("set a timer for 48 hours", en) == "Timers can run from 1 second to 24 hours."
+        assert instant_answer("set a timer for pasta for 10 minutes", en) is None  # named timers go to Claude
+        assert instant_answer("stop the timer and play music", en) is None
+        assert instant_answer("cancel the timer", en) == "Cancelled the timer."
+        assert not timers.timers
+    finally:
+        for t in timers.timers.values():
+            t.task.cancel()
+        timers.timers.clear()
