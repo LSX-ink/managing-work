@@ -2238,3 +2238,52 @@ def test_the_last_lore_line_is_said_close_and_dry(s, tmp_path, monkeypatch):
     subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "sine=f=300:d=1", str(voice)], check=True, capture_output=True)
     cv.render_scene([still], voice, 1.0, tmp_path / "close.mp4", tone="close")  # ffmpeg takes the tone
     assert cv.audio_seconds(tmp_path / "close.mp4") > 0.9
+
+
+def test_rain_or_dust_drifts_over_lore_pictures(s, tmp_path, monkeypatch):
+    from PIL import Image
+    for kind in ("rain", "dust"):
+        tile = Image.open(cv.particle_tile(kind, tmp_path / f"{kind}.png", seed=3))
+        assert tile.size == (cv.W, 2 * cv.H) and tile.getchannel("A").getextrema()[1] > 0
+        assert tile.crop((0, 0, cv.W, cv.H)).tobytes() == tile.crop((0, cv.H, cv.W, 2 * cv.H)).tobytes()  # loops
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "ambience": "rain"}))
+    seen = []
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.append(a[12]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "add_ambience", lambda video, kind, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "make_score", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert len(seen) == 2 and all(p and p[1] == cv.PARTICLES["rain"][1] for p in seen)
+    assert seen[0][0] == seen[1][0]  # one layer for the whole video
+    seen.clear()  # no weather in the script, or another look: nothing drifts
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=cv.parse_script(SCRIPT)))
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert seen == [None] * 4
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (5, 5, 5)).save(still)
+    layer = cv.particle_tile("dust", tmp_path / "p.png", seed=1)
+    cv.render_scene([still], None, 1.0, tmp_path / "p.mp4", hit="boom", riser=True, particles=(layer, 600))
+
+    def frame(n):
+        out = tmp_path / f"f{n}.png"
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / "p.mp4"), "-vf", f"select=eq(n\\,{n})", "-frames:v", "1",
+                        str(out)], check=True, capture_output=True)
+        return Image.open(out).convert("L")
+    a, b = frame(12), frame(24)
+    assert a.getextrema()[1] > 60 and a.tobytes() != b.tobytes()  # specks show, and they move
+    assert abs(cv.audio_seconds(tmp_path / "p.mp4") - 1.0) < 0.15
