@@ -12,6 +12,7 @@ import anthropic
 import httpx
 
 import aboutyou
+import calcmaths
 import agenda
 import alerts
 import computer
@@ -375,6 +376,32 @@ def _shopping_answer(said: str, settings: Settings) -> str | None:
     return None
 
 
+_SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?[\d(][\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
+_SPOKEN_MATHS = ((r"(\d(?:[\d.,]*\d)?) ?(?:%|per ?cent) of ", r"\1/100*"), (r"divided by|over|÷", "/"),
+                 (r"(?:multiplied )?by|times|x|×", "*"), (r"plus|add", "+"), (r"minus|take away", "-"),
+                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the power of", "**"),
+                 (r"the square root of|square root of", "sqrt"))
+
+
+def _maths_answer(said: str) -> str | None:
+    """'What's 12 times 7?', 'what is 15% of 80', 'work out 100 divided by 3': a plain sum, worked out on the spot."""
+    if not (m := _SUM.match(said)):
+        return None
+    text = " " + m.group("sum").lower() + " "
+    for words, symbol in _SPOKEN_MATHS:
+        text = re.sub(r"(?<![a-z])(?:" + words + r")(?![a-z])", f" {symbol} " if symbol[0] != "\\" else symbol, text)
+    text = re.sub(r"sqrt\s+([\d.]+)", r"sqrt(\1)", text).strip()
+    if re.search(r"[a-z]", text.replace("sqrt", "")) or not re.search(r"\d\s*(?:\*\*?|/|\+|-)\s*[\d(s]|sqrt\(", text):
+        return None  # words left over, or no sum at all: Claude handles it
+    try:
+        value = calcmaths.calculate(text).rsplit(" = ", 1)[1]
+    except ValueError as exc:
+        return str(exc)
+    if "." in value and "e" not in value:  # said aloud, four decimal places is plenty
+        value = calcmaths.fmt(round(float(value.replace(",", "")), 4))
+    return f"That's {value}."
+
+
 def _seconds(amount: str, unit: str) -> float:
     n = float(amount) if amount[0].isdigit() else _WORDS[amount.lower()]
     unit = unit.lower()
@@ -405,7 +432,7 @@ def _ordinal(n: int) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, plain timers, reminders and the shopping list, answered on the spot: no need to wait for Claude."""
+    """The time, the date, plain timers, reminders, the shopping list and simple sums, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = text.strip()
@@ -416,7 +443,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings))
+            or _shopping_answer(said, settings) or _maths_answer(said))
 
 
 def time_of_day(hour: int | None = None) -> str:
