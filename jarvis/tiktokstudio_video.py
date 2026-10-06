@@ -1149,6 +1149,34 @@ EDGE_SECONDS = 0.015
 EDGE_FADE = f",afade=t=in:d={EDGE_SECONDS},afade=t=out:st={{out:.3f}}:d={EDGE_SECONDS}"
 
 
+# The still pictures come alive with the weather of the story's world: rain streaks falling past the camera, or dust
+# drifting slowly through the light in a quiet room or at night, so a picture never sits dead still on screen.
+# One tile is drawn per video (twice as tall as the screen, its two halves identical) and scrolled down behind the
+# captions, so the fall loops seamlessly. (kind, pixels per second)
+PARTICLES = {"rain": ("rain", 2400), "night": ("dust", 45), "room": ("dust", 35), "wind": ("dust", 160)}
+PARTICLE_STYLES = ("lore",)
+
+
+def particle_tile(kind: str, out: Path, seed: int = 0) -> Path:
+    rng = random.Random(seed)
+    tile = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(tile)
+    if kind == "rain":
+        for _ in range(260):
+            x, y, n = rng.uniform(0, W), rng.uniform(0, H), rng.uniform(40, 80)
+            draw.line([(x, y), (x - n * 0.12, y + n)], fill=(220, 230, 255, rng.randint(35, 75)), width=2)
+    else:
+        for _ in range(110):
+            x, y, r = rng.uniform(0, W), rng.uniform(0, H), rng.uniform(1.0, 3.5)
+            draw.ellipse([x - r, y - r, x + r, y + r], fill=(255, 245, 225, rng.randint(50, 120)))
+        tile = tile.filter(ImageFilter.GaussianBlur(1.2))
+    full = Image.new("RGBA", (W, 2 * H), (0, 0, 0, 0))
+    full.paste(tile, (0, 0))
+    full.paste(tile, (0, H))
+    full.save(out)
+    return out
+
+
 # Lore viewers love the moment a twist proves a clue they saw earlier: as the reveal (the first "boom" after the
 # planted clue) lands, the clue scene's closeup flashes back for the same split second as the opening teaser.
 CLUE_STYLES = ("lore",)
@@ -1168,7 +1196,7 @@ def clue_flashback(shots: list, clue: int, played: list) -> dict:
 def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions: Path | None = None, move: int = 0,
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
-                 tone: str = "", riser: bool = False) -> None:
+                 tone: str = "", riser: bool = False, particles: tuple | None = None) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1201,20 +1229,26 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     graded = "".join(f",{f}" for f in (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, "")) if f)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0{graded}[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
-    video = "[vc]"
-    if captions:
-        inputs += ["-f", "concat", "-safe", "0", "-i", str(captions)]
-        chains.append(f"[{k + 1}:v]format=rgba,setpts=PTS-STARTPTS[cap];[vc][cap]overlay=0:{CAPTION_Y}:eof_action=pass[vo]")
-        video = "[vo]"
-    look = f"{HIT_LOOKS[hit]}," if hit in HIT_LOOKS else (f"fade=t=in:st=0:d={DIP_SECONDS}," if dip else "")
-    chains.append(f"{video}{look}format=yuv420p[v]")
-    polish = f"{VOICE_POLISH},{VOICE_TONES[tone] + ',' if tone in VOICE_TONES else ''}" if audio else ""
-    edges = EDGE_FADE.format(out=max(0.0, frames / FPS - EDGE_SECONDS))
     effects = [f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH] if (
         hit in HITS or whoosh) else []
     if riser:
         swell = min(RISER_SECONDS, frames / FPS)
         effects.append(RISER.format(d=swell, delay=round((frames / FPS - swell) * 1000)))
+    video = "[vc]"
+    if particles:  # the particle layer is the last input, after the captions and the sound effects
+        layer, speed = particles
+        at = k + 1 + bool(captions) + len(effects)
+        chains.append(f"[{at}:v]format=rgba,crop={W}:{H}:0:'{H}-mod(t*{speed},{H})'[pt];"
+                      f"[vc][pt]overlay=0:0:shortest=1[vp]")
+        video = "[vp]"
+    if captions:
+        inputs += ["-f", "concat", "-safe", "0", "-i", str(captions)]
+        chains.append(f"[{k + 1}:v]format=rgba,setpts=PTS-STARTPTS[cap];{video}[cap]overlay=0:{CAPTION_Y}:eof_action=pass[vo]")
+        video = "[vo]"
+    look = f"{HIT_LOOKS[hit]}," if hit in HIT_LOOKS else (f"fade=t=in:st=0:d={DIP_SECONDS}," if dip else "")
+    chains.append(f"{video}{look}format=yuv420p[v]")
+    polish = f"{VOICE_POLISH},{VOICE_TONES[tone] + ',' if tone in VOICE_TONES else ''}" if audio else ""
+    edges = EDGE_FADE.format(out=max(0.0, frames / FPS - EDGE_SECONDS))
     if effects:
         first = k + 1 + bool(captions)
         for effect in effects:
@@ -1225,6 +1259,8 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                       f"duration=first:normalize=0,apad{edges}[a]")
     else:
         chains.append(f"[{k}:a]{polish}apad,aresample=44100{edges}[a]")
+    if particles:
+        inputs += ["-loop", "1", "-framerate", str(FPS), "-i", str(particles[0])]
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
          "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-r", str(FPS), *VIDEO_CODEC,
          "-c:a", "aac", "-b:a", WORK_AUDIO, "-ar", "44100", "-ac", "2", str(out)])
@@ -1501,6 +1537,9 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                                     for i, ((_, spoken, words), seconds) in enumerate(zip(voices, lengths))))
     parts, jobs = [], []
     tease = script.get("teaser", 0)
+    weather = PARTICLES.get(script.get("ambience", "")) if account.get("style") in PARTICLE_STYLES else None
+    particles = (await asyncio.to_thread(particle_tile, weather[0], work / "particles.png", random.randint(1, 10**6)),
+                 weather[1]) if weather else None
     flashback = clue_flashback(shots, script.get("clue", 0), played) if account.get("style") in CLUE_STYLES else {}
     teaser = shots[tease - 1][0] if account.get("style") in TEASER_STYLES and 3 <= tease <= len(shots) else None
     for i, (mine, (voice, spoken, words), seconds, track) in enumerate(zip(shots, voices, lengths, tracks)):
@@ -1512,7 +1551,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                      pace, grade, i > 0 and pace == "slow" and not hit, STYLE_ATMOSPHERE.get(account.get("style"), ""),
                      teaser if i == 0 else flashback.get(i),
                      (STYLE_LAST_TONE if i == len(shots) - 1 and i > 0 else STYLE_VOICE_TONE).get(account.get("style"), ""),
-                     account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS))
+                     account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS,
+                     particles))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
