@@ -1131,8 +1131,13 @@ VOICE_POLISH = ("highpass=f=80,equalizer=f=3000:t=q:w=1.2:g=3,deesser=i=0.4,"
 # a style's own narrator sound on top of the polish. "storyteller" is the late-night lore voice: warmer and fuller in
 # the chest, the hiss rolled off, and a faint small-room echo, so it sounds like someone telling you a story in the
 # dark rather than a text-to-speech read
-VOICE_TONES = {"storyteller": "equalizer=f=140:t=q:w=1:g=3,equalizer=f=8000:t=h:w=3000:g=-2,aecho=0.85:0.5:35:0.1"}
+# "close" is the last line, the one that loops back to the start: the room echo drops away and the voice comes in
+# fuller and drier, as if the narrator leaned in to say it right in your ear. The change of sound makes the ending
+# land as the ending, and the line people quote in the comments
+VOICE_TONES = {"storyteller": "equalizer=f=140:t=q:w=1:g=3,equalizer=f=8000:t=h:w=3000:g=-2,aecho=0.85:0.5:35:0.1",
+               "close": "equalizer=f=180:t=q:w=1:g=4,equalizer=f=8000:t=h:w=3000:g=-3,volume=0.9"}
 STYLE_VOICE_TONE = {"lore": "storyteller"}
+STYLE_LAST_TONE = {"lore": "close"}
 
 
 # x264 with its "auto-variance" adaptive quantisation set to favour dark, flat areas: smooth gradients (night skies,
@@ -1505,7 +1510,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         pace = scenes[i].get("pace", "normal")
         jobs.append((mine, voice, seconds, part, track, i, i > 0 and sfx, loop_to, hit,
                      pace, grade, i > 0 and pace == "slow" and not hit, STYLE_ATMOSPHERE.get(account.get("style"), ""),
-                     teaser if i == 0 else flashback.get(i), STYLE_VOICE_TONE.get(account.get("style"), ""),
+                     teaser if i == 0 else flashback.get(i),
+                     (STYLE_LAST_TONE if i == len(shots) - 1 and i > 0 else STYLE_VOICE_TONE).get(account.get("style"), ""),
                      account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS))
         parts.append(part)
     await render_all(jobs)

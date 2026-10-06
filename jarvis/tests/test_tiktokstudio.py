@@ -2203,3 +2203,38 @@ def test_the_narrator_holds_a_beat_of_silence_before_a_lore_reveal(s, tmp_path, 
     seen.clear()
     asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
     assert beat == pytest.approx(seen[0] - 0.2 + cv.TWIST_BEAT, abs=1 / cv.FPS)  # other looks keep their timing
+
+
+def test_the_last_lore_line_is_said_close_and_dry(s, tmp_path, monkeypatch):
+    assert "aecho" in cv.VOICE_TONES["storyteller"] and "aecho" not in cv.VOICE_TONES["close"]
+    script = cv.parse_script(SCRIPT)
+    script["scenes"] = [dict(script["scenes"][i % 2]) for i in range(4)]
+    tones = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        tones.__setitem__(a[1], a[10]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert tones == {0: "storyteller", 1: "storyteller", 2: "storyteller", 3: "close"}
+    tones.clear()  # other looks keep the plain voice to the end
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert set(tones.values()) == {""}
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image
+    still, voice = tmp_path / "s.png", tmp_path / "v.m4a"
+    Image.new("RGB", (cv.W, cv.H), (10, 10, 10)).save(still)
+    subprocess.run([cv.ffmpeg(), "-y", "-f", "lavfi", "-i", "sine=f=300:d=1", str(voice)], check=True, capture_output=True)
+    cv.render_scene([still], voice, 1.0, tmp_path / "close.mp4", tone="close")  # ffmpeg takes the tone
+    assert cv.audio_seconds(tmp_path / "close.mp4") > 0.9
