@@ -1153,7 +1153,11 @@ EDGE_FADE = f",afade=t=in:d={EDGE_SECONDS},afade=t=out:st={{out:.3f}}:d={EDGE_SE
 # drifting slowly through the light in a quiet room or at night, so a picture never sits dead still on screen.
 # One tile is drawn per video (twice as tall as the screen, its two halves identical) and scrolled down behind the
 # captions, so the fall loops seamlessly. (kind, pixels per second)
-PARTICLES = {"rain": ("rain", 2400), "night": ("dust", 45), "room": ("dust", 35), "wind": ("dust", 160)}
+# A story with no weather of its own (an explainer, a place with no sound) still gets the faintest slow dust, so no
+# lore video is ever "just a picture".
+PARTICLES = {"rain": ("rain", 2400), "night": ("dust", 45), "room": ("dust", 35), "wind": ("dust", 160),
+             "city": ("dust", 60)}
+STILL_AIR = ("dust", 25)
 PARTICLE_STYLES = ("lore",)
 
 
@@ -1537,7 +1541,7 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                                     for i, ((_, spoken, words), seconds) in enumerate(zip(voices, lengths))))
     parts, jobs = [], []
     tease = script.get("teaser", 0)
-    weather = PARTICLES.get(script.get("ambience", "")) if account.get("style") in PARTICLE_STYLES else None
+    weather = PARTICLES.get(script.get("ambience", ""), STILL_AIR) if account.get("style") in PARTICLE_STYLES else None
     particles = (await asyncio.to_thread(particle_tile, weather[0], work / "particles.png", random.randint(1, 10**6)),
                  weather[1]) if weather else None
     flashback = clue_flashback(shots, script.get("clue", 0), played) if account.get("style") in CLUE_STYLES else {}
