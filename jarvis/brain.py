@@ -17,6 +17,7 @@ import calcunits
 import agenda
 import alerts
 import computer
+import dates
 import reminders
 import shopping
 import timers
@@ -429,6 +430,52 @@ def _units_answer(said: str) -> str | None:
     return said_back.replace("°C", " degrees Celsius").replace("°F", " degrees Fahrenheit")
 
 
+_WORLD_TIME = re.compile(_NAME + r"(?:what(?:'s| is) the time|what time is it|what's the time now|time) in (?P<where>[a-z .]+?)"
+                         r"(?: (?:right )?now)?" + _END, re.I)
+_FIXED_DAYS = {"christmas": (12, 25), "christmas day": (12, 25), "christmas eve": (12, 24), "boxing day": (12, 26),
+               "new year": (1, 1), "new year's": (1, 1), "new year's day": (1, 1), "new year's eve": (12, 31),
+               "halloween": (10, 31), "valentine's day": (2, 14), "valentines day": (2, 14), "valentine's": (2, 14),
+               "bonfire night": (11, 5), "guy fawkes night": (11, 5)}
+_DAYS_UNTIL = re.compile(_NAME + r"(?:how (?:many|long) (?:days |sleeps |weeks )?(?:is it |are there |left )?(?:until|till|til|to|before)"
+                         r"|how long (?:is it )?(?:until|till|to)) (?P<day>[a-z' ]+?)" + _END, re.I)
+_TOMORROW = re.compile(_NAME + r"(?:what(?:'s| is) (?:the date |the day )?tomorrow|what day is (?:it )?tomorrow|"
+                       r"what(?:'s| is) tomorrow's date|what(?:'s| is) the date tomorrow)" + _END, re.I)
+
+
+def _calendar_answer(said: str, now: time.struct_time) -> str | None:
+    """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
+    today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
+    if m := _WORLD_TIME.match(said):
+        name = dates.CITY_ZONES.get(m.group("where").strip().lower().removeprefix("the "))
+        if not name:
+            return None  # somewhere less common: Claude looks it up
+        try:
+            from zoneinfo import ZoneInfo
+            there = dt.datetime.now(ZoneInfo(name))
+        except Exception:  # no time zone data on this PC: Claude's tool asks the internet
+            return None
+        hour = there.hour % 12 or 12
+        when = "" if there.date() == dt.datetime.now().date() else (
+            " tomorrow" if there.date() > dt.datetime.now().date() else " yesterday")
+        return f"It's {hour}:{there.minute:02d} {'am' if there.hour < 12 else 'pm'}{when} in {m.group('where').strip().title()}."
+    if m := _DAYS_UNTIL.match(said):
+        key = m.group("day").strip().lower().removeprefix("the ")
+        if key not in _FIXED_DAYS:
+            return None
+        month, day = _FIXED_DAYS[key]
+        target = dt.date(today.year, month, day)
+        if target < today:
+            target = dt.date(today.year + 1, month, day)
+        n, name = (target - today).days, key.title().replace("'S", "'s")
+        if n == 0:
+            return f"{name} is today!"
+        return f"{n} day{'s' if n != 1 else ''} until {name}, on {target:%A} the {_ordinal(target.day)} of {target:%B}."
+    if _TOMORROW.match(said):
+        t = today + dt.timedelta(days=1)
+        return f"Tomorrow is {t:%A} the {_ordinal(t.day)} of {t:%B}."
+    return None
+
+
 def _seconds(amount: str, unit: str) -> float:
     n = float(amount) if amount[0].isdigit() else _WORDS[amount.lower()]
     unit = unit.lower()
@@ -459,7 +506,7 @@ def _ordinal(n: int) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, plain timers, reminders, the shopping list, simple sums and unit conversions, answered on the spot: no need to wait for Claude."""
+    """The time, the date, plain timers, reminders, the shopping list, simple sums, unit conversions, world times and days until Christmas, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = text.strip()
@@ -469,6 +516,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
+    if (found := _calendar_answer(said, now)) is not None:
+        return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _maths_answer(said)
             or _units_answer(said))
