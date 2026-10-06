@@ -340,6 +340,7 @@ function connect(onOpen) {
             queue.push(msg);
             playNext();
         } else if (msg.type === 'alerts') {
+            checkBuild(msg.build);
             alertsList.replaceChildren();
             msg.items.forEach(addAlert);
         } else if (msg.type === 'alert') {
@@ -384,6 +385,26 @@ function connect(onOpen) {
         onOpen && onOpen();
     };
     ws.onclose = lostConnection;
+}
+
+// After an update (git pull, then Alfred restarted) the page reloads itself, so it never runs old code.
+let pageBuild = '';
+function checkBuild(build) {
+    if (!build) return;
+    if (!pageBuild) {
+        pageBuild = build;
+        return;
+    }
+    if (build === pageBuild) return;
+    const reloadWhenFree = () => {
+        if (busy || speaking || queue.length) {
+            setTimeout(reloadWhenFree, 2000);   // never cut off an answer
+            return;
+        }
+        try { if (started) sessionStorage.setItem('jarvis-resume', '1'); } catch { /* private window */ }
+        location.reload();
+    };
+    reloadWhenFree();
 }
 
 function lostConnection() {
@@ -831,6 +852,22 @@ function stopListening() {
 }
 
 // ---- Controls ---------------------------------------------------------------
+
+// Reloaded after an update while awake: carry on listening, without the greeting.
+try {
+    if (sessionStorage.getItem('jarvis-resume')) {
+        sessionStorage.removeItem('jarvis-resume');
+        setTimeout(() => {
+            if (started) return;
+            started = true;
+            keepScreenOn();
+            const go = () => { setState('idle', ''); maybeListen(); };
+            if (ws && ws.readyState === WebSocket.OPEN) go();   // the page already connected on its own
+            else if (ws && ws.readyState === WebSocket.CONNECTING) ws.addEventListener('open', go, { once: true });
+            else connect(go);
+        }, 400);
+    }
+} catch { /* private window */ }
 
 orb.addEventListener('click', () => {
     if (!started) {

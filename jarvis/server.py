@@ -40,6 +40,19 @@ from brain import Brain, computer_enabled, persona
 from config import ROOT, settings
 
 FRONTEND = ROOT / "frontend"
+
+
+def frontend_build() -> str:
+    """A fingerprint of the page's files: when it changes (after git pull and a restart), open pages reload."""
+    digest = hashlib.sha256()
+    for path in sorted(FRONTEND.rglob("*")):
+        if path.is_file() and path.name != "custom.css":
+            digest.update(path.relative_to(FRONTEND).as_posix().encode())
+            digest.update(path.read_bytes())
+    return digest.hexdigest()[:12]
+
+
+BUILD = frontend_build()
 WEATHER_TTL = 600  # seconds the HUD weather panel reuses a reading
 EMAIL_TTL = 60  # seconds the HUD email counter reuses a count
 CONFIRM_TIMEOUT = 120  # seconds to approve mouse/keyboard actions before they are declined
@@ -601,7 +614,7 @@ async def websocket(ws: WebSocket):
 
     task = asyncio.create_task(worker())
     ws.app.state.pages[id(ws)] = (ws, speak, brain)
-    await ws.send_json({"type": "alerts", "items": ws.app.state.alerts})
+    await ws.send_json({"type": "alerts", "items": ws.app.state.alerts, "build": BUILD})
     if note := alerts.setup_note(settings):
         await ws.send_json({"type": "note", "text": note})
     try:
