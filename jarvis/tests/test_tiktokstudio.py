@@ -2267,10 +2267,13 @@ def test_rain_or_dust_drifts_over_lore_pictures(s, tmp_path, monkeypatch):
     asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
     assert len(seen) == 2 and all(p and p[1] == cv.PARTICLES["rain"][1] for p in seen)
     assert seen[0][0] == seen[1][0]  # one layer for the whole video
-    seen.clear()  # no weather in the script, or another look: nothing drifts
+    seen.clear()  # no weather in the script: the faintest slow dust, so it's never just a picture
     asyncio.run(cv.make(None, None, s, lore, tmp_path, script=cv.parse_script(SCRIPT)))
+    assert [p[1] for p in seen] == [cv.STILL_AIR[1]] * 2
+    assert all(kind in cv.PARTICLES for kind in cv.AMBIENCE)  # every world the script can pick has its own
+    seen.clear()  # another look: nothing drifts
     asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
-    assert seen == [None] * 4
+    assert seen == [None] * 2
     monkeypatch.undo()
     pytest.importorskip("imageio_ffmpeg")
     import subprocess
