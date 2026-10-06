@@ -2171,3 +2171,35 @@ def test_the_planted_clue_flashes_back_as_the_twist_lands(s, tmp_path, monkeypat
     seen.clear()  # another look gets no flashback
     asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
     assert seen[3][0] is None
+
+
+def test_the_narrator_holds_a_beat_of_silence_before_a_lore_reveal(s, tmp_path, monkeypatch):
+    lengths = cv.twist_beats([3.0, 4.0, 5.0], [2.9, 3.0, 4.5], ["", "boom", "boom"])
+    assert lengths[0] == pytest.approx(2.9 + cv.TWIST_BEAT, abs=1 / cv.FPS)  # stretched for the pause
+    assert lengths[1] == 4.0 and lengths[2] == 5.0  # already room enough, and the last scene leads into nothing
+    assert cv.TWIST_BEAT >= cv.DROP_SECONDS  # the whole music drop falls in the narrator's silence
+    assert cv.twist_beats([3.0, 4.0], [2.9, 3.0], ["", "sting"]) == [3.0, 4.0]
+    script = json.loads(SCRIPT)
+    script["scenes"][1]["hit"] = "boom"
+    script = cv.parse_script(json.dumps(script))
+    seen = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "fit_to_length", lambda voiced, *a, **k: [v + 0.2 for v in voiced])
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.__setitem__(a[1], seconds), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    beat = seen[0]
+    seen.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert beat == pytest.approx(seen[0] - 0.2 + cv.TWIST_BEAT, abs=1 / cv.FPS)  # other looks keep their timing

@@ -1273,6 +1273,20 @@ def drop_times(lengths, played) -> list[float]:
     return [starts[i] for i, hit in enumerate(played[:len(lengths)]) if i > 0 and hit in DROP_HITS]
 
 
+# ...and the narrator stops talking for that moment too: the scene before a reveal holds at least TWIST_BEAT seconds
+# after its last word, so the music drop and the riser play in a real silence, the held breath before the twist.
+TWIST_BEAT = DROP_SECONDS + 0.1
+
+
+def twist_beats(lengths: list[float], voiced: list[float], played: list) -> list[float]:
+    """The scene lengths with a beat of silence before every "boom" reveal (the scene before it stretched to fit)."""
+    out = list(lengths)
+    for i in range(len(out) - 1):
+        if i + 1 < len(played) and played[i + 1] in DROP_HITS:
+            out[i] = max(out[i], round((voiced[i] + TWIST_BEAT) * FPS) / FPS)
+    return out
+
+
 def add_music(video: Path, track: Path, out: Path, drops=()) -> None:
     """Lay the track quietly under the voice, dipping further whenever Alfred speaks, and fade it out at the end.
     At each of drops (seconds into the video) the music falls silent for a moment first, so the reveal hits."""
@@ -1466,6 +1480,12 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
         voicing.cancel()  # a failed picture or still must not leave voice fetches running
         raise
     lengths = fit_to_length([v[1] for v in voices], paces=[sc.get("pace", "normal") for sc in scenes])
+    sfx = account.get("sfx", True) is not False
+    played = []  # each scene's sound effect, at most MAX_HITS a video, worked out first so a riser can lead into one
+    for scene in scenes:
+        played.append(scene.get("hit", "") if sfx and sum(map(bool, played)) < MAX_HITS else "")
+    if account.get("style") in DROP_STYLES:
+        lengths = twist_beats(lengths, [v[1] for v in voices], played)
     async def track_for(i, spoken, words, seconds):
         if not captions:
             return None
@@ -1475,10 +1495,6 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
     tracks = await asyncio.gather(*(track_for(i, spoken, words, seconds)
                                     for i, ((_, spoken, words), seconds) in enumerate(zip(voices, lengths))))
     parts, jobs = [], []
-    sfx = account.get("sfx", True) is not False
-    played = []  # each scene's sound effect, at most MAX_HITS a video, worked out first so a riser can lead into one
-    for scene in scenes:
-        played.append(scene.get("hit", "") if sfx and sum(map(bool, played)) < MAX_HITS else "")
     tease = script.get("teaser", 0)
     flashback = clue_flashback(shots, script.get("clue", 0), played) if account.get("style") in CLUE_STYLES else {}
     teaser = shots[tease - 1][0] if account.get("style") in TEASER_STYLES and 3 <= tease <= len(shots) else None
