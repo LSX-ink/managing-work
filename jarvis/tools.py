@@ -96,6 +96,7 @@ import diy_projects
 import diy_room
 import dates_saved
 import design
+import skillscan
 import docs_tools
 import docs_tools_forms
 import docs_tools_sheets
@@ -342,7 +343,7 @@ ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, 
 ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [station]  # the station world behind the HUD
-ABILITIES += [design]  # UI UX Pro Max design library
+ABILITIES += [design, skillscan]  # design libraries and the skill scanner
 
 
 def defer(tool: dict) -> dict:
