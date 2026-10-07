@@ -30,6 +30,7 @@ import arcade
 import arcade_board
 import arcade_cards
 import arcade_words
+import browser
 import calcmaths
 import calcmoney
 import calcrandom
@@ -344,6 +345,7 @@ ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market,
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [station]  # the station world behind the HUD
 ABILITIES += [design, skillscan]  # design libraries and the skill scanner
+ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 
 
 def defer(tool: dict) -> dict:

@@ -12,6 +12,8 @@ pyautogui>=0.9.54
 edge-tts>=7.0
 imageio-ffmpeg>=0.5
 json-repair>=0.30  # mends the odd broken script JSON
+# Alfred's own web browser: drives Edge, Chrome or Playwright's Chromium
+playwright>=1.47
 # Clip accounts: download Twitch clips
 yt-dlp>=2025.1.1
 # Kick clips (n3on.vault): lets yt-dlp reach kick.com like a normal browser
