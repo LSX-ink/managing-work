@@ -669,6 +669,40 @@ _PICK = re.compile(_NAME + r"(?:pick|choose|give me) a (?:random )?number (?:bet
 _JOKE = re.compile(_NAME + r"(?:(?:tell me|say|give me) (?:a |another )?joke|(?:tell me )?another joke|make me laugh)" + _END, re.I)
 
 
+_WORD = r"(?:the word )?[\"']?(?P<word>[a-z][a-z'-]{0,40}?)[\"']?"
+_SPELL = re.compile(_NAME + r"(?:how (?:do you|do I|would you|to) spell " + _WORD + r"|spell " + _WORD.replace("word>", "word2>")
+                    + r"(?: for me)?|how (?:is|do you write) " + _WORD.replace("word>", "word3>") + r" (?:spelt|spelled|spelt out)"
+                    r"|what(?:'s| is) the spelling (?:of|for) " + _WORD.replace("word>", "word4>") + r")" + _END, re.I)
+_LETTERS = re.compile(_NAME + r"(?:how many letters (?:are )?(?:there )?(?:in|does) " + _WORD + r"(?: have)?)" + _END, re.I)
+
+
+def _spelt(word: str) -> str:
+    """'necessary' -> 'N, E, C, E, double S, A, R, Y': read out the British way, one letter at a time."""
+    letters = [c.upper() if c.isalpha() else {"-": "hyphen", "'": "apostrophe"}[c] for c in word]
+    out, i = [], 0
+    while i < len(letters):
+        if i + 1 < len(letters) and letters[i] == letters[i + 1] and len(letters[i]) == 1:
+            out.append(f"double {letters[i]}")
+            i += 2
+        else:
+            out.append(letters[i])
+            i += 1
+    return ", ".join(out)
+
+
+def _spelling_answer(said: str) -> str | None:
+    """'How do you spell necessary?' and 'how many letters in banana?': no need to ask Claude."""
+    if m := _SPELL.match(said):
+        word = next(w for w in m.groups() if w)
+        if word.lower() in ("it", "that", "this", "them", "those", "these"):
+            return None  # "spell that": Claude knows what "that" was
+        return f"{word.capitalize()}: {_spelt(word.lower())}."
+    if m := _LETTERS.match(said):
+        word, n = m.group("word"), sum(c.isalpha() for c in m.group("word"))
+        return f"{word.capitalize()} has {n} letter{'s' if n != 1 else ''}."
+    return None
+
+
 def _fun_answer(said: str) -> str | None:
     """'Flip a coin', 'roll two dice', 'pick a number between 1 and 10', 'tell me a joke'."""
     if _COIN.match(said):
@@ -761,7 +795,7 @@ def tidy_request(text: str) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
+    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = tidy_request(text)
@@ -775,7 +809,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said)
-            or _units_answer(said) or _fun_answer(said))
+            or _units_answer(said) or _fun_answer(said) or _spelling_answer(said))
 
 
 def time_of_day(hour: int | None = None) -> str:
