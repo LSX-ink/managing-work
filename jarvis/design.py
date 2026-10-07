@@ -14,6 +14,10 @@ rules that stop AI-looking pages (taste-skill, minimalist-skill, brutalist-skill
 brandkit...), read the same way. skills/anime holds anime-mj (MIT, from github.com/jawhnycooke/claude-code-anime-mj),
 an anime and manga prompt builder with manga artist and studio styles, and higgsfield-anime, the user's own prompt
 template for Higgsfield.
+
+Any other folder dropped into skills/ with */SKILL.md guides is picked up too, named after its folder. skillscan checks
+every library first: blocked ones are refused, and a new or changed one is scanned the first time guides are listed
+or read.
 """
 
 import asyncio
@@ -22,11 +26,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import skillscan
 from config import Settings
 
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
-GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt"}
+GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt"}  # labels
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -64,7 +69,7 @@ def command(args: dict) -> list[str]:
 
 
 def run(cmd: list[str]) -> str:
-    env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+    env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8", "PYTHONDONTWRITEBYTECODE": "1"}
     try:
         done = subprocess.run(cmd, cwd=SCRIPTS, capture_output=True, text=True, encoding="utf-8", errors="replace",
                               timeout=TIMEOUT, env=env)
@@ -87,22 +92,42 @@ def summary(path: Path) -> str:
     return ""
 
 
+def guide_libraries() -> list[str]:
+    """Folders in skills/ with */SKILL.md guides: the named ones first, then any others."""
+    found = [lib for lib in skillscan.libraries() if any((SKILLS / lib).glob("*/SKILL.md"))]
+    return [lib for lib in GUIDE_LIBRARIES if lib in found] + [lib for lib in found if lib not in GUIDE_LIBRARIES]
+
+
 def guides() -> dict[str, Path]:
-    return {p.parent.name: p.parent for lib in GUIDE_LIBRARIES for p in sorted((SKILLS / lib).glob("*/SKILL.md"))}
+    found = {}
+    for lib in guide_libraries():
+        for p in sorted((SKILLS / lib).glob("*/SKILL.md")):
+            found.setdefault(p.parent.name, p.parent)
+    return found
 
 
-def guide(args: dict) -> str:
+def guide(args: dict, settings: Settings | None = None) -> str:
+    settings = settings or Settings()
     found = guides()
+    checked, fresh = skillscan.check(settings, guide_libraries())
+    news = skillscan.news(checked, fresh)
     name = (args.get("guide") or "").strip().lower()
     if not name:
-        out = []
-        for lib, who in GUIDE_LIBRARIES.items():
+        out = [news] if news else []
+        for lib in guide_libraries():
+            who = GUIDE_LIBRARIES.get(lib, lib)
+            if checked.get(lib, {}).get("verdict") == "blocked":
+                out.append(f"{who} guides: blocked by the skill check ({'; '.join(checked[lib]['reasons'][:2])}).")
+                continue
             out.append(f"{who} guides:")
             out += [f"- {n}: {summary(d / 'SKILL.md')}" for n, d in found.items() if d.parent.name == lib]
         return "\n".join(out)
     if name not in found:
         raise ValueError(f"No guide called {name}. Pick one of: {', '.join(found)}.")
     folder = found[name]
+    refusal = skillscan.blocked_reason(settings, folder.parent.name)
+    if refusal:
+        return (news + "\n" if news else "") + refusal
     part = (args.get("file") or "SKILL.md").strip()
     files = sorted(p.name for p in folder.glob("*.md"))
     if part not in files:
@@ -110,7 +135,7 @@ def guide(args: dict) -> str:
     text = (folder / part).read_text(encoding="utf-8")
     start = max(0, int(args.get("offset") or 0))
     chunk = text[start:start + GUIDE_CHARS]
-    head = f"{name}/{part} (files: {', '.join(files)})\n\n"
+    head = (news + "\n\n" if news else "") + f"{name}/{part} (files: {', '.join(files)})\n\n"
     if start + GUIDE_CHARS < len(text):
         chunk += f"\n... more: call again with offset {start + GUIDE_CHARS}"
     return head + chunk
@@ -158,7 +183,8 @@ def tool_definitions() -> list[dict]:
                        "taste-skill-v1. Anime prompts (for anime or manga art, images or video): anime-mj (genres, "
                        "30+ manga artists, 14 studios like Ghibli and KyoAni; files sref-library.md, "
                        "video-animation.md; --niji and --sref only work in Midjourney), higgsfield-anime "
-                       "(fill-in template for Higgsfield). Call with no guide to list them.",
+                       "(fill-in template for Higgsfield). New libraries dropped into skills/ appear here too. Call "
+                       "with no guide to list them.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -177,5 +203,7 @@ NAMES = {"design_advice", "design_guide"}
 
 async def run_tool(name: str, args: dict, settings: Settings, http=None) -> str:
     if name == "design_guide":
-        return guide(args)
-    return await asyncio.to_thread(run, command(args))
+        return guide(args, settings)
+    cmd = command(args)
+    refusal = skillscan.blocked_reason(settings, SCRIPTS.parent.name)
+    return refusal or await asyncio.to_thread(run, cmd)
