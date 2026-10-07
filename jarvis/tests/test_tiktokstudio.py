@@ -2448,3 +2448,46 @@ def test_lore_types_a_dateline_as_the_story_starts(s, tmp_path, monkeypatch):
     out = subprocess.run([cv.ffmpeg(), "-v", "info", "-ss", "0.3", "-t", "1", "-i", str(tmp_path / "typed.mp4"),
                           "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
     assert float(re.search(r"max_volume: (-?[\d.]+)", out).group(1)) > -40  # the typewriter taps
+
+
+def test_lore_twists_drain_the_colour(s, tmp_path, monkeypatch):
+    script = cv.parse_script(SCRIPT)
+    script["scenes"] = [dict(script["scenes"][i % 2], hit="") for i in range(4)]
+    script["scenes"][2]["hit"] = "boom"
+    seen = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.__setitem__(a[1], a[16]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "add_ambience", lambda video, kind, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "make_score", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert seen == {0: False, 1: False, 2: True, 3: False}  # only the boom reveal
+    seen.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert set(seen.values()) == {False}
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import subprocess
+    from PIL import Image, ImageStat
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (200, 40, 40)).save(still)
+    cv.render_scene([still], None, 3.0, tmp_path / "drain.mp4", drain=True)
+
+    def colour(n):
+        out = tmp_path / f"c{n}.png"
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / "drain.mp4"), "-vf", f"select=eq(n\\,{n})", "-frames:v",
+                        "1", str(out)], check=True, capture_output=True)
+        return ImageStat.Stat(Image.open(out).convert("HSV")).mean[1]
+    grey, back = colour(round(0.5 * cv.FPS)), colour(round(2.6 * cv.FPS))
+    assert grey < 0.35 * back  # grey as the twist lands, the colour back once it has sunk in
