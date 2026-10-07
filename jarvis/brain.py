@@ -539,6 +539,30 @@ _INDIRECT = ((r"^tell me (?=what |how |when )", ""), (r"^what time it is", "what
              (r"^tell me (?:the|today's) date", "what's the date"), (r"^what the date is tomorrow", "what's the date tomorrow"))
 
 
+_TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90}
+_UNITS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9}
+_COMPOUND = re.compile(r"\b(" + "|".join(_TENS) + r")[ -](" + "|".join(_UNITS) + r")\b", re.I)
+_SMALL = r"(\d+|a|an|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+
+
+def _small(word: str) -> int:
+    return int(word) if word.isdigit() else _WORDS[word.lower()]
+
+
+def spoken_durations(said: str) -> str:
+    """'twenty five minutes' -> '25 minutes', 'an hour and a half' -> '90 minutes',
+    'two and a half hours' -> '2.5 hours', '1 hour 30 minutes' -> '90 minutes', 'half an hour' -> '30 minutes'."""
+    said = _COMPOUND.sub(lambda m: str(_TENS[m[1].lower()] + _UNITS[m[2].lower()]), said)
+    said = re.sub(r"\b(?:an|one) hour and a half\b", "90 minutes", said, flags=re.I)
+    said = re.sub(r"\bhalf an hour\b", "30 minutes", said, flags=re.I)
+    said = re.sub(r"\ba quarter of an hour\b", "15 minutes", said, flags=re.I)
+    said = re.sub(r"\b" + _SMALL + r" and a half (hours?|minutes?)\b",
+                  lambda m: f"{_small(m[1]) + 0.5:g} {m[2].rstrip('s')}s", said, flags=re.I)
+    said = re.sub(r"\b" + _SMALL + r" hours? (?:and )?(\d+) minutes?\b",
+                  lambda m: f"{_small(m[1]) * 60 + int(m[2])} minutes", said, flags=re.I)
+    return said
+
+
 def tidy_request(text: str) -> str:
     """'Um, Alfred, could you tell me what time it is please mate?' -> 'what time is it?': the plain request,
     so the instant answers catch the many ways people actually say things."""
@@ -547,7 +571,7 @@ def tidy_request(text: str) -> str:
     said = _TRAIL.sub(r"\1", said)
     for pattern, plain in _INDIRECT:
         said = re.sub(pattern, plain, said, flags=re.I)
-    return said
+    return spoken_durations(said)
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:

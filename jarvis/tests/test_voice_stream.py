@@ -371,3 +371,30 @@ def test_fillers_and_polite_wording_still_get_instant_answers():
     assert instant_answer("uh, flip a coin", en, now) in ("Heads.", "Tails.")
     assert instant_answer("can you tell me a joke", en, now)
     assert instant_answer("well I want to know about the weather", en, now) is None
+
+
+def test_spoken_durations_become_plain_numbers():
+    from brain import spoken_durations, tidy_request
+    assert spoken_durations("set a timer for twenty five minutes") == "set a timer for 25 minutes"
+    assert spoken_durations("set a timer for an hour and a half") == "set a timer for 90 minutes"
+    assert spoken_durations("set a timer for two and a half hours") == "set a timer for 2.5 hours"
+    assert spoken_durations("set a timer for 1 hour 30 minutes") == "set a timer for 90 minutes"
+    assert spoken_durations("2 hours and 15 minutes") == "135 minutes"
+    assert spoken_durations("a quarter of an hour") == "15 minutes"
+    assert tidy_request("Alfred, remind me in half an hour to stretch") == "remind me in 30 minutes to stretch"
+
+
+async def test_natural_durations_set_timers_and_reminders(tmp_path):
+    import timers
+    import reminders
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    try:
+        assert instant_answer("set a timer for twenty five minutes", en) == "Timer set for 25 minutes."
+        assert instant_answer("set a timer for an hour and a half", en).startswith("Timer set for 1 hour")
+        assert instant_answer("remind me in forty five minutes to check the oven", en).endswith(": check the oven.")
+        assert [r["text"] for r in reminders.load(en)] == ["check the oven"]
+    finally:
+        for t in list(timers.timers.values()):
+            t.task.cancel()
+        timers.timers.clear()
