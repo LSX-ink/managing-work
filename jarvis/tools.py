@@ -147,6 +147,7 @@ import health
 import knowledge
 import knowledge_explore
 import knowledge_mindmap
+import mcpbridge
 import media_files
 import media_find
 import media_pictures
@@ -346,6 +347,7 @@ ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [station]  # the station world behind the HUD
 ABILITIES += [design, skillscan]  # design libraries and the skill scanner
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
+ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 
 
 def defer(tool: dict) -> dict:
