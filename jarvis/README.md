@@ -227,6 +227,14 @@ With email set up, "Alfred, anything important in my email today?" gets a summar
 
 With your email set up (see Deliveries below), say "Alfred, save every payslip email from VGC into my HS2 folder". He files every matching email already in your inbox straight away (up to ten years back) and then every new one within a few minutes of it arriving: each attachment (the payslip PDF) and the email text, named by the date the email was sent, e.g. `VGC Payslip 2025-09-27.pdf`. A folder that doesn't exist is created (it shows as a star). Ask "what email rules do I have?" or "stop filing VGC emails". Your inbox is only read, never changed.
 
+### Design advice
+
+Alfred has the UI UX Pro Max design library built in (from [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), MIT licence, in `skills/ui-ux-pro-max`). Say "Alfred, design a website for a cosy bakery" and he gives you a full plan: layout, style, a colour palette with hex codes, a font pairing and mistakes to avoid. Smaller questions work too: "what fonts go with a gaming channel?", "colours for a fitness app", "how big should buttons be on a phone?". It works offline, with nothing sent anywhere.
+
+Emil Kowalski's design guides are built in too (from [emilkowalski/skills](https://github.com/emilkowalski/skills), MIT licence, in `skills/emil-kowalski`). They teach his way of making interfaces and animations feel polished. Try "Alfred, how should this pop-up animate?", "review the animations on my HUD" or "make my page feel like a phone app".
+
+Taste Skill is built in as well (from [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), MIT licence, in `skills/taste`). Its rules stop pages looking generic and AI-made, with styles such as minimalist, brutalist and soft. Try "Alfred, redesign my landing page with taste" or "make me a minimalist portfolio".
+
 ### New abilities
 
 When you ask for something Alfred can't do yet ("Alfred, set a timer for ten minutes"), he doesn't just say no. He sends the request to Claude, the AI that builds him, as a GitHub issue labelled `alfred-wish`. Claude checks for new requests every few hours, builds each one as a pull request, and tells you in the project chat. Merge it, run `git pull` and restart, and Alfred can do it. You can also ask him to improve something ("Alfred, get better at…"). A copy of every request goes in `wishes.md` next to `server.py`.
