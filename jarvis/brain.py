@@ -530,11 +530,31 @@ def _ordinal(n: int) -> str:
     return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
 
 
+_LEAD = re.compile(r"^(?:(?:hey|ok|okay|oi|right|so|well|um+|uh+|er+|erm+|hmm+|alright|quick question|"
+                   r"alfred|alfie|jarvis|(?:can|could|would) you (?:please )?tell me(?= (?:what|how|when)\b)|(?:can|could|would|will) you(?: please)?|"
+                   r"please|do you know|i (?:want|need|would like) to know)[,.!]?\s+)+", re.I)
+_TRAIL = re.compile(r"(?:,?\s+(?:mate|buddy|pal|sir|for me|thanks|thank you|cheers|alfred|jarvis|please))+([?.!]*)$", re.I)
+_INDIRECT = ((r"^tell me (?=what |how |when )", ""), (r"^what time it is", "what time is it"), (r"^what the time is", "what's the time"),
+             (r"^what (?:the date|today's date) is", "what's the date"), (r"^what day it is", "what day is it"),
+             (r"^tell me (?:the|today's) date", "what's the date"), (r"^what the date is tomorrow", "what's the date tomorrow"))
+
+
+def tidy_request(text: str) -> str:
+    """'Um, Alfred, could you tell me what time it is please mate?' -> 'what time is it?': the plain request,
+    so the instant answers catch the many ways people actually say things."""
+    said = re.sub(r"\s+", " ", text).strip()
+    said = _LEAD.sub("", said)
+    said = _TRAIL.sub(r"\1", said)
+    for pattern, plain in _INDIRECT:
+        said = re.sub(pattern, plain, said, flags=re.I)
+    return said
+
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, plain timers, reminders, the shopping list, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
-    said = text.strip()
+    said = tidy_request(text)
     now = now or time.localtime()
     if _ASK_TIME.match(said):
         hour = now.tm_hour % 12 or 12
