@@ -305,6 +305,21 @@ def test_simple_sums_are_worked_out_instantly():
     assert instant_answer("what is 2 plus 2 in French", en) is None
 
 
+def test_sums_said_in_words_are_worked_out_instantly():
+    from brain import instant_answer, spoken_numbers
+    en = Settings(speech_lang="en-GB")
+    assert spoken_numbers("two hundred and fifty") == "250"
+    assert spoken_numbers("a thousand and one nights") == "1001 nights"
+    assert instant_answer("what is twenty five times four", en) == "That's 100."
+    assert instant_answer("what's two hundred and fifty divided by ten", en) == "That's 25."
+    assert instant_answer("work out three point five plus one point two five", en) == "That's 4.75."
+    assert instant_answer("what is twelve thousand three hundred and forty five plus five", en) == "That's 12,350."
+    assert instant_answer("what's a hundred plus 7", en) == "That's 107."
+    assert instant_answer("how many grams in three ounces", en) == "3 oz is 85.0486 g."
+    assert instant_answer("what's seven and five", en) is None  # "and" only joins after hundred/thousand
+    assert instant_answer("what is one", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
