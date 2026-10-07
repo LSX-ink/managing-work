@@ -1061,6 +1061,15 @@ ATMOSPHERES = {
 }
 STYLE_ATMOSPHERE = {"lore": "film"}
 
+# The colour drain: in the big lore edits, the moment the twist lands the world goes grey, as if time stopped, and
+# the colour seeps back in once it has sunk in. On a "boom" reveal the picture drops to DRAIN_LOW saturation, holds
+# for DRAIN_HOLD seconds while the line lands, and recovers over DRAIN_BACK seconds (under the captions, which stay
+# in colour so the punch words still glow).
+DRAIN_LOW, DRAIN_HOLD, DRAIN_BACK = 0.1, 1.0, 0.8
+DRAIN = (f"eq=eval=frame:saturation='{DRAIN_LOW}+{1 - DRAIN_LOW:.2f}*clip((t-{DRAIN_HOLD})/{DRAIN_BACK},0,1)'")
+DRAIN_HITS = ("boom",)
+DRAIN_STYLES = ("lore",)
+
 
 # A colour grade for the whole video, picked from the script's mood, so a horror story looks cold and a memory
 # looks warm (applied under the captions, so they stay clean white).
@@ -1258,7 +1267,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
                  tone: str = "", riser: bool = False, particles: tuple | None = None, focus: bool = False,
-                 storm: float | None = None, dateline: tuple | None = None) -> None:
+                 storm: float | None = None, dateline: tuple | None = None, drain: bool = False) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1266,7 +1275,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     (with a white flash or a colour-split glitch, HIT_LOOKS). pace sets how fast the camera pushes. teaser flashes
     another picture for TEASER_SECONDS before the scene's own shots, inside its length: a later moment on the first
     scene, or the planted clue on the twist scene. dateline ((picture, seconds), from dateline_image) types the story's
-    place and time on screen with typewriter taps."""
+    place and time on screen with typewriter taps. drain greys the picture out as a twist lands (DRAIN)."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)] if len(
@@ -1292,8 +1301,8 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                       f"setpts=PTS-STARTPTS,setsar=1{shake}" + (FOCUS_PULL.format(i=i) if i == pull else f"[s{i}]"))
     k = len(stills)
     strike = LIGHTNING.format(at=storm) if storm is not None else ""
-    graded = "".join(f",{f}" for f in (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, ""), strike)
-                     if f)
+    looks = (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, ""), strike, DRAIN if drain else "")
+    graded = "".join(f",{f}" for f in looks if f)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0{graded}[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
     effects = [f"{HITS[hit]},volume=0.8,aformat=channel_layouts=stereo" if hit in HITS else WHOOSH] if (
@@ -1639,7 +1648,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                      (STYLE_LAST_TONE if i == len(shots) - 1 and i > 0 else STYLE_VOICE_TONE).get(account.get("style"), ""),
                      account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS,
                      particles, account.get("style") in FOCUS_STYLES, storms.get(i),
-                     stamp if i == DATELINE_SCENE else None))
+                     stamp if i == DATELINE_SCENE else None,
+                     account.get("style") in DRAIN_STYLES and hit in DRAIN_HITS))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
