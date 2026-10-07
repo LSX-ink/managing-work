@@ -336,3 +336,20 @@ def test_world_times_days_until_and_tomorrow_are_instant():
     assert instant_answer("what's the date tomorrow", en, now) == "Tomorrow is Wednesday the 7th of October."
     christmas = time.strptime("2026-12-25 09:00", "%Y-%m-%d %H:%M")
     assert instant_answer("how many days until Christmas", en, christmas) == "Christmas is today!"
+
+
+def test_coins_dice_numbers_and_jokes_are_instant():
+    import re
+    import fun
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("Alfred, flip a coin", en) in ("Heads.", "Tails.")
+    assert re.fullmatch(r"You rolled a [1-6]\.", instant_answer("roll a dice", en))
+    two = instant_answer("roll two dice please", en)
+    a, b, total = map(int, re.fullmatch(r"You rolled ([1-6]) and ([1-6]), (\d+) in total\.", two).groups())
+    assert a + b == total
+    for _ in range(20):
+        assert 1 <= int(re.fullmatch(r"I pick (\d+)\.", instant_answer("pick a number between 10 and 1", en))[1]) <= 10
+    assert instant_answer("tell me a joke", en) in fun.JOKES
+    assert instant_answer("tell me a joke about cats", en) is None  # Claude writes a cat joke
+    assert instant_answer("another one", en) is None  # could mean anything: Claude decides
