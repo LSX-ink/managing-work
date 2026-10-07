@@ -1000,6 +1000,29 @@ def test_a_sound_effect_renders_with_ffmpeg(tmp_path):
         assert cv.audio_seconds(tmp_path / f"{kind}.mp4") >= 0.39
 
 
+def test_a_shaking_hit_renders_on_a_scene_with_several_shots(tmp_path):
+    """The shake's zoom changed the first shot's pixel shape, so ffmpeg refused to join it to the next shot."""
+    pytest.importorskip("imageio_ffmpeg")
+    from PIL import Image
+    shots = []
+    for i, colour in enumerate(((200, 0, 0), (0, 0, 200), (0, 200, 0))):
+        shots.append(tmp_path / f"{i}.png")
+        Image.new("RGB", (cv.W, cv.H), colour).save(shots[-1])
+    for kind in cv.SHAKE_HITS:
+        cv.render_scene(shots[:2], None, 1.0, tmp_path / f"{kind}.mp4", hit=kind, teaser=shots[2], rewind=True)
+        assert cv.audio_seconds(tmp_path / f"{kind}.mp4") >= 0.99
+
+
+def test_ffmpeg_errors_show_the_cause(monkeypatch):
+    class Done:
+        returncode = 1
+        stderr = ("[Parsed_concat_12 @ 0x1] Input link in0:v0 parameters do not match\n"
+                  "[vost#0:0/libx264 @ 0x2] Task finished with error code: -22 (Invalid argument)\nConversion failed!\n")
+    monkeypatch.setattr(cv.subprocess, "run", lambda *a, **k: Done())
+    with pytest.raises(RuntimeError, match="Parsed_concat_12.*do not match"):
+        cv.run(["-i", "x"])
+
+
 def test_the_camera_follows_the_pace_and_a_boom_shakes_it(tmp_path):
     pytest.importorskip("imageio_ffmpeg")
     import subprocess

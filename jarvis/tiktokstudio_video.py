@@ -955,8 +955,10 @@ def reading_seconds(text: str) -> float:
 
 def run(args: list[str]) -> None:
     done = subprocess.run([ffmpeg(), "-hide_banner", "-loglevel", "error", "-y", *args], capture_output=True, text=True)
-    if done.returncode:
-        raise RuntimeError(f"ffmpeg failed: {done.stderr[-400:]}")
+    if done.returncode:  # the first error line is the cause; the rest is ffmpeg shutting its threads down
+        lines = [l for l in done.stderr.splitlines() if l.strip()]
+        cause = next((l for l in lines if "Task finished" not in l and "Terminating thread" not in l), "")
+        raise RuntimeError(f"ffmpeg failed: {cause[:300]}" + (f" ... {lines[-1][:150]}" if lines else ""))
 
 
 # the voice service leaves up to a second of silence after the last word; cut it back to a short breath so the
@@ -1333,7 +1335,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         shake = SHAKE.format(w=int(W * 1.04), h=int(H * 1.04), W=W, H=H) if i == 0 and hit in SHAKE_HITS else ""
         chains.append(f"[{i}:v]scale={int(W * 1.2)}:{int(H * 1.2)},zoompan=z='{z.format(n=max(1, n), r=rate)}':d=1:"
                       f"x='{x.format(n=max(1, n))}':y='{y}':s={W}x{H}:fps={FPS},trim=end_frame={n},"
-                      f"setpts=PTS-STARTPTS,setsar=1{shake}" + (FOCUS_PULL.format(i=i) if i == pull else f"[s{i}]"))
+                      f"setpts=PTS-STARTPTS{shake},setsar=1" + (FOCUS_PULL.format(i=i) if i == pull else f"[s{i}]"))
     k = len(stills)
     strike = LIGHTNING.format(at=storm) if storm is not None else ""
     tape = REWIND_LOOK.format(a=back, b=round(back + REWIND_SECONDS, 3)) if back is not None else ""
