@@ -6,6 +6,7 @@ last_frame grabs a clip's final frame as a picture, so the next generated clip c
 or Seedance's video extension) and the shots flow on from each other instead of looking patched together.
 """
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -21,7 +22,7 @@ from tiktokstudio_store import slug
 from tiktokstudio_video import audio_seconds, ffmpeg
 
 NAMES = {"join_video_clips"}
-ACTIONS = ["join", "last_frame"]
+ACTIONS = ["join", "last_frame", "handoff"]
 DEFAULT_FOLDER = "Work/Films"
 MAX_CLIPS = 40
 MAX_DOWNLOAD = 500 * 1024 * 1024
@@ -38,7 +39,12 @@ def tool_definitions() -> list[dict]:
                        "(web links from Higgsfield, or files in the memory folders like Work/Films/shot1.mp4), makes "
                        "them one size and frame rate, joins them with hard cuts or crossfades, and lays audio tracks "
                        "(narration, music; links or files) over the whole film, saving it to a memory folder. "
-                       "last_frame (clip) saves a clip's final frame as a picture: use it as the start image of "
+                       "handoff (clip) is for chaining Higgsfield clips into one long take: it grabs the clip's final "
+                       "frame, uploads it to Higgsfield as an image and returns its media_id, ready to pass as "
+                       "start_image to the next generate_video (a video's own media_id is refused there). Loop "
+                       "generate -> handoff -> generate for each segment (ask the user first: each one spends "
+                       "credits), then join all the clips. "
+                       "last_frame (clip) only saves a clip's final frame as a picture: use it as the start image of "
                        "the next generated clip so each shot carries on from the last one.",
         "input_schema": {
             "type": "object",
@@ -210,7 +216,8 @@ def join(settings: Settings, args: dict, http=None) -> screen.Shown:
     return screen.Shown(said, screen.file_card(settings, out))
 
 
-def last_frame(settings: Settings, args: dict, http=None) -> str:
+def grab_last_frame(settings: Settings, args: dict, http=None) -> tuple[Path, Path]:
+    """(the clip's final frame as a PNG in the folder, the clip's name)."""
     folder = memory.folder(settings, args.get("folder") or DEFAULT_FOLDER, create=True)
     clip = fetch(settings, args.get("clip", ""), folder, http)
     seconds = probe(clip)["seconds"]
@@ -220,8 +227,53 @@ def last_frame(settings: Settings, args: dict, http=None) -> str:
         clip.unlink(missing_ok=True)
     if not out.exists():
         raise ValueError("I couldn't grab the last frame of that clip.")
+    return out, clip
+
+
+def last_frame(settings: Settings, args: dict, http=None) -> str:
+    out, clip = grab_last_frame(settings, args, http)
     return (f"Saved the last frame of {clip.name} as {mc.rel(settings, out)}. Upload it as the start image of the "
             "next clip so the shot carries straight on.")
+
+
+def higgsfield(tool: str, arguments: dict) -> str:
+    """One Higgsfield tool through the MCP bridge (signed in through the browser the first time), as its text."""
+    import mcpbridge
+    server = mcpbridge.get_server("higgsfield")
+    result = server.request("tools/call", {"name": tool, "arguments": arguments}, mcpbridge.CALL_SECONDS)
+    text = "\n".join(p.get("text", "") for p in result.get("content") or [] if p.get("type") == "text")
+    if result.get("structuredContent") is not None:
+        text += "\n" + json.dumps(result["structuredContent"])
+    if result.get("isError"):
+        raise ValueError(f"Higgsfield said: {text.strip()[:300]}")
+    return text
+
+
+def found(text: str, *keys: str) -> str:
+    for key in keys:
+        match = re.search(rf'"{key}"\s*:\s*"([^"]+)"', text) or re.search(rf"\b{key}\s*[:=]\s*(\S+)", text)
+        if match:
+            return match[1].strip("'\",;")
+    return ""
+
+
+def handoff(settings: Settings, args: dict, http=None) -> str:
+    """The clip's final frame uploaded to Higgsfield as an image: its media_id is the next clip's start_image."""
+    frame, clip = grab_last_frame(settings, args, http)
+    reply = higgsfield("media_upload", {"filename": frame.name.replace(" ", "-"), "content_type": "image/png"})
+    media_id, upload = found(reply, "media_id", "id"), found(reply, "upload_url", "url")
+    if not media_id or not upload.startswith("https://"):
+        raise ValueError(f"Higgsfield's upload reply wasn't what I expected: {reply.strip()[:300]}")
+    try:
+        sent = httpx.put(upload, content=frame.read_bytes(), headers={"Content-Type": "image/png"}, timeout=120)
+    except httpx.HTTPError as exc:
+        raise ValueError(f"I couldn't upload the frame to Higgsfield: {exc}") from None
+    if sent.status_code >= 300:
+        raise ValueError(f"Higgsfield refused the frame upload ({sent.status_code}).")
+    higgsfield("media_confirm", {"media_id": media_id, "type": "image"})
+    return (f"Uploaded the last frame of {clip.name} to Higgsfield (saved too as {mc.rel(settings, frame)}). "
+            f"start_image media_id: {media_id}. Pass it as the start image of the next generate_video so the shot "
+            "carries straight on.")
 
 
 def run_tool(name: str, args: dict, settings: Settings, http=None):
@@ -230,4 +282,6 @@ def run_tool(name: str, args: dict, settings: Settings, http=None):
         return join(settings, args)
     if action == "last_frame":
         return last_frame(settings, args)
+    if action == "handoff":
+        return handoff(settings, args)
     raise ValueError(f"Pick one of: {', '.join(ACTIONS)}.")
