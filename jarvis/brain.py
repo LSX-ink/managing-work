@@ -517,9 +517,45 @@ _TOMORROW = re.compile(_NAME + r"(?:what(?:'s| is) (?:the date |the day )?tomorr
                        r"what(?:'s| is) tomorrow's date|what(?:'s| is) the date tomorrow)" + _END, re.I)
 
 
+_UNTIL_CLOCK = re.compile(_NAME + r"(?:how long (?:is it |have I got |do I have )?|how many (?:minutes|hours) (?:is it |have I got |do I have )?|"
+                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r")" + _END, re.I)
+_TIME_IN = re.compile(_NAME + r"(?:what time will it be|what(?:'s| is| will be) the time|what time is it) in " + _AMOUNT
+                      + r" (minutes?|mins?|hours?|hrs?)(?: time)?" + _END, re.I)
+
+
+def _say_clock(hour: int, minute: int) -> str:
+    return f"{hour % 12 or 12}{f':{minute:02d}' if minute else ''} {'am' if hour < 12 else 'pm'}"
+
+
+def _clock_maths(said: str, now: time.struct_time) -> str | None:
+    """'How long until 5 pm?' and 'what time will it be in 3 hours?': worked out from the clock on the spot."""
+    here = dt.datetime(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
+    if m := _TIME_IN.match(said):
+        later = here + dt.timedelta(seconds=_seconds(m.group(1), m.group(2)))
+        day = "" if later.date() == here.date() else " tomorrow" if (later.date() - here.date()).days == 1 else f" on {later:%A}"
+        return f"It'll be {_say_clock(later.hour, later.minute)}{day}."
+    if not (m := _UNTIL_CLOCK.match(said)):
+        return None
+    if m.group("h24"):
+        hour, minute = int(m.group("h24")), int(m.group("m24"))
+    else:
+        hour, minute = int(m.group("h")), int(m.group("m") or 0)
+        if not 1 <= hour <= 12 or minute > 59:
+            return None
+        hour = hour % 12 + (12 if m.group("ap").lower().startswith("p") else 0)
+    target = here.replace(hour=hour, minute=minute)
+    if target <= here:
+        target += dt.timedelta(days=1)
+    hours, minutes = divmod(int((target - here).total_seconds() // 60), 60)
+    parts = [f"{n} {unit}{'s' if n != 1 else ''}" for n, unit in ((hours, "hour"), (minutes, "minute")) if n]
+    return f"{' and '.join(parts)} until {_say_clock(hour, minute)}."
+
+
 def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
+    if (found := _clock_maths(said, now)) is not None:
+        return found
     if m := _WORLD_TIME.match(said):
         name = dates.CITY_ZONES.get(m.group("where").strip().lower().removeprefix("the "))
         if not name:
@@ -649,7 +685,7 @@ def tidy_request(text: str) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, plain timers, reminders, the shopping list, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
+    """The time, the date, time until 5 pm, plain timers, reminders, the shopping list, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = tidy_request(text)

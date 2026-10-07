@@ -320,6 +320,21 @@ def test_sums_said_in_words_are_worked_out_instantly():
     assert instant_answer("what is one", en) is None
 
 
+def test_time_until_and_time_in_are_worked_out_instantly():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-06 14:45", "%Y-%m-%d %H:%M")
+    assert instant_answer("how long until 5 pm", en, now) == "2 hours and 15 minutes until 5 pm."
+    assert instant_answer("Alfred, how many minutes until 3pm?", en, now) == "15 minutes until 3 pm."
+    assert instant_answer("how long till 17:30", en, now) == "2 hours and 45 minutes until 5:30 pm."
+    assert instant_answer("how long until 2:30 pm", en, now) == "23 hours and 45 minutes until 2:30 pm."
+    assert instant_answer("what time will it be in 3 hours", en, now) == "It'll be 5:45 pm."
+    assert instant_answer("what time will it be in an hour and a half", en, now) == "It'll be 4:15 pm."
+    assert instant_answer("what's the time in 10 hours", en, now) == "It'll be 12:45 am tomorrow."
+    assert instant_answer("how long until 13 pm", en, now) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
