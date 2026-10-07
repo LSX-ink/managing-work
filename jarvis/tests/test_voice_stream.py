@@ -367,6 +367,20 @@ def test_discounts_tips_and_bill_splits_are_instant():
     assert instant_answer("split £10 between 0", en) is None
 
 
+def test_spelling_and_letter_counts_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("how do you spell necessary", en) == "Necessary: N, E, C, E, double S, A, R, Y."
+    assert instant_answer("Alfred, how do you spell accommodation?", en) == \
+        "Accommodation: A, double C, O, double M, O, D, A, T, I, O, N."
+    assert instant_answer("how is Wednesday spelt", en) == "Wednesday: W, E, D, N, E, S, D, A, Y."
+    assert instant_answer("what's the spelling of mother-in-law", en) == \
+        "Mother-in-law: M, O, T, H, E, R, hyphen, I, N, hyphen, L, A, W."
+    assert instant_answer("how many letters in banana", en) == "Banana has 6 letters."
+    assert instant_answer("spell it", en) is None  # "it" means the last thing said: Claude
+    assert instant_answer("how do you spell my name", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
