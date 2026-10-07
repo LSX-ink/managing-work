@@ -2497,3 +2497,55 @@ def test_lore_twists_drain_the_colour(s, tmp_path, monkeypatch):
         return ImageStat.Stat(Image.open(out).convert("HSV")).mean[1]
     grey, back = colour(round(0.5 * cv.FPS)), colour(round(2.6 * cv.FPS))
     assert grey < 0.35 * back  # grey as the twist lands, the colour back once it has sunk in
+
+
+def test_lore_punch_words_land_with_a_thump(s, tmp_path, monkeypatch):
+    words = [(0.1, 0.4, "She"), (0.4, 0.9, "found"), (0.9, 1.3, "room"), (1.6, 2.0, "4B."), (2.2, 2.6, "Room"),
+             (2.7, 3.0, "4B"), (3.1, 3.4, "again")]
+    assert cv.thump_times(words, ["room", "4b"]) == [0.9, 1.6]  # first time each is said, at most two
+    assert cv.thump_times(words, ["room", "4b"], hit="boom") == [1.6, 2.2]  # clear of the boom ringing out
+    assert cv.thump_times(words, []) == []
+    script = cv.parse_script(SCRIPT)
+    script["scenes"] = [dict(script["scenes"][i % 2], hit="") for i in range(3)]
+    script["scenes"][1]["punch"] = [cv.bare(script["scenes"][1]["narration"].split()[1])]
+    script["scenes"][0]["punch"] = script["scenes"][2]["punch"] = []
+    seen = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def a_voice(http, settings, text, voice, target, *a, **k):
+        target.write_bytes(b"mp3")
+        return True
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", a_voice)
+    monkeypatch.setattr(cv, "audio_seconds", lambda path: 4.0)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.__setitem__(a[1], a[17]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "add_ambience", lambda video, kind, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "make_score", lambda *a: None)
+    monkeypatch.setattr(cv, "normalise", lambda video, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    monkeypatch.setattr(cv, "video_facts", lambda path: "")
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert seen[0] == [] and seen[2] == [] and len(seen[1]) == 1 and seen[1][0] > 0
+    seen.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert set(map(tuple, seen.values())) == {()}
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import re
+    import subprocess
+    from PIL import Image
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (40, 40, 50)).save(still)
+    cv.render_scene([still], None, 2.0, tmp_path / "thump.mp4", thumps=[1.0])
+
+    def peak(at):
+        out = subprocess.run([cv.ffmpeg(), "-v", "info", "-ss", str(at), "-t", "0.3", "-i", str(tmp_path / "thump.mp4"),
+                              "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
+        return float(re.search(r"max_volume: (-?[\d.]+)", out).group(1))
+    assert peak(1.0) > -30 and peak(0.3) < -60  # the thump lands on the word, silence before it
