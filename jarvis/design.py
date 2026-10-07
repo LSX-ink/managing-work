@@ -1,9 +1,15 @@
-"""Design advice from UI UX Pro Max: styles, colour palettes, font pairings, UX rules, icons, charts and
-stack tips for websites, apps and pages.
+"""Design advice from two built-in libraries.
+
+UI UX Pro Max: styles, colour palettes, font pairings, UX rules, icons, charts and stack tips for websites, apps
+and pages.
 
 The library lives in skills/ui-ux-pro-max (MIT, from github.com/nextlevelbuilder/ui-ux-pro-max-skill). Its search
 script reads local CSV files only and makes no internet calls. It runs in its own Python process so its modules
 (core, design_system) never mix with Alfred's.
+
+Emil Kowalski's skills (MIT, from github.com/emilkowalski/skills) live in skills/emil-kowalski: written guides on UI
+polish and animation (emil-design-eng, animate, review-animations, apple-design, mobile-native...). design_guide
+hands Alfred a guide's text to follow.
 """
 
 import asyncio
@@ -14,13 +20,16 @@ from pathlib import Path
 
 from config import Settings
 
-SCRIPTS = Path(__file__).resolve().parent / "skills" / "ui-ux-pro-max" / "scripts"
+SKILLS = Path(__file__).resolve().parent / "skills"
+SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
+EMIL = SKILLS / "emil-kowalski"
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
           "html-tailwind", "shadcn", "jetpack-compose", "threejs", "angular", "laravel", "javafx", "wpf", "winui",
           "avalonia", "uno", "uwp"]
 MAX_CHARS = 8000
+GUIDE_CHARS = 20000
 TIMEOUT = 60
 
 
@@ -66,6 +75,40 @@ def run(cmd: list[str]) -> str:
     return out
 
 
+def summary(path: Path) -> str:
+    for line in path.read_text(encoding="utf-8").splitlines()[:10]:
+        if line.startswith("description:"):
+            text = line.split(":", 1)[1].strip().strip('"')
+            return text[:160] + ("..." if len(text) > 160 else "")
+    return ""
+
+
+def guides() -> dict[str, Path]:
+    return {p.parent.name: p.parent for p in sorted(EMIL.glob("*/SKILL.md"))}
+
+
+def guide(args: dict) -> str:
+    found = guides()
+    name = (args.get("guide") or "").strip().lower()
+    if not name:
+        lines = [f"- {n}: {summary(d / 'SKILL.md')}" for n, d in found.items()]
+        return "Emil Kowalski's design guides:\n" + "\n".join(lines)
+    if name not in found:
+        raise ValueError(f"No guide called {name}. Pick one of: {', '.join(found)}.")
+    folder = found[name]
+    part = (args.get("file") or "SKILL.md").strip()
+    files = sorted(p.name for p in folder.glob("*.md"))
+    if part not in files:
+        raise ValueError(f"{name} has these files: {', '.join(files)}.")
+    text = (folder / part).read_text(encoding="utf-8")
+    start = max(0, int(args.get("offset") or 0))
+    chunk = text[start:start + GUIDE_CHARS]
+    head = f"{name}/{part} (files: {', '.join(files)})\n\n"
+    if start + GUIDE_CHARS < len(text):
+        chunk += f"\n... more: call again with offset {start + GUIDE_CHARS}"
+    return head + chunk
+
+
 def tool_definitions() -> list[dict]:
     return [{
         "name": "design_advice",
@@ -95,11 +138,31 @@ def tool_definitions() -> list[dict]:
             "required": ["query"],
             "additionalProperties": False,
         },
+    }, {
+        "name": "design_guide",
+        "description": "Emil Kowalski's design engineering guides: how to make interfaces and animations feel "
+                       "polished. Guides: emil-design-eng (his whole philosophy), animate, animate-expo, "
+                       "animation-vocabulary (names for a motion effect), apple-design, review-animations, "
+                       "improve-animations, find-animation-opportunities, mobile-native, break-ui, prototype, "
+                       "pick-ui-library, ask-sonner, write-swift. Call with no guide to list them. Read the guide "
+                       "and follow it when designing, animating or reviewing UI, then answer in plain words.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "guide": {"type": "string", "description": "Guide name, e.g. 'emil-design-eng'. Empty lists them."},
+                "file": {"type": "string", "description": "Extra file in the guide, e.g. 'RECIPES.md'. "
+                                                          "Default SKILL.md."},
+                "offset": {"type": "integer", "minimum": 0, "description": "To read on from a cut-off point."},
+            },
+            "additionalProperties": False,
+        },
     }]
 
 
-NAMES = {"design_advice"}
+NAMES = {"design_advice", "design_guide"}
 
 
 async def run_tool(name: str, args: dict, settings: Settings, http=None) -> str:
+    if name == "design_guide":
+        return guide(args)
     return await asyncio.to_thread(run, command(args))

@@ -36,3 +36,24 @@ def test_bad_input():
 def test_registered_and_deferred():
     assert design in tools.ABILITIES and design not in tools.ALWAYS_LOADED
     assert design.SCRIPTS.joinpath("search.py").exists()
+
+
+def guide(args):
+    return asyncio.run(design.run_tool("design_guide", args, Settings()))
+
+
+def test_guide_list_and_read():
+    listing = guide({})
+    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 14
+    out = guide({"guide": "animate", "file": "RECIPES.md"})
+    assert out.startswith("animate/RECIPES.md")
+    long = guide({"guide": "write-swift"})
+    assert "call again with offset 20000" in long
+    assert "offset" not in guide({"guide": "write-swift", "offset": 40000}).split("\n\n", 1)[1][-60:]
+
+
+def test_guide_bad_names():
+    with pytest.raises(ValueError):
+        design.guide({"guide": "nope"})
+    with pytest.raises(ValueError):
+        design.guide({"guide": "animate", "file": "../../config.py"})
