@@ -31,7 +31,7 @@ from config import Settings
 
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
-GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt"}  # labels
+GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic"}  # labels
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -183,7 +183,9 @@ def tool_definitions() -> list[dict]:
                        "taste-skill-v1. Anime prompts (for anime or manga art, images or video): anime-mj (genres, "
                        "30+ manga artists, 14 studios like Ghibli and KyoAni; files sref-library.md, "
                        "video-animation.md; --niji and --sref only work in Midjourney), higgsfield-anime "
-                       "(fill-in template for Higgsfield). New libraries dropped into skills/ appear here too. Call "
+                       "(fill-in template for Higgsfield). Anthropic: frontend-design (a distinctive look for a new page or "
+                       "app: a clear aesthetic direction, bold typography and colour, nothing templated; read it "
+                       "first when building or restyling a website). New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",
