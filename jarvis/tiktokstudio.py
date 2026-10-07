@@ -654,6 +654,32 @@ def remove_account(settings: Settings, args: dict) -> str:
     return f"Removed {a['name']}. Its videos are still in the folder."
 
 
+def delete_videos(settings: Settings, args: dict) -> str:
+    """Deletes the videos Alfred has made (each with its cover picture and notes), for one account or all of them.
+    The ticks, X's and lessons stay, so he still learns from them; a video being made right now is left alone."""
+    data = cs.load(settings)
+    named = cs.account(data, args["account"]) if args.get("account") else None
+    accounts = [named] if named else data["accounts"]
+    who = named["name"] if named else "every account"
+    if not args.get("confirmed"):
+        return (f"Ask the user to confirm deleting all the videos made for {who} (this can't be undone), then call "
+                "again with confirmed.")
+    gone = 0
+    names = {a["name"] for a in accounts}
+    for v in data["videos"]:
+        if v.get("account") in names and v.get("status") != "making" and v.get("status") != "deleted":
+            v["status"] = "deleted"
+            v.pop("file", None)
+    for a in accounts:  # every video file in the account's folder, including ones the studio lost track of
+        folder = cs.work_folder(settings, "TikTok", a["name"])
+        for video in folder.glob("*.mp4"):
+            for path in (video, video.with_suffix(".png"), video.with_suffix(".md")):
+                path.unlink(missing_ok=True)
+            gone += 1
+    cs.save(settings, data)
+    return f"Deleted {gone} video{'' if gone == 1 else 's'} for {who}. What you liked and rejected is still remembered."
+
+
 def name_ideas(args: dict) -> str:
     theme = cs.clean(args.get("theme"), 300) or "short AI story videos"
     return (f"INSTRUCTION for Alfred: suggest 10 flashy, current, Gen Z style TikTok account names for: {theme}. "
@@ -682,7 +708,7 @@ async def profile_kit(settings: Settings, http: httpx.AsyncClient, args: dict) -
 
 ACTIONS = ["studio", "make_video", "approve", "reject", "skip", "pause", "resume", "set_views", "accounts", "add_account", "update_account",
            "remove_account", "name_ideas", "profile_kit", "trends", "connect", "setup", "bible", "lessons",
-           "draft_script", "viral"]
+           "draft_script", "viral", "delete_videos"]
 
 
 def tool_definitions() -> list[dict]:
@@ -714,7 +740,9 @@ def tool_definitions() -> list[dict]:
                        "before and after from the stream. update_account "
                        "(account, new_name or any field; off true switches an account off so it makes no videos at "
                        "all, off false switches it back on: 'switch karma.receipts on'). Only lowkey.lore is on "
-                       "until the user sets the other pages up. remove_account (account, confirmed). name_ideas (theme) for "
+                       "until the user sets the other pages up. remove_account (account, confirmed). delete_videos (optional account, "
+                       "confirmed) deletes the videos already made, with their covers and notes, keeping what Alfred "
+                       "learnt from them: 'delete the videos', 'clear out the lore videos'. name_ideas (theme) for "
                        "flashy Gen Z account names. profile_kit (account) makes a profile picture and a bio. trends (account, refresh) shows this "
                        "week's TikTok trends for its niche (checked daily before the first video and used in every "
                        "script, with the account's best-performing videos) so you can plan what to post next. connect (account) gives the TikTok login link. setup explains "
@@ -830,6 +858,8 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
         return update_account(settings, args)
     if action == "remove_account":
         return remove_account(settings, args)
+    if action == "delete_videos":
+        return delete_videos(settings, args)
     if action == "name_ideas":
         return name_ideas(args)
     if action == "trends":

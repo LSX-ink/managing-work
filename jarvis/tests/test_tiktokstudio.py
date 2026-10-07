@@ -97,6 +97,35 @@ def test_add_rename_and_remove_accounts(s):
     assert shown.card["rows"][0][:2] == ["lowkey.lore", "lore"] and shown.card["rows"][0][4] == "no"
 
 
+def test_delete_videos_clears_the_made_videos_but_keeps_the_lessons(s):
+    v = add_video(s)
+    folder = cs.work_folder(s, "TikTok", "lowkey.lore")
+    (folder / "clip.png").write_bytes(b"png")
+    (folder / "clip.md").write_text("notes", encoding="utf-8")
+    (folder / "Profile picture.png").write_bytes(b"png")
+    (folder / "lost.mp4").write_bytes(b"mp4")  # a video the studio lost track of
+    other = cs.work_folder(s, "TikTok", "mindglitch.fyi")
+    (other / "kept.mp4").write_bytes(b"mp4")
+    making = add_video(s, status="making", file="")
+    data = cs.load(s)
+    cs.account(data, "lowkey.lore")["taste"]["liked"].append({"title": "Liked one"})
+    cs.save(s, data)
+    assert "confirm" in studio(s, action="delete_videos", account="lowkey.lore")
+    assert (folder / "clip.mp4").exists()  # nothing goes without a yes
+    said = studio(s, action="delete_videos", account="lowkey.lore", confirmed=True)
+    assert "Deleted 2 videos for lowkey.lore" in said
+    assert sorted(p.name for p in folder.iterdir()) == ["Profile picture.png"]
+    assert (other / "kept.mp4").exists()  # another account's videos stay
+    data = cs.load(s)
+    rows = {r["id"]: r for r in data["videos"]}
+    assert rows[v["id"]]["status"] == "deleted" and "file" not in rows[v["id"]]
+    assert rows[making["id"]]["status"] == "making"  # the one being made is left alone
+    assert cs.account(data, "lowkey.lore")["taste"]["liked"]  # the lessons stay
+    assert creator.queue(s) == []
+    studio(s, action="delete_videos", confirmed=True)  # every account
+    assert not (other / "kept.mp4").exists()
+
+
 def test_name_ideas_asks_for_gen_z_names(s):
     said = studio(s, action="name_ideas", theme="horror stories")
     assert "Gen Z" in said and "horror stories" in said
