@@ -151,13 +151,16 @@ Rules:
 - clue: the number of the scene that plants the small clue the twist proves right. As the twist lands, that
   scene's closeup flashes back on screen for a split second, so viewers realise it was there all along and rewatch
   to catch it. 0 if there is no planted clue.
+- dateline: where and when the story happens, typed on screen as the story starts, like a case file (for example
+  "DERRY, MAINE · OCT 1987" or "ROOM 4B · 3:12 AM"), under 32 characters. "" for an explainer or anything with no
+  real time and place.
 - mood: 2 or 3 words for the backing music (for example "tense slow piano", "eerie ambient", "upbeat hype").
 - sound: one trending TikTok sound from the trends above that fits this story (name and artist), or a style of
   sound to search for if none fits. The user adds it in the TikTok app when posting.
 
 Reply with ONLY this JSON:
 {{"pitches": [{{"idea": "...", "score": 0}}], "title": "...", "keyword": "...", "series": "...", "character": "...",
-  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none", "teaser": 0, "clue": 0,
+  "hook": "...", "cover": "...", "caption": "...", "hashtags": ["..."], "mood": "...", "sound": "...", "pinned_comment": "...", "ambience": "none", "teaser": 0, "clue": 0, "dateline": "",
   "bible": {{"world": "...", "characters": [{{"name": "...", "look": "...", "notes": "...", "voice_type": "woman"}}], "threads_opened": ["..."], "threads_closed": ["..."]}},
   "scenes": [{{"text": "...", "narration": "...", "picture": "...", "closeup": "...", "detail": "...", "pace": "normal", "speaker": "narrator", "punch": ["..."], "hit": "none"}}]}}"""
 
@@ -318,6 +321,7 @@ def parse_script(text: str) -> dict:
         "score": _score(data.get("score")),
         "teaser": _teaser(data.get("teaser")),
         "clue": _teaser(data.get("clue")),
+        "dateline": cs.clean(data.get("dateline"), 40).upper(),
         "bible": data.get("bible") if isinstance(data.get("bible"), dict) else {},
         "scenes": [{"text": cs.clean(s.get("text") or s.get("narration"), 120),
                     "narration": cs.clean(s.get("narration") or s.get("text"), 400),
@@ -419,7 +423,7 @@ async def edit_script(client, settings: Settings, brief: str, draft: dict) -> di
         return draft  # the editor cut too much
     edited["character"] = edited["character"] or draft["character"]
     edited["bible"] = edited["bible"] or draft["bible"]
-    for key in ("cover", "mood", "sound", "pinned_comment", "ambience", "teaser", "clue"):
+    for key in ("cover", "mood", "sound", "pinned_comment", "ambience", "teaser", "clue", "dateline"):
         edited[key] = edited[key] or draft[key]
     return edited
 
@@ -1124,6 +1128,35 @@ def storm_times(lengths: list[float], played: list) -> dict:
             if not (i < len(played) and played[i]) and lengths[i] * STORM_AT + THUNDER_LAG < lengths[i]}
 
 
+# The dateline: true-crime and lore videos type the place and time on screen as the story starts ("DERRY, MAINE ·
+# OCT 1987"), letter by letter with the tap of a typewriter, like the first page of a case file. It tells viewers
+# this "really happened somewhere", which makes them lean in. It types on the first story scene after the hook, sits
+# just above the captions, and fades away after DATELINE_HOLD seconds.
+DATELINE_SCENE, DATELINE_AT, DATELINE_CHAR, DATELINE_HOLD, DATELINE_FADE = 1, 0.25, 0.055, 2.6, 0.4
+DATELINE_H = 110
+DATELINE_Y = CAPTION_Y - DATELINE_H
+DATELINE_STYLES = ("lore",)
+TYPING = ("aevalsrc='0.6*(random(0)*2-1)*exp(-500*mod(t,{step}))*lt(t,{d})':d={d}:s=44100,highpass=f=1800,"
+          "volume=0.5,aformat=channel_layouts=stereo,adelay={delay}|{delay}")
+
+
+def dateline_image(text: str, out: Path) -> tuple[Path, float]:
+    """The dateline drawn once, cropped to the text so the typing reveals it at an even pace: (picture, seconds to
+    type it). White on a soft dark band, left-aligned inside the safe zone."""
+    size = 54
+    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    while size > 30 and probe.textlength(text, font=ac.font(size)) > W - 2 * SAFE_SIDE - 40:
+        size -= 4
+    face = ac.font(size)
+    width = int(probe.textlength(text, font=face)) + 40
+    im = Image.new("RGBA", (width, DATELINE_H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(im)
+    draw.rectangle([0, 18, width, DATELINE_H - 18], fill=(0, 0, 0, 120))
+    draw.text((20, DATELINE_H / 2), text, font=face, fill=(245, 240, 230, 255), anchor="lm")
+    im.save(out)
+    return out, round(len(text) * DATELINE_CHAR, 3)
+
+
 # The loop: the last scene ends on a short, slow settle into the video's very first frame, so when TikTok replays
 # it the cut back to the start is seamless and the video feels like it never ended (rewatches push it out further).
 LOOP_SECONDS = 0.8
@@ -1225,14 +1258,15 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
                  tone: str = "", riser: bool = False, particles: tuple | None = None, focus: bool = False,
-                 storm: float | None = None) -> None:
+                 storm: float | None = None, dateline: tuple | None = None) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
     in place of the swish, and a boom or glitch shakes the camera as it lands
     (with a white flash or a colour-split glitch, HIT_LOOKS). pace sets how fast the camera pushes. teaser flashes
     another picture for TEASER_SECONDS before the scene's own shots, inside its length: a later moment on the first
-    scene, or the planted clue on the twist scene."""
+    scene, or the planted clue on the twist scene. dateline ((picture, seconds), from dateline_image) types the story's
+    place and time on screen with typewriter taps."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)] if len(
@@ -1266,6 +1300,9 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         hit in HITS or whoosh) else []
     if storm is not None:
         effects.append(THUNDER.format(delay=round((storm + THUNDER_LAG) * 1000)))
+    if dateline:
+        typed = dateline[1]
+        effects.append(TYPING.format(step=DATELINE_CHAR, d=typed, delay=round(DATELINE_AT * 1000)))
     if riser:
         swell = min(RISER_SECONDS, frames / FPS)
         effects.append(RISER.format(d=swell, delay=round((frames / FPS - swell) * 1000)))
@@ -1276,6 +1313,13 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         chains.append(f"[{at}:v]format=rgba,crop={W}:{H}:0:'{H}-mod(t*{speed},{H})'[pt];"
                       f"[vc][pt]overlay=0:0:shortest=1[vp]")
         video = "[vp]"
+    if dateline:  # after the particles, so the falling rain never covers the words
+        at = k + 1 + bool(captions) + len(effects) + bool(particles)
+        typed, gone = dateline[1], DATELINE_AT + dateline[1] + DATELINE_HOLD
+        chains.append(f"[{at}:v]format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':"
+                      f"a='alpha(X,Y)*lte(X,W*(T-{DATELINE_AT})/{typed})*clip(({gone}-T)/{DATELINE_FADE},0,1)'[dl];"
+                      f"{video}[dl]overlay={SAFE_SIDE}:{DATELINE_Y}:shortest=1[vd]")
+        video = "[vd]"
     if captions:
         inputs += ["-f", "concat", "-safe", "0", "-i", str(captions)]
         chains.append(f"[{k + 1}:v]format=rgba,setpts=PTS-STARTPTS[cap];{video}[cap]overlay=0:{CAPTION_Y}:eof_action=pass[vo]")
@@ -1296,6 +1340,8 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         chains.append(f"[{k}:a]{polish}apad,aresample=44100{edges}[a]")
     if particles:
         inputs += ["-loop", "1", "-framerate", str(FPS), "-i", str(particles[0])]
+    if dateline:
+        inputs += ["-loop", "1", "-framerate", str(FPS), "-i", str(dateline[0])]
     run([*inputs, "-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
          "-frames:v", str(frames), "-t", f"{frames / FPS:.3f}", "-r", str(FPS), *VIDEO_CODEC,
          "-c:a", "aac", "-b:a", WORK_AUDIO, "-ar", "44100", "-ac", "2", str(out)])
@@ -1577,6 +1623,9 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                  weather[1]) if weather else None
     storms = (storm_times(lengths, played) if account.get("style") in STORM_STYLES
               and script.get("ambience") == "rain" else {})
+    stamp = (await asyncio.to_thread(dateline_image, script["dateline"], work / "dateline.png")
+             if account.get("style") in DATELINE_STYLES and script.get("dateline") and len(shots) > DATELINE_SCENE
+             else None)
     flashback = clue_flashback(shots, script.get("clue", 0), played) if account.get("style") in CLUE_STYLES else {}
     teaser = shots[tease - 1][0] if account.get("style") in TEASER_STYLES and 3 <= tease <= len(shots) else None
     for i, (mine, (voice, spoken, words), seconds, track) in enumerate(zip(shots, voices, lengths, tracks)):
@@ -1589,7 +1638,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                      teaser if i == 0 else flashback.get(i),
                      (STYLE_LAST_TONE if i == len(shots) - 1 and i > 0 else STYLE_VOICE_TONE).get(account.get("style"), ""),
                      account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS,
-                     particles, account.get("style") in FOCUS_STYLES, storms.get(i)))
+                     particles, account.get("style") in FOCUS_STYLES, storms.get(i),
+                     stamp if i == DATELINE_SCENE else None))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
