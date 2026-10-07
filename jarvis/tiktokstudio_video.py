@@ -1112,6 +1112,26 @@ HITS = {
 }
 MAX_HITS = 3
 
+# The thump: in the big lore edits the word that matters (the name, the number, the twist word) doesn't just get
+# bigger on screen, it lands with a soft sub-bass hit you feel more than hear, so it sticks. The scene's "punch" words
+# get one each as they're spoken (at most MAX_THUMPS a scene), never on top of the scene's own sound effect.
+THUMP = ("aevalsrc='0.8*sin(2*PI*58*t)*exp(-9*t)':d=0.45:s=44100,volume=0.55,aformat=channel_layouts=stereo,"
+         "adelay={delay}|{delay}")
+MAX_THUMPS, THUMP_CLEAR = 2, 1.4  # a hit sound rings for THUMP_CLEAR seconds; no thump inside it
+THUMP_STYLES = ("lore",)
+
+
+def thump_times(words, punch, hit: str = "") -> list[float]:
+    """When each of the scene's punch words is first spoken (seconds into the scene)."""
+    times, seen = [], set()
+    for start, _, word in words:
+        key = bare(word)
+        if key in punch and key not in seen and not (hit and start < THUMP_CLEAR):
+            seen.add(key)
+            times.append(round(start, 3))
+    return times[:MAX_THUMPS]
+
+
 # The riser: big lore videos build tension into a reveal with a low swell that grows under the last seconds of the
 # scene before it, so the boom lands harder. Only before a boom or sting, and only for the styles that use it.
 RISER_SECONDS = 2.5
@@ -1267,7 +1287,8 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                  whoosh: bool = False, loop_to: Path | None = None, hit: str = "", pace: str = "normal",
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
                  tone: str = "", riser: bool = False, particles: tuple | None = None, focus: bool = False,
-                 storm: float | None = None, dateline: tuple | None = None, drain: bool = False) -> None:
+                 storm: float | None = None, dateline: tuple | None = None, drain: bool = False,
+                 thumps=()) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1275,7 +1296,8 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     (with a white flash or a colour-split glitch, HIT_LOOKS). pace sets how fast the camera pushes. teaser flashes
     another picture for TEASER_SECONDS before the scene's own shots, inside its length: a later moment on the first
     scene, or the planted clue on the twist scene. dateline ((picture, seconds), from dateline_image) types the story's
-    place and time on screen with typewriter taps. drain greys the picture out as a twist lands (DRAIN)."""
+    place and time on screen with typewriter taps. drain greys the picture out as a twist lands (DRAIN). thumps
+    (seconds) put a soft sub-bass hit under the punch words."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)] if len(
@@ -1309,6 +1331,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
         hit in HITS or whoosh) else []
     if storm is not None:
         effects.append(THUNDER.format(delay=round((storm + THUNDER_LAG) * 1000)))
+    effects += [THUMP.format(delay=round(at * 1000)) for at in thumps]
     if dateline:
         typed = dateline[1]
         effects.append(TYPING.format(step=DATELINE_CHAR, d=typed, delay=round(DATELINE_AT * 1000)))
@@ -1649,7 +1672,9 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                      account.get("style") in RISER_STYLES and i + 1 < len(played) and played[i + 1] in RISER_HITS,
                      particles, account.get("style") in FOCUS_STYLES, storms.get(i),
                      stamp if i == DATELINE_SCENE else None,
-                     account.get("style") in DRAIN_STYLES and hit in DRAIN_HITS))
+                     account.get("style") in DRAIN_STYLES and hit in DRAIN_HITS,
+                     thump_times(words or estimate_words(scenes[i]["narration"], spoken), scenes[i].get("punch", []), hit)
+                     if account.get("style") in THUMP_STYLES and voice else []))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
