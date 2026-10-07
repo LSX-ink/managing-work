@@ -20,6 +20,12 @@ import tiktok
 import tools
 from config import Settings
 
+@pytest.fixture(autouse=True)
+def clip_pages(monkeypatch):
+    """The clip pages were retired (7 Oct), but the clip code is still tested with them."""
+    monkeypatch.setattr(cs, "STARTERS", cs.STARTERS + cs.CLIP_PAGES)
+
+
 
 @pytest.fixture
 def s(tmp_path):
@@ -64,14 +70,14 @@ def test_starts_with_flashy_accounts_in_the_looks_the_user_liked(s):
     assert [a["per_day"] for a in data["accounts"]] == [3, 3, 3, 5, 3]
 
 
-def test_clipzz_joins_a_studio_made_before_it(s):
-    old = {"accounts": [cs.new_account(**cs.STARTERS[0])], "videos": []}
+def test_clip_pages_are_removed_once_from_an_older_studio(s):
+    old = {"accounts": [cs.new_account(**a) for a in cs.STARTERS], "videos": [], "starters_added": ["Clipzz", "n3on.vault"]}
     (Path(s.memory_dir) / cs.FILE).write_text(json.dumps(old), encoding="utf-8")
-    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore", "Clipzz", "n3on.vault"]
+    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore", "mindglitch.fyi", "karma.receipts"]
     data = cs.load(s)
-    data["accounts"].pop()  # removed on purpose: it stays removed
+    data["accounts"].append(cs.new_account(**cs.CLIP_PAGES[0]))  # added back on purpose: it stays
     cs.save(s, data)
-    assert [a["name"] for a in cs.load(s)["accounts"]] == ["lowkey.lore", "Clipzz"]
+    assert [a["name"] for a in cs.load(s)["accounts"]][-1] == "Clipzz"
 
 
 def test_add_rename_and_remove_accounts(s):

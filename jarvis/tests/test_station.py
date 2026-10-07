@@ -9,6 +9,12 @@ import tiktokstudio_store as cs
 import tools
 from config import Settings
 
+@pytest.fixture(autouse=True)
+def clip_pages(monkeypatch):
+    """The clip pages were retired (7 Oct), but the clip code is still tested with them."""
+    monkeypatch.setattr(cs, "STARTERS", cs.STARTERS + cs.CLIP_PAGES)
+
+
 
 @pytest.fixture
 def s(tmp_path):

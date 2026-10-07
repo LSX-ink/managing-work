@@ -18,6 +18,9 @@ import httpx
 from config import Settings
 
 DEFAULT_FOLDERS = ["Ideas", "Work", "Music", "Personal", "Shopping", "Reminders"]
+# Alfred's own folders the user asked for (7 Oct), with the folders inside them. Each is made once; one the user
+# deletes later stays deleted.
+STARTER_EXTRAS = {"Kinetic Web Designs": [], "YouTube": ["Shorts Analytics", "TikTok Pages"]}
 MAX_FILE_BYTES = 20 * 1024 * 1024
 MAX_UPLOAD_BYTES = 4 * 1024 * 1024 * 1024  # files added to a memory folder: streamed to disk, so big videos are fine
 MAX_DOWNLOAD_BYTES = 200 * 1024 * 1024
@@ -56,6 +59,26 @@ def names(settings: Settings) -> list[str]:
         (base / name).mkdir(parents=True, exist_ok=True)
     index.write_text(json.dumps(found, indent=2), encoding="utf-8")
     return list(found)
+
+
+def starter_extras(settings: Settings) -> list[str]:
+    """Make the STARTER_EXTRAS folders not made before; returns the ones made now."""
+    names(settings)
+    marker = root(settings) / "starter_folders.json"
+    try:
+        done = set(json.loads(marker.read_text(encoding="utf-8")))
+    except (OSError, ValueError, TypeError):
+        done = set()
+    made = []
+    for top, inner in STARTER_EXTRAS.items():
+        if top in done:
+            continue
+        for part in [top, *(f"{top}/{name}" for name in inner)]:
+            (root(settings) / part).mkdir(parents=True, exist_ok=True)
+        done.add(top)
+        made.append(top)
+    marker.write_text(json.dumps(sorted(done), indent=2), encoding="utf-8")
+    return made
 
 
 def folder(settings: Settings, which: int | str, create: bool = False) -> Path:

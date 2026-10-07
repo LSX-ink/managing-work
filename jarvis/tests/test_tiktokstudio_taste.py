@@ -18,6 +18,12 @@ import twitch
 from config import Settings
 from tests.test_tiktokstudio import SCRIPT, FakeClient, add_video, allow, clip
 
+@pytest.fixture(autouse=True)
+def clip_pages(monkeypatch):
+    """The clip pages were retired (7 Oct), but the clip code is still tested with them."""
+    monkeypatch.setattr(cs, "STARTERS", cs.STARTERS + cs.CLIP_PAGES)
+
+
 
 @pytest.fixture
 def s(tmp_path):

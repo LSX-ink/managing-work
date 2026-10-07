@@ -57,6 +57,10 @@ STARTERS = [
                                         "betrayal, secrets, faith and protection, second chances and satisfying twists; end with a line "
                                         "that invites a comment (like Type amen)",
      "style": "drama", "format": "story", "series": ["Karma Hit Different", "They Didn't Know", "Plot Twist"]},
+]
+# Clip pages, retired by the user on 7 Oct ("we won't use them anymore"): no longer made, and removed once from
+# studios that had them. The clip code stays (tested with these pages) in case a clip page is added again.
+CLIP_PAGES = [
     {"name": "Clipzz", "theme": "the most viral Twitch streamer moments, from old classics to this week's",
      "style": "clips", "format": "clips", "per_day": 5, "category": "Just Chatting",
      "stream_min_views": 200_000, "continue_at": 200_000},
@@ -67,7 +71,7 @@ STARTERS = [
 LORE = "lowkey.lore"  # the one page still making videos (the others are off until the user sets them up)
 SWITCH_OFF_OTHERS = True
 # Starters added after someone's studio already existed get added once, by name.
-LATER_STARTERS = {"Clipzz", "n3on.vault"}
+LATER_STARTERS: set[str] = set()
 
 
 def clean(value, limit: int = 200) -> str:
@@ -128,7 +132,7 @@ def load(settings: Settings) -> dict:
     except (OSError, ValueError):
         data = None
     if not isinstance(data, dict):
-        data = {"accounts": [new_account(**s) for s in STARTERS], "videos": []}
+        data = {"accounts": [new_account(**s) for s in STARTERS], "videos": [], "clips_removed": True}
     for key in ("accounts", "videos"):
         if not isinstance(data.get(key), list):
             data[key] = []
@@ -139,6 +143,9 @@ def load(settings: Settings) -> dict:
                 data["accounts"].append(new_account(**starter))
             added.add(starter["name"])
     data["starters_added"] = sorted(added)
+    if not data.get("clips_removed"):  # the user, 7 Oct: remove the clip pages, they won't be used any more
+        data["accounts"] = [a for a in data["accounts"] if a.get("format") != "clips"]
+        data["clips_removed"] = True
     if SWITCH_OFF_OTHERS and not data.get("lore_only"):  # the user, 4 Oct: stop every page but lowkey.lore until they make a page for it
         for a in data["accounts"]:
             a["off"] = a.get("name", "").lower() != LORE

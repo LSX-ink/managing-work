@@ -166,6 +166,8 @@ Say "Alfred, open my Work folder" and he opens it on the HUD, or "open my Work f
 
 Alfred can make new folders too: "Alfred, create a Fitness folder" makes one of his own, and "create an Invoices folder in Work" makes one inside the six. Then say "save this in Fitness", "download this into Work/Invoices" or "open Work/Invoices" (that one opens in File Explorer). Every folder you make also becomes a ringed star in the sky around the wolf: hover it to see its name, click it to open the folder on the PC. When Alfred opens one, its star flares. New folders also show at the top of their folder's panel.
 
+Two of Alfred's own folders are made for you the first time he starts: **Kinetic Web Designs** for website work, and **YouTube** with **Shorts Analytics** and **TikTok Pages** inside it. If you delete one, it stays deleted.
+
 To remove one, say "Alfred, delete the Work/Payslips folder". He asks you to confirm first, and only deletes empty folders he or you made, never the wolf's six.
 
 Alfred can download files too: "Download this PDF into my Work folder" with a link, or "find the Python logo and save it in Ideas". He keeps the file's own name unless you give one. Downloads are limited to 200 MB, and he refuses links that point at your own PC or home network (your router, other devices).
@@ -326,15 +328,7 @@ waiting videos from `GET /creator/queue`.
   beside each account once. Approved videos then go to your TikTok inbox to post, or post straight away with
   `JARVIS_TIKTOK_MODE=direct`.
 - Without one, approved videos stay in the folder with their caption, ready to upload by hand.
-- **Clipzz** posts 5 viral Twitch streamer clips a day, old classics and this week's, cropped to fill the phone
-  and joined to a minute or more, with the streamer credited on screen and in the caption. It needs a free Twitch
-  app (`TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` from dev.twitch.tv/console). Clip accounts only clip
-  streamers marked as allowing it: say "add xqc on Kick to Clipzz, he allows clipping". Reposting other people's
-  clips can get an account struck or left out of TikTok's rewards.
-- **n3on.vault** is N3on's clip page (he allows clipping): his viral Kick clips with 100k+ views, new and old,
-  each cut again from the stream with about 30 seconds before and after (the plain clip when the stream is gone).
-  Kick needs no keys (`KICK_CLIENT_ID` and `KICK_CLIENT_SECRET` are optional); his Twitch clips join in when the
-  Twitch keys are set.
+- The clip pages (Clipzz and n3on.vault) were removed on 7 October and aren't made any more.
 - Trends: before each account's first video of the day Alfred checks this week's TikTok trends for its niche
   (topics, hashtags, hooks, sounds) and writes with them, along with what did best on that account. Ask "what's
   trending for mindglitch.fyi?" to plan what to post next.
