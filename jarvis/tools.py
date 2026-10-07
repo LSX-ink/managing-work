@@ -228,6 +228,7 @@ import todo
 import travel_guide
 import travel_papers
 import travel_trips
+import videojoin
 import webview_food
 import webview_listen
 import news_bulletin
@@ -348,6 +349,7 @@ ABILITIES += [station]  # the station world behind the HUD
 ABILITIES += [design, skillscan]  # design libraries and the skill scanner
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
+ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
 
 
 def defer(tool: dict) -> dict:
