@@ -352,6 +352,21 @@ def test_dates_ahead_and_weekdays_are_worked_out_instantly():
     assert instant_answer("what day is Easter", en, now) is None
 
 
+def test_discounts_tips_and_bill_splits_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's 20% off £50", en) == "£10 off, so it's £40."
+    assert instant_answer("what's twenty percent off forty dollars", en) == "8 dollars off, so it's 32 dollars."
+    assert instant_answer("what's a 15% tip on £40", en) == "That adds £6, making £46 in total."
+    assert instant_answer("how much is a 12.5% service charge on a £86.40 bill", en) == \
+        "That adds £10.80, making £97.20 in total."
+    assert instant_answer("split £60 between 4", en) == "That's £15 each."
+    assert instant_answer("split the bill of 100 pounds between three people", en) == "That's 33.33 pounds each."
+    assert instant_answer("divide 45 quid by 2", en) == "That's 22.50 pounds each."
+    assert instant_answer("divide 100 by 4", en) is None  # plain division isn't a bill
+    assert instant_answer("split £10 between 0", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

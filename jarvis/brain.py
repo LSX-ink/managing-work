@@ -478,6 +478,41 @@ def _maths_answer(said: str) -> str | None:
     return f"That's {value}."
 
 
+_CASH = r"(?P<cur>[£$€])?(?P<amt>\d[\d,]*(?:\.\d{1,2})?)(?: ?(?P<word>pounds?|quid|dollars?|euros?|bucks))?"
+_PERCENT = r"(?P<pc>\d+(?:\.\d+)?) ?(?:%|per ?cent)"
+_DISCOUNT = re.compile(_NAME + r"(?:what(?:'s| is)|how much is|work out|calculate) " + _PERCENT + r" off (?:of )?" + _CASH + _END, re.I)
+_TIP = re.compile(_NAME + r"(?:what(?:'s| is)|how much is|work out|calculate) (?:a |the )?" + _PERCENT
+                  + r" (?:tip|service(?: charge)?|gratuity) (?:on|for|of) (?:a |the )?" + _CASH + r"(?: bill| meal)?" + _END, re.I)
+_SPLIT = re.compile(_NAME + r"(?:split|divide|share) (?:a |the )?(?:bill (?:of )?)?" + _CASH + r"(?: bill)? (?:between|among|amongst|by|for|into) "
+                    r"(?P<people>\d+)(?: (?:people|ways|of us|persons|friends))?" + _END, re.I)
+
+
+def _money(value: float, m: re.Match) -> str:
+    text = f"{value:,.2f}".removesuffix(".00")
+    if m.group("cur"):
+        return m.group("cur") + text
+    word = (m.group("word") or "").lower()
+    return text + {"quid": " pounds", "bucks": " dollars"}.get(word, f" {word.rstrip('s')}s" if word else "")
+
+
+def _money_answer(said: str) -> str | None:
+    """'What's 20% off £50?', 'what's a 15% tip on £40?', 'split £60 between 4': shop and restaurant sums on the spot."""
+    said = spoken_numbers(said)
+    if m := _DISCOUNT.match(said) or _TIP.match(said):
+        amount, pc = float(m.group("amt").replace(",", "")), float(m.group("pc"))
+        part = round(amount * pc / 100, 2)
+        if m.re is _DISCOUNT:
+            return f"{_money(part, m)} off, so it's {_money(amount - part, m)}."
+        return f"That adds {_money(part, m)}, making {_money(amount + part, m)} in total."
+    if m := _SPLIT.match(said):
+        people = int(m.group("people"))
+        if people < 1 or not (m.group("cur") or m.group("word") or re.search(r" (?:between|among)", said, re.I)):
+            return None
+        share = float(m.group("amt").replace(",", "")) / people
+        return f"That's {_money(round(share + 1e-9, 2), m)} each."
+    return None
+
+
 _QTY = r"(?P<n>-?\d[\d,]*(?:\.\d+)?|" + _AMOUNT[1:-1] + r") ?(?P<a>[a-z°][a-z°23 .]{0,24}?)"
 _CONVERT = re.compile(_NAME + r"(?:(?:what(?:'s| is)|convert|change|how much is|how (?:long|far|heavy|big|hot|cold) is) )?"
                       + _QTY + r" (?:in|to|into|in to) (?P<b>[a-z°][a-z°23 .]{0,24}?)" + _END, re.I)
@@ -726,7 +761,7 @@ def tidy_request(text: str) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, reminders, the shopping list, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
+    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = tidy_request(text)
@@ -739,7 +774,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := _calendar_answer(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _maths_answer(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said)
             or _units_answer(said) or _fun_answer(said))
 
 
