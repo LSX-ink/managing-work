@@ -2389,3 +2389,62 @@ def test_rain_stories_get_lightning_and_thunder(s, tmp_path, monkeypatch):
     out = subprocess.run([cv.ffmpeg(), "-v", "info", "-ss", "1.2", "-t", "0.4", "-i", str(tmp_path / "storm.mp4"),
                           "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
     assert float(re.search(r"max_volume: (-?[\d.]+)", out).group(1)) > -40  # the thunder rolls in after it
+
+
+def test_lore_types_a_dateline_as_the_story_starts(s, tmp_path, monkeypatch):
+    script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "dateline": "Derry, Maine · Oct 1987"}))
+    assert script["dateline"] == "DERRY, MAINE · OCT 1987"
+    assert cv.parse_script(SCRIPT)["dateline"] == ""
+    assert "dateline" in cv.SCRIPT_PROMPT
+    seen = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.__setitem__(a[1], a[15]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "add_ambience", lambda video, kind, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "make_score", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert seen[cv.DATELINE_SCENE] is not None and seen[cv.DATELINE_SCENE][1] > 0  # only on the first story scene
+    assert all(v is None for i, v in seen.items() if i != cv.DATELINE_SCENE)
+    seen.clear()  # no dateline in the script, or another look: nothing typed
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script={**script, "dateline": ""}))
+    assert set(seen.values()) == {None}
+    seen.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert set(seen.values()) == {None}
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import re
+    import subprocess
+    from PIL import Image, ImageStat
+    still = tmp_path / "s.png"
+    Image.new("RGB", (cv.W, cv.H), (40, 40, 50)).save(still)
+    stamp = cv.dateline_image("DERRY, MAINE · OCT 1987", tmp_path / "d.png")
+    width = Image.open(stamp[0]).size[0]
+    cv.render_scene([still], None, 5.0, tmp_path / "typed.mp4", dateline=stamp)
+
+    def band(n, left=0.0, right=1.0):
+        out = tmp_path / f"d{n}.png"
+        x = cv.SAFE_SIDE + int(width * left)
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / "typed.mp4"), "-vf",
+                        f"select=eq(n\\,{n}),crop={int(width * (right - left))}:{cv.DATELINE_H}:{x}:{cv.DATELINE_Y}",
+                        "-frames:v", "1", str(out)], check=True, capture_output=True)
+        return Image.open(out).convert("L").getextrema()[1]
+    assert band(2) < 80  # nothing typed yet
+    mid = round((cv.DATELINE_AT + stamp[1] / 2) * cv.FPS)
+    assert band(mid, 0.0, 0.3) > 200 and band(mid, 0.75, 1.0) < 80  # half typed: the start shows, the end doesn't
+    assert band(round(2.5 * cv.FPS)) > 200  # all there
+    assert band(round(4.8 * cv.FPS)) < 80  # and gone again
+    out = subprocess.run([cv.ffmpeg(), "-v", "info", "-ss", "0.3", "-t", "1", "-i", str(tmp_path / "typed.mp4"),
+                          "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
+    assert float(re.search(r"max_volume: (-?[\d.]+)", out).group(1)) > -40  # the typewriter taps
