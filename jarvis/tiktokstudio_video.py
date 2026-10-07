@@ -1194,6 +1194,16 @@ LOOP_SECONDS = 0.8
 # the viewer has seen where it's going and stays to find out how it gets there (the "open on the answer" trick).
 TEASER_SECONDS = 0.6
 TEASER_STYLES = ("lore",)
+# ...and then the tape rewinds: right after the flash-forward, the picture judders with a VHS colour split and static
+# for REWIND_SECONDS under a quick tape-whirr, the "let's go back to where it started" beat that big lore videos use
+# so the jump from the ending back to the beginning reads as deliberate, not as a glitch.
+REWIND_SECONDS = 0.3
+REWIND_LOOK = ("rgbashift=rh=-16:bh=16:rv=4:enable='between(t,{a},{b})',"
+               "noise=alls=45:allf=t:enable='between(t,{a},{b})',"
+               "eq=saturation=0.4:contrast=1.2:enable='between(t,{a},{b})'")
+REWIND_SOUND = ("aevalsrc='0.35*sin(2*PI*(2600-5200*t)*t)*(0.6+0.4*sin(2*PI*55*t))':d={d}:s=44100,highpass=f=500,"
+                "afade=t=out:st={fade}:d=0.08,volume=0.5,aformat=channel_layouts=stereo,adelay={delay}|{delay}")
+REWIND_STYLES = ("lore",)
 TEASER_MOTION = ("1.25-0.15*on/{n}", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # a quick pull back out of the moment
 LOOP_MOTION = ("1+0.04*(1-on/{n})", "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)")  # ends at zoom 1, where scene 1 starts
 
@@ -1288,7 +1298,7 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                  grade: str = "", dip: bool = False, atmosphere: str = "", teaser: Path | None = None,
                  tone: str = "", riser: bool = False, particles: tuple | None = None, focus: bool = False,
                  storm: float | None = None, dateline: tuple | None = None, drain: bool = False,
-                 thumps=()) -> None:
+                 thumps=(), rewind: bool = False) -> None:
     """One scene: its shots one after another (each with its own camera move), the captions on top, the voice under it,
     and (whoosh) a soft swish as it cuts in. loop_to (the last scene only) adds a short tail settling into that picture,
     the opening frame, so the video loops seamlessly. hit (one of HITS) plays a sound effect as the scene starts,
@@ -1297,7 +1307,8 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     another picture for TEASER_SECONDS before the scene's own shots, inside its length: a later moment on the first
     scene, or the planted clue on the twist scene. dateline ((picture, seconds), from dateline_image) types the story's
     place and time on screen with typewriter taps. drain greys the picture out as a twist lands (DRAIN). thumps
-    (seconds) put a soft sub-bass hit under the punch words."""
+    (seconds) put a soft sub-bass hit under the punch words. rewind (with a teaser) plays a tape-rewind
+    look and whirr as the flash-forward cuts back to the start."""
     stills = [stills] if isinstance(stills, (str, Path)) else list(stills)
     frames = max(1, round(seconds * FPS))
     split = [frames] if len(stills) == 1 else [round(frames * 0.55), frames - round(frames * 0.55)] if len(
@@ -1305,9 +1316,11 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     stills = stills[:3]
     motions = [MOTIONS[(move + i) % len(MOTIONS)] for i in range(len(stills))]
     pull = 1 if focus and len(stills) > 1 else None  # the closeup, the scene's second shot
+    back = None  # when the flash-forward ends and the tape rewinds, in seconds
     if teaser is not None and split[0] > 1:
         flash = min(round(TEASER_SECONDS * FPS), split[0] // 2)  # never more than half the first shot
         stills, split, motions = [teaser, *stills], [flash, split[0] - flash, *split[1:]], [TEASER_MOTION, *motions]
+        back = round(flash / FPS, 3) if rewind else None
         pull = pull and pull + 1
     if loop_to is not None:
         tail = max(1, round(LOOP_SECONDS * FPS))
@@ -1323,7 +1336,9 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
                       f"setpts=PTS-STARTPTS,setsar=1{shake}" + (FOCUS_PULL.format(i=i) if i == pull else f"[s{i}]"))
     k = len(stills)
     strike = LIGHTNING.format(at=storm) if storm is not None else ""
-    looks = (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, ""), strike, DRAIN if drain else "")
+    tape = REWIND_LOOK.format(a=back, b=round(back + REWIND_SECONDS, 3)) if back is not None else ""
+    looks = (SHARPEN, GRADES.get(grade, ""), VIGNETTE, ATMOSPHERES.get(atmosphere, ""), strike, DRAIN if drain else "",
+             tape)
     graded = "".join(f",{f}" for f in looks if f)
     chains.append("".join(f"[s{i}]" for i in range(k)) + f"concat=n={k}:v=1:a=0{graded}[vc]")
     inputs += ["-i", str(audio)] if audio else ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
@@ -1332,6 +1347,8 @@ def render_scene(stills, audio: Path | None, seconds: float, out: Path, captions
     if storm is not None:
         effects.append(THUNDER.format(delay=round((storm + THUNDER_LAG) * 1000)))
     effects += [THUMP.format(delay=round(at * 1000)) for at in thumps]
+    if back is not None:
+        effects.append(REWIND_SOUND.format(d=REWIND_SECONDS, fade=REWIND_SECONDS - 0.08, delay=round(back * 1000)))
     if dateline:
         typed = dateline[1]
         effects.append(TYPING.format(step=DATELINE_CHAR, d=typed, delay=round(DATELINE_AT * 1000)))
@@ -1674,7 +1691,8 @@ async def make(client, http: httpx.AsyncClient, settings: Settings, account: dic
                      stamp if i == DATELINE_SCENE else None,
                      account.get("style") in DRAIN_STYLES and hit in DRAIN_HITS,
                      thump_times(words or estimate_words(scenes[i]["narration"], spoken), scenes[i].get("punch", []), hit)
-                     if account.get("style") in THUMP_STYLES and voice else []))
+                     if account.get("style") in THUMP_STYLES and voice else [],
+                     i == 0 and account.get("style") in REWIND_STYLES))
         parts.append(part)
     await render_all(jobs)
     name = cs.slug(f"{script['title']}")
