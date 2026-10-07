@@ -44,7 +44,9 @@ def guide(args):
 
 def test_guide_list_and_read():
     listing = guide({})
-    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 14
+    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 27
+    assert "Taste Skill guides:" in listing and "taste-skill:" in listing
+    assert guide({"guide": "taste-skill"}).startswith("taste-skill/SKILL.md")
     out = guide({"guide": "animate", "file": "RECIPES.md"})
     assert out.startswith("animate/RECIPES.md")
     long = guide({"guide": "write-swift"})

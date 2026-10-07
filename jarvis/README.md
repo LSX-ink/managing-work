@@ -233,6 +233,8 @@ Alfred has the UI UX Pro Max design library built in (from [nextlevelbuilder/ui-
 
 Emil Kowalski's design guides are built in too (from [emilkowalski/skills](https://github.com/emilkowalski/skills), MIT licence, in `skills/emil-kowalski`). They teach his way of making interfaces and animations feel polished. Try "Alfred, how should this pop-up animate?", "review the animations on my HUD" or "make my page feel like a phone app".
 
+Taste Skill is built in as well (from [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), MIT licence, in `skills/taste`). Its rules stop pages looking generic and AI-made, with styles such as minimalist, brutalist and soft. Try "Alfred, redesign my landing page with taste" or "make me a minimalist portfolio".
+
 ### New abilities
 
 When you ask for something Alfred can't do yet ("Alfred, set a timer for ten minutes"), he doesn't just say no. He sends the request to Claude, the AI that builds him, as a GitHub issue labelled `alfred-wish`. Claude checks for new requests every few hours, builds each one as a pull request, and tells you in the project chat. Merge it, run `git pull` and restart, and Alfred can do it. You can also ask him to improve something ("Alfred, get better at…"). A copy of every request goes in `wishes.md` next to `server.py`.

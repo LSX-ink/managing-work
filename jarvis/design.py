@@ -9,7 +9,9 @@ script reads local CSV files only and makes no internet calls. It runs in its ow
 
 Emil Kowalski's skills (MIT, from github.com/emilkowalski/skills) live in skills/emil-kowalski: written guides on UI
 polish and animation (emil-design-eng, animate, review-animations, apple-design, mobile-native...). design_guide
-hands Alfred a guide's text to follow.
+hands Alfred a guide's text to follow. Taste Skill (MIT, from github.com/Leonxlnx/taste-skill) lives in skills/taste:
+rules that stop AI-looking pages (taste-skill, minimalist-skill, brutalist-skill, soft-skill, redesign-skill,
+brandkit...), read the same way.
 """
 
 import asyncio
@@ -22,7 +24,7 @@ from config import Settings
 
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
-EMIL = SKILLS / "emil-kowalski"
+GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill"}
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -84,15 +86,18 @@ def summary(path: Path) -> str:
 
 
 def guides() -> dict[str, Path]:
-    return {p.parent.name: p.parent for p in sorted(EMIL.glob("*/SKILL.md"))}
+    return {p.parent.name: p.parent for lib in GUIDE_LIBRARIES for p in sorted((SKILLS / lib).glob("*/SKILL.md"))}
 
 
 def guide(args: dict) -> str:
     found = guides()
     name = (args.get("guide") or "").strip().lower()
     if not name:
-        lines = [f"- {n}: {summary(d / 'SKILL.md')}" for n, d in found.items()]
-        return "Emil Kowalski's design guides:\n" + "\n".join(lines)
+        out = []
+        for lib, who in GUIDE_LIBRARIES.items():
+            out.append(f"{who} guides:")
+            out += [f"- {n}: {summary(d / 'SKILL.md')}" for n, d in found.items() if d.parent.name == lib]
+        return "\n".join(out)
     if name not in found:
         raise ValueError(f"No guide called {name}. Pick one of: {', '.join(found)}.")
     folder = found[name]
@@ -140,12 +145,15 @@ def tool_definitions() -> list[dict]:
         },
     }, {
         "name": "design_guide",
-        "description": "Emil Kowalski's design engineering guides: how to make interfaces and animations feel "
-                       "polished. Guides: emil-design-eng (his whole philosophy), animate, animate-expo, "
-                       "animation-vocabulary (names for a motion effect), apple-design, review-animations, "
-                       "improve-animations, find-animation-opportunities, mobile-native, break-ui, prototype, "
-                       "pick-ui-library, ask-sonner, write-swift. Call with no guide to list them. Read the guide "
-                       "and follow it when designing, animating or reviewing UI, then answer in plain words.",
+        "description": "Written design guides to read and follow when designing, animating, redesigning or "
+                       "reviewing UI, then answer in plain words. Emil Kowalski (polish and motion): emil-design-eng "
+                       "(his whole philosophy), animate, animate-expo, animation-vocabulary (names for a motion "
+                       "effect), apple-design, review-animations, improve-animations, find-animation-opportunities, "
+                       "mobile-native, break-ui, prototype, pick-ui-library, ask-sonner, write-swift. Taste Skill "
+                       "(good taste instead of generic AI pages): taste-skill (main), minimalist-skill, "
+                       "brutalist-skill, soft-skill, redesign-skill, brandkit, image-to-code-skill, stitch-skill, "
+                       "imagegen-frontend-web, imagegen-frontend-mobile, output-skill, gpt-tasteskill, "
+                       "taste-skill-v1. Call with no guide to list them.",
         "input_schema": {
             "type": "object",
             "properties": {
