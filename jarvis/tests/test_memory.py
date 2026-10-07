@@ -307,3 +307,12 @@ def test_read_document(settings):
     memory.save_file(settings, "Work", "song.mp3", b"x")
     with pytest.raises(ValueError, match="not .mp3"):
         memory.document_content(settings, "Work", "song.mp3")
+
+
+def test_starter_folders_are_made_once(tmp_path):
+    s = Settings(memory_dir=str(tmp_path))
+    assert memory.starter_extras(s) == ["Kinetic Web Designs", "YouTube"]
+    assert (tmp_path / "YouTube" / "Shorts Analytics").is_dir() and (tmp_path / "YouTube" / "TikTok Pages").is_dir()
+    assert [e["name"] for e in memory.extras(s)] == ["Kinetic Web Designs", "YouTube"]
+    memory.delete_folder(s, "Kinetic Web Designs")
+    assert memory.starter_extras(s) == [] and not (tmp_path / "Kinetic Web Designs").exists()

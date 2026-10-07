@@ -70,6 +70,7 @@ async def lifespan(app: FastAPI):
     app.state.pages = {}  # open pages: id(WebSocket) -> (WebSocket, its speak function, its Brain)
     app.state.alerts = []  # notifications shown on the page, newest last
     app.state.alert_ids = itertools.count(1)
+    memory.starter_extras(settings)
     watchers = alerts.start(settings, lambda text, kind: announce(app, text, kind))
     timers.set_announcer(lambda text, kind: announce(app, text, kind))
     helpers.set_context(app.state.client, lambda text, kind: announce(app, text, kind))
