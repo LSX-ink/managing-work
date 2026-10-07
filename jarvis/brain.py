@@ -99,6 +99,9 @@ def error_key(exc: Exception) -> str:
 _NEW_WEB_TOOLS = ("claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6",
                   "claude-sonnet-5", "claude-sonnet-4-6")
 _NO_EFFORT = ("claude-haiku-4-5", "claude-sonnet-4-5")
+# Models that take adaptive thinking (they decide how much to think; effort sets the depth). Older ones would
+# need a fixed thinking budget, so they go without.
+_ADAPTIVE_THINKING = _NEW_WEB_TOOLS + ("claude-fable-5",)
 _NO_TOOL_SEARCH = ("claude-haiku", "claude-3")
 _SERVER_FALLBACK = ("claude-opus-5", "claude-fable-5")
 _COMPUTER_TOOLSET = ("claude-opus-5", "claude-fable-5")
@@ -134,6 +137,7 @@ PROBLEM_SOLVING = """How you solve problems on your own:
 - Chain your abilities: look things up, then act on what you found, then show or save the result. Use a search, a calculator or a file instead of guessing.
 - If a tool fails, read the error, fix what you sent and try once more; if it fails again, take a different route (another tool, a web search, the screen, or a background helper) rather than giving up.
 - Never call the same tool with the same input after it has failed twice.
+- For a request with several steps (planning, comparing, fixing, building, money or anything with code), think it through before acting: plan the steps, check each tool result before the next step, and verify the answer before giving it. Keep that thinking to yourself; what you say aloud stays short.
 - Check the result before saying it's done: read back what a tool returned, and say plainly what worked and what didn't. Never claim something happened that a tool didn't confirm.
 - When something is outside every ability you have, say what you can do instead, then use request_new_ability.
 - When you finish, offer one useful next step only if there's an obvious one."""
@@ -216,8 +220,40 @@ def tool_search_enabled(settings: Settings) -> bool:
     return settings.tool_search and not settings.model.startswith(_NO_TOOL_SEARCH)
 
 
-def request_options(settings: Settings) -> dict:
-    """Model-dependent request parameters."""
+EFFORTS = ("low", "medium", "high")
+_HARD = re.compile(r"\b(?:plan(?:s|ning)?|compare|comparison|pros and cons|trade.?offs?|strategy|debug|code|coding|script|"
+                   r"program(?:ming)?|python|javascript|sql|excel formula|spreadsheet|design|architect\w*|build|"
+                   r"budget|invest\w*|tax(?:es)?|mortgage|loan|pension|salary|savings|analy[sz]\w*|research|"
+                   r"step by step|think (?:hard|carefully|it through)|in detail|essay|report|proposal|cover letter)\b", re.I)
+_MEDIUM = re.compile(r"\b(?:why|how (?:do|does|did|can|could|should|would|to|much|many|long)|explain|fix|work out|"
+                     r"figure out|calculate|recommend|should i|which (?:is|one|would)|difference between|"
+                     r"help me|organi[sz]e|summari[sz]e|draft|rewrite|schedule|troubleshoot|what if)\b", re.I)
+_STEPS = re.compile(r"\b(?:then|after that|and also|first|next|finally)\b|;", re.I)
+
+
+def question_effort(text: str) -> str:
+    """How hard a question looks, from cheap cues: small talk stays low, multi-step or tricky asks go higher."""
+    words = len(text.split())
+    hard = len(set(m.lower() for m in _HARD.findall(text)))
+    if words <= 3 and not hard:
+        return "low"  # "why?", "thanks", "how are you"
+    score = 2 * min(hard, 2) + min(len(set(m.lower() for m in _MEDIUM.findall(text))), 2)
+    score += (words > 30) + (words > 80) + bool(_STEPS.search(text)) + (text.count("?") > 1)
+    return "high" if score >= 3 else "medium" if score >= 1 else "low"
+
+
+def turn_effort(settings: Settings, text: str) -> str:
+    """Effort for one turn. JARVIS_THINKING=low|medium|high fixes it; auto (the default) raises JARVIS_EFFORT for
+    harder questions but never lowers it."""
+    if settings.thinking in EFFORTS:
+        return settings.thinking
+    if settings.effort not in EFFORTS or text.startswith("[activate]"):
+        return settings.effort  # xhigh or max stay as set; the greeting stays quick
+    return max(settings.effort, question_effort(text), key=EFFORTS.index)
+
+
+def request_options(settings: Settings, effort: str | None = None) -> dict:
+    """Model-dependent request parameters. `effort` overrides JARVIS_EFFORT for this turn."""
     model = settings.model
     new_web = model.startswith(_NEW_WEB_TOOLS)
     every = list(tools.client_tool_definitions(settings))
@@ -246,7 +282,9 @@ def request_options(settings: Settings) -> dict:
                    "list and searched. When a request needs several abilities, combine them to deliver the result.")
     opts: dict = {"model": model, "max_tokens": 16000, "system": system, "tools": tool_list}
     if not model.startswith(_NO_EFFORT):
-        opts["output_config"] = {"effort": settings.effort}
+        opts["output_config"] = {"effort": effort or settings.effort}
+    if model.startswith(_ADAPTIVE_THINKING):
+        opts["thinking"] = {"type": "adaptive"}  # thinks only as much as the question needs; never read aloud
     if model.startswith(_SERVER_FALLBACK):
         # If a safety classifier declines, the API retries on a suitable fallback model.
         opts["betas"] = ["server-side-fallback-2026-07-01"]
@@ -819,7 +857,7 @@ class Brain:
         self._notes.clear()
         self.messages.append({"role": "user", "content": f"(Local time: {stamp})\n{notes}{user_text}"})
         try:
-            await self._run(speak)
+            await self._run(speak, turn_effort(self.settings, user_text))
             reply = " ".join(filter(None, (spoken_text(m["content"]) for m in self.messages[start + 1:]
                                            if m["role"] == "assistant" and not isinstance(m["content"], str))))
             if reply and not user_text.startswith("[activate]"):
@@ -834,8 +872,8 @@ class Brain:
             await speak(line(self.settings, error_key(exc)))
         self.messages = trim_history(self.messages)
 
-    async def _run(self, speak: Speak) -> None:
-        opts = request_options(self.settings)
+    async def _run(self, speak: Speak, effort: str | None = None) -> None:
+        opts = request_options(self.settings, effort)
         start = len(self.messages) - 1
         for _ in range(MAX_TOOL_ROUNDS):
             prune_images(self.messages)

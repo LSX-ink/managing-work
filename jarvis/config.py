@@ -31,6 +31,8 @@ IMAP_HOSTS = {
 class Settings:
     model: str = os.getenv("JARVIS_MODEL", "claude-opus-5")
     effort: str = os.getenv("JARVIS_EFFORT", "low")
+    # auto: more thought for harder questions, JARVIS_EFFORT for small talk; low, medium or high fixes it
+    thinking: str = os.getenv("JARVIS_THINKING", "auto").strip().lower()
     user_name: str = os.getenv("JARVIS_USER_NAME", "")
     user_address: str = os.getenv("JARVIS_USER_ADDRESS", "sir")
     city: str = os.getenv("JARVIS_CITY", "")
