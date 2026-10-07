@@ -235,6 +235,8 @@ Emil Kowalski's design guides are built in too (from [emilkowalski/skills](https
 
 Taste Skill is built in as well (from [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), MIT licence, in `skills/taste`). Its rules stop pages looking generic and AI-made, with styles such as minimalist, brutalist and soft. Try "Alfred, redesign my landing page with taste" or "make me a minimalist portfolio".
 
+For anime, Alfred has anime-mj (from [jawhnycooke/claude-code-anime-mj](https://github.com/jawhnycooke/claude-code-anime-mj), MIT licence, in `skills/anime`), an anime and manga prompt builder with 30+ manga artist styles and 14 studio looks such as Ghibli and KyoAni, plus your own Higgsfield anime template. Try "Alfred, write me an anime prompt for a Ghibli-style forest spirit" or "give me a Higgsfield anime video prompt for a lore story". The `--niji` and `--sref` codes only work in Midjourney; the rest works in Higgsfield.
+
 ### New abilities
 
 When you ask for something Alfred can't do yet ("Alfred, set a timer for ten minutes"), he doesn't just say no. He sends the request to Claude, the AI that builds him, as a GitHub issue labelled `alfred-wish`. Claude checks for new requests every few hours, builds each one as a pull request, and tells you in the project chat. Merge it, run `git pull` and restart, and Alfred can do it. You can also ask him to improve something ("Alfred, get better at…"). A copy of every request goes in `wishes.md` next to `server.py`.

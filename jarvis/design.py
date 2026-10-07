@@ -11,7 +11,9 @@ Emil Kowalski's skills (MIT, from github.com/emilkowalski/skills) live in skills
 polish and animation (emil-design-eng, animate, review-animations, apple-design, mobile-native...). design_guide
 hands Alfred a guide's text to follow. Taste Skill (MIT, from github.com/Leonxlnx/taste-skill) lives in skills/taste:
 rules that stop AI-looking pages (taste-skill, minimalist-skill, brutalist-skill, soft-skill, redesign-skill,
-brandkit...), read the same way.
+brandkit...), read the same way. skills/anime holds anime-mj (MIT, from github.com/jawhnycooke/claude-code-anime-mj),
+an anime and manga prompt builder with manga artist and studio styles, and higgsfield-anime, the user's own prompt
+template for Higgsfield.
 """
 
 import asyncio
@@ -24,7 +26,7 @@ from config import Settings
 
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
-GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill"}
+GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt"}
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -153,7 +155,10 @@ def tool_definitions() -> list[dict]:
                        "(good taste instead of generic AI pages): taste-skill (main), minimalist-skill, "
                        "brutalist-skill, soft-skill, redesign-skill, brandkit, image-to-code-skill, stitch-skill, "
                        "imagegen-frontend-web, imagegen-frontend-mobile, output-skill, gpt-tasteskill, "
-                       "taste-skill-v1. Call with no guide to list them.",
+                       "taste-skill-v1. Anime prompts (for anime or manga art, images or video): anime-mj (genres, "
+                       "30+ manga artists, 14 studios like Ghibli and KyoAni; files sref-library.md, "
+                       "video-animation.md; --niji and --sref only work in Midjourney), higgsfield-anime "
+                       "(fill-in template for Higgsfield). Call with no guide to list them.",
         "input_schema": {
             "type": "object",
             "properties": {
