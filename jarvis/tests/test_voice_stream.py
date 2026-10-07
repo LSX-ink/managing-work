@@ -335,6 +335,23 @@ def test_time_until_and_time_in_are_worked_out_instantly():
     assert instant_answer("how long until 13 pm", en, now) is None
 
 
+def test_dates_ahead_and_weekdays_are_worked_out_instantly():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-06 14:45", "%Y-%m-%d %H:%M")
+    assert instant_answer("what's the date in 2 weeks", en, now) == "It'll be Tuesday the 20th of October."
+    assert instant_answer("what day will it be in ten days", en, now) == "It'll be Friday the 16th of October."
+    assert instant_answer("what date is it 100 days from now", en, now) == "It'll be Thursday the 14th of January 2027."
+    assert instant_answer("what day is the 25th of December", en, now) == "The 25th of December is a Friday."
+    assert instant_answer("what day of the week is March 3rd", en, now) == "The 3rd of March 2027 is a Wednesday."
+    assert instant_answer("what day was the 4th of July 1776", en, now) == "The 4th of July 1776 was a Thursday."
+    assert instant_answer("what day does Christmas fall on", en, now) == "The 25th of December is a Friday."
+    assert instant_answer("what day is the 30th of February", en, now) == "There's no 30th of February."
+    assert instant_answer("what day is it", en, now) == "It's Tuesday the 6th of October."
+    assert instant_answer("what day is Easter", en, now) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

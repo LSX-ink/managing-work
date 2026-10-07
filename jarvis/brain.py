@@ -517,6 +517,47 @@ _TOMORROW = re.compile(_NAME + r"(?:what(?:'s| is) (?:the date |the day )?tomorr
                        r"what(?:'s| is) tomorrow's date|what(?:'s| is) the date tomorrow)" + _END, re.I)
 
 
+_DATE_IN = re.compile(_NAME + r"(?:what(?:'s| is| will be) the (?:date|day)|what date (?:is it|will it be)|what day (?:is it|will it be)) "
+                      r"(?:in (?P<n>\d+|a|an) (?P<unit>days?|weeks?)(?: time)?|(?P<n2>\d+|a|an) (?P<unit2>days?|weeks?) (?:from (?:now|today)|today))" + _END, re.I)
+_MONTH_NAMES = ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+                "november", "december")
+_MONTH = r"(?P<mon>" + "|".join(_MONTH_NAMES) + r"|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec)"
+_WEEKDAY_OF = re.compile(_NAME + r"what day (?:of the week )?(?:is|was|will be|does|did|will) (?:it on )?(?:the )?"
+                         r"(?:(?P<d>\d{1,2})(?:st|nd|rd|th)? (?:of )?" + _MONTH + r"|" + _MONTH.replace("mon>", "mon2>")
+                         + r" (?:the )?(?P<d2>\d{1,2})(?:st|nd|rd|th)?|(?P<named>[a-z' ]+?)),?(?: (?P<y>\d{4}))?(?: (?:fall|land|be) on| fall| land| be)?" + _END, re.I)
+
+
+def _date_maths(said: str, today: dt.date) -> str | None:
+    """'What's the date in 2 weeks?' and 'what day is the 25th of December?': worked out from the calendar on the spot."""
+    said = spoken_numbers(said)
+    if m := _DATE_IN.match(said):
+        n, unit = (m.group("n"), m.group("unit")) if m.group("n") else (m.group("n2"), m.group("unit2"))
+        days = (1 if not n.isdigit() else int(n)) * (7 if unit.lower().startswith("w") else 1)
+        if days > 36500:
+            return None
+        t = today + dt.timedelta(days=days)
+        return f"It'll be {t:%A} the {_ordinal(t.day)} of {t:%B}{f' {t.year}' if t.year != today.year else ''}."
+    if not (m := _WEEKDAY_OF.match(said)):
+        return None
+    if m.group("named"):
+        if (key := m.group("named").strip().lower().removeprefix("the ")) not in _FIXED_DAYS:
+            return None  # "what day is it", "what day is Easter": the others or Claude
+        month, day = _FIXED_DAYS[key]
+    else:
+        word = (m.group("mon") or m.group("mon2")).lower()
+        month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+        day = int(m.group("d") or m.group("d2"))
+    year = int(m.group("y") or today.year)
+    try:
+        t = dt.date(year, month, day)
+        if not m.group("y") and t < today:  # no year said: the next one coming up
+            t = dt.date(year + 1, month, day)
+    except ValueError:
+        return f"There's no {_ordinal(day)} of {_MONTH_NAMES[month - 1].title()}{' that year' if m.group('y') else ''}."
+    verb = "was" if t < today else "is"
+    return f"The {_ordinal(t.day)} of {t:%B}{f' {t.year}' if m.group('y') or t.year != today.year else ''} {verb} a {t:%A}."
+
+
 _UNTIL_CLOCK = re.compile(_NAME + r"(?:how long (?:is it |have I got |do I have )?|how many (?:minutes|hours) (?:is it |have I got |do I have )?|"
                           r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r")" + _END, re.I)
 _TIME_IN = re.compile(_NAME + r"(?:what time will it be|what(?:'s| is| will be) the time|what time is it) in " + _AMOUNT
@@ -554,7 +595,7 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
 def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
-    if (found := _clock_maths(said, now)) is not None:
+    if (found := _clock_maths(said, now) or _date_maths(said, today)) is not None:
         return found
     if m := _WORLD_TIME.match(said):
         name = dates.CITY_ZONES.get(m.group("where").strip().lower().removeprefix("the "))
@@ -685,7 +726,7 @@ def tidy_request(text: str) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, time until 5 pm, plain timers, reminders, the shopping list, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
+    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, reminders, the shopping list, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = tidy_request(text)
