@@ -100,3 +100,35 @@ def test_downloads_linked_clips(films, tmp_path):
         server.shutdown()
     assert "Joined 2 clips into Anime.mp4" in said
     assert not list((folder / ".parts").iterdir())  # the downloads are cleared once the film is made
+
+
+def test_handoff_uploads_the_last_frame_to_higgsfield(films, monkeypatch):
+    settings, folder = films
+    make_clip(folder / "seg1.mp4", 1.0, colour="green")
+    calls, puts = [], []
+
+    def fake_higgsfield(tool, arguments):
+        calls.append((tool, arguments))
+        if tool == "media_upload":
+            return '{"media_id": "img_123", "upload_url": "https://upload.example/put?sig=1"}'
+        return '{"status": "confirmed"}'
+
+    class Sent:
+        status_code = 200
+
+    monkeypatch.setattr(videojoin, "higgsfield", fake_higgsfield)
+    monkeypatch.setattr(videojoin.httpx, "put", lambda url, content, headers, timeout: puts.append(
+        (url, content[:8], headers)) or Sent())
+    said = run(settings, action="handoff", clip="seg1.mp4")
+    assert "start_image media_id: img_123" in said
+    assert calls[0] == ("media_upload", {"filename": "seg1-last-frame.png", "content_type": "image/png"})
+    assert calls[1] == ("media_confirm", {"media_id": "img_123", "type": "image"})
+    assert puts[0][0] == "https://upload.example/put?sig=1" and puts[0][1].startswith(b"\x89PNG")
+
+
+def test_handoff_explains_an_odd_reply(films, monkeypatch):
+    settings, folder = films
+    make_clip(folder / "seg2.mp4", 1.0)
+    monkeypatch.setattr(videojoin, "higgsfield", lambda tool, arguments: "something unexpected")
+    with pytest.raises(ValueError, match="wasn't what I expected"):
+        run(settings, action="handoff", clip="seg2.mp4")
