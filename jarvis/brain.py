@@ -18,6 +18,7 @@ import agenda
 import alerts
 import computer
 import dates
+import fun
 import reminders
 import shopping
 import timers
@@ -476,6 +477,30 @@ def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     return None
 
 
+_COIN = re.compile(_NAME + r"(?:(?:can you |please )?(?:flip|toss) a coin|heads or tails)" + _END, re.I)
+_DICE = re.compile(_NAME + r"(?:can you |please )?roll (?:a |an |(?P<n>one|two|three|four|five|six|[1-6]) )?(?:dice|die)" + _END, re.I)
+_PICK = re.compile(_NAME + r"(?:pick|choose|give me) a (?:random )?number (?:between|from) (?P<a>-?\d+) (?:and|to) (?P<b>-?\d+)" + _END, re.I)
+_JOKE = re.compile(_NAME + r"(?:(?:tell me|say|give me) (?:a |another )?joke|(?:tell me )?another joke|make me laugh)" + _END, re.I)
+
+
+def _fun_answer(said: str) -> str | None:
+    """'Flip a coin', 'roll two dice', 'pick a number between 1 and 10', 'tell me a joke'."""
+    if _COIN.match(said):
+        return fun.rng.choice(("Heads.", "Tails."))
+    if m := _DICE.match(said):
+        word = (m.group("n") or "1").lower()
+        n = int(word) if word.isdigit() else _WORDS[word]
+        rolls = [fun.rng.randint(1, 6) for _ in range(n)]
+        return f"You rolled a {rolls[0]}." if n == 1 else \
+            f"You rolled {', '.join(map(str, rolls[:-1]))} and {rolls[-1]}, {sum(rolls)} in total."
+    if m := _PICK.match(said):
+        a, b = sorted((int(m.group("a")), int(m.group("b"))))
+        return f"I pick {fun.rng.randint(a, b)}." if b - a <= 10 ** 9 else "Pick a smaller range than that."
+    if _JOKE.match(said):
+        return fun.next_joke()
+    return None
+
+
 def _seconds(amount: str, unit: str) -> float:
     n = float(amount) if amount[0].isdigit() else _WORDS[amount.lower()]
     unit = unit.lower()
@@ -506,7 +531,7 @@ def _ordinal(n: int) -> str:
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, plain timers, reminders, the shopping list, simple sums, unit conversions, world times and days until Christmas, answered on the spot: no need to wait for Claude."""
+    """The time, the date, plain timers, reminders, the shopping list, simple sums, unit conversions, world times, days until Christmas, coins, dice and jokes, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = text.strip()
@@ -520,7 +545,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _maths_answer(said)
-            or _units_answer(said))
+            or _units_answer(said) or _fun_answer(said))
 
 
 def time_of_day(hour: int | None = None) -> str:
