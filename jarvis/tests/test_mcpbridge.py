@@ -56,7 +56,10 @@ def test_registered_and_deferred():
 
 
 def test_reads_the_claude_app_list(claude_app):
-    assert list(mcpbridge.load_config()) == ["perplexity"]  # the remote (url) one isn't a local server
+    found = mcpbridge.load_config()
+    assert list(found) == ["perplexity", "remote", "higgsfield"]
+    assert found["remote"]["args"] == ["-y", "mcp-remote", "https://example.com/mcp"]  # online ones via mcp-remote
+    assert found["higgsfield"]["args"][-1] == "https://mcp.higgsfield.ai/mcp"
     assert "perplexity (starts when needed)" in run(action="servers")
 
 
@@ -76,7 +79,7 @@ def test_clear_errors(claude_app, monkeypatch):
     with pytest.raises(ValueError, match="no tool 'fly'"):
         run(action="call", server="perplexity", tool="fly")
     monkeypatch.setenv("JARVIS_MCP_CONFIG", str(claude_app.parent / "missing.json"))
-    assert "no MCPs" in run(action="servers")
+    assert run(action="servers") == "MCPs Alfred can use: higgsfield (starts when needed)"
     monkeypatch.setenv("JARVIS_MCP", "false")
     assert "switched off" in run(action="servers")
 

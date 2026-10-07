@@ -6,6 +6,9 @@ The servers speak MCP over stdio: one JSON-RPC message per line. This is a small
 needs (initialize, tools/list, tools/call), so there's no extra package to install. The API keys in the config's "env"
 go to the server processes only; Alfred never sees them. Turn the bridge off with JARVIS_MCP=false, or point it at
 another config file with JARVIS_MCP_CONFIG.
+
+Online MCPs (a "url" instead of a command, like Higgsfield) run through mcp-remote (npx -y mcp-remote URL), which
+opens the browser to sign in the first time and remembers the login. Higgsfield is always on the list.
 """
 
 import atexit
@@ -24,7 +27,8 @@ from config import Settings
 NAMES = {"mcp_bridge"}
 ACTIONS = ["servers", "tools", "call", "restart"]
 PROTOCOL = "2025-06-18"
-START_SECONDS = 90  # the first start can download the server (npx -y ...)
+START_SECONDS = 180  # the first start can download the server (npx -y ...) or wait for a browser sign-in
+REMOTES = {"higgsfield": "https://mcp.higgsfield.ai/mcp"}  # online MCPs Alfred always has, unless the app lists them
 CALL_SECONDS = 120
 MAX_TEXT = 8000
 MAX_TOOLS_TEXT = 12000
@@ -37,11 +41,14 @@ def tool_definitions() -> list[dict]:
     return [{
         "name": "mcp_bridge",
         "description": "Use the MCP servers the user added to the Claude desktop app on this PC (for example "
-                       "Perplexity for web research, Firecrawl for scraping sites, Playwright for a browser): "
+                       "Perplexity for web research, Firecrawl for scraping sites, Playwright for a browser) plus Higgsfield "
+                       "(AI images and videos, including anime): "
                        "'ask Perplexity...', 'use Firecrawl to scrape...', 'what MCPs have I got'. servers lists them; "
                        "tools (server) lists that server's tools with their inputs; call (server, tool, arguments) "
                        "runs one; restart (server) restarts a stuck one. Check tools first if you don't know a tool's "
-                       "inputs. Ask the user before a tool that sends, buys, posts or deletes something.",
+                       "inputs. Ask the user before a tool that sends, buys, posts or deletes something, and before any "
+                       "Higgsfield generation (each one spends the user's Higgsfield credits; check balance first). "
+                       "The first Higgsfield use opens the browser to sign in.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -75,8 +82,20 @@ def config_paths() -> list[Path]:
     return found
 
 
+def remote(url: str) -> dict:
+    return {"command": "npx", "args": ["-y", "mcp-remote", url], "env": {}}
+
+
 def load_config() -> dict:
-    """{name: {"command", "args", "env"}} for every local (command-line) server in the Claude app's config."""
+    """{name: {"command", "args", "env"}} for every server in the Claude app's config, plus Higgsfield."""
+    found = app_config()
+    for name, url in REMOTES.items():
+        if not any(n.lower() == name for n in found):
+            found[name] = remote(url)
+    return found
+
+
+def app_config() -> dict:
     for path in config_paths():
         if path.is_file():
             try:
@@ -84,9 +103,14 @@ def load_config() -> dict:
             except (OSError, ValueError) as exc:
                 raise ValueError(f"I couldn't read the Claude app's MCP list ({path.name}): {exc}") from None
             servers = data.get("mcpServers") or {}
-            return {name: {"command": s["command"], "args": [str(a) for a in s.get("args") or []],
-                           "env": {k: str(v) for k, v in (s.get("env") or {}).items()}}
-                    for name, s in servers.items() if isinstance(s, dict) and s.get("command")}
+            found = {}
+            for name, spec in servers.items():
+                if isinstance(spec, dict) and spec.get("command"):
+                    found[name] = {"command": spec["command"], "args": [str(a) for a in spec.get("args") or []],
+                                   "env": {k: str(v) for k, v in (spec.get("env") or {}).items()}}
+                elif isinstance(spec, dict) and str(spec.get("url", "")).startswith("https://"):
+                    found[name] = remote(spec["url"])
+            return found
     return {}
 
 
@@ -193,7 +217,7 @@ class Server:
 def get_server(name: str) -> Server:
     specs = load_config()
     if not specs:
-        raise ValueError("There are no MCPs in the Claude app on this PC yet (Settings > Developer in the Claude app).")
+        raise ValueError("There are no MCPs on this PC yet (Settings > Developer in the Claude app).")
     match = next((n for n in specs if n.lower() == (name or "").strip().lower()), None)
     if match is None:
         raise ValueError(f"There's no MCP called '{name}'. The ones in the Claude app are: {', '.join(specs)}.")
@@ -262,7 +286,7 @@ def run_tool(name: str, args: dict, settings: Settings, http=None):
         specs = load_config()
         if not specs:
             return "There are no MCPs in the Claude app on this PC yet."
-        return "MCPs from the Claude app: " + ", ".join(
+        return "MCPs Alfred can use: " + ", ".join(
             f"{n} ({'running' if n in _servers and _servers[n].alive() else 'starts when needed'})" for n in specs)
     if action == "restart":
         with _lock:
