@@ -64,6 +64,7 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `ANTHROPIC_API_KEY` | (required) | From [console.anthropic.com](https://console.anthropic.com) |
 | `JARVIS_MODEL` | `claude-opus-5` | Any Claude model. `claude-haiku-4-5` is cheaper and faster, but less capable. |
 | `JARVIS_EFFORT` | `low` | Thinking effort. `low` keeps voice replies fast. |
+| `JARVIS_THINKING` | `auto` | How hard he thinks per question. `auto` keeps small talk at `JARVIS_EFFORT` and gives harder asks (plans, comparisons, money, code, several steps) `medium` or `high`. `low`, `medium` or `high` fixes it for every question. Newer models also think before answering (adaptive thinking); none of it is read aloud |
 | `ELEVENLABS_API_KEY` | (empty) | Optional, for a better voice. When empty, the browser's voice is used. |
 | `ELEVENLABS_VOICE_ID` | George | Any ElevenLabs voice ID |
 | `ELEVENLABS_MODEL` | (auto) | Empty picks `eleven_turbo_v2_5` for languages it speaks, otherwise `eleven_v3` |
