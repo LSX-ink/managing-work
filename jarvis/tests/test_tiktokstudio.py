@@ -2549,3 +2549,56 @@ def test_lore_punch_words_land_with_a_thump(s, tmp_path, monkeypatch):
                               "-af", "volumedetect", "-f", "null", "-"], capture_output=True, text=True).stderr
         return float(re.search(r"max_volume: (-?[\d.]+)", out).group(1))
     assert peak(1.0) > -30 and peak(0.3) < -60  # the thump lands on the word, silence before it
+
+
+def test_lore_rewinds_the_tape_after_the_flash_forward(s, tmp_path, monkeypatch):
+    script = cv.parse_script(SCRIPT)
+    script["scenes"] = [dict(script["scenes"][i % 2], hit="") for i in range(4)]
+    seen = {}
+
+    async def no_picture(*a, **k):
+        return None
+
+    async def no_voice(*a, **k):
+        return False
+    monkeypatch.setattr(cv, "fetch_picture", no_picture)
+    monkeypatch.setattr(cv, "narrate", no_voice)
+    monkeypatch.setattr(cv, "render_scene", lambda stills, audio, seconds, out, *a: (
+        seen.__setitem__(a[1], a[18]), out.write_bytes(b"mp4")))
+    monkeypatch.setattr(cv, "join", lambda parts, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "add_ambience", lambda video, kind, out: out.write_bytes(b"mp4"))
+    monkeypatch.setattr(cv, "music_for", lambda *a: None)
+    monkeypatch.setattr(cv, "make_score", lambda *a: None)
+    monkeypatch.setattr(cv, "check_video", lambda path: [])
+    lore = cs.account(cs.load(s), "lowkey.lore")
+    asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
+    assert seen == {0: True, 1: False, 2: False, 3: False}  # only the opening scene
+    seen.clear()
+    asyncio.run(cv.make(None, None, s, {**lore, "style": "noir"}, tmp_path, script=script))
+    assert set(seen.values()) == {False}
+    monkeypatch.undo()
+    pytest.importorskip("imageio_ffmpeg")
+    import re
+    import subprocess
+    from PIL import Image, ImageStat
+    still, later = tmp_path / "s.png", tmp_path / "t.png"
+    Image.new("RGB", (cv.W, cv.H), (200, 60, 60)).save(still)
+    Image.new("RGB", (cv.W, cv.H), (60, 60, 200)).save(later)
+    for name, rewind in (("tape", True), ("plain", False)):
+        cv.render_scene([still], None, 2.0, tmp_path / f"{name}.mp4", teaser=later, rewind=rewind)
+
+    def colour(name, n):
+        out = tmp_path / f"{name}{n}.png"
+        subprocess.run([cv.ffmpeg(), "-y", "-i", str(tmp_path / f"{name}.mp4"), "-vf", f"select=eq(n\\,{n})",
+                        "-frames:v", "1", str(out)], check=True, capture_output=True)
+        return ImageStat.Stat(Image.open(out).convert("HSV")).mean[1]
+    during = round((cv.TEASER_SECONDS + 0.1) * cv.FPS)
+    assert colour("tape", during) < 0.75 * colour("plain", during)  # the picture judders, washed out
+    assert abs(colour("tape", round(1.5 * cv.FPS)) - colour("plain", round(1.5 * cv.FPS))) < 8  # then it's clean
+
+    def peak(name):
+        out = subprocess.run([cv.ffmpeg(), "-v", "info", "-ss", str(cv.TEASER_SECONDS), "-t", "0.3", "-i",
+                              str(tmp_path / f"{name}.mp4"), "-af", "volumedetect", "-f", "null", "-"],
+                             capture_output=True, text=True).stderr
+        return float(re.search(r"max_volume: (-?[\d.]+)", out).group(1))
+    assert peak("tape") > -30 and peak("plain") < -60  # the tape whirr
