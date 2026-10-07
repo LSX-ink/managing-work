@@ -379,6 +379,41 @@ def _shopping_answer(said: str, settings: Settings) -> str | None:
     return None
 
 
+_ONES = {"zero": 0, "nought": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+         "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+         "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
+         "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90}
+_SCALES = {"hundred": 100, "thousand": 1000, "million": 1000000}
+_NUM_WORD = r"(?:" + "|".join(list(_ONES) + list(_SCALES)) + r")"
+_AFTER_SCALE = r"(?:(?<=hundred)|(?<=thousand)|(?<=million))"
+_SPOKEN_NUMBER = re.compile(r"\b(?:an? (?=hundred|thousand|million))?" + _NUM_WORD
+                            + r"(?:(?: |-|" + _AFTER_SCALE + r" and )" + _NUM_WORD + r"|" + _AFTER_SCALE
+                            + r"(?: and)? \d{1,2}(?![\d.,]))*(?: point(?: " + _NUM_WORD + r")+)?\b", re.I)
+
+
+def _number_value(words: str) -> str:
+    whole, _, decimals = words.lower().replace("-", " ").partition(" point ")
+    total = part = 0
+    for word in whole.split():
+        if word in ("a", "an", "and"):
+            part = part or (1 if word != "and" else 0)
+        elif word in _ONES or word.isdigit():
+            part += _ONES[word] if word in _ONES else int(word)
+        elif word == "hundred":
+            part = (part or 1) * 100
+        else:
+            total += (part or 1) * _SCALES[word]
+            part = 0
+    value = str(total + part)
+    return value + ("." + "".join(str(_ONES[w] % 10) for w in decimals.split()) if decimals else "")
+
+
+def spoken_numbers(said: str) -> str:
+    """'twenty five times four' -> '25 times 4', 'two hundred and fifty' -> '250', 'three point five' -> '3.5',
+    so sums and conversions said in words are answered on the spot."""
+    return _SPOKEN_NUMBER.sub(lambda m: _number_value(m[0]), said)
+
+
 _SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?[\d(][\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
 _SPOKEN_MATHS = ((r"(\d(?:[\d.,]*\d)?) ?(?:%|per ?cent) of ", r"\1/100*"), (r"divided by|over|÷", "/"),
                  (r"(?:multiplied )?by|times|x|×", "*"), (r"plus|add", "+"), (r"minus|take away", "-"),
@@ -388,7 +423,7 @@ _SPOKEN_MATHS = ((r"(\d(?:[\d.,]*\d)?) ?(?:%|per ?cent) of ", r"\1/100*"), (r"di
 
 def _maths_answer(said: str) -> str | None:
     """'What's 12 times 7?', 'what is 15% of 80', 'work out 100 divided by 3': a plain sum, worked out on the spot."""
-    if not (m := _SUM.match(said)):
+    if not (m := _SUM.match(spoken_numbers(said))):
         return None
     text = " " + m.group("sum").lower() + " "
     for words, symbol in _SPOKEN_MATHS:
@@ -413,6 +448,7 @@ _HOW_MANY = re.compile(_NAME + r"how many (?P<b>[a-z°][a-z°23 .]{0,24}?) (?:is
 
 def _units_answer(said: str) -> str | None:
     """'What's 10 miles in km?', 'how many grams in 3 ounces', '20 degrees in Fahrenheit': converted on the spot."""
+    said = spoken_numbers(said)
     m = _CONVERT.match(said) or _HOW_MANY.match(said)
     if not m:
         return None
