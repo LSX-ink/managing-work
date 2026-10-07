@@ -353,3 +353,21 @@ def test_coins_dice_numbers_and_jokes_are_instant():
     assert instant_answer("tell me a joke", en) in fun.JOKES
     assert instant_answer("tell me a joke about cats", en) is None  # Claude writes a cat joke
     assert instant_answer("another one", en) is None  # could mean anything: Claude decides
+
+
+def test_fillers_and_polite_wording_still_get_instant_answers():
+    import time
+    from brain import instant_answer, tidy_request
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-07 04:19", "%Y-%m-%d %H:%M")
+    assert tidy_request("Um, Alfred, could you please tell me what time it is, mate?") == "what time is it?"
+    assert instant_answer("um what time is it", en, now) == "It's 4:19 am."
+    assert instant_answer("Alfred, can you tell me what time it is", en, now) == "It's 4:19 am."
+    assert instant_answer("do you know what the date is", en, now) == "It's Wednesday the 7th of October."
+    assert instant_answer("tell me the date please", en, now) == "It's Wednesday the 7th of October."
+    assert instant_answer("could you tell me the date", en, now) == "It's Wednesday the 7th of October."
+    assert instant_answer("okay so what's 12 times 7, thanks", en, now) == "That's 84."
+    assert instant_answer("so how many days until Christmas", en, now).startswith("79 days until Christmas")
+    assert instant_answer("uh, flip a coin", en, now) in ("Heads.", "Tails.")
+    assert instant_answer("can you tell me a joke", en, now)
+    assert instant_answer("well I want to know about the weather", en, now) is None
