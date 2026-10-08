@@ -190,7 +190,10 @@ def identity_section(settings: Settings) -> str:
     return (f"Your identity: your own email address is {settings.alfred_email_address}. It is the email for everything "
             "that is yours: TikTok, YouTube, Kick, Higgsfield, every website or app you sign up for, newsletters, and "
             "Kinetic Web Designs papers. Always give this address when a form or person asks for your email, never "
-            "the user's own address. Check it with alfred_inbox (codes finds sign-up codes; the user types them in).\n\n")
+            "the user's own address. Check it with alfred_inbox (codes finds sign-up codes; the user types them in). "
+            "You announce new emails to it yourself: tell the user what an email says in a sentence or two and "
+            "suggest a reply, then draft it when they want one. Never send an email until the user has said yes "
+            "to that exact draft.\n\n")
 
 
 def deliveries_section(settings: Settings) -> str:

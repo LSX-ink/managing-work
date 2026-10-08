@@ -23,6 +23,7 @@ from typing import Awaitable, Callable
 
 import httpx
 
+import alfred_mail
 import filing
 
 from config import ROOT, Settings
@@ -331,6 +332,8 @@ def start(settings: Settings, announce: Announce) -> list[asyncio.Task]:
     if settings.email_enabled:
         tasks.append(asyncio.create_task(watch_email(settings, announce)))
         tasks.append(asyncio.create_task(filing.watch(settings, announce)))
+    if alfred_mail.enabled(settings):
+        tasks.append(asyncio.create_task(alfred_mail.watch(settings, announce)))
     if settings.phone_alerts:
         tasks.append(asyncio.create_task(watch_phone(settings, announce)))
     if settings.phone_relay:
