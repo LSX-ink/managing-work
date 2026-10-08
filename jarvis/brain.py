@@ -180,7 +180,20 @@ Showing things: when the user asks to see or show something, or it's easier to r
 
 New abilities: if the user asks for something none of your tools (including ones found by search) can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
-{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}"""
+{identity_section(settings)}{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}"""
+
+
+def identity_section(settings: Settings) -> str:
+    """Alfred's own email address is his identity for every account he has or signs up for."""
+    if not settings.alfred_email_address:
+        return ""
+    return (f"Your identity: your own email address is {settings.alfred_email_address}. It is the email for everything "
+            "that is yours: TikTok, YouTube, Kick, Higgsfield, every website or app you sign up for, newsletters, and "
+            "Kinetic Web Designs papers. Always give this address when a form or person asks for your email, never "
+            "the user's own address. Check it with alfred_inbox (codes finds sign-up codes; the user types them in). "
+            "You announce new emails to it yourself: tell the user what an email says in a sentence or two and "
+            "suggest a reply, then draft it when they want one. Never send an email until the user has said yes "
+            "to that exact draft.\n\n")
 
 
 def deliveries_section(settings: Settings) -> str:

@@ -65,7 +65,8 @@ class Settings:
     email_imap_host: str = os.getenv("JARVIS_EMAIL_IMAP_HOST", "").strip()  # empty: picked from the address
     email_check_seconds: int = int(os.getenv("JARVIS_EMAIL_CHECK_SECONDS", "60"))
     # Alfred's own mailbox (alfred_mail.py): his address for every account he signs up for, and for business papers
-    alfred_email_address: str = os.getenv("JARVIS_ALFRED_EMAIL_ADDRESS", "").strip()
+    # His identity: every account he has (TikTok, YouTube, Kick, Higgsfield, sign-ups) uses this address.
+    alfred_email_address: str = os.getenv("JARVIS_ALFRED_EMAIL_ADDRESS", "alfredw.lsx@gmail.com").strip()
     alfred_email_app_password: str = "".join(os.getenv("JARVIS_ALFRED_EMAIL_APP_PASSWORD", "").split())
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
     # Calls over the internet: your phone posts to a private ntfy topic that Jarvis makes up himself
