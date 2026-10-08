@@ -219,6 +219,27 @@ async def test_an_instant_answer_skips_claude_but_stays_in_the_conversation():
                                {"role": "assistant", "content": said[0]}]
 
 
+async def test_what_did_you_hear_repeats_the_last_thing_said():
+    class NoCalls:
+        beta = SimpleNamespace(messages=SimpleNamespace(create=None, stream=None))
+
+    said = []
+
+    async def speak(text, quiet=False, join=False):
+        said.append(text)
+
+    b = Brain(Settings(model="claude-opus-5", tasks_file="", enable_screen=False, speech_lang="en-GB"),
+              NoCalls(), http=None)
+    await b.handle("Alfred, what did you hear?", speak)
+    assert said[-1] == "I haven't heard anything from you yet."
+    await b.handle("What time is it?", speak)
+    await b.handle("what did I just say", speak)
+    assert said[-1] == 'I heard: "What time is it?".'
+    await b.handle("did you hear me right?", speak)  # asking twice doesn't overwrite it
+    assert said[-1] == 'I heard: "What time is it?".'
+    assert b.messages[-1] == {"role": "assistant", "content": said[1]}  # the check stays out of the history
+
+
 async def test_plain_timers_are_set_checked_and_cancelled_on_the_spot():
     import timers
     from brain import instant_answer

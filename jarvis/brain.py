@@ -794,6 +794,11 @@ def tidy_request(text: str) -> str:
     return spoken_durations(said)
 
 
+_WHAT_HEARD = re.compile(_NAME + r"(?:what did (?:you|u) (?:just )?hear(?: me say)?|what did I (?:just )?say|"
+                         r"what do you think I said|did you hear (?:me|that)(?: right| properly| correctly)?|"
+                         r"(?:say|repeat) (?:back )?what I (?:just )?said|repeat (?:that|me) back)" + _END, re.I)
+
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -962,6 +967,7 @@ class Brain:
         self._failures: dict[str, int] = {}  # failed tool calls this turn, to stop the same mistake repeating
         self.messages: list[dict] = load_carry_over(settings)  # picks up where the last session left off
         self._notes: list[str] = []  # announcements made since the user last spoke
+        self._heard = ""  # the last thing the user said, for "what did you hear?"
 
     @property
     def computer(self):
@@ -991,6 +997,11 @@ class Brain:
         self._notes.append(f"{time.strftime('%H:%M')} {text}")
 
     async def handle(self, user_text: str, speak: Speak) -> None:
+        if _WHAT_HEARD.match(tidy_request(user_text)):  # checking the mic heard you right: no need for Claude
+            await speak(f'I heard: "{self._heard}".' if self._heard else "I haven't heard anything from you yet.")
+            return
+        if not user_text.startswith("["):
+            self._heard = user_text.strip()
         if (quick := instant_answer(user_text, self.settings)) is not None:
             self.messages += [{"role": "user", "content": user_text}, {"role": "assistant", "content": quick}]
             await speak(quick)
