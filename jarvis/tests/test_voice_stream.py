@@ -419,6 +419,21 @@ def test_a_voice_stopwatch_starts_laps_and_stops():
     assert instant_answer("start a stopwatch and play music", en) is None
 
 
+def test_days_since_and_ages_are_worked_out_instantly():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-06 14:45", "%Y-%m-%d %H:%M")
+    assert instant_answer("how many days since the 1st of January", en, now) == "278 days since 1st January 2026."
+    assert instant_answer("how many days has it been since Christmas", en, now) == "285 days since 25th December 2025."
+    assert instant_answer("how many weeks since March 3rd 2025", en, now) == "83 weeks and 1 day since 3rd March 2025."
+    assert instant_answer("how old is someone born in 1990", en, now) == "They'd be 35 or 36, depending on their birthday."
+    assert instant_answer("how old is someone born on the 20th of December 1990", en, now) == "They'd be 35 today."
+    assert instant_answer("how old is someone born on 1st October 1990", en, now) == "They'd be 36 today."
+    assert instant_answer("how many days since my birthday", en, now) is None  # Claude may know it
+    assert instant_answer("how old is someone born in 2030", en, now) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

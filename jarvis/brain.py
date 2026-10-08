@@ -562,6 +562,53 @@ _WEEKDAY_OF = re.compile(_NAME + r"what day (?:of the week )?(?:is|was|will be|d
                          + r" (?:the )?(?P<d2>\d{1,2})(?:st|nd|rd|th)?|(?P<named>[a-z' ]+?)),?(?: (?P<y>\d{4}))?(?: (?:fall|land|be) on| fall| land| be)?" + _END, re.I)
 
 
+_DATE_SAID = (r"(?:the )?(?P<d>\d{1,2})(?:st|nd|rd|th)? (?:of )?" + _MONTH + r"|" + _MONTH.replace("mon>", "mon2>")
+              + r" (?:the )?(?P<d2>\d{1,2})(?:st|nd|rd|th)?")
+_DAYS_SINCE = re.compile(_NAME + r"how many (?P<unit>days|weeks) (?:has it been |is it |have passed |ago was it )?(?:since|from) (?:"
+                         + _DATE_SAID + r"|(?P<named>[a-z' ]+?)),?(?: (?P<y>\d{4}))?" + _END, re.I)
+_AGE = re.compile(_NAME + r"how old (?:is|would be|will be) (?:someone|somebody|a person|someone who was|a person) born (?:in|on) "
+                  r"(?:(?:" + _DATE_SAID + r"),? )?(?P<y>\d{4})" + _END, re.I)
+
+
+def _said_date(m: re.Match, year: int) -> dt.date | None:
+    if "named" in m.re.groupindex and m.group("named"):
+        key = m.group("named").strip().lower().removeprefix("the ")
+        return dt.date(year, *_FIXED_DAYS[key]) if key in _FIXED_DAYS else None
+    word = (m.group("mon") or m.group("mon2") or "").lower()
+    if not word:
+        return None
+    month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+    try:
+        return dt.date(year, month, int(m.group("d") or m.group("d2")))
+    except ValueError:
+        return None
+
+
+def _since_and_age(said: str, today: dt.date) -> str | None:
+    """'How many days since the 1st of January?' and 'how old is someone born in 1990?'"""
+    if m := _DAYS_SINCE.match(said):
+        then = _said_date(m, int(m.group("y") or today.year))
+        if then and not m.group("y") and then > today:  # no year said: the last one that's been
+            then = _said_date(m, today.year - 1)
+        if not then or then > today:
+            return None
+        days = (today - then).days
+        n, unit = (days, "day") if m.group("unit").lower() == "days" else (days // 7, "week")
+        extra = f" and {days % 7} day{'s' if days % 7 != 1 else ''}" if unit == "week" and days % 7 else ""
+        return f"{n:,} {unit}{'s' if n != 1 else ''}{extra} since {_ordinal(then.day)} {then:%B %Y}."
+    if m := _AGE.match(said):
+        year = int(m.group("y"))
+        born = _said_date(m, year) if (m.group("mon") or m.group("mon2")) else None
+        if year > today.year or (born and born > today):
+            return None
+        if born:
+            age = today.year - year - ((today.month, today.day) < (born.month, born.day))
+            return f"They'd be {age} today."
+        return f"They'd be {today.year - year - 1} or {today.year - year}, depending on their birthday." if year < today.year \
+            else "Under a year old."
+    return None
+
+
 def _date_maths(said: str, today: dt.date) -> str | None:
     """'What's the date in 2 weeks?' and 'what day is the 25th of December?': worked out from the calendar on the spot."""
     said = spoken_numbers(said)
@@ -630,7 +677,7 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
 def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
-    if (found := _clock_maths(said, now) or _date_maths(said, today)) is not None:
+    if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)) is not None:
         return found
     if m := _WORLD_TIME.match(said):
         name = dates.CITY_ZONES.get(m.group("where").strip().lower().removeprefix("the "))
@@ -816,7 +863,7 @@ _WHAT_HEARD = re.compile(_NAME + r"(?:what did (?:you|u) (?:just )?hear(?: me sa
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
+    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = tidy_request(text)
