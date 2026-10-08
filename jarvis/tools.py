@@ -98,6 +98,9 @@ import diy_room
 import dates_saved
 import design
 import design_extract
+import kinetic_find
+import kinetic_invoices
+import kinetic_sales
 import skillscan
 import docs_tools
 import docs_tools_forms
@@ -348,6 +351,7 @@ ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market,
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [station]  # the station world behind the HUD
 ABILITIES += [design, design_extract, skillscan]  # design libraries, design extraction and the skill scanner
+ABILITIES += [kinetic_find, kinetic_sales, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, invoice
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
