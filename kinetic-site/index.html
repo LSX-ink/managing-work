@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinetic Web Designs</title>
+<meta name="description" content="Kinetic Web Designs builds websites around your colours: pick a style, test three colours in our colour lab, get an instant quote and tell us your vision.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a wide editorial column; the colour lab is the centrepiece, styles and quote sit either side of it in the scroll. */
+:root {
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --sunk: #e6e9ef;
+  --ink: #0d1424;
+  --muted: #4d5768;
+  --line: #d3d8e1;
+  --accent: #2443e8;
+  --accent-ink: #ffffff;
+  --signal: #ffbf1f;
+  --good: #137a47;
+  --bad: #b3261e;
+  --display: "Syne", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --r: 14px;
+  --gutter: clamp(16px, 4vw, 40px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b101b; --surface: #121a29; --sunk: #1a2335; --ink: #eef1f7; --muted: #a3adbf; --line: #2a3448;
+    --accent: #7f93ff; --accent-ink: #0b101b; --signal: #ffcb4a; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b101b; --surface: #121a29; --sunk: #1a2335; --ink: #eef1f7; --muted: #a3adbf; --line: #2a3448;
+  --accent: #7f93ff; --accent-ink: #0b101b; --signal: #ffcb4a; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-inline: var(--gutter); }
+a { color: var(--accent); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.08; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.8rem, 4vw, 2.7rem); }
+h3 { font-size: 1.2rem; }
+p { margin: 0; }
+.eyebrow { font-family: var(--mono); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lede { color: var(--muted); max-width: 62ch; font-size: 1.08rem; }
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; border-radius: 6px; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; z-index: 50; }
+.skip:focus { left: 16px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 1rem var(--body); border: 2px solid var(--ink); background: var(--ink); color: var(--bg);
+  padding: 12px 22px; border-radius: 999px; cursor: pointer; text-decoration: none; transition: transform .18s ease; }
+.btn:hover { transform: translateY(-2px); }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+section { padding-block: clamp(56px, 8vw, 96px); }
+.head { display: grid; gap: 14px; margin-bottom: 36px; }
+
+/* header */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
+.logo { font: 800 1.25rem var(--display); color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+.logo i { width: 26px; height: 26px; border-radius: 8px; background: conic-gradient(from 200deg, var(--accent), var(--signal), var(--accent)); display: inline-block; }
+nav { display: flex; gap: 18px; flex-wrap: wrap; }
+nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: .95rem; }
+nav a:hover { color: var(--accent); }
+@media (max-width: 720px) { nav { display: none; } }
+
+/* hero */
+.hero { padding-block: clamp(40px, 7vw, 84px) clamp(48px, 7vw, 80px); }
+.hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 5vw, 64px); align-items: center; }
+@media (max-width: 880px) { .hero .wrap { grid-template-columns: 1fr; } }
+.hero h1 { font-size: clamp(2.6rem, 7vw, 5rem); font-weight: 800; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .copy { display: grid; gap: 22px; min-width: 0; }
+.hero .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.swatchline { display: flex; gap: 8px; align-items: center; font-family: var(--mono); font-size: .8rem; color: var(--muted); flex-wrap: wrap; }
+.swatchline b { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 1px solid var(--line); }
+.stage { position: relative; min-width: 0; }
+.mini { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 60px -30px rgba(13,20,36,.45);
+  background: var(--m-bg); color: var(--m-ink); font-family: var(--m-font, var(--body)); transition: background .6s ease, color .6s ease; }
+.mini .chrome { display: flex; gap: 6px; padding: 10px 12px; background: color-mix(in srgb, var(--m-ink) 8%, var(--m-bg)); }
+.mini .chrome span { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--m-ink) 25%, transparent); }
+.mini .in { padding: clamp(18px, 3vw, 30px); display: grid; gap: 14px; }
+.mini .nav { display: flex; justify-content: space-between; font-weight: 700; font-size: .85rem; }
+.mini .nav small { opacity: .65; font-weight: 500; }
+.mini h4 { margin: 0; font-family: var(--m-display, var(--display)); font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.05; }
+.mini .pill { justify-self: start; background: var(--m-main); color: var(--m-on); padding: 9px 18px; border-radius: var(--m-r, 999px); font-weight: 700; font-size: .85rem; transition: background .6s ease; }
+.mini .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.mini .cards div { border-radius: calc(var(--m-r, 12px) / 2); padding: 12px; background: color-mix(in srgb, var(--m-ink) 6%, var(--m-bg)); font-size: .75rem; }
+.mini .cards div b { display: block; width: 22px; height: 6px; border-radius: 3px; background: var(--m-accent); margin-bottom: 8px; transition: background .6s ease; }
+.stage .tag { position: absolute; right: -6px; bottom: -14px; background: var(--signal); color: #1a1400; font: 600 .8rem var(--mono); padding: 6px 12px; border-radius: 999px; }
+
+/* process */
+.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; counter-reset: step; list-style: none; padding: 0; margin: 0; }
+@media (max-width: 960px) { .steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .steps { grid-template-columns: 1fr; } }
+.steps li { counter-increment: step; display: grid; gap: 8px; padding: 18px; border-top: 3px solid var(--ink); min-width: 0; }
+.steps li::before { content: counter(step, decimal-leading-zero); font: 500 .85rem var(--mono); color: var(--accent); }
+.steps p { color: var(--muted); font-size: .95rem; }
+
+/* styles */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.chip { border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 7px 14px; font: 600 .9rem var(--body); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 900px) { .styles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .styles { grid-template-columns: 1fr; } }
+.style { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: grid; min-width: 0; }
+.style .meta { padding: 16px; display: grid; gap: 8px; border-top: 1px solid var(--line); }
+.style .meta p { color: var(--muted); font-size: .92rem; }
+.style .meta .for { font: 500 .75rem var(--mono); color: var(--muted); }
+.style .meta button { justify-self: start; }
+.style.picked { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+/* front-page previews: a real 960px-wide home page, scaled down to fit its frame */
+.frame { position: relative; overflow: hidden; aspect-ratio: 960 / 640; background: var(--sunk); border-bottom: 1px solid var(--line); }
+.frame .fp { position: absolute; top: 0; left: 0; transform: scale(var(--k, .35)); transform-origin: top left; pointer-events: none; }
+.frame .zoom { position: absolute; right: 10px; bottom: 10px; font: 600 .8rem var(--body); background: rgba(10,12,18,.78); color: #fff; border: 0; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sw { display: flex; border-radius: 999px; overflow: hidden; border: 2px solid var(--line); padding: 0; cursor: pointer; height: 28px; background: none; }
+.sw span { width: 16px; }
+.sw[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.sw.yours { font: 600 .75rem var(--body); color: var(--ink); padding: 0 10px; align-items: center; }
+.fp { width: 960px; min-height: 640px; background: var(--m-bg); color: var(--m-ink); font: 15px/1.5 var(--m-font); text-align: left;
+  --line: color-mix(in srgb, var(--m-ink) 14%, transparent); --card: color-mix(in srgb, var(--m-ink) 6%, var(--m-bg)); }
+.fp * { box-sizing: border-box; }
+.fp .fnav { display: flex; justify-content: space-between; align-items: center; padding: 20px 44px; border-bottom: 1px solid var(--line); }
+.fp .flogo { font: 700 21px var(--m-display); display: flex; gap: 10px; align-items: center; }
+.fp .flogo i { width: 22px; height: 22px; border-radius: calc(var(--m-r) / 2 + 3px); background: var(--m-main); display: inline-block; }
+.fp .flinks { display: flex; gap: 26px; font-size: 14px; opacity: .78; }
+.fp .fbtn { display: inline-block; background: var(--m-main); color: var(--m-on); padding: 11px 20px; border-radius: var(--m-r); font-weight: 700; font-size: 14px; }
+.fp .fghost { display: inline-block; border: 2px solid currentColor; padding: 9px 18px; border-radius: var(--m-r); font-weight: 700; font-size: 14px; }
+.fp .fhero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 44px; padding: 58px 44px 46px; align-items: center; }
+.fp .fkick { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--m-accent); font-weight: 700; margin-bottom: 14px; }
+.fp h5 { font: 700 54px/1.02 var(--m-display); margin: 0 0 18px; letter-spacing: -.01em; }
+.fp .fsub { opacity: .75; font-size: 17px; max-width: 40ch; margin: 0 0 26px; }
+.fp .fbtns { display: flex; gap: 12px; align-items: center; }
+.fp .fart { height: 300px; border-radius: var(--m-r); position: relative; overflow: hidden;
+  background: radial-gradient(circle at 70% 30%, color-mix(in srgb, var(--m-accent) 85%, #fff) 0 18%, transparent 19%),
+              linear-gradient(160deg, color-mix(in srgb, var(--m-main) 70%, #fff) 0%, var(--m-main) 55%, color-mix(in srgb, var(--m-main) 60%, #000) 100%); }
+.fp .fart::before { content: ""; position: absolute; left: -10%; right: -10%; bottom: -40%; height: 75%; border-radius: 50%; background: color-mix(in srgb, var(--m-main) 45%, #000); opacity: .55; }
+.fp .fart::after { content: ""; position: absolute; left: 12%; bottom: 14%; width: 38%; height: 44%; border-radius: var(--m-r) var(--m-r) 0 0; background: color-mix(in srgb, var(--m-bg) 92%, var(--m-main)); box-shadow: 140px 30px 0 -10px color-mix(in srgb, var(--m-accent) 80%, var(--m-bg)); }
+.fp .fbadge { position: absolute; z-index: 1; left: 18px; top: 18px; background: var(--m-bg); color: var(--m-ink); font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+.fp .fserv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 0 44px 34px; }
+.fp .fserv div { background: var(--card); padding: 22px; border-radius: var(--m-r); }
+.fp .fserv b { display: block; width: 36px; height: 36px; border-radius: calc(var(--m-r) / 2 + 6px); background: var(--m-accent); margin-bottom: 14px; }
+.fp .fserv strong { display: block; font: 700 17px var(--m-display); margin-bottom: 4px; }
+.fp .fserv span { font-size: 14px; opacity: .72; }
+.fp .fquote { margin: 0 44px 40px; padding: 22px 26px; border-left: 4px solid var(--m-accent); background: var(--card); border-radius: 0 var(--m-r) var(--m-r) 0; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+.fp .fquote q { font-size: 17px; font-style: italic; }
+.fp .fquote small { white-space: nowrap; color: var(--m-accent); font-weight: 700; letter-spacing: 2px; }
+/* Bold: the hero is a solid block of the main colour with huge type */
+.fp.s-bold .fhero { background: var(--m-main); color: var(--m-on); grid-template-columns: 1.35fr .65fr; padding-block: 64px; margin-bottom: 34px; }
+.fp.s-bold h5 { font-size: 76px; text-transform: uppercase; line-height: .95; font-weight: 800; }
+.fp.s-bold .fhero .fbtn { background: var(--m-accent); color: var(--m-ink); }
+.fp.s-bold .fkick { color: inherit; opacity: .8; }
+.fp.s-bold .fart { height: 280px; background: var(--m-accent); border-radius: var(--m-r); }
+.fp.s-bold .fart::before { background: var(--m-ink); opacity: .9; height: 45%; border-radius: 0; left: 0; right: 0; bottom: 0; }
+.fp.s-bold .fart::after { background: var(--m-on); box-shadow: none; left: 18%; width: 30%; height: 62%; bottom: 0; border-radius: 0; }
+.fp.s-bold .fserv div { border-top: 6px solid var(--m-main); }
+/* Elegant: centred serif, thin rules, quiet buttons */
+.fp.s-elegant .fnav { justify-content: center; flex-direction: column; gap: 10px; padding-block: 24px; }
+.fp.s-elegant .flinks { text-transform: uppercase; letter-spacing: .2em; font-size: 11px; }
+.fp.s-elegant .flogo i, .fp.s-elegant .fnav .fbtn { display: none; }
+.fp.s-elegant .flogo { font-weight: 400; font-size: 26px; letter-spacing: .06em; }
+.fp.s-elegant .fhero { grid-template-columns: 1fr; text-align: center; justify-items: center; padding-top: 50px; gap: 30px; }
+.fp.s-elegant h5 { font-weight: 400; font-size: 58px; }
+.fp.s-elegant h5 em { font-style: italic; color: var(--m-main); }
+.fp.s-elegant .fsub { margin-inline: auto; }
+.fp.s-elegant .fbtns { justify-content: center; }
+.fp.s-elegant .fbtn, .fp.s-elegant .fghost { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 600; }
+.fp.s-elegant .fart { width: 100%; height: 200px; }
+.fp.s-elegant .fserv div { background: none; border-top: 1px solid var(--m-ink); border-radius: 0; text-align: center; }
+.fp.s-elegant .fserv b { width: 8px; height: 8px; margin: 0 auto 14px; border-radius: 50%; }
+.fp.s-elegant .fquote { border: 0; background: none; justify-content: center; flex-direction: column; text-align: center; }
+/* Playful: soft blobs, a tinted hero card and a sticker */
+.fp.s-playful .fhero { margin: 26px 44px 34px; padding: 44px; background: color-mix(in srgb, var(--m-accent) 20%, var(--m-bg)); border-radius: 36px; }
+.fp.s-playful .fart { border-radius: 46% 54% 40% 60% / 55% 45% 55% 45%; height: 280px; }
+.fp.s-playful .fart::after { border-radius: 50%; width: 34%; height: 34%; left: 16%; bottom: 30%; }
+.fp.s-playful .fbadge { left: auto; right: 6px; top: 6px; transform: rotate(8deg); background: var(--m-accent); color: var(--m-ink); padding: 14px 16px; border-radius: 50%; width: 92px; height: 92px; display: grid; place-items: center; text-align: center; line-height: 1.1; }
+.fp.s-playful .fserv div { border-radius: 26px; }
+.fp.s-playful .fserv b { border-radius: 50%; }
+.fp.s-playful .fquote { border: 0; border-radius: 26px; }
+/* Studio: magazine grid with big image tiles */
+.fp.s-studio .fnav { border-bottom: 2px solid var(--m-ink); }
+.fp.s-studio .flinks { text-transform: uppercase; font-size: 12px; letter-spacing: .12em; opacity: 1; }
+.fp.s-studio .fhero { grid-template-columns: .8fr 1.2fr; align-items: end; }
+.fp.s-studio h5 { font-size: 62px; text-transform: uppercase; line-height: .92; font-weight: 800; letter-spacing: -.02em; }
+.fp.s-studio .fart { height: 330px; border-radius: 0; background: none; display: grid; grid-template-columns: 1.3fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; }
+.fp.s-studio .fart::before, .fp.s-studio .fart::after { display: none; }
+.fp.s-studio .fart u { display: block; background: linear-gradient(150deg, color-mix(in srgb, var(--m-main) 55%, #fff), var(--m-main)); }
+.fp.s-studio .fart u:first-child { grid-row: span 2; background: linear-gradient(200deg, color-mix(in srgb, var(--m-accent) 70%, #fff), color-mix(in srgb, var(--m-main) 80%, #000)); }
+.fp.s-studio .fart u:last-child { background: var(--m-accent); }
+.fp.s-studio .fserv div { background: none; border-top: 2px solid var(--m-ink); border-radius: 0; padding-inline: 0; }
+.fp.s-studio .fserv b { display: none; }
+.fp.s-studio .fquote { border-left: 0; border-top: 2px solid var(--m-ink); background: none; border-radius: 0; padding-inline: 0; }
+/* Night: dark page, glowing colours */
+.fp.s-night .fart { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--m-accent) 90%, #fff) 0 10%, color-mix(in srgb, var(--m-accent) 40%, transparent) 25%, transparent 55%),
+  radial-gradient(circle at 30% 80%, color-mix(in srgb, var(--m-main) 70%, transparent), transparent 60%), color-mix(in srgb, var(--m-bg) 80%, #000); border: 1px solid var(--line); }
+.fp.s-night .fart::before { opacity: .25; }
+.fp.s-night .fart::after { background: none; border: 2px solid var(--m-accent); box-shadow: 0 0 24px var(--m-accent); }
+.fp.s-night h5 em { font-style: normal; color: var(--m-accent); text-shadow: 0 0 22px color-mix(in srgb, var(--m-accent) 60%, transparent); }
+.fp.s-night .fbtn { box-shadow: 0 0 22px color-mix(in srgb, var(--m-main) 55%, transparent); }
+.fp.s-night .fserv div { border: 1px solid var(--line); }
+.viewer { position: fixed; inset: 0; z-index: 90; background: rgba(5,7,12,.94); display: grid; grid-template-rows: auto 1fr; padding: 14px; gap: 10px; }
+.viewer[hidden] { display: none; }
+.viewer .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #fff; flex-wrap: wrap; }
+.viewer .top .btn { background: #fff; color: #0d1424; border-color: #fff; padding: 8px 16px; }
+.viewer .scroll { overflow: auto; border-radius: 14px; }
+.viewer .frame { aspect-ratio: auto; border: 0; }
+
+/* colour lab */
+.lab { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 32px); display: grid; gap: 26px; }
+.pickers { display: grid; grid-template-columns: repeat(3, 1fr) 1.3fr; gap: 16px; align-items: end; }
+@media (max-width: 900px) { .pickers { grid-template-columns: repeat(3, 1fr); } .pickers .presets { grid-column: 1 / -1; } }
+@media (max-width: 520px) { .pickers { grid-template-columns: 1fr; } }
+.pick { display: grid; gap: 6px; min-width: 0; }
+.pick label { font-weight: 700; font-size: .92rem; }
+.pick .field { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--line); border-radius: 12px; padding: 6px 10px 6px 6px; background: var(--bg); }
+.pick input[type="color"] { width: 44px; height: 38px; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 8px; flex: none; }
+.pick input[type="text"] { font: 500 .95rem var(--mono); border: 0; background: transparent; color: var(--ink); width: 100%; min-width: 0; text-transform: uppercase; }
+.pick small { color: var(--muted); font-size: .8rem; }
+.presets { display: grid; gap: 8px; min-width: 0; }
+.presets .list { display: flex; gap: 8px; flex-wrap: wrap; }
+.preset { display: flex; border-radius: 999px; overflow: hidden; border: 1.5px solid var(--line); cursor: pointer; padding: 0; background: none; height: 30px; }
+.preset span { width: 22px; }
+.labtools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.checks { display: flex; gap: 10px; flex-wrap: wrap; }
+.check { display: inline-flex; gap: 8px; align-items: center; font-size: .88rem; padding: 6px 12px; border-radius: 999px; background: var(--sunk); }
+.check b { font-family: var(--mono); font-weight: 500; }
+.check.pass b { color: var(--good); }
+.check.fail b { color: var(--bad); }
+.templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 900px) { .templates { grid-template-columns: 1fr; } }
+.tpl { display: grid; gap: 10px; min-width: 0; }
+.tpl .frame { border: 1px solid var(--line); border-radius: 14px; }
+.tpl .cap { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.tpl .cap p { color: var(--muted); font-size: .88rem; }
+.tpl input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; }
+.tpl label { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
+
+/* quote */
+.quote { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; align-items: start; }
+@media (max-width: 880px) { .quote { grid-template-columns: 1fr; } }
+.packs { display: grid; gap: 12px; }
+.pack { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r); padding: 18px; cursor: pointer; }
+.pack:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.pack input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 4px; }
+.pack p { color: var(--muted); font-size: .92rem; }
+.pack .price { font: 700 1.2rem var(--display); white-space: nowrap; }
+.addons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 6px; }
+@media (max-width: 520px) { .addons { grid-template-columns: 1fr; } }
+.addon { display: flex; gap: 10px; align-items: center; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: .95rem; }
+.addon input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
+.addon span { flex: 1; }
+.addon em { font-style: normal; font-family: var(--mono); font-size: .85rem; color: var(--muted); }
+.addon input[type="number"] { width: 56px; font: 500 .9rem var(--mono); padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.total { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); background: var(--ink); color: var(--bg); border-radius: 20px; padding: 26px; display: grid; gap: 14px; }
+.total .big { font: 800 clamp(2.4rem, 6vw, 3.4rem) var(--display); font-variant-numeric: tabular-nums; }
+.total dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; margin: 0; font-size: .95rem; }
+.total dt { opacity: .75; }
+.total dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.total .btn { background: var(--signal); border-color: var(--signal); color: #1a1400; justify-self: start; }
+.total small { opacity: .7; }
+
+/* brief */
+.brief { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+@media (max-width: 880px) { .brief { grid-template-columns: 1fr; } }
+form.vision { display: grid; gap: 14px; min-width: 0; }
+.f { display: grid; gap: 6px; }
+.f label { font-weight: 700; font-size: .92rem; }
+.f input, .f textarea, .f select { font: 1rem var(--body); padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); width: 100%; }
+.f textarea { min-height: 120px; resize: vertical; }
+.f small { color: var(--muted); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 520px) { .two { grid-template-columns: 1fr; } }
+.summary { background: var(--sunk); border-radius: 18px; padding: 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.summary .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--line); padding-bottom: 8px; flex-wrap: wrap; }
+.summary .row span:first-child { color: var(--muted); }
+.summary .dots { display: flex; gap: 6px; }
+.summary .dots b { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); }
+.sent { background: var(--surface); border: 2px solid var(--good); border-radius: 16px; padding: 18px; display: grid; gap: 10px; }
+.sent pre { white-space: pre-wrap; font: .85rem var(--mono); background: var(--sunk); padding: 12px; border-radius: 10px; max-height: 260px; overflow: auto; margin: 0; }
+
+footer { border-top: 1px solid var(--line); padding-block: 40px; color: var(--muted); font-size: .92rem; }
+footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.addr { font-family: var(--mono); color: var(--ink); user-select: all; }
+
+/* sign-up gate */
+.gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--ink) 55%, transparent); backdrop-filter: blur(6px); }
+.gate[hidden] { display: none; }
+.gate .card { background: var(--surface); color: var(--ink); border-radius: 24px; padding: clamp(22px, 4vw, 36px); width: min(460px, 100%); display: grid; gap: 16px; box-shadow: 0 40px 80px -30px rgba(0,0,0,.5); }
+.gate h2 { font-size: 1.8rem; }
+.gate p { color: var(--muted); }
+.gate .err { color: var(--bad); font-weight: 600; min-height: 1.4em; }
+.gate .consent { display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; color: var(--muted); }
+.gate .consent input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 2px; flex: none; }
+.gate .fine { font-size: .78rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" hidden>
+  <form class="card" id="gate-form" novalidate>
+    <span class="eyebrow">Kinetic Web Designs</span>
+    <h2 id="gate-title">Join to explore our designs</h2>
+    <p>Enter your email to open the style gallery, colour lab and instant quotes. No password needed.</p>
+    <div class="f">
+      <label for="gate-email">Your email</label>
+      <input id="gate-email" type="email" autocomplete="email" inputmode="email" placeholder="you@yourbusiness.co.uk" required>
+    </div>
+    <label class="consent"><input type="checkbox" id="gate-consent"> Send me design tips, offers and news from Kinetic Web Designs by email. You can unsubscribe at any time.</label>
+    <p class="err" id="gate-err" role="alert"></p>
+    <button class="btn accent" type="submit" id="gate-go">Continue</button>
+    <p class="fine">We check your email address is real before you continue. We never share it.</p>
+  </form>
+</div>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href="#top"><i aria-hidden="true"></i>Kinetic</a>
+    <nav aria-label="Main">
+      <a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#vision">Your vision</a>
+    </nav>
+    <a class="btn accent" href="#vision">Start a project</a>
+  </div>
+</header>
+
+<main id="main">
+<div class="hero" id="top">
+  <div class="wrap">
+    <div class="copy">
+      <span class="eyebrow">Web design for independent businesses</span>
+      <h1>Your website, built around <em>your colours.</em></h1>
+      <p class="lede">Pick a style you like, choose three colours and watch them work on a real page. You'll get three designs to choose from, a clear price up front, and a site that works on every phone.</p>
+      <div class="ctas"><a class="btn" href="#lab">Try the colour lab</a><a class="btn ghost" href="#quote">Get a price</a></div>
+      <div class="swatchline" aria-live="polite"><span>Now showing:</span><b id="hs1"></b><b id="hs2"></b><b id="hs3"></b><span id="hs-name">Harbour</span></div>
+    </div>
+    <div class="stage" aria-hidden="true">
+      <div class="mini" id="hero-mini">
+        <div class="chrome"><span></span><span></span><span></span></div>
+        <div class="in">
+          <div class="nav"><span id="hero-biz">Harbour Coffee</span><small>Menu · Visit · Book</small></div>
+          <h4 id="hero-line">Fresh roast, five minutes from the quay.</h4>
+          <span class="pill">Order ahead</span>
+          <div class="cards"><div><b></b>Opening hours</div><div><b></b>Our beans</div><div><b></b>Find us</div></div>
+        </div>
+      </div>
+      <span class="tag">3 colours · 1 site</span>
+    </div>
+  </div>
+</div>
+
+<section aria-labelledby="how-title">
+  <div class="wrap">
+    <div class="head"><span class="eyebrow">How it works</span><h2 id="how-title">From your idea to a live site in five steps</h2></div>
+    <ol class="steps">
+      <li><h3>Tell us your vision</h3><p>How you'd like it to look and what it needs to do, in your own words.</p></li>
+      <li><h3>Pick 3 colours</h3><p>Choose a main colour, a background and an accent in our colour lab.</p></li>
+      <li><h3>Choose a template</h3><p>We send you 3 designs showing your colours used 3 different ways.</p></li>
+      <li><h3>We build it</h3><p>Your chosen design becomes a fast site that works on every phone.</p></li>
+      <li><h3>Words, invoice, launch</h3><p>We write the copy with you, invoice clearly and put you live.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="styles" aria-labelledby="styles-title">
+  <div class="wrap">
+    <div class="head"><span class="eyebrow">Inspiration</span><h2 id="styles-title">Find a style you like</h2>
+      <p class="lede">Each style is a full front page. Tap the colour dots to see it in different colours, or try it in your own. Pick one and the colour lab below uses it.</p></div>
+    <div class="filters" role="group" aria-label="Filter styles by business">
+      <button class="chip" aria-pressed="true" data-f="all">All</button>
+      <button class="chip" aria-pressed="false" data-f="food">Food & drink</button>
+      <button class="chip" aria-pressed="false" data-f="beauty">Hair & beauty</button>
+      <button class="chip" aria-pressed="false" data-f="trades">Trades</button>
+      <button class="chip" aria-pressed="false" data-f="shops">Shops</button>
+    </div>
+    <div class="styles" id="style-grid"></div>
+  </div>
+</section>
+
+<section id="lab" aria-labelledby="lab-title">
+  <div class="wrap">
+    <div class="head"><span class="eyebrow">Colour workshop</span><h2 id="lab-title">Test how your colours work</h2>
+      <p class="lede">Choose three colours. We show them on three templates, each using your palette a different way, and check the text stays easy to read.</p></div>
+    <div class="lab">
+      <div class="pickers">
+        <div class="pick"><label for="c1t">Main colour</label><div class="field"><input type="color" id="c1" aria-label="Main colour picker"><input type="text" id="c1t" maxlength="7" spellcheck="false"></div><small>Buttons and headlines</small></div>
+        <div class="pick"><label for="c2t">Background</label><div class="field"><input type="color" id="c2" aria-label="Background colour picker"><input type="text" id="c2t" maxlength="7" spellcheck="false"></div><small>The page behind everything</small></div>
+        <div class="pick"><label for="c3t">Accent</label><div class="field"><input type="color" id="c3" aria-label="Accent colour picker"><input type="text" id="c3t" maxlength="7" spellcheck="false"></div><small>Highlights and small details</small></div>
+        <div class="presets"><span class="eyebrow">Ready-made palettes</span><div class="list" id="presets"></div></div>
+      </div>
+      <div class="labtools">
+        <button class="btn ghost" type="button" id="shuffle">Suggest a palette</button>
+        <div class="checks" id="checks" aria-live="polite"></div>
+      </div>
+      <div class="templates" id="templates"></div>
+      <div class="labtools"><a class="btn accent" href="#vision" id="use-palette">Use these colours in my brief</a><span class="eyebrow" id="style-note">Style: Clean</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="quote" aria-labelledby="quote-title">
+  <div class="wrap">
+    <div class="head"><span class="eyebrow">Instant quote</span><h2 id="quote-title">See your price before you ask</h2>
+      <p class="lede">Prices are fixed for what's listed. Half is paid up front to book your start date and the rest when your site goes live.</p></div>
+    <div class="quote">
+      <div>
+        <div class="packs" role="radiogroup" aria-label="Website package" id="packs"></div>
+        <h3 style="margin-top:26px">Add-ons</h3>
+        <div class="addons" id="addons"></div>
+        <label class="addon" style="margin-top:10px"><input type="checkbox" id="care" checked><span>Monthly care plan: hosting, security updates, backups and small text changes</span><em>£35/mo</em></label>
+      </div>
+      <aside class="total" aria-live="polite">
+        <span class="eyebrow" style="color:inherit;opacity:.75">Your estimate</span>
+        <div class="big" id="q-total">£895</div>
+        <dl id="q-lines"></dl>
+        <small id="q-time">Ready in 2 to 4 weeks</small>
+        <a class="btn" href="#vision">Add to my brief</a>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section id="vision" aria-labelledby="vision-title">
+  <div class="wrap">
+    <div class="head"><span class="eyebrow">Your vision</span><h2 id="vision-title">Tell us how you'd like your website to look</h2>
+      <p class="lede">Describe it in your own words. We bring your thoughts to life, send you three designs in your colours, then build the one you choose.</p></div>
+    <div class="brief">
+      <form class="vision" id="vision-form" novalidate>
+        <div class="two">
+          <div class="f"><label for="v-name">Your name</label><input id="v-name" autocomplete="name" required></div>
+          <div class="f"><label for="v-biz">Business name</label><input id="v-biz" autocomplete="organization" required></div>
+        </div>
+        <div class="two">
+          <div class="f"><label for="v-email">Email</label><input id="v-email" type="email" autocomplete="email" required></div>
+          <div class="f"><label for="v-phone">Phone (optional)</label><input id="v-phone" type="tel" autocomplete="tel"></div>
+        </div>
+        <div class="f"><label for="v-what">What does your business do?</label><input id="v-what" placeholder="e.g. a barber shop in Stockport"></div>
+        <div class="f"><label for="v-look">How would you like it to look and feel?</label><textarea id="v-look" placeholder="Calm and premium, lots of photos of our work, easy to book…" required></textarea></div>
+        <div class="f"><label for="v-like">Websites you like (optional)</label><input id="v-like" placeholder="Links or names, and what you like about them"></div>
+        <div class="f"><label for="v-when">When would you like it live?</label>
+          <select id="v-when"><option>As soon as possible</option><option>Within a month</option><option>In 1 to 3 months</option><option>Just exploring</option></select></div>
+        <p class="err" id="v-err" role="alert" style="color:var(--bad);font-weight:600"></p>
+        <button class="btn accent" type="submit">Send my brief</button>
+        <div id="v-done" hidden></div>
+      </form>
+      <aside class="summary" aria-label="What's included in your brief">
+        <span class="eyebrow">Included with your brief</span>
+        <div class="row"><span>Style</span><strong id="s-style">Clean</strong></div>
+        <div class="row"><span>Colours</span><span class="dots"><b id="s1"></b><b id="s2"></b><b id="s3"></b></span></div>
+        <div class="row"><span>Template</span><strong id="s-tpl">Light & airy</strong></div>
+        <div class="row"><span>Package</span><strong id="s-pack">Business website</strong></div>
+        <div class="row"><span>Estimate</span><strong id="s-total">£895</strong></div>
+        <p style="color:var(--muted);font-size:.92rem">Within two working days we reply with three designs in your colours, a fixed quote and a start date. Prefer email? Write to <span class="addr">alfredw.lsx@gmail.com</span>.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><strong style="color:var(--ink)">Kinetic Web Designs</strong> · Websites for independent businesses</span>
+    <span>Email <span class="addr">alfredw.lsx@gmail.com</span></span>
+  </div>
+</footer>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewer-title" hidden>
+  <div class="top"><strong id="viewer-title">Preview</strong><button class="btn" type="button" id="viewer-close">Close</button></div>
+  <div class="scroll" id="viewer-page"></div>
+</div>
+<script>
+(() => {
+  // Where sign-ups and briefs go once the site is hosted (a form endpoint). Empty: kept in this browser only.
+  const SIGNUP_ENDPOINT = "";
+  const BRIEF_ENDPOINT = "";
+  const $ = (s, el = document) => el.querySelector(s);
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem("kwd-" + k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem("kwd-" + k, JSON.stringify(v)); } catch {} }
+  };
+  const money = n => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+
+  // ---------- colour maths ----------
+  const hexOk = h => /^#[0-9a-f]{6}$/i.test(h);
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const lum = h => { const c = rgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const onColour = h => contrast(h, "#ffffff") >= contrast(h, "#111111") ? "#ffffff" : "#111111";
+  const mix = (a, b, t) => "#" + rgb(a).map((v, i) => Math.round(v + (rgb(b)[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  const inkFor = bg => lum(bg) > .35 ? mix("#0f1115", bg, .08) : mix("#f6f7f9", bg, .06);
+  const hsl = (h, s, l) => { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return "#" + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join(""); };
+
+  const PALETTES = [
+    { name: "Harbour", c: ["#1f4e79", "#f4f7fa", "#f2a541"] },
+    { name: "Fig & clay", c: ["#7a2e3a", "#fbf3ee", "#d9a441"] },
+    { name: "Fern", c: ["#2f6b4f", "#f3f6f1", "#e07a5f"] },
+    { name: "Midnight", c: ["#8fb3ff", "#10131c", "#ffcf5c"] },
+    { name: "Salon", c: ["#1c1a1d", "#faf6f6", "#c58b9b"] },
+    { name: "Workshop", c: ["#0b4f8a", "#f6f8fa", "#f2a516"] }
+  ];
+  const STYLES = [
+    { id: "clean", name: "Clean", for: ["shops", "trades"], desc: "Plenty of white space, simple type and soft corners. Lets your photos and products lead.",
+      display: "'Figtree', system-ui, sans-serif", body: "'Figtree', system-ui, sans-serif", r: "12px", sample: "Simple. Clear. Yours." },
+    { id: "bold", name: "Bold", for: ["trades", "food"], desc: "Big chunky headlines and solid blocks of colour. Hard to miss on a phone.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "4px", sample: "Call us. We'll be there." },
+    { id: "elegant", name: "Elegant", for: ["beauty", "food"], desc: "A refined serif, fine lines and calm spacing. Feels premium and unhurried.",
+      display: "Georgia, 'Times New Roman', serif", body: "'Figtree', sans-serif", r: "2px", sample: "Treatments, beautifully done." },
+    { id: "playful", name: "Playful", for: ["food", "shops"], desc: "Rounded shapes, pill buttons and a friendly tone. Great for cafes and gift shops.",
+      display: "'Trebuchet MS', 'Figtree', sans-serif", body: "'Figtree', sans-serif", r: "22px", sample: "Come in, the kettle's on!" },
+    { id: "studio", name: "Studio", for: ["beauty", "shops"], desc: "Big photos, tight type and an editorial grid, like a magazine for your brand.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "0px", sample: "New season. New look." },
+    { id: "night", name: "Night", for: ["food", "beauty"], desc: "A dark background that makes colours glow. Suits bars, barbers and late openers.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "10px", sample: "Open late. Book tonight.", dark: true }
+  ];
+  const TEMPLATES = [
+    { id: "light", name: "Light & airy", note: "Your background leads; the main colour is for buttons and headings." },
+    { id: "block", name: "Bold block", note: "Your main colour fills the page; the accent makes buttons pop." },
+    { id: "dark", name: "After dark", note: "A deep version of your main colour, with the accent glowing on top." }
+  ];
+
+  const state = Object.assign({ c: PALETTES[0].c.slice(), style: "clean", tpl: "light", pack: "business", addons: {}, extraPages: 1, care: true },
+    store.get("state") || {});
+  const save = () => store.set("state", state);
+
+  // ---------- mini site renderer ----------
+  function miniVars(el, v) { for (const [k, val] of Object.entries(v)) el.style.setProperty(k, val); }
+  function templateVars(tpl, [main, bg, acc], style) {
+    let pageBg = bg, mainC = main;
+    if (tpl === "block") pageBg = main, mainC = acc;
+    if (tpl === "dark") pageBg = mix(main, "#05070b", .82), mainC = acc;
+    if (style.dark && tpl === "light") pageBg = mix(bg, "#05070b", .9);
+    const ink = inkFor(pageBg);
+    return { "--m-bg": pageBg, "--m-ink": ink, "--m-main": mainC, "--m-on": onColour(mainC), "--m-accent": tpl === "light" ? acc : mix(acc, ink, .1),
+      "--m-display": style.display, "--m-font": style.body, "--m-r": style.r };
+  }
+  const miniHTML = (biz, line, cta) => `<div class="chrome"><span></span><span></span><span></span></div><div class="in">
+    <div class="nav"><span>${biz}</span><small>Menu · Visit · Book</small></div><h4>${line}</h4><span class="pill">${cta}</span>
+    <div class="cards"><div><b></b>Opening hours</div><div><b></b>What we do</div><div><b></b>Find us</div></div></div>`;
+
+  // ---------- hero palette cycle ----------
+  const heroBiz = [["Harbour Coffee", "Fresh roast, five minutes from the quay."], ["Fig & Clay Bistro", "Small plates, big flavour, open till late."],
+    ["Fern Garden Co.", "Gardens designed, planted and cared for."], ["Midnight Barbers", "Sharp cuts. Open late. Walk-ins welcome."],
+    ["Salon Rosa", "Colour, cuts and care you'll love."], ["Workshop Plumbing", "Fixed fast, left tidy. Fully insured."]];
+  let hi = 0;
+  function hero() {
+    const p = PALETTES[hi % PALETTES.length], [biz, line] = heroBiz[hi % heroBiz.length];
+    miniVars($("#hero-mini"), templateVars("light", p.c, STYLES[0]));
+    $("#hero-biz").textContent = biz; $("#hero-line").textContent = line;
+    ["#hs1", "#hs2", "#hs3"].forEach((s, i) => $(s).style.background = p.c[i]);
+    $("#hs-name").textContent = p.name;
+  }
+  hero();
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => { hi++; hero(); }, 3200);
+
+  // ---------- front-page previews ----------
+  const PAGES = {
+    clean: { biz: "Northside Hardware", links: ["Shop", "Services", "About", "Contact"], cta: "Visit us", kick: "Family run since 1987",
+      h: "Everything for the job, under one roof.", sub: "Tools, paint and expert advice. Order online and collect in an hour.", b1: "Shop now", b2: "Opening times",
+      badge: "Open today 8am to 6pm", serv: [["Click & collect", "Ready in 60 minutes"], ["Key cutting", "While you wait"], ["Paint mixing", "Any colour, any size"]],
+      quote: "Friendly, quick and they always have what I need.", pal: 5 },
+    bold: { biz: "Rapid Plumbing", links: ["Services", "Areas", "Reviews"], cta: "Call 24/7", kick: "Emergency callouts",
+      h: "Leak? We're on our way.", sub: "Gas Safe engineers across the city. Fixed price, no call-out fee.", b1: "Book a plumber", b2: "Get a price",
+      badge: "", serv: [["Boilers", "Repairs and servicing"], ["Bathrooms", "Fitted in a week"], ["Emergencies", "Out within the hour"]],
+      quote: "Turned up in 40 minutes and fixed it first time.", pal: 0 },
+    elegant: { biz: "SALON ROSA", links: ["Treatments", "Prices", "Our team", "Book"], cta: "Book", kick: "Hair · Colour · Care",
+      h: "Treatments, <em>beautifully</em> done.", sub: "A calm studio for colour, cuts and care, with time set aside just for you.", b1: "Book an appointment", b2: "See prices",
+      badge: "", serv: [["Colour", "Balayage, gloss, toning"], ["Cut & finish", "Tailored to you"], ["Treatments", "Repair and shine"]],
+      quote: "The most relaxing hour of my month.", pal: 4 },
+    playful: { biz: "Little Fern Café", links: ["Menu", "Cakes", "Find us"], cta: "Order", kick: "Brunch · Coffee · Cake",
+      h: "Come in, the kettle's on!", sub: "Fresh bakes every morning, dogs welcome and the comfiest sofas in town.", b1: "See the menu", b2: "Find us",
+      badge: "New autumn menu!", serv: [["All-day brunch", "Till 3pm daily"], ["Birthday cakes", "Order 2 days ahead"], ["Dog friendly", "Treats on the house"]],
+      quote: "Best flat white and the cakes are huge.", pal: 2 },
+    studio: { biz: "ATELIER NINE", links: ["New in", "Women", "Men", "Journal"], cta: "Bag (0)", kick: "Autumn / Winter",
+      h: "New season. New look.", sub: "Small-batch clothing made in Britain. Free returns on every order.", b1: "Shop the edit", b2: "Lookbook",
+      badge: "", serv: [["Free delivery", "On orders over £50"], ["Made in Britain", "Small workshops"], ["Easy returns", "30 days, no fuss"]],
+      quote: "Beautifully made. I wear it every week.", pal: 1 },
+    night: { biz: "Midnight Barbers", links: ["Cuts", "Prices", "Barbers"], cta: "Book", kick: "Open till midnight",
+      h: "Sharp cuts. <em>Open late.</em>", sub: "Skin fades, beard trims and hot towel shaves. Walk-ins welcome after 6pm.", b1: "Book tonight", b2: "Prices",
+      badge: "Walk-ins welcome", serv: [["Skin fade", "£18 · 40 minutes"], ["Beard trim", "£10 · 20 minutes"], ["Hot towel shave", "£22 · 30 minutes"]],
+      quote: "Only place I trust with my fade.", pal: 3 }
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function frontPage(style, colours, tpl) {
+    const p = PAGES[style.id] || PAGES.clean;
+    const v = templateVars(tpl || (style.dark ? "dark" : "light"), colours, style);
+    const vars = Object.entries(v).map(([k, val]) => `${k}:${val}`).join(";");
+    const art = style.id === "studio" ? "<u></u><u></u><u></u>" : (p.badge ? `<span class="fbadge">${p.badge}</span>` : "");
+    return `<div class="fp s-${style.id}" style="${esc(vars)}" aria-hidden="true">
+      <div class="fnav"><span class="flogo"><i></i>${p.biz}</span><span class="flinks">${p.links.map(l => `<span>${l}</span>`).join("")}</span><span class="fbtn">${p.cta}</span></div>
+      <div class="fhero"><div><div class="fkick">${p.kick}</div><h5>${p.h}</h5><p class="fsub">${p.sub}</p>
+        <div class="fbtns"><span class="fbtn">${p.b1}</span><span class="fghost">${p.b2}</span></div></div><div class="fart">${art}</div></div>
+      <div class="fserv">${p.serv.map(([a, b]) => `<div><b></b><strong>${a}</strong><span>${b}</span></div>`).join("")}</div>
+      <div class="fquote"><q>${p.quote}</q><small>★★★★★</small></div></div>`;
+  }
+  // Scale each 960px page to its frame's width.
+  const fit = new ResizeObserver(entries => entries.forEach(e => {
+    const k = e.contentRect.width / 960; e.target.style.setProperty("--k", k);
+    if (e.target.closest(".viewer")) e.target.style.height = e.target.firstElementChild.offsetHeight * k + "px";  // the whole page, not a crop
+  }));
+  function frame(html, label) { return `<div class="frame" role="img" aria-label="${esc(label)}">${html}</div>`; }
+  function fitAll(root) { root.querySelectorAll(".frame").forEach(f => fit.observe(f)); }
+  const cardPal = {};
+  const palOf = s => cardPal[s.id] === "yours" ? state.c : PALETTES[cardPal[s.id] ?? PAGES[s.id].pal].c;
+
+  // ---------- styles gallery ----------
+  const FOR = { food: "food & drink", beauty: "hair & beauty", trades: "trades", shops: "shops" };
+  function renderStyles(filter = "all") {
+    const grid = $("#style-grid");
+    grid.innerHTML = STYLES.filter(s => filter === "all" || s.for.includes(filter)).map(s => {
+      const chosen = cardPal[s.id] ?? PAGES[s.id].pal;
+      return `<article class="style${state.style === s.id ? " picked" : ""}">
+        ${frame(frontPage(s, palOf(s)), `${s.name} style front page for ${PAGES[s.id].biz}`).replace("</div>\n", "</div>\n")}
+        <div class="meta"><h3>${s.name}</h3><p>${s.desc}</p>
+          <div class="swatches" role="group" aria-label="Colour options for ${s.name}">${PALETTES.map((p, i) => `<button class="sw" type="button" data-sw="${s.id}" data-i="${i}" aria-pressed="${chosen === i}" title="${p.name}" aria-label="Show ${s.name} in ${p.name} colours">${p.c.map(c => `<span style="background:${c}"></span>`).join("")}</button>`).join("")}<button class="sw yours" type="button" data-sw="${s.id}" data-i="yours" aria-pressed="${chosen === "yours"}">Your colours</button></div>
+          <span class="for">Good for: ${s.for.map(f => FOR[f]).join(", ")}</span>
+          <div class="labtools"><button class="btn ${state.style === s.id ? "accent" : "ghost"}" type="button" data-style="${s.id}" aria-pressed="${state.style === s.id}">${state.style === s.id ? "Chosen" : "Use this style"}</button>
+          <button class="btn ghost" type="button" data-view="${s.id}">View full size</button></div></div>
+      </article>`;
+    }).join("");
+    fitAll(grid);
+  }
+  function openViewer(style, colours, tpl) {
+    const v = $("#viewer");
+    $("#viewer-title").textContent = `${style.name} style · ${PAGES[style.id].biz}`;
+    $("#viewer-page").innerHTML = frame(frontPage(style, colours, tpl), `${style.name} style front page, full size`);
+    v.hidden = false; fitAll(v); $("#viewer-close").focus();
+  }
+  $("#viewer-close").addEventListener("click", () => { $("#viewer").hidden = true; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $("#viewer").hidden = true; });
+  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
+    renderStyles(c.dataset.f);
+  }));
+  $("#style-grid").addEventListener("click", e => {
+    const sw = e.target.closest("[data-sw]");
+    if (sw) { cardPal[sw.dataset.sw] = sw.dataset.i === "yours" ? "yours" : +sw.dataset.i; renderStyles(document.querySelector('.chip[aria-pressed="true"]').dataset.f); return; }
+    const view = e.target.closest("[data-view]");
+    if (view) { const st = STYLES.find(x => x.id === view.dataset.view); openViewer(st, palOf(st)); return; }
+    const b = e.target.closest("[data-style]"); if (!b) return;
+    const st = STYLES.find(x => x.id === b.dataset.style);
+    state.style = st.id; state.c = palOf(st).slice(); save();
+    renderStyles(document.querySelector('.chip[aria-pressed="true"]').dataset.f); renderLab();
+    document.getElementById("lab").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  });
+
+  // ---------- colour lab ----------
+  $("#presets").innerHTML = PALETTES.map((p, i) => `<button class="preset" type="button" data-p="${i}" title="${p.name}" aria-label="Use the ${p.name} palette">${p.c.map(c => `<span style="background:${c}"></span>`).join("")}</button>`).join("");
+  $("#presets").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (b) { state.c = PALETTES[b.dataset.p].c.slice(); save(); renderLab(); } });
+  [1, 2, 3].forEach(n => {
+    $("#c" + n).addEventListener("input", e => { state.c[n - 1] = e.target.value; save(); renderLab(); });
+    $("#c" + n + "t").addEventListener("change", e => {
+      let v = e.target.value.trim(); if (!v.startsWith("#")) v = "#" + v;
+      if (hexOk(v)) { state.c[n - 1] = v.toLowerCase(); save(); }
+      renderLab();
+    });
+  });
+  $("#shuffle").addEventListener("click", () => {
+    const h = Math.floor(Math.random() * 360), dark = Math.random() < .25;
+    state.c = [hsl(h, 55 + Math.random() * 25, dark ? 70 : 32), dark ? hsl(h, 25, 8) : hsl(h, 30, 97), hsl((h + 150 + Math.random() * 60) % 360, 80, 58)];
+    save(); renderLab();
+  });
+  function renderLab() {
+    const style = STYLES.find(s => s.id === state.style) || STYLES[0];
+    state.c.forEach((c, i) => { $("#c" + (i + 1)).value = c; $("#c" + (i + 1) + "t").value = c.toUpperCase(); });
+    const [main, bg, acc] = state.c;
+    const checks = [
+      ["Text on background", contrast(inkFor(bg), bg), 4.5], ["Button text", contrast(onColour(main), main), 4.5],
+      ["Main colour on background", contrast(main, bg), 3], ["Accent stands out", contrast(acc, bg), 1.6]
+    ];
+    $("#checks").innerHTML = checks.map(([label, r, need]) => `<span class="check ${r >= need ? "pass" : "fail"}">${label} <b>${r.toFixed(1)}:1 ${r >= need ? "Easy to read" : "Too faint"}</b></span>`).join("");
+    $("#templates").innerHTML = TEMPLATES.map(t => `<div class="tpl">${frame(frontPage(style, state.c, t.id), `${t.name} template in your colours`)}
+      <div class="cap"><label><input type="radio" name="tpl" value="${t.id}" ${state.tpl === t.id ? "checked" : ""}> ${t.name}</label><button class="btn ghost" type="button" data-tview="${t.id}" style="padding:6px 14px;font-size:.85rem">View full size</button><p>${t.note}</p></div></div>`).join("");
+    fitAll($("#templates"));
+    $("#style-note").textContent = "Style: " + style.name;
+    summary();
+  }
+  $("#templates").addEventListener("click", e => { const b = e.target.closest("[data-tview]"); if (b) openViewer(STYLES.find(x => x.id === state.style) || STYLES[0], state.c, b.dataset.tview); });
+  $("#templates").addEventListener("change", e => { if (e.target.name === "tpl") { state.tpl = e.target.value; save(); summary(); } });
+
+  // ---------- quote ----------
+  const PACKS = [
+    { id: "starter", name: "Starter website", price: 395, weeks: "1 to 2 weeks", desc: "One page made for phones, contact form, tap-to-call and Google basics. 2 rounds of changes." },
+    { id: "business", name: "Business website", price: 895, weeks: "2 to 4 weeks", desc: "Up to 5 pages, Google Business Profile help, share previews and secure hosting setup. 3 rounds of changes." },
+    { id: "shop", name: "Online shop", price: 1595, weeks: "4 to 6 weeks", desc: "Everything in Business, plus a shop with up to 20 products, card payments and delivery options." }
+  ];
+  const ADDONS = [
+    { id: "logo", name: "Logo design", price: 150 }, { id: "copy", name: "Copywriting, per page", price: 60, per: "pages" },
+    { id: "booking", name: "Online booking", price: 200 }, { id: "seo", name: "Local Google setup", price: 150 },
+    { id: "photos", name: "Photo editing and stock images", price: 100 }, { id: "extra", name: "Extra pages", price: 120, per: "extra" }
+  ];
+  $("#packs").innerHTML = PACKS.map(p => `<label class="pack"><input type="radio" name="pack" value="${p.id}" ${state.pack === p.id ? "checked" : ""}>
+    <span><h3>${p.name}</h3><p>${p.desc}</p></span><span class="price">${money(p.price)}</span></label>`).join("");
+  $("#addons").innerHTML = ADDONS.map(a => `<label class="addon"><input type="checkbox" data-a="${a.id}" ${state.addons[a.id] ? "checked" : ""}><span>${a.name}</span>
+    ${a.per ? `<input type="number" min="1" max="20" value="${state.addons[a.id] || 1}" data-q="${a.id}" aria-label="How many">` : ""}<em>${money(a.price)}</em></label>`).join("");
+  $("#packs").addEventListener("change", e => { state.pack = e.target.value; save(); quote(); });
+  $("#addons").addEventListener("change", e => {
+    const id = e.target.dataset.a || e.target.dataset.q;
+    if (e.target.dataset.a) state.addons[id] = e.target.checked ? (+($(`[data-q="${id}"]`)?.value) || 1) : 0;
+    else if (state.addons[id]) state.addons[id] = Math.max(1, Math.min(20, +e.target.value || 1));
+    save(); quote();
+  });
+  $("#care").checked = state.care;
+  $("#care").addEventListener("change", e => { state.care = e.target.checked; save(); quote(); });
+  function quote() {
+    const p = PACKS.find(x => x.id === state.pack) || PACKS[1];
+    const lines = [[p.name, p.price]];
+    ADDONS.forEach(a => { const q = state.addons[a.id]; if (q) lines.push([a.name + (a.per ? ` × ${q}` : ""), a.price * (a.per ? q : 1)]); });
+    const total = lines.reduce((s, [, v]) => s + v, 0);
+    $("#q-total").textContent = money(total);
+    $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${money(v)}</dd>`).join("") +
+      `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Care plan</dt><dd>£35/month</dd>` : "");
+    $("#q-time").textContent = "Ready in " + p.weeks + " from your go-ahead";
+    state.total = total; summary();
+  }
+
+  // ---------- brief ----------
+  function summary() {
+    const style = STYLES.find(s => s.id === state.style) || STYLES[0];
+    $("#s-style").textContent = style.name;
+    ["#s1", "#s2", "#s3"].forEach((s, i) => $(s).style.background = state.c[i]);
+    $("#s-tpl").textContent = (TEMPLATES.find(t => t.id === state.tpl) || TEMPLATES[0]).name;
+    $("#s-pack").textContent = (PACKS.find(p => p.id === state.pack) || PACKS[1]).name;
+    $("#s-total").textContent = money(state.total || 895) + (state.care ? " + £35/month" : "");
+  }
+  const draft = store.get("brief") || {};
+  ["name", "biz", "email", "phone", "what", "look", "like", "when"].forEach(k => {
+    const el = $("#v-" + k); if (draft[k]) el.value = draft[k];
+    el.addEventListener("input", () => { draft[k] = el.value; store.set("brief", draft); });
+  });
+  async function post(url, data) {
+    if (!url) return false;
+    try { const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(data) }); return r.ok; }
+    catch { return false; }
+  }
+  $("#vision-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = k => $("#v-" + k).value.trim();
+    if (!f("name") || !f("biz") || !f("look")) { $("#v-err").textContent = "Please add your name, business name and how you'd like it to look."; return; }
+    if (!EMAIL.test(f("email"))) { $("#v-err").textContent = "Please check your email address."; return; }
+    $("#v-err").textContent = "";
+    const style = STYLES.find(s => s.id === state.style) || STYLES[0];
+    const brief = { type: "brief", name: f("name"), business: f("biz"), email: f("email"), phone: f("phone"), what: f("what"), look: f("look"),
+      inspiration: f("like"), when: f("when"), style: style.name, colours: { main: state.c[0], background: state.c[1], accent: state.c[2] },
+      template: $("#s-tpl").textContent, package: $("#s-pack").textContent, estimate: $("#s-total").textContent, sent: new Date().toISOString() };
+    const ok = await post(BRIEF_ENDPOINT, brief);
+    const text = `Website brief for ${brief.business}\nFrom: ${brief.name} (${brief.email}${brief.phone ? ", " + brief.phone : ""})\nWhat they do: ${brief.what || "-"}\nLook and feel: ${brief.look}\nSites they like: ${brief.inspiration || "-"}\nWhen: ${brief.when}\nStyle: ${brief.style}\nColours: ${brief.colours.main}, ${brief.colours.background}, ${brief.colours.accent}\nTemplate: ${brief.template}\nPackage: ${brief.package}\nEstimate: ${brief.estimate}`;
+    const done = $("#v-done"); done.hidden = false; done.className = "sent";
+    done.innerHTML = ok ? `<strong>Thanks, ${brief.name}. Your brief is with us.</strong><p>We'll reply to ${brief.email} with three designs in your colours.</p>`
+      : `<strong>Your brief is ready.</strong><p>Copy it and email it to <span class="addr">alfredw.lsx@gmail.com</span>, and we'll reply with three designs in your colours.</p><pre id="brief-text"></pre><button class="btn ghost" type="button" id="copy-brief">Copy brief</button>`;
+    if (!ok) {
+      $("#brief-text").textContent = text;
+      $("#copy-brief").addEventListener("click", async ev => {
+        try { await navigator.clipboard.writeText(text); ev.target.textContent = "Copied"; }
+        catch { const r = document.createRange(); r.selectNodeContents($("#brief-text")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); ev.target.textContent = "Selected: press Ctrl+C"; }
+      });
+    }
+  });
+
+  // ---------- email sign-up gate ----------
+  const EMAIL = /^[^\s@<>()",;:]+@([a-z0-9-]+\.)+[a-z]{2,}$/i;
+  const THROWAWAY = ["mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com", "temp-mail.org", "yopmail.com", "trashmail.com",
+    "sharklasers.com", "getnada.com", "dispostable.com", "maildrop.cc", "throwawaymail.com", "fakeinbox.com", "mintemail.com", "emailondeck.com"];
+  const TYPOS = { "gmial.com": "gmail.com", "gmai.com": "gmail.com", "gmail.co": "gmail.com", "gamil.com": "gmail.com", "hotmial.com": "hotmail.com",
+    "hotmail.co": "hotmail.co.uk", "outlok.com": "outlook.com", "yahooo.com": "yahoo.com", "icloud.co": "icloud.com" };
+  async function domainTakesMail(domain) {
+    // Asks public DNS whether the domain has a mail server. "unknown" if DNS can't be reached from here.
+    try {
+      const ask = async t => (await (await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${t}`, { signal: AbortSignal.timeout(5000) })).json());
+      const mx = await ask("MX");
+      if (mx.Status === 3) return "no";
+      if ((mx.Answer || []).some(a => a.type === 15 && !/^0 \.?$/.test(a.data))) return "yes";
+      const a = await ask("A");
+      return (a.Answer || []).length ? "yes" : "no";
+    } catch { return "unknown"; }
+  }
+  const gate = $("#gate");
+  if (!store.get("member")) { gate.hidden = false; document.documentElement.style.overflow = "hidden"; setTimeout(() => $("#gate-email").focus(), 50); }
+  $("#gate-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const err = $("#gate-err"), email = $("#gate-email").value.trim().toLowerCase(), domain = email.split("@")[1] || "";
+    if (!EMAIL.test(email)) { err.textContent = "That doesn't look like an email address. Check it and try again."; return; }
+    if (TYPOS[domain]) { err.textContent = `Did you mean ${email.split("@")[0]}@${TYPOS[domain]}? Please check the spelling.`; return; }
+    if (THROWAWAY.includes(domain)) { err.textContent = "Please use your real email address, not a temporary one."; return; }
+    $("#gate-go").disabled = true; err.textContent = "Checking your email address…";
+    const ok = await domainTakesMail(domain);
+    $("#gate-go").disabled = false;
+    if (ok === "no") { err.textContent = `We couldn't find an email service at ${domain}. Please check the address and try again.`; return; }
+    err.textContent = "";
+    const member = { email, marketing: $("#gate-consent").checked, joined: new Date().toISOString() };
+    store.set("member", member);
+    post(SIGNUP_ENDPOINT, { type: "signup", ...member });
+    if (!$("#v-email").value) { $("#v-email").value = email; draft.email = email; store.set("brief", draft); }
+    gate.hidden = true; document.documentElement.style.overflow = "";
+  });
+
+  renderStyles(); renderLab(); quote();
+})();
+</script>
+
+</html>
