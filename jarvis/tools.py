@@ -18,6 +18,7 @@ import active_outdoors
 import active_workout
 import agenda
 import alerts
+import alfred_mail
 import assistant_day
 import assistant_inbox
 import assistant_life
@@ -351,6 +352,7 @@ ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market,
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [station]  # the station world behind the HUD
 ABILITIES += [design, design_extract, skillscan]  # design libraries, design extraction and the skill scanner
+ABILITIES += [alfred_mail]  # Alfred's own email account
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, invoice
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
