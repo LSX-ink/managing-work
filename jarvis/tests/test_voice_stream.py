@@ -402,6 +402,23 @@ def test_spelling_and_letter_counts_are_instant():
     assert instant_answer("how do you spell my name", en) is None
 
 
+def test_a_voice_stopwatch_starts_laps_and_stops():
+    import timers
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    timers.stopwatch.clear()
+    assert instant_answer("what's the stopwatch at", en) == "There's no stopwatch running."
+    assert instant_answer("Alfred, start a stopwatch please", en) == "Stopwatch started."
+    timers.stopwatch["start"] -= 75  # 75 seconds later
+    assert instant_answer("how long has the stopwatch been running", en) == "1 minute 15 seconds on the stopwatch."
+    assert instant_answer("lap", en) == "Lap 1: 1 minute 15 seconds."
+    timers.stopwatch["start"] -= 30
+    assert instant_answer("lap", en) == "Lap 2: 30 seconds."
+    assert instant_answer("stop the stopwatch", en) == "Stopped at 1 minute 45 seconds after 2 laps."
+    assert not timers.stopwatch
+    assert instant_answer("start a stopwatch and play music", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
