@@ -434,6 +434,24 @@ def test_days_since_and_ages_are_worked_out_instantly():
     assert instant_answer("how old is someone born in 2030", en, now) is None
 
 
+def test_leap_years_month_lengths_and_week_numbers_are_instant():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-06 14:45", "%Y-%m-%d %H:%M")
+    assert instant_answer("is 2028 a leap year", en, now) == "2028 is a leap year."
+    assert instant_answer("is it a leap year?", en, now) == "2026 isn't a leap year."
+    assert instant_answer("is next year a leap year", en, now) == "Next year, 2027, isn't a leap year."
+    assert instant_answer("how many days in February", en, now) == "February 2026 has 28 days."
+    assert instant_answer("how many days are there in February 2028", en, now) == "February 2028 has 29 days."
+    assert instant_answer("how many days in this month", en, now) == "October has 31 days."
+    assert instant_answer("how many days left in the year", en, now) == "86 days left in the year, not counting today."
+    assert instant_answer("how many weeks left in the year", en, now) == "12 weeks and 2 days left in the year, not counting today."
+    assert instant_answer("what week number is it", en, now) == "It's week 41 of 2026."
+    assert instant_answer("what day of the year is it", en, now) == "Today is day 279 of 365."
+    assert instant_answer("how many days in my holiday", en, now) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
