@@ -114,3 +114,11 @@ def test_outlook_host_and_kinetic_business_email(s):
 
 def test_registered(s):
     assert "alfred_inbox" in {t["name"] for t in tools.client_tool_definitions(s)}
+
+
+def test_identity_is_in_alfreds_instructions(s, tmp_path):
+    import brain
+    prompt = brain.system_prompt(s)
+    assert "your own email address is alfred.lsx@gmail.com" in prompt and "TikTok, YouTube" in prompt
+    assert "Your identity" not in brain.system_prompt(replace(s, alfred_email_address=""))
+    assert Settings(memory_dir=str(tmp_path)).alfred_email_address  # set by default, even without .env
