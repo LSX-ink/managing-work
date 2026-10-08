@@ -97,6 +97,7 @@ import diy_projects
 import diy_room
 import dates_saved
 import design
+import design_extract
 import skillscan
 import docs_tools
 import docs_tools_forms
@@ -346,7 +347,7 @@ ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, 
 ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [station]  # the station world behind the HUD
-ABILITIES += [design, skillscan]  # design libraries and the skill scanner
+ABILITIES += [design, design_extract, skillscan]  # design libraries, design extraction and the skill scanner
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
