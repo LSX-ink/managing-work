@@ -452,6 +452,22 @@ def test_leap_years_month_lengths_and_week_numbers_are_instant():
     assert instant_answer("how many days in my holiday", en, now) is None
 
 
+def test_halves_primes_factorials_and_rounding_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what is half of 90", en) == "That's 45."
+    assert instant_answer("three quarters of 200", en) == "That's 150."
+    assert instant_answer("Alfred, what's twice 12?", en) == "That's 24."
+    assert instant_answer("is 97 a prime number", en) == "Yes, 97 is a prime number."
+    assert instant_answer("is 91 prime", en) == "No, 91 isn't prime. It's 7 times 13."
+    assert instant_answer("what's 7 factorial", en) == "That's 5,040."
+    assert instant_answer("round 3.14159 to 2 decimal places", en) == "That's 3.14."
+    assert instant_answer("round 1234 to the nearest hundred", en) == "That's 1,200."
+    assert instant_answer("round 4.2 up", en) == "That's 5."
+    assert instant_answer("half of my dinner", en) is None
+    assert instant_answer("factorial of 25", en) is None  # too long to say: Claude explains
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
