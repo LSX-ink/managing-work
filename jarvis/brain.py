@@ -727,7 +727,23 @@ def _seconds(amount: str, unit: str) -> float:
     return n * (3600 if unit.startswith("h") else 60 if unit.startswith("m") else 1)
 
 
+_WATCH = r"(?:the |a |my )?stop ?watch"
+_START_WATCH = re.compile(_NAME + r"(?:(?:start|begin|restart|reset|set) " + _WATCH + r"|" + _WATCH + r" (?:start|go))" + _END, re.I)
+_CHECK_WATCH = re.compile(_NAME + r"(?:how long (?:has|is|on) " + _WATCH + r"(?: been)?(?: running| going| on)?|"
+                          r"(?:check|what(?:'s| is)) " + _WATCH + r"(?: at| on| say| time)?|" + _WATCH + r" time)" + _END, re.I)
+_LAP_WATCH = re.compile(_NAME + r"(?:lap|split|lap time|take a lap|mark a lap)" + _END, re.I)
+_STOP_WATCH = re.compile(_NAME + r"(?:stop|end|finish|cancel|pause) " + _WATCH + _END, re.I)
+
+
 def _timer_answer(said: str, settings: Settings) -> str | None:
+    if _START_WATCH.match(said):
+        return timers.start_stopwatch()
+    if _CHECK_WATCH.match(said):
+        return timers.check_stopwatch()
+    if _STOP_WATCH.match(said):
+        return timers.stop_stopwatch()
+    if _LAP_WATCH.match(said):
+        return timers.lap_stopwatch()
     if m := _SET_TIMER.match(said):
         groups = [g for g in m.groups() if g]
         seconds = 1800 if not groups else _seconds(groups[0], groups[1])
@@ -800,7 +816,7 @@ _WHAT_HEARD = re.compile(_NAME + r"(?:what did (?:you|u) (?:just )?hear(?: me sa
 
 
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
-    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
+    """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = tidy_request(text)

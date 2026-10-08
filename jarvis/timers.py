@@ -26,6 +26,7 @@ class Timer:
 
 timers: dict[str, Timer] = {}
 on_break = False
+stopwatch: dict = {}  # {"start": monotonic seconds, "laps": [lap times]} while one is running
 
 
 def set_announcer(announce: Announce) -> None:
@@ -157,3 +158,34 @@ def run_tool(name: str, args: dict, settings: Settings) -> str:
     if name == "cancel_timer":
         return cancel_timer(args.get("label") or "")
     return take_break()
+
+
+def start_stopwatch(now: float | None = None) -> str:
+    restarted = bool(stopwatch)
+    stopwatch.clear()
+    stopwatch.update(start=time.monotonic() if now is None else now, laps=[])
+    return "Stopwatch restarted." if restarted else "Stopwatch started."
+
+
+def check_stopwatch(now: float | None = None) -> str:
+    if not stopwatch:
+        return "There's no stopwatch running."
+    return f"{spoken((time.monotonic() if now is None else now) - stopwatch['start'])} on the stopwatch."
+
+
+def lap_stopwatch(now: float | None = None) -> str:
+    if not stopwatch:
+        return "There's no stopwatch running."
+    total = (time.monotonic() if now is None else now) - stopwatch["start"]
+    lap = total - sum(stopwatch["laps"])
+    stopwatch["laps"].append(lap)
+    return f"Lap {len(stopwatch['laps'])}: {spoken(lap)}."
+
+
+def stop_stopwatch(now: float | None = None) -> str:
+    if not stopwatch:
+        return "There's no stopwatch running."
+    total = (time.monotonic() if now is None else now) - stopwatch["start"]
+    laps = len(stopwatch["laps"])
+    stopwatch.clear()
+    return f"Stopped at {spoken(total)}{f' after {laps} lap' + ('s' if laps != 1 else '') if laps else ''}."
