@@ -73,7 +73,8 @@ def tool_definitions() -> list[dict]:
                        "for you to look at; close shuts the window. Use it when the user wants something done on a "
                        "website or a page read that the quick page reader can't load. Never type passwords or card "
                        "details (tell the user to type those in the window themselves), and ask the user before any "
-                       "click that buys, pays, sends, posts or deletes something (then call again with confirmed).",
+                       "click that buys, pays, sends, posts or deletes something (then call again with confirmed). When a "
+                       "sign-up form asks for an email, use Alfred's own address from alfred_inbox, not the user's.",
         "input_schema": {
             "type": "object",
             "properties": {

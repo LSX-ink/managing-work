@@ -88,7 +88,9 @@ def next_id(rows: list[dict]) -> int:
 
 def business(settings: Settings) -> dict:
     found = load(settings, BUSINESS, {})
-    return {"name": "Kinetic Web Designs", "owner": "", "email": "", "phone": "", "website": "", "address": "",
+    if not found.get("email"):  # Alfred's own address is the business email until the user sets another
+        found = {**found, "email": settings.alfred_email_address}
+    return {"name": "Kinetic Web Designs", "owner": "", "phone": "", "website": "", "address": "",
             "bank_name": "", "sort_code": "", "account_number": "", "vat_number": "", **found}
 
 
