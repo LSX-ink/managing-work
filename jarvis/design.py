@@ -150,7 +150,8 @@ def tool_definitions() -> list[dict]:
                        "and mistakes to avoid. For a focused question, search one domain: style, color, typography, "
                        "google-fonts, ux (usability and accessibility rules), landing, product, icons, chart, gsap "
                        "(animation presets), react or web. Use stack for tips for a framework (html-tailwind, react, "
-                       "nextjs, flutter...). Keep queries to 2-5 words. Summarise the result in plain words.",
+                       "nextjs, flutter...). Keep queries to 2-5 words. Summarise the result in plain words. To match "
+                       "a site the user likes, run extract_design_system on it first.",
         "input_schema": {
             "type": "object",
             "properties": {
