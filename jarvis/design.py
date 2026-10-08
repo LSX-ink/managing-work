@@ -186,7 +186,9 @@ def tool_definitions() -> list[dict]:
                        "video-animation.md; --niji and --sref only work in Midjourney), higgsfield-anime "
                        "(fill-in template for Higgsfield). Anthropic: frontend-design (a distinctive look for a new page or "
                        "app: a clear aesthetic direction, bold typography and colour, nothing templated; read it "
-                       "first when building or restyling a website). New libraries dropped into skills/ appear here too. Call "
+                       "first when building or restyling a website), theme-factory (10 ready-made colour and font themes for "
+                       "pages, slides and posters; the themes are its files, e.g. file 'ocean-depths.md', "
+                       "'midnight-galaxy.md'; or make a custom one). New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",
