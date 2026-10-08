@@ -1,6 +1,7 @@
 """Jarvis's brain: a Claude conversation with a manual tool-use loop."""
 
 import asyncio
+import calendar
 import datetime as dt
 import json
 import re
@@ -609,6 +610,56 @@ def _since_and_age(said: str, today: dt.date) -> str | None:
     return None
 
 
+_LEAP = re.compile(_NAME + r"is (?:(?P<y>\d{4})|(?P<rel>it|this year|next year|last year)) (?:a )?leap year" + _END, re.I)
+_DAYS_IN = re.compile(_NAME + r"how many days (?:are there |is there |are |is )?in (?:the month of )?(?:(?P<this>this month|the month|"
+                      r"this year|the year|next month)|" + _MONTH + r")(?: (?P<y>\d{4}))?" + _END, re.I)
+_DAYS_LEFT = re.compile(_NAME + r"how many (?P<unit>days|weeks) (?:are )?(?:left|remaining|to go) (?:in|of|until the end of) "
+                        r"(?:this|the) (?P<span>year|month)" + _END, re.I)
+_WEEK_NO = re.compile(_NAME + r"(?:what(?:'s| is) (?:the |this )?week number|what week (?:number )?(?:of the year )?is (?:it|this)"
+                      r"(?: of the year)?|which week (?:of the year )?is (?:it|this))(?: today| now)?" + _END, re.I)
+_DAY_OF_YEAR = re.compile(_NAME + r"what day of the year is (?:it|today)" + _END, re.I)
+
+
+def _calendar_facts(said: str, today: dt.date) -> str | None:
+    """'Is 2028 a leap year?', 'how many days in February?', 'what week number is it?', 'how many days left this year?'"""
+    if m := _LEAP.match(said):
+        rel = (m.group("rel") or "").lower()
+        year = int(m.group("y")) if m.group("y") else today.year + {"next year": 1, "last year": -1}.get(rel, 0)
+        verb = ("was" if year < today.year else "is") + ("" if calendar.isleap(year) else "n't")
+        return f"{year} {verb} a leap year." if m.group("y") or rel in ("it", "this year") \
+            else f"{rel.capitalize()}, {year}, {verb} a leap year."
+    if m := _DAYS_IN.match(said):
+        year = int(m.group("y") or today.year)
+        this = (m.group("this") or "").lower()
+        if this.endswith("year"):
+            return f"{year} has {366 if calendar.isleap(year) else 365} days."
+        if this:
+            month = today.month + (this == "next month")
+            year, month = (year + 1, 1) if month == 13 else (year, month)
+        else:
+            word = m.group("mon").lower()
+            month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+        days = calendar.monthrange(year, month)[1]
+        when = f" {year}" if m.group("y") or year != today.year or month == 2 else ""
+        return f"{_MONTH_NAMES[month - 1].title()}{when} has {days} days."
+    if m := _DAYS_LEFT.match(said):
+        if m.group("span").lower() == "year":
+            end, span = dt.date(today.year, 12, 31), "the year"
+        else:
+            end, span = dt.date(today.year, today.month, calendar.monthrange(today.year, today.month)[1]), f"{today:%B}"
+        days = (end - today).days
+        if m.group("unit").lower() == "weeks":
+            extra = f" and {days % 7} day{'s' if days % 7 != 1 else ''}" if days % 7 else ""
+            return f"{days // 7} week{'s' if days // 7 != 1 else ''}{extra} left in {span}, not counting today."
+        return f"{days} day{'s' if days != 1 else ''} left in {span}, not counting today."
+    if _WEEK_NO.match(said):
+        return f"It's week {today.isocalendar()[1]} of {today.isocalendar()[0]}."
+    if _DAY_OF_YEAR.match(said):
+        n = today.timetuple().tm_yday
+        return f"Today is day {n} of {calendar.isleap(today.year) and 366 or 365}."
+    return None
+
+
 def _date_maths(said: str, today: dt.date) -> str | None:
     """'What's the date in 2 weeks?' and 'what day is the 25th of December?': worked out from the calendar on the spot."""
     said = spoken_numbers(said)
@@ -677,7 +728,8 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
 def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
-    if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)) is not None:
+    if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)
+                  or _calendar_facts(said, today)) is not None:
         return found
     if m := _WORLD_TIME.match(said):
         name = dates.CITY_ZONES.get(m.group("where").strip().lower().removeprefix("the "))
