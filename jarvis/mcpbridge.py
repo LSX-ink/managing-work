@@ -18,6 +18,7 @@ import os
 import shutil
 import subprocess
 import threading
+import time
 from concurrent.futures import Future
 from concurrent.futures import TimeoutError as FutureTimeout
 from pathlib import Path
@@ -30,6 +31,7 @@ PROTOCOL = "2025-06-18"
 START_SECONDS = 180  # the first start can download the server (npx -y ...) or wait for a browser sign-in
 REMOTES = {"higgsfield": "https://mcp.higgsfield.ai/mcp"}  # online MCPs Alfred always has, unless the app lists them
 CALL_SECONDS = 120
+WAIT_SECONDS = 900  # Higgsfield's jobs_wait polls here until the videos are done, so Claude asks only once
 MAX_TEXT = 8000
 MAX_TOOLS_TEXT = 12000
 
@@ -48,6 +50,8 @@ def tool_definitions() -> list[dict]:
                        "runs one; restart (server) restarts a stuck one. Check tools first if you don't know a tool's "
                        "inputs. Ask the user before a tool that sends, buys, posts or deletes something, and before any "
                        "Higgsfield generation (each one spends the user's Higgsfield credits; check balance first). "
+                       "After a Higgsfield generation, call jobs_wait once with its job ids: it waits until they "
+                       "are all done (up to 15 minutes), so never call it again to check. "
                        "The first Higgsfield use opens the browser to sign in.",
         "input_schema": {
             "type": "object",
@@ -278,6 +282,41 @@ def result_content(server: Server, result: dict):
     return [*images, {"type": "text", "text": text}] if images else text
 
 
+def wait_state(result: dict) -> tuple[bool, float] | None:
+    """(all done?, seconds to wait before asking again) from a Higgsfield jobs_wait result, or None if unclear."""
+    data = result.get("structuredContent")
+    if not isinstance(data, dict):
+        for part in result.get("content") or []:
+            if part.get("type") == "text":
+                try:
+                    data = json.loads(part.get("text", ""))
+                except ValueError:
+                    continue
+                break
+    if not isinstance(data, dict) or not isinstance(data.get("all_terminal"), bool):
+        return None
+    try:
+        pause = float(data.get("poll_after_seconds") or 5)
+    except (TypeError, ValueError):
+        pause = 5.0
+    return data["all_terminal"], min(max(pause, 1.0), 30.0)
+
+
+def wait_for_jobs(server: Server, arguments: dict, limit: float = WAIT_SECONDS, sleep=time.sleep) -> dict:
+    """Keep asking Higgsfield until every job has finished, instead of Claude asking again each round.
+
+    Each round Claude asks costs a full resend of the conversation; waiting here costs nothing. Stops when the jobs
+    are done, on an error, when the answer can't be read, or after `limit` seconds, and returns the last answer."""
+    arguments = {**arguments, "timeout_seconds": 15}
+    deadline = time.monotonic() + limit
+    while True:
+        result = server.request("tools/call", {"name": "jobs_wait", "arguments": arguments}, CALL_SECONDS)
+        state = None if result.get("isError") else wait_state(result)
+        if state is None or state[0] or time.monotonic() + state[1] >= deadline:
+            return result
+        sleep(state[1])
+
+
 def run_tool(name: str, args: dict, settings: Settings, http=None):
     if not enabled():
         return "The MCP bridge is switched off (JARVIS_MCP=false in .env)."
@@ -304,6 +343,9 @@ def run_tool(name: str, args: dict, settings: Settings, http=None):
         if tool not in {t["name"] for t in server.tools}:
             raise ValueError(f"{server.name} has no tool '{tool}'. Its tools are: "
                              f"{', '.join(t['name'] for t in server.tools)}.")
-        result = server.request("tools/call", {"name": tool, "arguments": args.get("arguments") or {}}, CALL_SECONDS)
+        arguments = args.get("arguments") or {}
+        if server.name.lower() == "higgsfield" and tool == "jobs_wait":
+            return result_content(server, wait_for_jobs(server, arguments))
+        result = server.request("tools/call", {"name": tool, "arguments": arguments}, CALL_SECONDS)
         return result_content(server, result)
     raise ValueError(f"Pick one of: {', '.join(ACTIONS)}.")

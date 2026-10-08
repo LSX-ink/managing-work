@@ -280,7 +280,10 @@ def request_options(settings: Settings, effort: str | None = None) -> dict:
                    "name or plain key words, then use it): " + ", ".join(t["name"] for t in deferred) + ". "
                    "Never tell the user you can't do something, or that you lack a tool, until you've checked this "
                    "list and searched. When a request needs several abilities, combine them to deliver the result.")
-    opts: dict = {"model": model, "max_tokens": 16000, "system": system, "tools": tool_list}
+    # Cache the conversation too, not just the tools: every tool round resends the whole history, and cached
+    # tokens cost about a tenth. The breakpoint moves to the newest message on its own each request.
+    opts: dict = {"model": model, "max_tokens": 16000, "system": system, "tools": tool_list,
+                  "cache_control": {"type": "ephemeral"}}
     if not model.startswith(_NO_EFFORT):
         opts["output_config"] = {"effort": effort or settings.effort}
     if model.startswith(_ADAPTIVE_THINKING):
