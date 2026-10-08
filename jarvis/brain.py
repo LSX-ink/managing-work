@@ -4,6 +4,7 @@ import asyncio
 import calendar
 import datetime as dt
 import json
+import math
 import re
 import time
 from pathlib import Path
@@ -492,6 +493,55 @@ def _maths_answer(said: str) -> str | None:
     return f"That's {value}."
 
 
+_NUM = r"(?P<n>-?\d[\d,]*(?:\.\d+)?)"
+_FRACTION = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?:(?P<part>half|a half|one half|a third|one third|"
+                       r"a quarter|one quarter|two thirds|2 thirds|three quarters|3 quarters|a fifth|a tenth|double|twice|triple|treble) (?:of )?)"
+                       + _NUM + _END, re.I)
+_PRIME = re.compile(_NAME + r"is " + _NUM + r" (?:a )?prime(?: number)?" + _END, re.I)
+_FACTORIAL = re.compile(_NAME + r"(?:what(?:'s| is) )?(?:" + _NUM + r" factorial|(?:the )?factorial of " + _NUM.replace("<n>", "<n2>") + r")" + _END, re.I)
+_ROUND = re.compile(_NAME + r"(?:what(?:'s| is) )?round(?:ed)? " + _NUM + r"(?: to (?:the nearest (?P<nearest>whole number|ten|10|hundred|100|thousand|1000)|"
+                    r"(?P<dp>\d+|one|two|three|four) (?:decimal places?|dp))| up| down)?" + _END, re.I)
+_PARTS = {"half": 0.5, "a half": 0.5, "one half": 0.5, "a third": 1 / 3, "one third": 1 / 3, "a quarter": 0.25,
+          "one quarter": 0.25, "two thirds": 2 / 3, "2 thirds": 2 / 3, "three quarters": 0.75, "3 quarters": 0.75, "a fifth": 0.2, "a tenth": 0.1,
+          "double": 2, "twice": 2, "triple": 3, "treble": 3}
+
+
+def _number_facts(said: str) -> str | None:
+    """'Half of 90', 'is 97 a prime number?', 'what's 7 factorial?', 'round 3.14159 to 2 decimal places'."""
+    said = spoken_numbers(said)
+    if m := _FRACTION.match(said):
+        value = float(m.group("n").replace(",", "")) * _PARTS[m.group("part").lower()]
+        return f"That's {calcmaths.fmt(round(value, 4))}."
+    if m := _PRIME.match(said):
+        text = m.group("n").replace(",", "")
+        if not text.lstrip("-").isdigit() or len(text) > 13:
+            return None
+        n = int(text)
+        if n < 2:
+            return f"No, {n:,} isn't a prime number."
+        factor = next((f for f in range(2, int(n ** 0.5) + 1) if n % f == 0), None)
+        return f"Yes, {n:,} is a prime number." if factor is None \
+            else f"No, {n:,} isn't prime. It's {factor:,} times {n // factor:,}."
+    if m := _FACTORIAL.match(said):
+        text = (m.group("n") or m.group("n2")).replace(",", "")
+        if not text.isdigit() or int(text) > 20:
+            return None  # too big to say aloud: Claude explains
+        return f"That's {math.factorial(int(text)):,}."
+    if m := _ROUND.match(said):
+        value = float(m.group("n").replace(",", ""))
+        if m.group("nearest"):
+            step = {"whole number": 1, "ten": 10, "hundred": 100, "thousand": 1000}.get(m.group("nearest").lower()) \
+                or int(m.group("nearest"))
+            return f"That's {calcmaths.fmt(float(math.floor(value / step + 0.5) * step))}."
+        if m.group("dp"):
+            places = {"one": 1, "two": 2, "three": 3, "four": 4}.get(m.group("dp").lower()) or int(m.group("dp"))
+            return f"That's {round(value, places):,.{places}f}." if places <= 10 else None
+        word = said.lower().rstrip("?.! ").split()[-1]
+        rounded = math.ceil(value) if word == "up" else math.floor(value) if word == "down" else math.floor(value + 0.5)
+        return f"That's {rounded:,}."
+    return None
+
+
 _CASH = r"(?P<cur>[£$€])?(?P<amt>\d[\d,]*(?:\.\d{1,2})?)(?: ?(?P<word>pounds?|quid|dollars?|euros?|bucks))?"
 _PERCENT = r"(?P<pc>\d+(?:\.\d+)?) ?(?:%|per ?cent)"
 _DISCOUNT = re.compile(_NAME + r"(?:what(?:'s| is)|how much is|work out|calculate) " + _PERCENT + r" off (?:of )?" + _CASH + _END, re.I)
@@ -941,7 +991,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := _calendar_answer(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said)
             or _units_answer(said) or _fun_answer(said) or _spelling_answer(said))
 
 
