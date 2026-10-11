@@ -606,6 +606,42 @@ def _units_answer(said: str) -> str | None:
 
 _WORLD_TIME = re.compile(_NAME + r"(?:what(?:'s| is) the time|what time is it|what's the time now|time) in (?P<where>[a-z .]+?)"
                          r"(?: (?:right )?now)?" + _END, re.I)
+_TIME_DIFF = re.compile(_NAME + r"(?:what(?:'s| is) the |how big is the |how much is the )?time difference (?:between (?P<a>[a-z .]+?) and "
+                        r"|(?:from|with|to) (?:here (?:to|and) )?)(?P<b>[a-z .]+?)" + _END, re.I)
+_AHEAD = re.compile(_NAME + r"how (?:many hours|far) (?:ahead|behind) (?:is|are) (?P<b>[a-z .]+?)(?: (?:of|from|than) (?P<a>[a-z .]+?))?(?: right now| now)?" + _END, re.I)
+
+
+def _offset_hours(where: str | None) -> tuple[float, str] | None:
+    """Hours ahead of UTC right now, and the place's spoken name; None for 'here'."""
+    from zoneinfo import ZoneInfo
+    if where is None or where.strip().lower() in ("here", "me", "us", "home", "my time"):
+        offset = dt.datetime.now().astimezone().utcoffset()
+        return offset.total_seconds() / 3600, "here"
+    name = dates.CITY_ZONES.get(where.strip().lower().removeprefix("the "))
+    if not name:
+        return None
+    return dt.datetime.now(ZoneInfo(name)).utcoffset().total_seconds() / 3600, where.strip().title()
+
+
+def _time_difference(said: str) -> str | None:
+    """'What's the time difference between London and Tokyo?', 'how many hours ahead is Sydney?'"""
+    m = _TIME_DIFF.match(said) or _AHEAD.match(said)
+    if not m:
+        return None
+    try:
+        a, b = _offset_hours(m.group("a")), _offset_hours(m.group("b"))
+    except Exception:  # no time zone data on this PC: Claude's tool asks the internet
+        return None
+    if not a or not b:
+        return None  # somewhere less common: Claude looks it up
+    gap = b[0] - a[0]
+    hours = f"{abs(gap):g} hour{'s' if abs(gap) != 1 else ''}"
+    if gap == 0:
+        return f"{b[1]} and {a[1]} are on the same time right now." if a[1] != "here" else f"{b[1]} is on the same time as here right now."
+    than = (f" of {a[1]}" if gap > 0 else f" {a[1]}") if a[1] != "here" else ""
+    return f"{b[1]} is {hours} {'ahead' if gap > 0 else 'behind'}{than}{' right now' if not than else ''}."
+
+
 _FIXED_DAYS = {"christmas": (12, 25), "christmas day": (12, 25), "christmas eve": (12, 24), "boxing day": (12, 26),
                "new year": (1, 1), "new year's": (1, 1), "new year's day": (1, 1), "new year's eve": (12, 31),
                "halloween": (10, 31), "valentine's day": (2, 14), "valentines day": (2, 14), "valentine's": (2, 14),
@@ -793,6 +829,8 @@ def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
     if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)
                   or _calendar_facts(said, today)) is not None:
+        return found
+    if (found := _time_difference(said)) is not None:
         return found
     if m := _WORLD_TIME.match(said):
         name = dates.CITY_ZONES.get(m.group("where").strip().lower().removeprefix("the "))
