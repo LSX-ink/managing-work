@@ -468,6 +468,20 @@ def test_halves_primes_factorials_and_rounding_are_instant():
     assert instant_answer("factorial of 25", en) is None  # too long to say: Claude explains
 
 
+def test_time_differences_between_cities_are_instant(monkeypatch):
+    import brain
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    offsets = {"london": 1, "tokyo": 9, "new york": -4, "paris": 2}
+    monkeypatch.setattr(brain, "_offset_hours", lambda where: (0, "here") if where is None else
+                        ((offsets[where.lower()], where.title()) if where.lower() in offsets else None))
+    assert instant_answer("what's the time difference between London and Tokyo", en) == "Tokyo is 8 hours ahead of London."
+    assert instant_answer("time difference between London and New York", en) == "New York is 5 hours behind London."
+    assert instant_answer("how many hours ahead is Paris of London", en) == "Paris is 1 hour ahead of London."
+    assert instant_answer("how far behind is New York", en) == "New York is 4 hours behind right now."
+    assert instant_answer("time difference between London and Atlantis", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
