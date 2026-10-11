@@ -99,6 +99,7 @@ import diy_room
 import dates_saved
 import design
 import design_extract
+import design_contrast
 import kinetic_find
 import kinetic_invoices
 import kinetic_sales
@@ -351,7 +352,7 @@ ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, 
 ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [station]  # the station world behind the HUD
-ABILITIES += [design, design_extract, skillscan]  # design libraries, design extraction and the skill scanner
+ABILITIES += [design, design_extract, design_contrast, skillscan]  # design libraries, extraction, contrast checks, skill scanner
 ABILITIES += [alfred_mail]  # Alfred's own email account
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, invoice
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
