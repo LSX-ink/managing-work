@@ -327,7 +327,7 @@ def quote_status(settings: Settings, args: dict) -> str:
 
 # ---- domain owner details ----------------------------------------------------------
 
-OWNER_FIELDS = [("domain", "Domain name"), ("owner_name", "Owner's full name or business name"),
+OWNER_FIELDS = [("domain", "Domain name"), ("owner_name", "Full name or business name"),
                 ("owner_address", "Postal address"), ("owner_email", "Email"), ("owner_phone", "Phone number")]
 
 
@@ -361,9 +361,10 @@ def domain_owner(settings: Settings, args: dict) -> screen.Shown:
     missing = [label.lower() for k, label in OWNER_FIELDS[1:] if not rec.get(k)]
     domain = rec.get("domain") or "your new domain name"
     if missing or not rec.get("owner_ok"):
-        ask = ("Hi, to register " + domain + " so that it legally belongs to you, I need "
-               + (", ".join(missing) if missing else "nothing else") + ". Please also reply \"Yes, register "
-               + domain + " in my name.\" I'll only use these details for your domain.")
+        need = ", ".join(missing[:-1]) + " and " + missing[-1] if len(missing) > 1 else "".join(missing)
+        ask = (f"Hi, I'll register {domain} so that it legally belongs to you. "
+               + (f"Please send me your {need}, and reply" if missing else "Please reply")
+               + f" \"Yes, register {domain} in my name.\" I'll only use these details for your domain.")
         body = "\n".join(lines) + "\n\nMessage to send them:\n" + ask
         text = (f"{name}'s domain owner details: {sum(1 for k, _ in OWNER_FIELDS if rec.get(k))} of "
                 f"{len(OWNER_FIELDS)} saved" + ("" if rec.get("owner_ok") else ", and their OK is still needed")

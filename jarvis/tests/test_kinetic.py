@@ -199,7 +199,8 @@ def test_domain_owner_details_after_a_quote_is_accepted(s):
     assert "2 of 5 saved" in shown and "OK is still needed" in shown
     body = shown.card["text"]
     assert "✓ Domain name: salscafe.co.uk" in body and "○ Postal address: still needed" in body
-    assert 'reply "Yes, register salscafe.co.uk in my name."' in body and "postal address, email, phone number" in body
+    assert 'reply "Yes, register salscafe.co.uk in my name."' in body
+    assert "send me your postal address, email and phone number" in body
     with pytest.raises(ValueError, match="email address"):
         sales(s, action="domain_owner", client="Sal's Cafe", owner_email="not-an-email")
     done = sales(s, action="domain_owner", client="Sal's Cafe", owner_address="1 High St, Stockport",
