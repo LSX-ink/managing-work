@@ -30,6 +30,11 @@ IMAP_HOSTS = {
 @dataclass(frozen=True)
 class Settings:
     model: str = os.getenv("JARVIS_MODEL", "claude-opus-5")
+    # Backup route when Claude itself fails (limits, credit, outages): OmniRoute's address, its API key, and the
+    # model or combo it should use. Empty address: no backup.
+    omniroute_url: str = os.getenv("JARVIS_OMNIROUTE_URL", "").strip()
+    omniroute_key: str = os.getenv("JARVIS_OMNIROUTE_KEY", "").strip()
+    omniroute_model: str = os.getenv("JARVIS_OMNIROUTE_MODEL", "auto").strip()
     effort: str = os.getenv("JARVIS_EFFORT", "low")
     # auto: more thought for harder questions, JARVIS_EFFORT for small talk; low, medium or high fixes it
     thinking: str = os.getenv("JARVIS_THINKING", "auto").strip().lower()

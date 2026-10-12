@@ -65,6 +65,7 @@ Open <http://127.0.0.1:8340>, click the orb, and allow the microphone. Jarvis gr
 | `JARVIS_MODEL` | `claude-opus-5` | Any Claude model. `claude-haiku-4-5` is cheaper and faster, but less capable. |
 | `JARVIS_EFFORT` | `low` | Thinking effort. `low` keeps voice replies fast. |
 | `JARVIS_THINKING` | `auto` | How hard he thinks per question. `auto` keeps small talk at `JARVIS_EFFORT` and gives harder asks (plans, comparisons, money, code, several steps) `medium` or `high`. `low`, `medium` or `high` fixes it for every question. Newer models also think before answering (adaptive thinking); none of it is read aloud |
+| `JARVIS_OMNIROUTE_URL` / `JARVIS_OMNIROUTE_KEY` / `JARVIS_OMNIROUTE_MODEL` | (empty) / (empty) / `auto` | Backup through [OmniRoute](https://github.com/diegosouzapw/OmniRoute), e.g. `http://localhost:20128`. When Claude fails (limit reached, no credit, key refused, Anthropic down or busy) the request goes through OmniRoute instead, and Alfred stays there for 5 minutes. The key comes from OmniRoute's API Keys page; the model is any model or combo OmniRoute knows. Backup AIs answer without Claude's own extras (its web search, tool search, thinking) and only see the abilities already loaded |
 | `ELEVENLABS_API_KEY` | (empty) | Optional, for a better voice. When empty, the browser's voice is used. |
 | `ELEVENLABS_VOICE_ID` | George | Any ElevenLabs voice ID |
 | `ELEVENLABS_MODEL` | (auto) | Empty picks `eleven_turbo_v2_5` for languages it speaks, otherwise `eleven_v3` |

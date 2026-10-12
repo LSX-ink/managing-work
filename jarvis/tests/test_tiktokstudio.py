@@ -1774,7 +1774,7 @@ def test_lore_scenes_get_a_third_shot_and_the_storyteller_voice(s, tmp_path, mon
     script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
     lore = cs.load(s)["accounts"][0]
     asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
-    assert [len(r) for r in rendered] == [3, 2]  # the picture changes every couple of seconds
+    assert sorted(len(r) for r in rendered) == [2, 3]  # the picture changes every couple of seconds; scenes render in parallel
     assert {size for _, size in asked} == {(cv.W, cv.H)} and len(asked) == 5
     assert voices == ["en-US-AndrewMultilingualNeural"] * 2
     rendered.clear()
