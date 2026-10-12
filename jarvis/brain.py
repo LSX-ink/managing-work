@@ -719,6 +719,32 @@ _WEEK_NO = re.compile(_NAME + r"(?:what(?:'s| is) (?:the |this )?week number|wha
 _DAY_OF_YEAR = re.compile(_NAME + r"what day of the year is (?:it|today)" + _END, re.I)
 
 
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+_DATE_OF_DAY = re.compile(_NAME + r"(?:what(?:'s| is) the date|what date is it|what date is|what's the date|when is|when's|what date will it be|(?P<was>what was the date|what date was))"
+                          r"(?: on)? (?P<which>this |next |last |coming |this coming )?(?P<day>" + "|".join(_WEEKDAYS)
+                          + r")(?P<week> week| after next)?" + _END, re.I)
+_YESTERDAY = re.compile(_NAME + r"(?:what was the date yesterday|what was yesterday's date|what day was (?:it )?yesterday|"
+                        r"what was yesterday)" + _END, re.I)
+
+
+def _weekday_date(said: str, today: dt.date) -> str | None:
+    """'What's the date on Friday?', 'when is next Monday?', 'what was the date yesterday?'"""
+    if _YESTERDAY.match(said):
+        t = today - dt.timedelta(days=1)
+        return f"Yesterday was {t:%A} the {_ordinal(t.day)} of {t:%B}."
+    if not (m := _DATE_OF_DAY.match(said)):
+        return None
+    which = (m.group("which") or "").strip().lower()
+    ahead = (_WEEKDAYS.index(m.group("day").lower()) - today.weekday()) % 7
+    if which == "last" or (m.group("was") and not which):
+        t = today - dt.timedelta(days=(7 - ahead) % 7 or 7)
+        return f"Last {t:%A} was the {_ordinal(t.day)} of {t:%B}."
+    t = today + dt.timedelta(days=ahead or 7)  # "Friday" on a Friday means next week's
+    if (m.group("week") or "").strip().lower() == "after next":
+        t += dt.timedelta(days=7)
+    return f"{t:%A} is the {_ordinal(t.day)} of {t:%B}{f' {t.year}' if t.year != today.year else ''}."
+
+
 def _calendar_facts(said: str, today: dt.date) -> str | None:
     """'Is 2028 a leap year?', 'how many days in February?', 'what week number is it?', 'how many days left this year?'"""
     if m := _LEAP.match(said):
@@ -828,7 +854,7 @@ def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
     if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)
-                  or _calendar_facts(said, today)) is not None:
+                  or _calendar_facts(said, today) or _weekday_date(said, today)) is not None:
         return found
     if (found := _time_difference(said)) is not None:
         return found
