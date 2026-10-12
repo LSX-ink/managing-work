@@ -216,6 +216,46 @@ nav a:hover { color: var(--accent); }
 .fp.s-studio .fserv div { background: none; border-top: 2px solid var(--m-ink); border-radius: 0; padding-inline: 0; }
 .fp.s-studio .fserv b { display: none; }
 .fp.s-studio .fquote { border-left: 0; border-top: 2px solid var(--m-ink); background: none; border-radius: 0; padding-inline: 0; }
+/* Illustrated scenes inside the style previews (one per business type) */
+.fp .fart.has-scene::before, .fp .fart.has-scene::after { display: none; }
+.fp .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fp .scene .m { fill: var(--m-main); } .fp .scene .a { fill: var(--m-accent); } .fp .scene .k { fill: var(--m-ink); }
+.fp .scene .b { fill: var(--m-bg); } .fp .scene .cd { fill: var(--card); }
+.fp .scene .dk { fill: color-mix(in srgb, var(--m-main) 45%, #000); }
+.fp .scene .lt { fill: color-mix(in srgb, var(--m-main) 35%, #fff); }
+.fp .scene .steel { fill: #c9d0d8; } .fp .scene .steel2 { fill: #8b949e; }
+/* tool hire: digger arm digs, mixer drum turns */
+.fp .scene .arm { transform-origin: 150px 182px; animation: k-dig 3.2s ease-in-out infinite; }
+.fp .scene .drum { transform-origin: 322px 186px; animation: k-spin 3.5s linear infinite; }
+.fp .scene .dust { animation: k-dust 3.2s ease-out infinite; transform-origin: 262px 246px; }
+@keyframes k-dig { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(7deg); } }
+@keyframes k-spin { to { transform: rotate(360deg); } }
+@keyframes k-dust { 0%, 45% { opacity: 0; transform: scale(.4); } 60% { opacity: .7; } 100% { opacity: 0; transform: scale(1.4) translateY(-8px); } }
+/* coffee: steam rises, espresso drips */
+.fp .scene .steam path { fill: none; stroke: var(--m-bg); stroke-width: 7; stroke-linecap: round; opacity: 0; animation: k-steam 3s ease-in-out infinite; }
+.fp .scene .steam path:nth-child(2) { animation-delay: 1s; } .fp .scene .steam path:nth-child(3) { animation-delay: 2s; }
+@keyframes k-steam { 0% { opacity: 0; transform: translateY(14px); } 35% { opacity: .85; } 100% { opacity: 0; transform: translateY(-26px); } }
+.fp .scene .drip { animation: k-drip 1.4s ease-in infinite; }
+@keyframes k-drip { 0% { transform: translateY(0); opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(34px); opacity: 0; } }
+/* barbers: pole stripes climb, clippers buzz, neon flickers */
+.fp .scene .stripes { animation: k-pole 1.6s linear infinite; }
+@keyframes k-pole { from { transform: translateY(0); } to { transform: translateY(-36px); } }
+.fp .scene .clip { animation: k-buzz .18s steps(2) infinite; transform-origin: 255px 95px; }
+@keyframes k-buzz { 0% { transform: rotate(-24deg) translate(0, 0); } 100% { transform: rotate(-24deg) translate(1.5px, -1px); } }
+.fp .scene .neon { fill: none; stroke: var(--m-accent); stroke-width: 1.6; font: 800 22px var(--m-display); letter-spacing: 2px;
+  filter: drop-shadow(0 0 6px var(--m-accent)); animation: k-flicker 4s linear infinite; }
+@keyframes k-flicker { 0%, 18%, 22%, 60%, 100% { opacity: 1; } 20%, 61% { opacity: .35; } }
+/* wigs: sparkles twinkle, tags sway */
+.fp .scene .spark { animation: k-twinkle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.fp .scene .spark:nth-of-type(2n) { animation-delay: .8s; } .fp .scene .spark:nth-of-type(3n) { animation-delay: 1.6s; }
+@keyframes k-twinkle { 0%, 100% { opacity: .2; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+.fp .scene .tag { transform-box: fill-box; transform-origin: top center; animation: k-sway 3s ease-in-out infinite; }
+@keyframes k-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+.fp.s-night .fart.has-scene .fbadge { left: auto; top: auto; right: 18px; bottom: 18px; }
+.fp.s-playful .fart.has-scene .fbadge { right: 44px; top: 26px; }
+.fp .fart.has-scene { background: linear-gradient(160deg, color-mix(in srgb, var(--m-main) 70%, #fff) 0%, var(--m-main) 55%, color-mix(in srgb, var(--m-main) 60%, #000) 100%); }
+.fp.s-elegant .fart.has-scene { height: 230px; background: linear-gradient(180deg, color-mix(in srgb, var(--m-accent) 22%, var(--m-bg)), color-mix(in srgb, var(--m-main) 10%, var(--m-bg))); }
+.fp.s-night .fart.has-scene { background: radial-gradient(circle at 70% 20%, color-mix(in srgb, var(--m-accent) 30%, transparent), transparent 55%), color-mix(in srgb, var(--m-bg) 80%, #000); }
 /* Night: dark page, glowing colours */
 .fp.s-night .fart { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--m-accent) 90%, #fff) 0 10%, color-mix(in srgb, var(--m-accent) 40%, transparent) 25%, transparent 55%),
   radial-gradient(circle at 30% 80%, color-mix(in srgb, var(--m-main) 70%, transparent), transparent 60%), color-mix(in srgb, var(--m-bg) 80%, #000); border: 1px solid var(--line); }
@@ -705,17 +745,17 @@ footer { border-top: 1px solid var(--line); }
     { name: "Workshop", c: ["#0b4f8a", "#f6f8fa", "#f2a516"] }
   ];
   const STYLES = [
-    { id: "clean", name: "Clean", for: ["shops", "trades"], desc: "Plenty of white space, simple type and soft corners. Lets your photos and products lead.",
+    { id: "clean", name: "Clean", for: ["trades", "shops"], desc: "Plenty of white space, simple type and soft corners. Lets your photos and products lead.",
       display: "'Figtree', system-ui, sans-serif", body: "'Figtree', system-ui, sans-serif", r: "12px", sample: "Simple. Clear. Yours." },
     { id: "bold", name: "Bold", for: ["trades", "food"], desc: "Big chunky headlines and solid blocks of colour. Hard to miss on a phone.",
       display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "4px", sample: "Call us. We'll be there." },
-    { id: "elegant", name: "Elegant", for: ["beauty", "food"], desc: "A refined serif, fine lines and calm spacing. Feels premium and unhurried.",
+    { id: "elegant", name: "Elegant", for: ["beauty", "shops"], desc: "A refined serif, fine lines and calm spacing. Feels premium and unhurried, like a wig boutique.",
       display: "Georgia, 'Times New Roman', serif", body: "'Figtree', sans-serif", r: "2px", sample: "Treatments, beautifully done." },
-    { id: "playful", name: "Playful", for: ["food", "shops"], desc: "Rounded shapes, pill buttons and a friendly tone. Great for cafes and gift shops.",
+    { id: "playful", name: "Playful", for: ["food", "shops"], desc: "Rounded shapes, pill buttons and a friendly tone. Great for coffee shops and cafes.",
       display: "'Trebuchet MS', 'Figtree', sans-serif", body: "'Figtree', sans-serif", r: "22px", sample: "Come in, the kettle's on!" },
     { id: "studio", name: "Studio", for: ["beauty", "shops"], desc: "Big photos, tight type and an editorial grid, like a magazine for your brand.",
       display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "0px", sample: "New season. New look." },
-    { id: "night", name: "Night", for: ["food", "beauty"], desc: "A dark background that makes colours glow. Suits bars, barbers and late openers.",
+    { id: "night", name: "Night", for: ["beauty", "food"], desc: "A dark background that makes colours glow. Suits barbers, bars and late openers.",
       display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "10px", sample: "Open late. Book tonight.", dark: true }
   ];
   const TEMPLATES = [
@@ -760,41 +800,131 @@ footer { border-top: 1px solid var(--line); }
 
   // ---------- front-page previews ----------
   const PAGES = {
-    clean: { biz: "Northside Hardware", links: ["Shop", "Services", "About", "Contact"], cta: "Visit us", kick: "Family run since 1987",
-      h: "Everything for the job, under one roof.", sub: "Tools, paint and expert advice. Order online and collect in an hour.", b1: "Shop now", b2: "Opening times",
-      badge: "Open today 8am to 6pm", serv: [["Click & collect", "Ready in 60 minutes"], ["Key cutting", "While you wait"], ["Paint mixing", "Any colour, any size"]],
-      quote: "Friendly, quick and they always have what I need.", pal: 5 },
+    clean: { biz: "Northside Tool Hire", links: ["Hire", "Buy", "Delivery", "Contact"], cta: "Call to hire", kick: "Hire by the day or the week",
+      h: "Pro tools for hire, delivered to site.", sub: "Mini diggers, mixers, breakers and access gear. Same-day delivery across the city.", b1: "Browse tools", b2: "Hire prices",
+      badge: "Same-day delivery", scene: "hire", serv: [["Mini diggers", "From £95 a day"], ["Cement mixers", "From £25 a day"], ["Power tools", "Drills, saws and breakers"]],
+      quote: "Digger on site by 8am and collected the same evening.", pal: 5 },
     bold: { biz: "Rapid Plumbing", links: ["Services", "Areas", "Reviews"], cta: "Call 24/7", kick: "Emergency callouts",
       h: "Leak? We're on our way.", sub: "Gas Safe engineers across the city. Fixed price, no call-out fee.", b1: "Book a plumber", b2: "Get a price",
       badge: "", serv: [["Boilers", "Repairs and servicing"], ["Bathrooms", "Fitted in a week"], ["Emergencies", "Out within the hour"]],
       quote: "Turned up in 40 minutes and fixed it first time.", pal: 0 },
-    elegant: { biz: "SALON ROSA", links: ["Treatments", "Prices", "Our team", "Book"], cta: "Book", kick: "Hair · Colour · Care",
-      h: "Treatments, <em>beautifully</em> done.", sub: "A calm studio for colour, cuts and care, with time set aside just for you.", b1: "Book an appointment", b2: "See prices",
-      badge: "", serv: [["Colour", "Balayage, gloss, toning"], ["Cut & finish", "Tailored to you"], ["Treatments", "Repair and shine"]],
-      quote: "The most relaxing hour of my month.", pal: 4 },
-    playful: { biz: "Little Fern Café", links: ["Menu", "Cakes", "Find us"], cta: "Order", kick: "Brunch · Coffee · Cake",
-      h: "Come in, the kettle's on!", sub: "Fresh bakes every morning, dogs welcome and the comfiest sofas in town.", b1: "See the menu", b2: "Find us",
-      badge: "New autumn menu!", serv: [["All-day brunch", "Till 3pm daily"], ["Birthday cakes", "Order 2 days ahead"], ["Dog friendly", "Treats on the house"]],
-      quote: "Best flat white and the cakes are huge.", pal: 2 },
+    elegant: { biz: "CROWN & CO.", links: ["Wigs", "Lace fronts", "Fittings", "Book"], cta: "Book", kick: "Wigs · Lace fronts · Private fittings",
+      h: "Find your <em>crown</em>.", sub: "Human hair and synthetic wigs, cut and styled for you in a calm private studio.", b1: "Book a fitting", b2: "Shop wigs",
+      badge: "", scene: "wigs", serv: [["Human hair wigs", "Cut and styled for you"], ["Lace fronts", "A natural hairline"], ["Private fittings", "Unhurried, one to one"]],
+      quote: "They found my perfect wig and made me feel amazing.", pal: 4 },
+    playful: { biz: "Bean & Steam", links: ["Menu", "Beans", "Find us"], cta: "Order ahead", kick: "Coffee · Brunch · Cake",
+      h: "Fresh coffee, poured with love.", sub: "Beans roasted down the road, bakes out of the oven at 7am and the comfiest sofas in town.", b1: "See the menu", b2: "Order ahead",
+      badge: "New autumn blend!", scene: "coffee", serv: [["Flat whites", "Roasted in town"], ["Fresh bakes", "Out of the oven at 7am"], ["Order ahead", "Skip the queue"]],
+      quote: "Best flat white in town and the cakes are huge.", pal: 1 },
     studio: { biz: "ATELIER NINE", links: ["New in", "Women", "Men", "Journal"], cta: "Bag (0)", kick: "Autumn / Winter",
       h: "New season. New look.", sub: "Small-batch clothing made in Britain. Free returns on every order.", b1: "Shop the edit", b2: "Lookbook",
       badge: "", serv: [["Free delivery", "On orders over £50"], ["Made in Britain", "Small workshops"], ["Easy returns", "30 days, no fuss"]],
       quote: "Beautifully made. I wear it every week.", pal: 1 },
     night: { biz: "Midnight Barbers", links: ["Cuts", "Prices", "Barbers"], cta: "Book", kick: "Open till midnight",
       h: "Sharp cuts. <em>Open late.</em>", sub: "Skin fades, beard trims and hot towel shaves. Walk-ins welcome after 6pm.", b1: "Book tonight", b2: "Prices",
-      badge: "Walk-ins welcome", serv: [["Skin fade", "£18 · 40 minutes"], ["Beard trim", "£10 · 20 minutes"], ["Hot towel shave", "£22 · 30 minutes"]],
+      badge: "Walk-ins welcome", scene: "barber", serv: [["Skin fade", "£18 · 40 minutes"], ["Beard trim", "£10 · 20 minutes"], ["Hot towel shave", "£22 · 30 minutes"]],
       quote: "Only place I trust with my fade.", pal: 3 }
+  };
+  // Illustrated scenes for the style previews, so each example looks like a real kind of business.
+  const SCENES = {
+    hire: `<svg class="scene" viewBox="0 0 400 300" aria-hidden="true">
+      <rect class="dk" x="0" y="248" width="400" height="52"/>
+      <g class="dust"><circle class="lt" cx="262" cy="246" r="9"/><circle class="lt" cx="276" cy="240" r="6"/><circle class="lt" cx="250" cy="241" r="5"/></g>
+      <rect class="k" x="38" y="222" width="150" height="28" rx="14"/>
+      <circle class="steel2" cx="54" cy="236" r="8"/><circle class="steel2" cx="86" cy="236" r="8"/><circle class="steel2" cx="118" cy="236" r="8"/><circle class="steel2" cx="150" cy="236" r="8"/><circle class="steel2" cx="172" cy="236" r="8"/>
+      <rect class="a" x="52" y="196" width="122" height="28" rx="5"/>
+      <rect class="a" x="58" y="150" width="70" height="50" rx="8"/>
+      <rect class="b" x="66" y="158" width="44" height="32" rx="4" opacity=".85"/>
+      <rect class="k" x="40" y="190" width="18" height="30" rx="4"/>
+      <g class="arm">
+        <path d="M150 182 L222 118" stroke="var(--m-accent)" stroke-width="15" stroke-linecap="round"/>
+        <path d="M222 118 L258 196" stroke="var(--m-accent)" stroke-width="11" stroke-linecap="round"/>
+        <path class="k" d="M248 192 L276 196 L272 222 Q256 226 244 214 Z"/>
+        <circle class="k" cx="150" cy="182" r="7"/><circle class="k" cx="222" cy="118" r="6"/>
+      </g>
+      <g><rect class="steel2" x="300" y="214" width="8" height="34"/><rect class="steel2" x="338" y="214" width="8" height="34"/>
+        <circle class="k" cx="352" cy="242" r="9"/><circle class="steel" cx="352" cy="242" r="4"/>
+        <g class="drum"><circle class="lt" cx="322" cy="186" r="36"/>
+          <path d="M296 160 L348 212 M322 150 L322 222 M286 186 L358 186" stroke="var(--m-main)" stroke-width="6" opacity=".55"/>
+          <circle class="dk" cx="322" cy="186" r="10"/></g>
+        <path class="k" d="M350 160 l24 -16 l7 10 l-24 16 z"/></g>
+      <g transform="translate(196 228)"><path class="b" d="M0 20 a22 20 0 0 1 44 0 z"/><rect class="b" x="-6" y="18" width="56" height="6" rx="3"/><rect class="a" x="19" y="2" width="6" height="16" rx="2"/></g>
+    </svg>`,
+    coffee: `<svg class="scene" viewBox="0 0 400 300" aria-hidden="true">
+      <rect class="k" x="34" y="232" width="150" height="12" rx="6" opacity=".85"/>
+      <rect class="dk" x="44" y="72" width="130" height="122" rx="16"/>
+      <rect class="steel" x="44" y="62" width="130" height="18" rx="8"/>
+      <circle class="a" cx="80" cy="108" r="13"/><circle class="b" cx="80" cy="108" r="5"/>
+      <circle class="steel" cx="122" cy="108" r="7"/><circle class="steel" cx="146" cy="108" r="7"/>
+      <rect class="steel" x="86" y="150" width="46" height="14" rx="5"/><rect class="steel2" x="126" y="153" width="40" height="8" rx="4"/>
+      <rect x="106" y="166" width="5" height="10" rx="2" fill="#5b3420" class="drip"/>
+      <path class="b" d="M88 204 h42 v14 a10 10 0 0 1 -10 10 h-22 a10 10 0 0 1 -10 -10 z"/><path d="M130 208 q12 2 0 12" stroke="var(--m-bg)" stroke-width="4" fill="none"/>
+      <rect class="b" x="80" y="226" width="58" height="6" rx="3"/>
+      <ellipse class="dk" cx="282" cy="244" rx="86" ry="12" opacity=".6"/>
+      <path class="b" d="M214 150 h134 v52 a40 40 0 0 1 -40 40 h-54 a40 40 0 0 1 -40 -40 z"/>
+      <path d="M348 168 q34 4 30 30 q-4 22 -34 22" stroke="var(--m-bg)" stroke-width="12" fill="none"/>
+      <ellipse cx="281" cy="152" rx="67" ry="13" fill="#6b3f22"/>
+      <ellipse cx="281" cy="152" rx="52" ry="9" fill="#e7cfae"/>
+      <path d="M281 160 c-14 -8 -12 -16 -4 -15 c3 0 4 3 4 3 c0 0 1 -3 4 -3 c8 -1 10 7 -4 15z" fill="#6b3f22" opacity=".7"/>
+      <rect class="a" x="214" y="186" width="134" height="12" opacity=".9"/>
+      <g class="steam"><path d="M258 132 q-10 -14 0 -26 q10 -12 0 -26"/><path d="M281 128 q-10 -14 0 -26 q10 -12 0 -26"/><path d="M304 132 q-10 -14 0 -26 q10 -12 0 -26"/></g>
+      <g fill="#4a2a17"><ellipse cx="200" cy="262" rx="9" ry="6" transform="rotate(-20 200 262)"/><ellipse cx="372" cy="266" rx="9" ry="6" transform="rotate(30 372 266)"/><ellipse cx="352" cy="276" rx="8" ry="5" transform="rotate(-40 352 276)"/></g>
+    </svg>`,
+    barber: `<svg class="scene" viewBox="0 0 400 300" aria-hidden="true">
+      <rect class="k" x="0" y="262" width="400" height="38" opacity=".08"/>
+      <text class="neon" x="386" y="44" text-anchor="end">OPEN LATE</text>
+      <rect class="steel" x="26" y="58" width="36" height="12" rx="6"/><rect class="steel" x="26" y="214" width="36" height="12" rx="6"/>
+      <circle class="steel" cx="44" cy="52" r="9"/>
+      <svg x="30" y="70" width="28" height="144"><rect width="28" height="144" fill="#f4f4f4"/>
+        <g class="stripes">${Array.from({ length: 8 }, (_, i) => `<path d="M-10 ${i * 36} L38 ${i * 36 - 30} L38 ${i * 36 - 18} L-10 ${i * 36 + 12} Z" fill="${i % 2 ? "#1f4fa8" : "#d23232"}"/>`).join("")}</g></svg>
+      <rect class="steel2" x="40" y="226" width="8" height="36"/>
+      <g opacity=".45" transform="translate(268 120) scale(.62)">
+        <rect class="m" x="40" y="0" width="70" height="110" rx="14"/><rect class="m" x="20" y="104" width="110" height="34" rx="12"/>
+        <rect class="steel2" x="68" y="138" width="14" height="60"/><ellipse class="steel2" cx="75" cy="200" rx="46" ry="9"/></g>
+      <ellipse class="k" cx="170" cy="262" rx="74" ry="9" opacity=".25"/>
+      <rect class="m" x="138" y="70" width="66" height="22" rx="10"/>
+      <rect class="m" x="126" y="96" width="92" height="96" rx="16"/>
+      <rect class="m" x="106" y="186" width="132" height="34" rx="14"/>
+      <rect class="steel" x="96" y="168" width="34" height="9" rx="4"/><rect class="steel" x="214" y="168" width="34" height="9" rx="4"/>
+      <rect class="steel" x="162" y="220" width="18" height="34"/><ellipse class="steel" cx="171" cy="256" rx="56" ry="8"/>
+      <rect class="steel2" x="206" y="226" width="40" height="7" rx="3"/>
+      <g class="clip"><rect x="242" y="70" width="30" height="88" rx="14" fill="#e9edf2"/><rect class="a" x="242" y="104" width="30" height="16"/>
+        <rect x="244" y="62" width="26" height="12" rx="3" fill="#8b949e"/>
+        <path d="M246 62 v-6 M251 62 v-6 M256 62 v-6 M261 62 v-6 M266 62 v-6" stroke="#c9d0d8" stroke-width="2.5"/>
+        <path d="M257 158 q4 40 -30 60" stroke="#8b949e" stroke-width="3" fill="none"/></g>
+      <g transform="translate(330 196) rotate(35)"><circle cx="-8" cy="22" r="8" fill="none" stroke="#c9d0d8" stroke-width="4"/><circle cx="8" cy="22" r="8" fill="none" stroke="#c9d0d8" stroke-width="4"/>
+        <path d="M-4 15 L6 -30 M4 15 L-6 -30" stroke="#e9edf2" stroke-width="4" stroke-linecap="round"/></g>
+    </svg>`,
+    wigs: `<svg class="scene" viewBox="0 0 800 230" aria-hidden="true">
+      <rect class="k" x="60" y="206" width="680" height="7" rx="3" opacity=".35"/>
+      ${[[190, "long"], [400, "bob"], [610, "curl"]].map(([x, w]) => `<g transform="translate(${x} 0)">
+        ${w === "long" ? `<path d="M-44 70 q-6 -50 44 -54 q50 4 44 54 q8 60 -6 104 q-14 10 -38 -6 q-24 16 -38 6 q-14 -44 -6 -104z" fill="#3a2418"/>` : ""}
+        ${w === "curl" ? Array.from({ length: 16 }, (_, i) => { const a = i / 16 * Math.PI * 2; return `<circle cx="${Math.round(Math.cos(a) * 46)}" cy="${Math.round(76 + Math.sin(a) * 50)}" r="20" fill="#1d1411"/>`; }).join("") + `<circle cx="0" cy="40" r="34" fill="#1d1411"/>` : ""}
+        <rect x="-11" y="122" width="22" height="34" fill="#e3d2c2"/>
+        <path d="M-50 196 q0 -40 50 -44 q50 4 50 44 z" fill="#ead9c9"/>
+        <ellipse cx="0" cy="84" rx="34" ry="44" fill="#efe0d1"/>
+        <path d="M-14 92 q4 3 8 0 M6 92 q4 3 8 0" stroke="#b9a493" stroke-width="2" fill="none"/>
+        ${w === "long" ? `<path d="M-38 74 q8 -46 38 -46 q34 0 40 40 q-30 -22 -78 6z" fill="#3a2418"/>` : ""}
+        ${w === "bob" ? `<path d="M-46 112 q-10 -86 46 -90 q56 4 46 90 l-16 2 q4 -50 -20 -64 q-20 26 -60 22 q-4 20 0 42z" fill="#d6b06a"/>` : ""}
+        <rect class="b" x="-46" y="196" width="92" height="10" rx="3"/>
+        <g class="tag"><path d="M34 140 v18" stroke="var(--m-ink)" stroke-width="1.5"/><rect class="a" x="18" y="158" width="34" height="20" rx="4"/></g>
+      </g>`).join("")}
+      <path class="a spark" d="M300 40 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4z"/>
+      <path class="a spark" d="M510 28 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3z"/>
+      <path class="a spark" d="M712 70 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4z"/>
+      <path class="a spark" d="M96 52 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3z"/>
+    </svg>`
   };
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   function frontPage(style, colours, tpl) {
     const p = PAGES[style.id] || PAGES.clean;
     const v = templateVars(tpl || (style.dark ? "dark" : "light"), colours, style);
     const vars = Object.entries(v).map(([k, val]) => `${k}:${val}`).join(";");
-    const art = style.id === "studio" ? "<u></u><u></u><u></u>" : (p.badge ? `<span class="fbadge">${p.badge}</span>` : "");
+    const art = style.id === "studio" ? "<u></u><u></u><u></u>" : (p.badge ? `<span class="fbadge">${p.badge}</span>` : "") + (SCENES[p.scene] || "");
     return `<div class="fp s-${style.id}" style="${esc(vars)}" aria-hidden="true">
       <div class="fnav"><span class="flogo"><i></i>${p.biz}</span><span class="flinks">${p.links.map(l => `<span>${l}</span>`).join("")}</span><span class="fbtn">${p.cta}</span></div>
       <div class="fhero"><div><div class="fkick">${p.kick}</div><h5>${p.h}</h5><p class="fsub">${p.sub}</p>
-        <div class="fbtns"><span class="fbtn">${p.b1}</span><span class="fghost">${p.b2}</span></div></div><div class="fart">${art}</div></div>
+        <div class="fbtns"><span class="fbtn">${p.b1}</span><span class="fghost">${p.b2}</span></div></div><div class="fart${p.scene ? " has-scene" : ""}">${art}</div></div>
       <div class="fserv">${p.serv.map(([a, b]) => `<div><b></b><strong>${a}</strong><span>${b}</span></div>`).join("")}</div>
       <div class="fquote"><q>${p.quote}</q><small>★★★★★</small></div></div>`;
   }
