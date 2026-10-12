@@ -45,9 +45,9 @@ class FakeClient:
         self.closed = True
 
 
-def backup(direct_error=None):
-    direct, gateway = FakeClient("claude", direct_error), FakeClient("backup")
-    return omniroute.BackupClient(direct, gateway, "alfred"), direct, gateway
+def backup(direct_error=None, gateway_error=None, free_first=False):
+    direct, gateway = FakeClient("claude", direct_error), FakeClient("backup", gateway_error)
+    return omniroute.BackupClient(direct, gateway, "alfred", free_first), direct, gateway
 
 
 OPTS = {"model": "claude-opus-5", "max_tokens": 100, "betas": ["x"], "thinking": {"type": "adaptive"},
@@ -98,7 +98,7 @@ async def test_falls_back_on_a_limit_and_stays_there_for_a_while():
     assert await client.beta.messages.create(**OPTS) == "backup"
     assert await client.messages.create(**OPTS) == "backup"
     assert len(direct.beta.messages.calls) == 1 and direct.messages.calls == []  # skipped during the cooldown
-    client.backup_until = 0
+    client.rest_until = 0
     await client.messages.create(**OPTS)
     assert len(direct.messages.calls) == 1
 
@@ -154,6 +154,37 @@ def test_backup_request_trims_the_conversation():
             {"type": "tool_result", "tool_use_id": "t1", "content": [{"type": "text", "text": "12:00"}]},
             {"type": "text", "text": "Thanks"}]},
     ]
+
+
+async def test_free_first_asks_omniroute_and_leaves_claude_alone():
+    client, direct, gateway = backup(free_first=True)
+    assert await client.beta.messages.create(**OPTS) == "backup"
+    async with client.beta.messages.stream(**OPTS) as stream:
+        assert stream == "backup"
+    assert direct.beta.messages.calls == [] and gateway.messages.calls[0]["model"] == "alfred"
+
+
+@pytest.mark.parametrize("exc", [status(anthropic.RateLimitError, 429), status(anthropic.BadRequestError, 400),
+                                 anthropic.APIConnectionError(request=REQUEST)])
+async def test_free_first_falls_back_to_claude_for_any_omniroute_failure(exc):
+    client, direct, gateway = backup(gateway_error=exc, free_first=True)
+    assert await client.beta.messages.create(**OPTS) == "claude"
+    assert direct.beta.messages.calls == [OPTS]  # Claude gets the full request, extras and all
+    async with client.beta.messages.stream(**OPTS) as stream:  # free AIs are skipped for a while
+        assert stream == "claude"
+    assert len(gateway.messages.calls) == 1
+
+
+async def test_free_first_when_both_fail_the_claude_error_shows():
+    client, _, _ = backup(direct_error=status(anthropic.AuthenticationError, 401),
+                          gateway_error=anthropic.APIConnectionError(request=REQUEST), free_first=True)
+    with pytest.raises(anthropic.AuthenticationError):
+        await client.messages.create(**OPTS)
+
+
+def test_free_first_setting_reaches_the_client():
+    settings = replace(Settings(), omniroute_url="http://localhost:20128", omniroute_first=True)
+    assert omniroute.make_client(settings, api_key="k").free_first
 
 
 async def test_close_closes_both():

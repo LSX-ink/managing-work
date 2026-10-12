@@ -1,12 +1,14 @@
-"""Backup route through OmniRoute (a local AI gateway, https://github.com/diegosouzapw/OmniRoute).
+"""A second route through OmniRoute (a local AI gateway, https://github.com/diegosouzapw/OmniRoute).
 
-Alfred talks to Claude directly, exactly as before. When that fails because the API key hit its limit, ran out
-of credit, was refused, or Anthropic is down or busy, the same request is sent once more through OmniRoute,
-which passes it to whichever backup AI is set up there. After such a failure Alfred stays on the backup for a
-few minutes rather than waiting on Anthropic each time.
+Two ways round, picked by JARVIS_OMNIROUTE_FIRST:
+- off (backup): Alfred talks to Claude directly. When that fails because the API key hit its limit, ran out of
+  credit, was refused, or Anthropic is down or busy, the same request goes once more through OmniRoute.
+- on (free first): Alfred asks OmniRoute first (point it at free AIs to save Claude tokens). When that fails for
+  any reason, Claude answers directly.
+After the first route fails, Alfred skips it for a few minutes rather than waiting on it each time.
 
-Backup AIs don't share Claude's built-in extras (its own web search, tool search, extended thinking), so the
-request is trimmed to plain text, pictures and Alfred's own tools before it goes to OmniRoute.
+OmniRoute's AIs don't share Claude's built-in extras (its own web search, tool search, extended thinking), so
+the request is trimmed to plain text, pictures and Alfred's own loaded tools before it goes there.
 """
 
 import contextlib
@@ -16,7 +18,7 @@ import anthropic
 
 from config import Settings
 
-COOLDOWN = 300  # seconds Alfred stays on the backup after Claude itself failed
+COOLDOWN = 300  # seconds Alfred skips the first route after it failed
 _GATEWAY_KEEP = {"model", "max_tokens", "system", "messages", "tools", "tool_choice", "temperature",
                  "stop_sequences", "metadata"}
 _BLOCKS_KEPT = {"text", "image", "tool_use", "tool_result"}
@@ -30,11 +32,11 @@ def make_client(settings: Settings, **kwargs):
         return direct
     gateway = anthropic.AsyncAnthropic(base_url=settings.omniroute_url.rstrip("/").removesuffix("/v1"),
                                        api_key=settings.omniroute_key or "omniroute", max_retries=1)
-    return BackupClient(direct, gateway, settings.omniroute_model or "auto")
+    return BackupClient(direct, gateway, settings.omniroute_model or "auto", settings.omniroute_first)
 
 
 def should_switch(exc: BaseException) -> bool:
-    """True for failures the backup can help with: limits, credit, a refused key, Anthropic down or busy."""
+    """True for Claude failures the backup can help with: limits, credit, a refused key, Anthropic down or busy."""
     if isinstance(exc, (anthropic.RateLimitError, anthropic.AuthenticationError, anthropic.PermissionDeniedError,
                         anthropic.APIConnectionError, anthropic.InternalServerError)):
         return True
@@ -100,36 +102,52 @@ class _Messages:
     def __init__(self, owner: "BackupClient", direct, gateway):
         self._owner, self._direct, self._gateway = owner, direct, gateway
 
+    def _routes(self, opts: dict) -> list:
+        """(name, the call's API, its request) in the order to try them."""
+        direct = ("Claude", self._direct, opts)
+        gateway = ("OmniRoute", self._gateway, gateway_request(opts, self._owner.model))
+        routes = [gateway, direct] if self._owner.free_first else [direct, gateway]
+        return routes[1:] if self._owner.resting() else routes
+
+    def _move_on(self, exc: BaseException, name: str) -> bool:
+        """After the first route failed: True to try the other one (and skip this one for a while)."""
+        if name == "Claude" and not should_switch(exc):
+            return False
+        if name == "OmniRoute" and not isinstance(exc, anthropic.APIError):
+            return False
+        self._owner.rest(name, exc)
+        return True
+
     async def create(self, **opts):
-        if not self._owner.on_backup():
+        *first, (_, api, request) = self._routes(opts)
+        for name, first_api, first_request in first:
             try:
-                return await self._direct.create(**opts)
+                return await first_api.create(**first_request)
             except Exception as exc:
-                if not should_switch(exc):
+                if not self._move_on(exc, name):
                     raise
-                self._owner.switched(exc)
-        return await self._gateway.create(**gateway_request(opts, self._owner.model))
+        return await api.create(**request)
 
     @contextlib.asynccontextmanager
     async def stream(self, **opts):
-        if not self._owner.on_backup():
-            manager = self._direct.stream(**opts)
+        *first, (_, api, request) = self._routes(opts)
+        for name, first_api, first_request in first:
+            manager = first_api.stream(**first_request)
             try:
                 stream = await manager.__aenter__()  # limits and outages show up here, before any words
             except Exception as exc:
-                if not should_switch(exc):
+                if not self._move_on(exc, name):
                     raise
-                self._owner.switched(exc)
+                continue
+            try:
+                yield stream
+            except BaseException as exc:
+                if not await manager.__aexit__(type(exc), exc, exc.__traceback__):
+                    raise
             else:
-                try:
-                    yield stream
-                except BaseException as exc:
-                    if not await manager.__aexit__(type(exc), exc, exc.__traceback__):
-                        raise
-                else:
-                    await manager.__aexit__(None, None, None)
-                return
-        async with self._gateway.stream(**gateway_request(opts, self._owner.model)) as stream:
+                await manager.__aexit__(None, None, None)
+            return
+        async with api.stream(**request) as stream:
             yield stream
 
 
@@ -141,19 +159,20 @@ class _Beta:
 class BackupClient:
     """Looks like anthropic.AsyncAnthropic for what Jarvis uses: messages and beta.messages, create and stream."""
 
-    def __init__(self, direct, gateway, model: str):
-        self.direct, self.gateway, self.model = direct, gateway, model
-        self.backup_until = 0.0
+    def __init__(self, direct, gateway, model: str, free_first: bool = False):
+        self.direct, self.gateway, self.model, self.free_first = direct, gateway, model, free_first
+        self.rest_until = 0.0
         self.messages = _Messages(self, direct.messages, gateway.messages)
         self.beta = _Beta(self)
 
-    def on_backup(self) -> bool:
-        return time.monotonic() < self.backup_until
+    def resting(self) -> bool:
+        return time.monotonic() < self.rest_until
 
-    def switched(self, exc: BaseException) -> None:
-        print(f"[jarvis] Claude failed ({type(exc).__name__}); answering through OmniRoute for "
+    def rest(self, name: str, exc: BaseException) -> None:
+        other = "Claude" if name == "OmniRoute" else "OmniRoute"
+        print(f"[jarvis] {name} failed ({type(exc).__name__}); answering through {other} for "
               f"{COOLDOWN // 60} minutes.", flush=True)
-        self.backup_until = time.monotonic() + COOLDOWN
+        self.rest_until = time.monotonic() + COOLDOWN
 
     async def close(self) -> None:
         await self.direct.close()
