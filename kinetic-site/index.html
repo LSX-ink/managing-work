@@ -327,6 +327,14 @@ footer nav a:hover { color: var(--ink); }
 .faq summary::after { content: "+"; font: 500 1.2rem var(--mono); color: var(--accent); }
 .faq details[open] summary::after { content: "\2212"; }
 .faq details p { margin: 0 0 16px; color: var(--muted); }
+/* Client area: start, manage or cancel hosting and care (payments run on Stripe's secure pages). */
+.account { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 860px) { .account { grid-template-columns: 1fr; } }
+.account article { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 10px; align-content: start; }
+.account h3 { margin: 0; font-family: var(--display); }
+.account p { margin: 0; color: var(--muted); }
+.account .btn { justify-self: start; }
+.secure-note { margin-top: 14px; color: var(--muted); font-size: .9rem; }
 .addr { font-family: var(--mono); color: var(--ink); user-select: all; }
 
 /* sign-up gate */
@@ -364,7 +372,7 @@ footer nav a:hover { color: var(--ink); }
   <div class="wrap">
     <a class="logo" href="#top"><i aria-hidden="true"></i>Kinetic</a>
     <nav aria-label="Main">
-      <a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#faq">FAQ</a><a href="#vision">Your vision</a>
+      <a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#faq">FAQ</a><a href="#account">Client area</a><a href="#vision">Your vision</a>
     </nav>
     <a class="btn accent" href="#vision">Start a project</a>
   </div>
@@ -477,6 +485,22 @@ footer nav a:hover { color: var(--ink); }
   </div>
 </section>
 
+<section id="account" aria-labelledby="account-title">
+  <div class="wrap">
+    <div class="head"><span class="eyebrow">Client area</span><h2 id="account-title">Your hosting and care plan</h2>
+      <p class="lede">£20 a month by Direct Debit or card. No long contract: start, change or cancel whenever you like.</p></div>
+    <div class="account">
+      <article><h3>Start your plan</h3><p>Set up your £20 monthly Direct Debit or card payment in a couple of minutes. Your first payment is taken when your website goes live.</p>
+        <a class="btn accent" id="plan-start" href="#">Start hosting and care</a></article>
+      <article><h3>Sign in and manage</h3><p>Sign in with the email you used to sign up. We'll send you a secure link to see your payments, download receipts, update your details or cancel.</p>
+        <a class="btn" id="plan-manage" href="#">Sign in to my plan</a></article>
+      <article><h3>Cancel any time</h3><p>Cancel from your plan page, by emailing <span class="addr">alfredw.lsx@gmail.com</span>, or through your own bank. If you leave, we hand your website and domain over to you.</p>
+        <a class="btn ghost" id="plan-cancel" href="#">Cancel my plan</a></article>
+    </div>
+    <p class="secure-note">Payments and bank details are handled by Stripe's secure pages. We never see or store your bank or card details. Direct Debits are protected by the Direct Debit Guarantee.</p>
+  </div>
+</section>
+
 <section id="faq" aria-labelledby="faq-title">
   <div class="wrap">
     <div class="head"><span class="eyebrow">Questions</span><h2 id="faq-title">Good to know before you start</h2></div>
@@ -533,7 +557,7 @@ footer nav a:hover { color: var(--ink); }
 <footer>
   <div class="wrap">
     <span><strong style="color:var(--ink)">Kinetic Web Designs</strong> · Websites for independent businesses</span>
-    <nav aria-label="Footer"><a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#faq">FAQ</a><a href="#vision">Start a project</a></nav>
+    <nav aria-label="Footer"><a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#faq">FAQ</a><a href="#account">Client area</a><a href="#vision">Start a project</a></nav>
     <span>Email <a class="addr" href="mailto:alfredw.lsx@gmail.com">alfredw.lsx@gmail.com</a></span>
   </div>
 </footer>
@@ -547,6 +571,19 @@ footer nav a:hover { color: var(--ink); }
   // Where sign-ups and briefs go once the site is hosted (a form endpoint). Empty: kept in this browser only.
   const SIGNUP_ENDPOINT = "";
   const BRIEF_ENDPOINT = "";
+  // Stripe links for the client area: a Payment Link for the £20 plan and the customer portal sign-in link.
+  // Empty: the buttons open an email to us instead.
+  const PLAN_SUBSCRIBE_LINK = "";
+  const PLAN_PORTAL_LINK = "";
+  const mailto = subject => "mailto:alfredw.lsx@gmail.com?subject=" + encodeURIComponent(subject);
+  [["#plan-start", PLAN_SUBSCRIBE_LINK, "Start my hosting and care plan"],
+   ["#plan-manage", PLAN_PORTAL_LINK, "My hosting and care plan"],
+   ["#plan-cancel", PLAN_PORTAL_LINK, "Cancel my hosting and care plan"]].forEach(([id, link, subject]) => {
+    const a = document.querySelector(id);
+    if (!a) return;
+    a.href = link || mailto(subject);
+    if (link) { a.target = "_blank"; a.rel = "noopener"; }
+  });
   const $ = (s, el = document) => el.querySelector(s);
   const store = {
     get(k) { try { return JSON.parse(localStorage.getItem("kwd-" + k)); } catch { return null; } },

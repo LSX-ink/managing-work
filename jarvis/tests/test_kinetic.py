@@ -6,6 +6,7 @@ from urllib.parse import parse_qs
 import httpx
 import pytest
 
+import alfred_mail
 import kinetic_find as kf
 import kinetic_invoices as ki
 import kinetic_sales as ks
@@ -209,6 +210,31 @@ def test_domain_owner_details_after_a_quote_is_accepted(s):
     assert st.load(s, st.DOMAIN_OWNERS, {})["Sal's Cafe"]["owner_name"] == "Sal Jones"
     with pytest.raises(ValueError, match="Which client"):
         sales(s, action="domain_owner")
+
+
+def test_welcome_emails_after_the_deposit_invoice(s):
+    sales(s, action="my_details", owner="Lee", phone="0161 111 1111")
+    sales(s, action="quote", client="Sal's Cafe", package="business", addons=["logo"])
+    out = inv(s, action="invoice", quote="Q-0001")
+    assert "welcome emails for Q-0001" in out and any(b["label"] == "Welcome emails" for b in out.card["buttons"])
+    sales(s, action="domain_owner", client="Sal's Cafe", domain="salscafe.co.uk")
+    shown = sales(s, action="welcome_emails", quote="Q-0001", contact_name="Sal")
+    assert "Give me their email address" in shown and "Nothing has been sent" in shown
+    body = shown.card["text"]
+    assert "Subject: Thank you for choosing Kinetic Web Designs: your order is confirmed" in body
+    assert "Dear Sal," in body and "- Logo design" in body and "Total: £1,045" in body
+    assert "Deposit to start (50%): £522.50, invoice INV-0001" in body and "3 rounds of changes" in body
+    assert "Subject: Next steps required from you" in body and "Hosting and care: £20 a month" in body
+    assert 'register salscafe.co.uk in my name' in body and "Lee\nKinetic Web Designs\n0161 111 1111" in body
+    assert "insurance" not in body.lower() and 'reply "Yes to hosting and care"' in body
+    folder = memory.root(s) / "Kinetic Web Designs" / "Clients" / "Sal's Cafe"
+    assert (folder / "Welcome email 2 Q-0001.md").exists()
+    sales(s, action="my_details", plan_link="https://buy.stripe.test/abc")
+    drafted = sales(s, action="welcome_emails", quote="Q-0001", to="sal@salscafe.test")
+    assert "have NOT been sent" in drafted and "https://buy.stripe.test/abc" in drafted.card["text"]
+    assert drafted.card["buttons"][0]["say"] == "Yes, send email draft 1."
+    assert [d["subject"] for d in alfred_mail._load_drafts(s)] == [
+        "Thank you for choosing Kinetic Web Designs: your order is confirmed", "Next steps required from you"]
 
 
 def test_mockup_uses_trade_look_or_saved_design_system(s):
