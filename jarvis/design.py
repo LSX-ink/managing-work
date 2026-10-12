@@ -14,7 +14,8 @@ rules that stop AI-looking pages (taste-skill, minimalist-skill, brutalist-skill
 brandkit...), read the same way. skills/anime holds anime-mj (MIT, from github.com/jawhnycooke/claude-code-anime-mj),
 an anime and manga prompt builder with manga artist and studio styles, and higgsfield-anime, the user's own prompt
 template for Higgsfield. skills/business holds pricing-strategy (MIT, from github.com/sickn33/antigravity-awesome-skills):
-pricing, tiers, value metrics and price rises for a product or service.
+pricing, tiers, value metrics and price rises for a product or service; and client-websites (ours): creative Kinetic
+client sites and mock-ups that sell, using 21st.dev components through the MCP bridge.
 
 Any other folder dropped into skills/ with */SKILL.md guides is picked up too, named after its folder. skillscan checks
 every library first: blocked ones are refused, and a new or changed one is scanned the first time guides are listed
@@ -192,7 +193,8 @@ def tool_definitions() -> list[dict]:
                        "pages, slides and posters; the themes are its files, e.g. file 'ocean-depths.md', "
                        "'midnight-galaxy.md'; or make a custom one). Business: pricing-strategy (setting or changing prices for a "
                        "product, service or website package: value-based pricing, tiers, value metric, free trial "
-                       "or freemium, price rises; ends with a pricing plan). New libraries dropped into skills/ appear here too. Call "
+                       "or freemium, price rises; ends with a pricing plan) and client-websites (read before making a Kinetic "
+                       "client mock-up or site: 21st.dev components, a page structure that sells, a quality check). New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",

@@ -484,8 +484,29 @@ def safe_css(value: str, fallback: str) -> str:
     return value if re.fullmatch(r"#[0-9a-fA-F]{3,8}|[\w\s'\",.-]{1,200}", value) and value.strip() else fallback
 
 
+_UNSAFE_TAGS = re.compile(r"<\s*(script|iframe|object|embed|link|meta|base|form|style)\b.*?(?:</\s*\1\s*>|/?>)",
+                          re.I | re.S)
+_UNSAFE_ATTRS = re.compile(r"""\s(?:on\w+|srcdoc|formaction)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)""", re.I)
+_JS_URLS = re.compile(r"(?:java|vb)script\s*:", re.I)
+
+
+def clean_section(html: str) -> str:
+    """Extra page sections (e.g. converted 21st.dev components) without scripts, frames, forms or event handlers."""
+    text = str(html or "")[:20_000]
+    for _ in range(3):  # nested tricks like <scr<script>ipt>
+        text = _UNSAFE_TAGS.sub("", text)
+    return _JS_URLS.sub("", _UNSAFE_ATTRS.sub("", text)).replace("<!--", "").strip()
+
+
+def clean_css(css: str) -> str:
+    """Section CSS that can't close the style tag, import other files or run anything."""
+    text = str(css or "")[:12_000].replace("<", "")  # CSS never needs "<", and without it nothing can end the style tag
+    text = re.sub(r"@import[^;]*;?", "", text, flags=re.I)
+    return re.sub(r"expression\s*\(|(?:java|vb)script\s*:|-moz-binding", "", text, flags=re.I)
+
+
 def mockup_html(name: str, trade: str, tagline: str, services: list[str], phone: str, town: str, look: dict | None,
-                maker: str) -> str:
+                maker: str, sections: list[str] = (), section_css: str = "") -> str:
     bg, ink, brand, accent, head, body, default_tag = TRADE_LOOKS[trade]
     if look:
         bg, ink, brand, accent = (safe_css(look.get(k), d) for k, d in
@@ -518,7 +539,9 @@ section{{padding:72px 0}}h2{{font-family:var(--head);font-size:clamp(1.6rem,4vw,
 .quote{{font-family:var(--head);font-size:1.4rem;max-width:36ch}}.quote small{{display:block;font-family:var(--body);font-size:.95rem;opacity:.7;margin-top:10px}}
 #contact{{background:var(--ink);color:var(--bg);border-radius:28px;padding:48px 28px;margin:0 0 72px}}
 #contact .btn{{background:var(--accent);color:var(--ink)}}footer{{padding:28px 0;font-size:.85rem;opacity:.65}}
-@media (max-width:600px){{.btn.ghost{{margin:12px 0 0}}.hero{{padding:48px 0 56px}}}}"""
+@media (max-width:600px){{.btn.ghost{{margin:12px 0 0}}.hero{{padding:48px 0 56px}}}}
+{clean_css(section_css)}"""
+    extra = "".join(f'<section class="extra">{x}</section>' for x in (clean_section(h) for h in list(sections)[:6]) if x)
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{e(name)}{where_} | Concept home page</title>
@@ -529,7 +552,7 @@ section{{padding:72px 0}}h2{{font-family:var(--head);font-size:clamp(1.6rem,4vw,
 Swap this line for what you do best and who you do it for.</p><div>{call}<a class="btn ghost" href="#services">See what we do</a></div></header></div>
 <div class="band">Open today · Friendly local service{where_}</div>
 <div class="wrap"><section id="services"><h2>What we do</h2><div class="grid">{cards}</div></section>
-<section><h2>What customers say</h2><p class="quote">"Space for a real review from one of your customers."<small>Your happy customer</small></p></section>
+{extra}<section><h2>What customers say</h2><p class="quote">"Space for a real review from one of your customers."<small>Your happy customer</small></p></section>
 <section id="contact"><h2>Visit or get in touch</h2><p>Opening hours, address and a map go here, so people can find you in seconds.</p><br>{call}</section>
 <footer>Concept home page for {e(name)} by {e(maker)}. Placeholder words only; not the live site.</footer></div>
 </body></html>
@@ -543,7 +566,8 @@ def mockup(settings: Settings, args: dict) -> screen.Shown:
     services = [st.clean(s, 40) for s in (args.get("services") or []) if st.clean(s)] or SERVICES[trade]
     look = look_from(settings, str(args.get("style_from") or "").strip())
     html = mockup_html(name, trade, st.clean(args.get("tagline"), 90), services, st.clean(args.get("phone") or p.get("phone"), 30),
-                       st.clean(args.get("town") or p.get("town"), 40), look, st.business(settings)["name"])
+                       st.clean(args.get("town") or p.get("town"), 40), look, st.business(settings)["name"],
+                       [x for x in args.get("sections") or [] if isinstance(x, str)], str(args.get("section_css") or ""))
     path = st.write(settings, ("Mockups", name), "index.html", html, replace=True)
     style = f" in the style of {args['style_from']}" if look else f" in a {trade} look"
     return st.file_shown(settings, path, f"I made a concept home page for {name}{style}. It's in {st.where(settings, path)}; "
@@ -637,7 +661,8 @@ def tool_definitions() -> list[dict]:
                        "writing. welcome_emails: after the deposit invoice, the order "
                        "confirmation and next-steps emails for a quote (contact_name, to puts them in drafts; the "
                        "user sends them). mockup: a free concept home page for a business, optionally "
-                       "in a design system saved by extract_design_system (style_from). outreach: a first message "
+                       "in a design system saved by extract_design_system (style_from); for a creative one, read the "
+                       "client-websites design guide first and add 21st.dev sections (sections, section_css). outreach: a first message "
                        "draft (email, letter, phone script, walk-in script, dm) from the audit. Drafts only: never "
                        "send anything, and only mark a quote sent when the user says they sent it.",
         "input_schema": {
@@ -672,6 +697,12 @@ def tool_definitions() -> list[dict]:
                 "phone": {"type": "string"}, "town": {"type": "string"},
                 "style_from": {"type": "string", "description": "mockup: a folder in Kinetic Web Designs saved by "
                                                                 "extract_design_system, e.g. 'stripe.com'."},
+                "sections": {"type": "array", "items": {"type": "string"},
+                             "description": "mockup: up to 6 extra sections as plain HTML (e.g. 21st.dev components "
+                                            "converted from React/Tailwind; see the client-websites design guide). "
+                                            "Scripts and event handlers are removed."},
+                "section_css": {"type": "string", "description": "mockup: plain CSS for those sections; use var(--bg), "
+                                                                "var(--ink), var(--brand), var(--accent), var(--head)."},
                 "channel": {"type": "string", "enum": CHANNELS},
                 "contact_name": {"type": "string", "description": "outreach: the owner's first name if known."},
                 "mockup": {"type": "boolean", "description": "outreach: offer a free mock-up (default true)."},
