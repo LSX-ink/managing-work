@@ -41,7 +41,8 @@ def tool_definitions() -> list[dict]:
     return [{
         "name": "mcp_bridge",
         "description": "Use the MCP servers the user added to the Claude desktop app on this PC (for example "
-                       "Perplexity for web research, Firecrawl for scraping sites, Playwright for a browser) plus Higgsfield "
+                       "Perplexity for web research, Firecrawl for scraping sites, Playwright for a browser, 21st.dev Magic for "
+                       "creative website components) plus Higgsfield "
                        "(AI images and videos, including anime): "
                        "'ask Perplexity...', 'use Firecrawl to scrape...', 'what MCPs have I got'. servers lists them; "
                        "tools (server) lists that server's tools with their inputs; call (server, tool, arguments) "

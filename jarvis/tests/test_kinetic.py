@@ -260,6 +260,19 @@ def test_mockup_uses_trade_look_or_saved_design_system(s):
         sales(s, action="mockup", client="Bloom", style_from="nope.com")
 
 
+def test_mockup_adds_cleaned_extra_sections(s):
+    hero = ('<div class="glow" onclick="steal()"><h2>Fresh bread daily</h2><a href="javascript:alert(1)">Order</a>'
+            '<script>alert(1)</script><iframe src="https://x.test"></iframe><img src=x onerror=alert(1)></div>')
+    sales(s, action="mockup", client="Sal's Cafe", sections=[hero, "<p>Why choose us</p>"],
+          section_css=".glow{background:var(--brand)}</style><script>alert(1)</script>@import url(x.css);")
+    html = (memory.root(s) / "Kinetic Web Designs" / "Mockups" / "Sal's Cafe" / "index.html").read_text(encoding="utf-8")
+    assert '<section class="extra"><div class="glow"><h2>Fresh bread daily</h2>' in html and "Why choose us" in html
+    assert ".glow{background:var(--brand)}" in html and "@import" not in html
+    for bad in ("<script", "<iframe", "onclick", "onerror", "javascript:"):
+        assert bad not in html.lower()
+    assert ks.clean_section("<scr<script></script>ipt>alert(1)</script>").lower().count("<script") == 0
+
+
 def test_outreach_drafts_are_never_sent(s):
     finder(s, action="find", town="Stockport")
     sales(s, action="my_details", owner="Lee", phone="07000 000000")
