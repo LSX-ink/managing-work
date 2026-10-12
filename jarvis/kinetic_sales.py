@@ -43,8 +43,8 @@ DEFAULT_PRICES = {
                     "includes": "A one-page website made for phones, contact form, tap-to-call, Google basics "
                                 "(title, description, business details) and 2 rounds of changes."},
         "business": {"name": "Business website", "price": 895,
-                     "includes": "Up to 5 pages made for phones, contact form, tap-to-call, Google Business Profile "
-                                 "help, share previews, a fast secure (HTTPS) setup and 3 rounds of changes."},
+                     "includes": "Up to 5 pages made for phones, contact form, tap-to-call, basic Google Business "
+                                 "Profile linking, share previews, a fast secure (HTTPS) setup and 3 rounds of changes."},
         "shop": {"name": "Online shop", "price": 1595,
                  "includes": "Everything in the business website plus a shop with up to 20 products, card payments "
                              "set up with your own provider, delivery options and order emails."},
@@ -54,7 +54,7 @@ DEFAULT_PRICES = {
         "copywriting": {"name": "Copywriting (per page)", "price": 60},
         "extra_page": {"name": "Extra page", "price": 120},
         "booking": {"name": "Online booking", "price": 200},
-        "seo": {"name": "Local Google setup", "price": 150},
+        "seo": {"name": "Full Google Business Profile setup and optimisation", "price": 150},
         "photos": {"name": "Photo editing and stock images", "price": 100},
     },
     "care_plan": {"name": "Monthly hosting and care", "price": 20,

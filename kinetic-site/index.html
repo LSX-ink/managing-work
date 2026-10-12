@@ -646,7 +646,7 @@ footer { border-top: 1px solid var(--line); }
       <details><summary>What's in monthly hosting and care?</summary><p>Your domain name, fast and secure hosting, security updates, backups and small text changes, all for £20 a month. Need lots of big videos or downloads? Extra file storage is £5 a month per 10 GB.</p></details>
       <details><summary>Who owns my website and domain?</summary><p>You do. Your domain is registered in your name and your accounts belong to you. If you ever leave, we hand everything over.</p></details>
       <details><summary>Do you write the words too?</summary><p>We write the copy with you. If you'd like us to write whole pages for you, copywriting is £60 a page.</p></details>
-      <details><summary>Will people find me on Google?</summary><p>Starter websites include the Google basics. Business websites and shops add help with your Google Business Profile, and Local Google setup is £150 as an add-on.</p></details>
+      <details><summary>Will people find me on Google?</summary><p>Starter websites include the Google basics. Business websites and shops link your existing Google Business Profile. Full Google Business Profile setup and optimisation (creating or verifying the profile, categories, photos, services and a review link) is £150 as an add-on.</p></details>
     </div>
   </div>
 </section>
@@ -1016,12 +1016,12 @@ footer { border-top: 1px solid var(--line); }
   // ---------- quote ----------
   const PACKS = [
     { id: "starter", name: "Starter website", price: 395, weeks: "1 to 2 weeks", desc: "One page made for phones, contact form, tap-to-call and Google basics. 2 rounds of changes." },
-    { id: "business", name: "Business website", price: 895, popular: true, weeks: "2 to 4 weeks", desc: "Up to 5 pages, Google Business Profile help, share previews and secure hosting setup. 3 rounds of changes." },
+    { id: "business", name: "Business website", price: 895, popular: true, weeks: "2 to 4 weeks", desc: "Up to 5 pages, basic Google Business Profile linking, share previews and secure hosting setup. 3 rounds of changes." },
     { id: "shop", name: "Online shop", price: 1595, weeks: "4 to 6 weeks", desc: "Everything in Business, plus a shop with up to 20 products, card payments and delivery options." }
   ];
   const ADDONS = [
     { id: "logo", name: "Logo design", price: 150 }, { id: "copy", name: "Copywriting, per page", price: 60, per: "pages" },
-    { id: "booking", name: "Online booking", price: 200 }, { id: "seo", name: "Local Google setup", price: 150 },
+    { id: "booking", name: "Online booking", price: 200 }, { id: "seo", name: "Full Google Business Profile setup and optimisation", price: 150 },
     { id: "photos", name: "Photo editing and stock images", price: 100 }, { id: "extra", name: "Extra pages", price: 120, per: "extra" }
   ];
   $("#packs").innerHTML = PACKS.map(p => `<label class="pack"><input type="radio" name="pack" value="${p.id}" ${state.pack === p.id ? "checked" : ""}>
