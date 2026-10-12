@@ -17,6 +17,7 @@ import aboutyou
 import calcmaths
 import calcunits
 import agenda
+import alfredmem
 import alerts
 import computer
 import dates
@@ -181,7 +182,7 @@ Showing things: when the user asks to see or show something, or it's easier to r
 
 New abilities: if the user asks for something none of your tools (including ones found by search) can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
-{identity_section(settings)}{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}"""
+{identity_section(settings)}{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}{alfredmem.prompt_section(settings)}"""
 
 
 def identity_section(settings: Settings) -> str:
@@ -1261,6 +1262,8 @@ class Brain:
                                            if m["role"] == "assistant" and not isinstance(m["content"], str))))
             if reply and not user_text.startswith("[activate]"):
                 await asyncio.to_thread(save_carry_over, self.settings, self.messages[start]["content"], reply)
+                remember = asyncio.to_thread(alfredmem.remember_turn, self.settings, self.messages[start]["content"], reply)
+                asyncio.get_running_loop().create_task(remember)  # in the background: never slows the reply
         except asyncio.CancelledError:  # you said cancel: forget the half-finished turn so history stays valid
             del self.messages[start:]
             raise

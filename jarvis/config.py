@@ -35,6 +35,8 @@ class Settings:
     omniroute_url: str = os.getenv("JARVIS_OMNIROUTE_URL", "").strip()
     omniroute_key: str = os.getenv("JARVIS_OMNIROUTE_KEY", "").strip()
     omniroute_model: str = os.getenv("JARVIS_OMNIROUTE_MODEL", "auto").strip()
+    alfred_mem: bool = _bool("JARVIS_ALFRED_MEM", True)  # Alfred's own long-term memory (Claude Mem)
+    alfred_mem_port: int = int(os.getenv("JARVIS_ALFRED_MEM_PORT", "37778"))  # not 37777: that's Claude Code's
     omniroute_first: bool = _bool("JARVIS_OMNIROUTE_FIRST", False)  # on: OmniRoute first, Claude when it fails
     effort: str = os.getenv("JARVIS_EFFORT", "low")
     # auto: more thought for harder questions, JARVIS_EFFORT for small talk; low, medium or high fixes it
