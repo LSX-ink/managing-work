@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.requests import ClientDisconnect
 
 import alerts
+import alfredmem
 import helpers
 import tiktokstudio
 import tiktokstudio_store
@@ -71,6 +72,7 @@ async def lifespan(app: FastAPI):
     app.state.alerts = []  # notifications shown on the page, newest last
     app.state.alert_ids = itertools.count(1)
     memory.starter_extras(settings)
+    asyncio.get_running_loop().run_in_executor(None, alfredmem.take_snapshot, settings)  # starts his memory too
     watchers = alerts.start(settings, lambda text, kind: announce(app, text, kind))
     timers.set_announcer(lambda text, kind: announce(app, text, kind))
     helpers.set_context(app.state.client, lambda text, kind: announce(app, text, kind))

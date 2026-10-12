@@ -12,6 +12,7 @@ import httpx
 
 import access
 import aboutyou
+import alfredmem
 import active_calc
 import active_log
 import active_outdoors
@@ -287,7 +288,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 ABILITIES = [todo, habits, money, notesearch, screen, helpers]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
-ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, station}  # headline abilities, never searched for
+ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, station, alfredmem}  # headline abilities, never searched for
 ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
@@ -359,6 +360,7 @@ ABILITIES += [kinetic_find, kinetic_sales, kinetic_invoices]  # Kinetic Web Desi
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
+ABILITIES += [alfredmem]  # Alfred's own long-term memory (Claude Mem)
 
 
 def defer(tool: dict) -> dict:
@@ -599,7 +601,10 @@ async def _run_tool(name: str, args: dict, settings: Settings, http: httpx.Async
     if name in filing.NAMES and settings.email_enabled:
         return await filing.run_tool(name, args, settings)
     if name in aboutyou.NAMES:
-        return await asyncio.to_thread(aboutyou.run_tool, name, args, settings)
+        result = await asyncio.to_thread(aboutyou.run_tool, name, args, settings)
+        if name == "remember_about_user" and result == "Remembered.":
+            await asyncio.to_thread(alfredmem.remember_fact, settings, aboutyou._clean(args["fact"]))
+        return result
     if name == "check_inbox" and settings.email_enabled:
         hours = min(max(int(args.get("hours") or 24), 1), 168)
         return await asyncio.to_thread(inbox_text, settings, hours)
