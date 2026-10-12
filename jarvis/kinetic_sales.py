@@ -13,6 +13,10 @@ domain_owner: once a client says yes, the details their domain name is registere
 name, address, email, phone and their written OK. Shows what is still missing and a message asking the client
 for it. Kept in kinetic-domain-owners.json on this PC only.
 
+welcome_emails: after the deposit invoice, two emails for a new client: a thank-you confirming their order and what
+they'll receive, then "Next steps required from you" (domain owner details, their content and the hosting and care
+plan). With the client's email address they go into Alfred's drafts for the user to send.
+
 outreach: a short first message (email, letter, phone call, walk-in or social DM) built from the audit. Drafts only:
 nothing is ever sent. UK rules on unsolicited marketing email (PECR) are summarised in the note it adds.
 """
@@ -22,14 +26,15 @@ import re
 from datetime import timedelta
 from html import escape
 
+import alfred_mail
 import kinetic_store as st
 import memory
 import screen
 from config import Settings
 
 NAMES = {"web_design_sales"}
-ACTIONS = ["prices", "set_price", "my_details", "quote", "quotes", "quote_status", "domain_owner", "mockup",
-           "outreach"]
+ACTIONS = ["prices", "set_price", "my_details", "quote", "quotes", "quote_status", "domain_owner",
+           "welcome_emails", "mockup", "outreach"]
 QUOTE_STATUSES = ["draft", "sent", "accepted", "declined"]
 CHANNELS = ["email", "letter", "phone", "visit", "dm"]
 DEFAULT_PRICES = {
@@ -157,7 +162,7 @@ def set_price(settings: Settings, args: dict) -> screen.Shown:
 
 
 DETAILS = ["name", "owner", "email", "phone", "website", "address", "bank_name", "sort_code", "account_number",
-           "vat_number"]
+           "vat_number", "plan_link"]
 
 
 def my_details(settings: Settings, args: dict) -> str:
@@ -377,6 +382,79 @@ def domain_owner(settings: Settings, args: dict) -> screen.Shown:
     return f"Quote {q['number']} is now {status}."
 
 
+# ---- welcome emails ----------------------------------------------------------------
+
+def welcome_emails(settings: Settings, args: dict) -> screen.Shown:
+    """The two emails a new client gets after their deposit invoice: order confirmation, then next steps."""
+    q = find_quote(st.rows_of(settings, st.QUOTES), args.get("quote") or args.get("client"))
+    p, me = prices(settings), st.business(settings)
+    name, first = q["client"], st.clean(args.get("contact_name"), 40) or "[First name]"
+    package, includes = (q["lines"][0][0].split(": ", 1) + [""])[:2]
+    extras = [f"{d}" + (f" × {n}" if n > 1 else "") for d, n, _ in q["lines"][1:]]
+    invoices = [i for i in st.rows_of(settings, st.INVOICES) if i.get("quote") == q["number"] and i["status"] != "cancelled"]
+    invoice_no = invoices[0]["number"] if invoices else "[Invoice number]"
+    domain = st.load(settings, st.DOMAIN_OWNERS, {}).get(name, {}).get("domain") or "your domain name"
+    care = q.get("care") or float(p["care_plan"]["price"])
+    sign = "\n".join(x for x in ("Kind regards,", me["owner"] or "[Your name]", me["name"],
+                                  " · ".join(x for x in (me["phone"], me["email"]) if x)) if x)
+    rounds = 2 if q["package"] == "starter" else 3
+    order = "\n".join([f"- {package}" + (f": {includes}" if includes else "")] + [f"- {x}" for x in extras])
+    first_email = (
+        f"Dear {first},\n\nThank you for choosing {me['name']}. I'm pleased to confirm your order and I'm looking "
+        f"forward to building your new website.\n\nYour order\n{order}\n\n"
+        f"Total: {st.gbp(q['total'])}\n"
+        + (f"Deposit to start ({st.num(p['deposit_percent'])}%): {st.gbp(q['deposit'])}, invoice {invoice_no}, sent today\n"
+           f"Balance: {st.gbp(q['total'] - q['deposit'])}, due when your website goes live\n" if q["deposit"] else "")
+        + f"Estimated time: {WEEKS[q['package']]} from receipt of your deposit\n\n"
+        f"What you'll receive\n- A website designed for phones, tablets and computers\n"
+        f"- {rounds} rounds of changes so it's exactly how you want it\n"
+        f"- Your domain name registered in your name, so it always belongs to you\n"
+        f"- Full ownership of the finished website once the final invoice is paid\n\n"
+        f"I'll send a short follow-up email with a few next steps. If you have any questions in the meantime, just "
+        f"reply to this email.\n\n{sign}")
+    join = (f"To join, set up your Direct Debit here: {me['plan_link']}\nOr just reply \"Yes to hosting and care\" "
+            f"with your details from step 1." if me.get("plan_link") else
+            "To join, just reply \"Yes to hosting and care\" with your details from step 1.")
+    second_email = (
+        f"Dear {first},\n\nTo get your website started, there are three quick things I need from you.\n\n"
+        f"1. Your domain owner details\nYour domain name ({domain}) will be registered in your name, so it legally "
+        f"belongs to you. Please reply with your full name or business name, postal address, email and phone number, "
+        f"and the words \"Yes, register {domain} in my name.\"\n\n"
+        f"2. Your content\nYour logo, any photos you'd like to use, and a few lines about your business in your own "
+        f"words. Don't worry if you don't have everything; we can help.\n\n"
+        f"3. Hosting and care: {st.gbp(care)} a month\nA website needs a secure home online, and it needs looking "
+        f"after. Our hosting and care plan means you never have to think about it.\n\nWhat's included\n"
+        f"- Your domain name and hosting: your website stays online, fast and secure.\n"
+        f"- Security checks and updates: we monitor your site and keep everything up to date.\n"
+        f"- Backups: if anything ever goes wrong, we can restore your site.\n"
+        f"- We fix problems for you: if something breaks, we put it right at no extra cost.\n"
+        f"- Small changes at no extra cost: updated prices, opening hours, text, photos or contact details. Just "
+        f"email us and we'll handle it.\n\nLarger changes, such as new pages, new features or a redesign, are quoted "
+        f"separately so you always know the cost before any work begins.\n\nHow it works\n"
+        f"- {st.gbp(care)} a month, starting the month your website goes live.\n"
+        f"- No long contract: cancel any time with one month's notice.\n"
+        f"- If you leave, we hand everything over to you, including your domain.\n\n"
+        f"Without a plan, you'd need to arrange and pay for your own hosting and domain and fix any problems "
+        f"yourself. Most of our clients find the plan saves them time, money and worry.\n\n{join}\n\n{sign}")
+    emails = [(f"Thank you for choosing {me['name']}: your order is confirmed", first_email),
+              ("Next steps required from you", second_email)]
+    for n, (subject, body) in enumerate(emails, 1):
+        st.write(settings, ("Clients", name), f"Welcome email {n} {q['number']}.md", f"Subject: {subject}\n\n{body}\n")
+    to = str(args.get("to") or "").strip()
+    if to:
+        ids = [alfred_mail.draft(settings, {"to": to, "subject": subject, "body": body}).card["id"]
+               for subject, body in emails]
+        text = (f"Both welcome emails for {name} are in my drafts to {to} and have NOT been sent. Send the order "
+                f"confirmation first, then next steps. Say \"send email draft\" with its number when you're happy.")
+        return st.text_card(text, f"Welcome emails: {name}", "\n\n----------\n\n".join(
+            f"Subject: {s}\n\n{b}" for s, b in emails), [
+            {"label": "Send order confirmation", "say": f"Yes, send email draft {ids[0].rsplit('-', 1)[-1]}."}])
+    return st.text_card(
+        f"Both welcome emails for {name} are written and saved in Kinetic Web Designs/Clients/{name}. {st.NOT_SENT} "
+        "Give me their email address and I'll put them in my drafts ready to send.",
+        f"Welcome emails: {name}", "\n\n----------\n\n".join(f"Subject: {s}\n\n{b}" for s, b in emails))
+
+
 # ---- mock-ups ----------------------------------------------------------------------
 
 def trade_of(text: str) -> str:
@@ -556,7 +634,9 @@ def tool_definitions() -> list[dict]:
                        "(draft, sent, accepted, declined). domain_owner: save and check a client's domain owner details "
                        "(domain, owner_name, owner_address, owner_email, owner_phone, owner_ok) so the domain is "
                        "registered in the client's name; only set owner_ok when the user says the client agreed in "
-                       "writing. mockup: a free concept home page for a business, optionally "
+                       "writing. welcome_emails: after the deposit invoice, the order "
+                       "confirmation and next-steps emails for a quote (contact_name, to puts them in drafts; the "
+                       "user sends them). mockup: a free concept home page for a business, optionally "
                        "in a design system saved by extract_design_system (style_from). outreach: a first message "
                        "draft (email, letter, phone script, walk-in script, dm) from the audit. Drafts only: never "
                        "send anything, and only mark a quote sent when the user says they sent it.",
@@ -580,6 +660,8 @@ def tool_definitions() -> list[dict]:
                 "owner_name": {"type": "string", "description": "domain_owner: the client's full or business name."},
                 "owner_address": {"type": "string"}, "owner_email": {"type": "string"},
                 "owner_phone": {"type": "string"},
+                "to": {"type": "string", "description": "welcome_emails: the client's email address, to put both "
+                                                        "emails in Alfred's drafts."},
                 "owner_ok": {"type": "boolean", "description": "domain_owner: true once the client has said in "
                                                                "writing to register it in their name."},
                 "item": {"type": "string", "description": "set_price: starter, business, shop, an add-on, care_plan, "
@@ -603,5 +685,6 @@ def tool_definitions() -> list[dict]:
 
 def run_tool(name: str, args: dict, settings: Settings, http=None):
     handlers = {"prices": show_prices, "set_price": set_price, "my_details": my_details, "quote": quote,
-                "quotes": quotes, "quote_status": quote_status, "domain_owner": domain_owner, "mockup": mockup, "outreach": outreach}
+                "quotes": quotes, "quote_status": quote_status, "domain_owner": domain_owner,
+                "welcome_emails": welcome_emails, "mockup": mockup, "outreach": outreach}
     return st.dispatch(handlers, args.get("action"), settings, args, "web design sales")

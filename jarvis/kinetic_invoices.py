@@ -123,7 +123,11 @@ def invoice(settings: Settings, args: dict) -> screen.Shown:
     if not (me["sort_code"] and me["account_number"]):
         text += " Your bank details aren't saved yet, so add them with 'set my bank details' and make it again, or " \
                 "fill them in before sending."
-    return st.file_shown(settings, path, text, [{"label": "Mark paid", "say": f"Invoice {number} has been paid."}])
+    buttons = [{"label": "Mark paid", "say": f"Invoice {number} has been paid."}]
+    if quote_no and (args.get("part") or "deposit") == "deposit":
+        text += f" Once it's sent, I can write their welcome emails: say \"welcome emails for {quote_no}\"."
+        buttons.append({"label": "Welcome emails", "say": f"Make the welcome emails for quote {quote_no}."})
+    return st.file_shown(settings, path, text, buttons)
 
 
 def invoices(settings: Settings, args: dict) -> screen.Shown:
