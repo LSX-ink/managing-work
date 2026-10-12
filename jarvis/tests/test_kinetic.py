@@ -192,6 +192,24 @@ def test_quote_from_audited_prospect_lists_fixes(s):
     assert "1 open worth £1,245" in sales(s, action="quotes")
 
 
+def test_domain_owner_details_after_a_quote_is_accepted(s):
+    sales(s, action="quote", client="Sal's Cafe", package="starter")
+    assert "domain owner details for Sal's Cafe" in sales(s, action="quote_status", quote="Q-0001", status="accepted")
+    shown = sales(s, action="domain_owner", quote="Q-0001", domain="https://www.salscafe.co.uk/", owner_name="Sal Jones")
+    assert "2 of 5 saved" in shown and "OK is still needed" in shown
+    body = shown.card["text"]
+    assert "✓ Domain name: salscafe.co.uk" in body and "○ Postal address: still needed" in body
+    assert 'reply "Yes, register salscafe.co.uk in my name."' in body and "postal address, email, phone number" in body
+    with pytest.raises(ValueError, match="email address"):
+        sales(s, action="domain_owner", client="Sal's Cafe", owner_email="not-an-email")
+    done = sales(s, action="domain_owner", client="Sal's Cafe", owner_address="1 High St, Stockport",
+                 owner_email="sal@salscafe.test", owner_phone="0161 000 0000", owner_ok=True)
+    assert "complete" in done and "Message to send" not in done.card["text"]
+    assert st.load(s, st.DOMAIN_OWNERS, {})["Sal's Cafe"]["owner_name"] == "Sal Jones"
+    with pytest.raises(ValueError, match="Which client"):
+        sales(s, action="domain_owner")
+
+
 def test_mockup_uses_trade_look_or_saved_design_system(s):
     finder(s, action="find", town="Stockport")
     out = sales(s, action="mockup", client="Sal's Cafe")

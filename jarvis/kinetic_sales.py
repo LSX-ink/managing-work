@@ -9,6 +9,10 @@ mockup: a one-page, phone-friendly concept home page for the business, in colour
 system saved by extract_design_system (style_from). Saved in Kinetic Web Designs/Mockups/<business>/index.html. It uses
 no photos or logos from the business, so it is safe to show them as a concept.
 
+domain_owner: once a client says yes, the details their domain name is registered with (the legal owner):
+name, address, email, phone and their written OK. Shows what is still missing and a message asking the client
+for it. Kept in kinetic-domain-owners.json on this PC only.
+
 outreach: a short first message (email, letter, phone call, walk-in or social DM) built from the audit. Drafts only:
 nothing is ever sent. UK rules on unsolicited marketing email (PECR) are summarised in the note it adds.
 """
@@ -24,7 +28,8 @@ import screen
 from config import Settings
 
 NAMES = {"web_design_sales"}
-ACTIONS = ["prices", "set_price", "my_details", "quote", "quotes", "quote_status", "mockup", "outreach"]
+ACTIONS = ["prices", "set_price", "my_details", "quote", "quotes", "quote_status", "domain_owner", "mockup",
+           "outreach"]
 QUOTE_STATUSES = ["draft", "sent", "accepted", "declined"]
 CHANNELS = ["email", "letter", "phone", "visit", "dm"]
 DEFAULT_PRICES = {
@@ -47,8 +52,9 @@ DEFAULT_PRICES = {
         "seo": {"name": "Local Google setup", "price": 150},
         "photos": {"name": "Photo editing and stock images", "price": 100},
     },
-    "care_plan": {"name": "Monthly care plan", "price": 35,
-                  "includes": "Hosting, security updates, backups and small text changes each month."},
+    "care_plan": {"name": "Monthly hosting and care", "price": 35,
+                  "includes": "Your domain name, hosting, security updates, backups and small text changes each "
+                              "month."},
     "deposit_percent": 50,
     "valid_days": 30,
 }
@@ -251,7 +257,8 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
              f"<li>Once you're happy, it goes live and the rest ({st.gbp(total - deposit)}) is invoiced.</li>", "</ol>",
              "<h2>The small print</h2>", "<ul>",
              "<li>You own the finished website and its content once the final invoice is paid.</li>",
-             "<li>Domain name and any paid plugins or shop fees are paid by you, at cost.</li>",
+             "<li>Your domain name is registered in your name, so it is yours. It is included with hosting and "
+             "care; without it, the domain and any paid plugins or shop fees are paid by you, at cost.</li>",
              "<li>Changes beyond the included rounds are charged at an agreed hourly rate.</li>",
              f"<li>Prices {'exclude VAT' if vat else 'have no VAT to add'}.</li>", "</ul>",
              f"<footer>Quote {number} · valid until {st.long_date(valid)}</footer>"]
@@ -314,7 +321,58 @@ def quote_status(settings: Settings, args: dict) -> str:
         st.save(settings, st.PROSPECTS, prospects)
     if status == "accepted":
         return (f"Brilliant, {q['client']} accepted quote {q['number']} for {st.gbp(q['total'])}. Say \"make the "
-                f"deposit invoice for {q['number']}\" when you're ready.")
+                f"deposit invoice for {q['number']}\" when you're ready. Next, collect their domain owner details: "
+                f"say \"domain owner details for {q['client']}\".")
+
+
+# ---- domain owner details ----------------------------------------------------------
+
+OWNER_FIELDS = [("domain", "Domain name"), ("owner_name", "Owner's full name or business name"),
+                ("owner_address", "Postal address"), ("owner_email", "Email"), ("owner_phone", "Phone number")]
+
+
+def domain_owner(settings: Settings, args: dict) -> screen.Shown:
+    """The details a client's domain is registered with, so the domain legally belongs to them."""
+    if not (args.get("client") or args.get("quote")):
+        raise ValueError("Which client's domain? Give their name.")
+    name = find_quote(st.rows_of(settings, st.QUOTES), args["quote"])["client"] if args.get("quote") \
+        else client_and_prospect(settings, args)[0]
+    owners = st.load(settings, st.DOMAIN_OWNERS, {})
+    rec = owners.get(name, {})
+    changed = False
+    for key, _ in OWNER_FIELDS:
+        if args.get(key):
+            value = st.clean(args[key], 200)
+            if key == "domain":
+                value = st.domain(value) or value.lower()
+            elif key == "owner_email" and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
+                raise ValueError("That email address doesn't look right.")
+            rec[key] = value
+            changed = True
+    if args.get("owner_ok") is not None:
+        rec["owner_ok"] = st.today().isoformat() if args["owner_ok"] else ""
+        changed = True
+    if changed:
+        owners[name] = rec
+        st.save(settings, st.DOMAIN_OWNERS, owners)
+    lines = [f"{'✓' if rec.get(k) else '○'} {label}: {rec.get(k) or 'still needed'}" for k, label in OWNER_FIELDS]
+    lines.append(f"{'✓' if rec.get('owner_ok') else '○'} Their written OK to register it in their name: "
+                 + (f"given {rec['owner_ok']}" if rec.get("owner_ok") else "still needed"))
+    missing = [label.lower() for k, label in OWNER_FIELDS[1:] if not rec.get(k)]
+    domain = rec.get("domain") or "your new domain name"
+    if missing or not rec.get("owner_ok"):
+        ask = ("Hi, to register " + domain + " so that it legally belongs to you, I need "
+               + (", ".join(missing) if missing else "nothing else") + ". Please also reply \"Yes, register "
+               + domain + " in my name.\" I'll only use these details for your domain.")
+        body = "\n".join(lines) + "\n\nMessage to send them:\n" + ask
+        text = (f"{name}'s domain owner details: {sum(1 for k, _ in OWNER_FIELDS if rec.get(k))} of "
+                f"{len(OWNER_FIELDS)} saved" + ("" if rec.get("owner_ok") else ", and their OK is still needed")
+                + ". There's a message you can send them on the card. " + st.NOT_SENT)
+    else:
+        body = "\n".join(lines) + ("\n\nAll set. Buy the domain in your Cloudflare account and enter these as the "
+                                   "owner (registrant) details.")
+        text = f"{name}'s domain owner details are complete, so you can register {domain} in their name."
+    return st.text_card(text, f"Domain owner: {name}", body)
     return f"Quote {q['number']} is now {status}."
 
 
@@ -494,7 +552,10 @@ def tool_definitions() -> list[dict]:
                        "seo, photos), care_plan per month and deposit percent. my_details: business name, owner, "
                        "contact and bank details used on quotes and invoices. quote: a printable website quote for a "
                        "client or saved prospect (lists what their audit found). quotes / quote_status: track quotes "
-                       "(draft, sent, accepted, declined). mockup: a free concept home page for a business, optionally "
+                       "(draft, sent, accepted, declined). domain_owner: save and check a client's domain owner details "
+                       "(domain, owner_name, owner_address, owner_email, owner_phone, owner_ok) so the domain is "
+                       "registered in the client's name; only set owner_ok when the user says the client agreed in "
+                       "writing. mockup: a free concept home page for a business, optionally "
                        "in a design system saved by extract_design_system (style_from). outreach: a first message "
                        "draft (email, letter, phone script, walk-in script, dm) from the audit. Drafts only: never "
                        "send anything, and only mark a quote sent when the user says they sent it.",
@@ -514,6 +575,12 @@ def tool_definitions() -> list[dict]:
                 "notes": {"type": "string", "description": "quote: a personal opening line."},
                 "quote": {"type": "string", "description": "Quote number like Q-0001, or the client."},
                 "status": {"type": "string", "enum": QUOTE_STATUSES},
+                "domain": {"type": "string", "description": "domain_owner: the client's domain, e.g. joes.co.uk."},
+                "owner_name": {"type": "string", "description": "domain_owner: the client's full or business name."},
+                "owner_address": {"type": "string"}, "owner_email": {"type": "string"},
+                "owner_phone": {"type": "string"},
+                "owner_ok": {"type": "boolean", "description": "domain_owner: true once the client has said in "
+                                                               "writing to register it in their name."},
                 "item": {"type": "string", "description": "set_price: starter, business, shop, an add-on, care_plan, "
                                                           "deposit (percent) or valid_days."},
                 "price": {"type": "number"},
@@ -535,5 +602,5 @@ def tool_definitions() -> list[dict]:
 
 def run_tool(name: str, args: dict, settings: Settings, http=None):
     handlers = {"prices": show_prices, "set_price": set_price, "my_details": my_details, "quote": quote,
-                "quotes": quotes, "quote_status": quote_status, "mockup": mockup, "outreach": outreach}
+                "quotes": quotes, "quote_status": quote_status, "domain_owner": domain_owner, "mockup": mockup, "outreach": outreach}
     return st.dispatch(handlers, args.get("action"), settings, args, "web design sales")
