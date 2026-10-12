@@ -191,6 +191,9 @@ def client_and_prospect(settings: Settings, args: dict) -> tuple[str, dict | Non
     return (p["name"] if p else st.need(who, "client", 80)), p
 
 
+REBUILD_OFF = 20
+REBUILD_PACKAGES = ("business", "shop")
+
 def quote_lines(settings: Settings, args: dict) -> tuple[list[tuple[str, int, float]], float, str]:
     """[(description, qty, unit price)], monthly care price (0 if none) and the package key."""
     p = prices(settings)
@@ -225,8 +228,10 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     lines, care, package = quote_lines(settings, args)
     p = prices(settings)
     subtotal = sum(q * u for _, q, u in lines)
-    discount = st.number(args.get("discount"), "discount", True, subtotal) if args.get("discount") else 0.0
-    total = round(subtotal - discount, 2)
+    # Clients who already have a website get 20% off a business site or shop rebuild, as the website promises.
+    rebuild = round(lines[0][2] * REBUILD_OFF / 100, 2) if args.get("existing_website") is True and package in REBUILD_PACKAGES else 0.0
+    discount = st.number(args.get("discount"), "discount", True, subtotal - rebuild) if args.get("discount") else 0.0
+    total = round(subtotal - rebuild - discount, 2)
     deposit = round(total * p["deposit_percent"] / 100, 2)
     rows = st.rows_of(settings, st.QUOTES)
     qid = st.next_id(rows)
@@ -246,6 +251,9 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     table = ["<table><tr><th>Item</th><th class=n>Qty</th><th class=n>Price</th><th class=n>Total</th></tr>"]
     table += [f"<tr><td>{escape(d)}</td><td class=n>{q}</td><td class=n>{st.gbp(u)}</td><td class=n>{st.gbp(q * u)}</td></tr>"
               for d, q, u in lines]
+    if rebuild:
+        table.append(f"<tr><td>Existing website: {REBUILD_OFF}% off the {escape(lines[0][0].split(': ')[0])}</td><td></td><td></td>"
+                     f"<td class=n>-{st.gbp(rebuild)}</td></tr>")
     if discount:
         table.append(f"<tr><td>Discount</td><td></td><td></td><td class=n>-{st.gbp(discount)}</td></tr>")
     table.append(f"<tr class=total><td>Total</td><td></td><td></td><td class=n>{st.gbp(total)}</td></tr></table>")
@@ -271,7 +279,7 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     path = st.write(settings, ("Clients", name), f"Quote {number}.html", html)
     rows.append({"id": qid, "number": number, "client": name, "package": package, "total": total, "deposit": deposit,
                  "care": care, "date": st.today().isoformat(), "valid_until": valid.isoformat(), "status": "draft",
-                 "lines": [[d, q, u] for d, q, u in lines], "discount": discount, "file": st.where(settings, path)})
+                 "lines": [[d, q, u] for d, q, u in lines], "discount": discount, "rebuild_discount": rebuild, "file": st.where(settings, path)})
     st.save(settings, st.QUOTES, rows)
     text = (f"Quote {number} for {name}: {st.gbp(total)}" + (f", with a {st.gbp(deposit)} deposit" if deposit else "")
             + (f" and an optional {st.gbp(care)} a month care plan" if care else "") +
@@ -678,6 +686,8 @@ def tool_definitions() -> list[dict]:
                     "description": {"type": "string"}, "price": {"type": "number"}}}},
                 "care_plan": {"type": "boolean", "description": "quote: offer the monthly care plan (default true)."},
                 "discount": {"type": "number", "description": "quote: pounds off."},
+                "existing_website": {"type": "boolean", "description": "quote: true when the client already has a "
+                                     "website; takes 20% off a business or shop package, as the Kinetic website offers."},
                 "notes": {"type": "string", "description": "quote: a personal opening line."},
                 "quote": {"type": "string", "description": "Quote number like Q-0001, or the client."},
                 "status": {"type": "string", "enum": QUOTE_STATUSES},

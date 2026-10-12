@@ -323,3 +323,17 @@ def test_invoice_from_items_without_bank_details(s):
 def test_registered_with_alfred(s):
     names = {t["name"] for t in tools.client_tool_definitions(s)}
     assert {"web_client_finder", "web_design_sales", "web_design_invoices"} <= names
+
+
+def test_existing_website_takes_20_percent_off_business_and_shop(s):
+    out = sales(s, action="quote", client="Ada's Cafe", package="business", existing_website=True)
+    q = st.rows_of(s, st.QUOTES)[0]
+    assert q["total"] == 716 and q["rebuild_discount"] == 179 and "£716" in out
+    html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Ada's Cafe" / "Quote Q-0001.html").read_text(encoding="utf-8")
+    assert "Existing website: 20% off" in html and "-£179" in html
+    sales(s, action="quote", client="Shop Co", package="shop", existing_website=True, discount=76)
+    assert st.rows_of(s, st.QUOTES)[1]["total"] == 1200
+    sales(s, action="quote", client="Tiny", package="starter", existing_website=True)
+    assert st.rows_of(s, st.QUOTES)[2]["total"] == 395  # starter sites don't get it
+    sales(s, action="quote", client="Bo", package="business", existing_website="yes")
+    assert st.rows_of(s, st.QUOTES)[3]["total"] == 895  # only a real true counts
