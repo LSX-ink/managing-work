@@ -482,6 +482,20 @@ def test_time_differences_between_cities_are_instant(monkeypatch):
     assert instant_answer("time difference between London and Atlantis", en) is None
 
 
+def test_dates_of_weekdays_and_yesterday_are_instant():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-06 14:45", "%Y-%m-%d %H:%M")  # a Tuesday
+    assert instant_answer("what's the date next Friday", en, now) == "Friday is the 9th of October."
+    assert instant_answer("what's the date on Tuesday", en, now) == "Tuesday is the 13th of October."
+    assert instant_answer("when is Friday after next", en, now) == "Friday is the 16th of October."
+    assert instant_answer("what was the date last Friday", en, now) == "Last Friday was the 2nd of October."
+    assert instant_answer("what was the date on Friday", en, now) == "Last Friday was the 2nd of October."
+    assert instant_answer("what was the date yesterday", en, now) == "Yesterday was Monday the 5th of October."
+    assert instant_answer("when is my dentist", en, now) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
