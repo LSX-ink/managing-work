@@ -276,6 +276,15 @@ nav a:hover { color: var(--accent); }
 .addon input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
 .addon span { flex: 1; }
 .care-addon { grid-column: 1 / -1; border-color: var(--accent); }
+.care-why { grid-column: 1 / -1; margin-top: -4px; }
+.care-why summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: .88rem; }
+.care-why summary::-webkit-details-marker { display: none; }
+.care-why summary span { font-size: 1.1rem; letter-spacing: .1em; color: var(--accent); line-height: 1; }
+.care-why[open] summary { color: var(--ink); border-color: var(--accent); }
+.care-why ul { margin: 10px 0 0; padding: 14px 18px 14px 34px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 8px; }
+.care-why li { color: var(--muted); font-size: .93rem; }
+.care-why li b { color: var(--ink); }
 .addon em { font-style: normal; font-family: var(--mono); font-size: .85rem; color: var(--muted); }
 .addon input[type="number"] { width: 56px; font: 500 .9rem var(--mono); padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
 .total { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); background: var(--ink); color: var(--bg); border-radius: 20px; padding: 26px; display: grid; gap: 14px; }
@@ -804,7 +813,16 @@ footer nav a:hover { color: var(--ink); }
     <span><h3>${p.name}${p.popular ? '<span class="badge">Recommended</span>' : ""}</h3><p>${p.desc}</p></span><span class="price">${money(p.price)}</span></label>`).join("");
   $("#addons").innerHTML = ADDONS.map(a => `<label class="addon"><input type="checkbox" data-a="${a.id}" ${state.addons[a.id] ? "checked" : ""}><span>${a.name}</span>
     ${a.per ? `<input type="number" min="1" max="20" value="${state.addons[a.id] || 1}" data-q="${a.id}" aria-label="How many">` : ""}<em>${money(a.price)}</em></label>`).join("") +
-    `<label class="addon care-addon"><input type="checkbox" id="care" ${state.care ? "checked" : ""}><span><b>Hosting and care, paid monthly</b><br>Your domain, hosting, security checks, updates, backups and small changes</span><em>£20/mo</em></label>`;
+    `<label class="addon care-addon"><input type="checkbox" id="care" ${state.care ? "checked" : ""}><span><b>Hosting and care, paid monthly</b><br>Your domain, hosting, security checks, updates, backups and small changes</span><em>£20/mo</em></label>
+    <details class="care-why"><summary aria-label="Why hosting and care matters"><span aria-hidden="true">•••</span> Why it matters</summary><ul>
+      <li><b>Your site stays online.</b> We renew your domain and hosting for you, so your website never expires or disappears.</li>
+      <li><b>Kept safe.</b> Regular security checks and updates keep hackers and spam out and your padlock (HTTPS) working.</li>
+      <li><b>Backed up.</b> If anything ever goes wrong, we restore your site quickly from a recent backup.</li>
+      <li><b>Problems fixed for you.</b> If something breaks, we put it right at no extra cost.</li>
+      <li><b>Small changes included.</b> New prices, opening hours, photos or text, updated whenever you ask.</li>
+      <li><b>Fast and found on Google.</b> We keep your site quick and working on new phones and browsers, which helps customers find you.</li>
+      <li><b>One person to call, no long contract.</b> Cancel any time with a month's notice.</li>
+    </ul></details>`;
   $("#packs").addEventListener("change", e => { state.pack = e.target.value; save(); quote(); });
   $("#addons").addEventListener("change", e => {
     const id = e.target.dataset.a || e.target.dataset.q;
