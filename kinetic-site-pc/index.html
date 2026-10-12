@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinetic Web Designs</title>
+<meta name="description" content="Kinetic Web Designs builds websites around your colours: pick a style, test three colours in our colour lab, get an instant quote and tell us your vision.">
+<link rel="canonical" href="https://lsx-ink.github.io/managing-work/">
+<meta name="theme-color" content="#2a46d1">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kinetic Web Designs">
+<meta property="og:title" content="Kinetic Web Designs: your website, built around your colours">
+<meta property="og:description" content="Pick a style, test your colours on a real page and see your price before you ask. Websites from £395 for independent businesses.">
+<meta property="og:url" content="https://lsx-ink.github.io/managing-work/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect width='28' height='28' rx='7' fill='%232a46d1'/%3E%3Cpath d='M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "ProfessionalService", "name": "Kinetic Web Designs",
+ "description": "Websites for independent businesses, built around your colours, with prices shown up front.",
+ "url": "https://lsx-ink.github.io/managing-work/", "email": "alfredw.lsx@gmail.com", "areaServed": "GB", "priceRange": "£395 to £1,595",
+ "makesOffer": [
+  {"@type": "Offer", "name": "Starter website", "price": "395", "priceCurrency": "GBP"},
+  {"@type": "Offer", "name": "Business website", "price": "895", "priceCurrency": "GBP"},
+  {"@type": "Offer", "name": "Online shop", "price": "1595", "priceCurrency": "GBP"}]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;550;600;650;700;750&family=Geist+Mono:wght@500;600&family=Syne:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Kinetic Web Designs, MCP build.
+   Design rules from the Higgsfield website-builder design recipe: one cobalt accent on a cool neutral base,
+   Geist + Geist Mono, one corner radius (12px), a split hero with a real component preview as its visual,
+   no eyebrow labels, no glow or gradient effects, one signature motion (the hero preview cycling styles and colours). */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --sunk: #e9ebef;
+  --ink: #11141b;
+  --muted: #535a69;
+  --line: #d8dbe2;
+  --accent: #2a46d1;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6eafb;
+  --good: #13704a;
+  --bad: #b3261e;
+  --display: "Geist", "Segoe UI", system-ui, sans-serif;
+  --body: "Geist", "Segoe UI", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Consolas, monospace;
+  --r: 12px;
+  --gutter: clamp(16px, 4vw, 40px);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1015; --surface: #161921; --sunk: #1d212b; --ink: #eceef3; --muted: #a2a8b5; --line: #2a2f3b;
+    --accent: #8ea0ff; --accent-ink: #0e1015; --accent-soft: #1f2540; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1015; --surface: #161921; --sunk: #1d212b; --ink: #eceef3; --muted: #a2a8b5; --line: #2a2f3b;
+  --accent: #8ea0ff; --accent-ink: #0e1015; --accent-soft: #1f2540; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+html, body { overflow-x: clip; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: var(--gutter); }
+a { color: var(--accent); }
+h1, h2, h3 { font-family: var(--display); line-height: 1.05; text-wrap: balance; margin: 0; letter-spacing: -0.035em; font-weight: 700; }
+h2 { font-size: clamp(2rem, 4.4vw, 3.1rem); }
+h3 { font-size: 1.12rem; letter-spacing: -0.015em; font-weight: 650; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 60ch; font-size: 1.08rem; line-height: 1.6; }
+.label { font-weight: 650; font-size: .9rem; color: var(--ink); }
+.eyebrow { font-weight: 600; font-size: .88rem; color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: var(--r); z-index: 200; }
+.skip:focus { left: 16px; }
+section { padding-block: clamp(64px, 9vw, 112px); }
+.head { display: grid; gap: 16px; margin-bottom: clamp(28px, 4vw, 44px); }
+
+/* Buttons: three identities. Solid ink for doing, cobalt with a sliding arrow for moving forward, outline for secondary. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font: 600 .98rem/1 var(--body); letter-spacing: -0.01em;
+  border: 1.5px solid var(--ink); background: var(--ink); color: var(--bg); padding: 14px 20px; border-radius: var(--r); cursor: pointer;
+  text-decoration: none; transition: transform .2s cubic-bezier(.3,.7,.4,1), background .2s ease, color .2s ease, border-color .2s ease; white-space: nowrap; }
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(1px) scale(.98); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--ink); }
+.btn.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.accent::after { content: "\2192"; font-family: var(--mono); transition: transform .25s cubic-bezier(.3,.7,.4,1); }
+.btn.accent:hover::after { transform: translateX(4px); }
+.btn:disabled { opacity: .6; cursor: progress; }
+.textlink { font-weight: 600; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 6px; text-decoration-thickness: 2px; transition: text-decoration-color .2s ease; }
+.textlink:hover { text-decoration-color: var(--accent); }
+
+/* Header */
+.bar { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(12px) saturate(150%);
+  border-bottom: 1px solid transparent; transition: border-color .2s ease; }
+.bar.scrolled { border-bottom-color: var(--line); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 68px; }
+.logo { font: 700 1.15rem var(--display); letter-spacing: -0.03em; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+.logo svg { width: 28px; height: 28px; flex: none; }
+.bar nav { display: flex; gap: 26px; }
+.bar nav a { color: var(--muted); text-decoration: none; font-weight: 550; font-size: .93rem; transition: color .15s ease; }
+.bar nav a:hover { color: var(--ink); }
+.bar .btn { padding: 11px 16px; font-size: .92rem; }
+@media (max-width: 900px) { .bar nav { display: none; } }
+
+/* Hero: copy left, a live front page right */
+.hero { padding-block: clamp(40px, 7vw, 88px) clamp(48px, 7vw, 80px); }
+.hero .wrap { display: grid; grid-template-columns: .92fr 1.08fr; gap: clamp(32px, 5vw, 72px); align-items: center; }
+@media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; } }
+.hero .copy { display: grid; gap: 26px; min-width: 0; }
+.hero h1 { font-size: clamp(2.7rem, 6.4vw, 4.9rem); line-height: .98; letter-spacing: -0.05em; font-weight: 750; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lede { font-size: 1.15rem; max-width: 42ch; }
+.ctas { display: flex; gap: 22px; flex-wrap: wrap; align-items: center; }
+.showcase { min-width: 0; display: grid; gap: 12px; }
+.showcase .frame { border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 1px 0 var(--line), 0 30px 70px -40px rgba(17,20,27,.45); }
+.showcase .fp { animation: fp-in .7s cubic-bezier(.3,.7,.4,1); }
+@keyframes fp-in { from { opacity: 0; transform: scale(var(--k, .5)) translateY(8px); } to { opacity: 1; transform: scale(var(--k, .5)); } }
+.caption { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font: 500 .82rem var(--mono); color: var(--muted); }
+.caption .dots { display: inline-flex; gap: 4px; }
+.caption .dots b { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line); display: inline-block; transition: background .5s ease; }
+.caption button { margin-left: auto; font: 500 .82rem var(--mono); background: none; border: 0; color: var(--muted); cursor: pointer; padding: 4px 0; text-decoration: underline; text-underline-offset: 4px; }
+
+/* Promises: one ruled row, no cards */
+.promise-band { padding-block: 0; }
+.promises { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); border-block: 1px solid var(--line); }
+.promises li { padding: 22px 22px 24px 0; display: grid; gap: 4px; }
+.promises li + li { padding-left: 22px; border-left: 1px solid var(--line); }
+.promises strong { font-family: var(--display); font-size: 1.02rem; letter-spacing: -0.015em; }
+.promises span { color: var(--muted); font-size: .93rem; }
+@media (max-width: 860px) { .promises { grid-template-columns: 1fr 1fr; }
+  .promises li:nth-child(3) { border-left: 0; padding-left: 0; } .promises li:nth-child(n+3) { border-top: 1px solid var(--line); } }
+@media (max-width: 480px) { .promises { grid-template-columns: 1fr; } .promises li, .promises li + li { padding-left: 0; border-left: 0; } .promises li + li { border-top: 1px solid var(--line); } }
+
+/* Process: a numbered track */
+.steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; counter-reset: step; }
+.steps li { counter-increment: step; display: grid; gap: 10px; align-content: start; padding: 0 22px 0 0; position: relative; min-width: 0; }
+.steps li::before { content: counter(step); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface); border: 1.5px solid var(--ink); font: 600 .9rem var(--mono); position: relative; z-index: 1; margin-bottom: 8px; }
+.steps li::after { content: ""; position: absolute; left: 36px; right: 0; top: 18px; height: 1.5px; background: var(--line); }
+.steps li:last-child::after { display: none; }
+.steps li:first-child::before { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.steps p { color: var(--muted); font-size: .94rem; }
+@media (max-width: 960px) { .steps { grid-template-columns: 1fr; gap: 22px; }
+  .steps li { grid-template-columns: 36px 1fr; column-gap: 16px; padding: 0; }
+  .steps li::before { grid-row: span 2; margin: 0; }
+  .steps li::after { left: 17px; right: auto; top: 40px; bottom: -22px; width: 1.5px; height: auto; } }
+
+/* Styles gallery */
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; padding: 4px; background: var(--sunk); border-radius: var(--r); width: fit-content; max-width: 100%; }
+.chip { border: 0; background: transparent; color: var(--muted); border-radius: 9px; padding: 8px 14px; font: 600 .9rem var(--body); cursor: pointer; transition: background .2s ease, color .2s ease; }
+.chip:hover { color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(17,20,27,.12); }
+.styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 980px) { .styles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .styles { grid-template-columns: 1fr; } }
+.style { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: grid; grid-template-rows: auto 1fr; min-width: 0; transition: border-color .2s ease, box-shadow .2s ease; }
+.style:hover { border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); }
+.style .meta { padding: 18px; display: grid; gap: 10px; align-content: start; }
+.style .meta p { color: var(--muted); font-size: .93rem; }
+.style .meta .for { font: 500 .78rem var(--mono); color: var(--muted); }
+.style .labtools .btn { padding: 10px 14px; font-size: .88rem; }
+.style.picked { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+
+/* front-page previews: a real 960px-wide home page, scaled down to fit its frame */
+.frame { position: relative; overflow: hidden; aspect-ratio: 960 / 640; background: var(--sunk); border-bottom: 1px solid var(--line); }
+.frame .fp { position: absolute; top: 0; left: 0; transform: scale(var(--k, .35)); transform-origin: top left; pointer-events: none; }
+.frame .zoom { position: absolute; right: 10px; bottom: 10px; font: 600 .8rem var(--body); background: rgba(10,12,18,.78); color: #fff; border: 0; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sw { display: flex; border-radius: 999px; overflow: hidden; border: 2px solid var(--line); padding: 0; cursor: pointer; height: 28px; background: none; }
+.sw span { width: 16px; }
+.sw[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.sw.yours { font: 600 .75rem var(--body); color: var(--ink); padding: 0 10px; align-items: center; }
+.fp { width: 960px; min-height: 640px; background: var(--m-bg); color: var(--m-ink); font: 15px/1.5 var(--m-font); text-align: left;
+  --line: color-mix(in srgb, var(--m-ink) 14%, transparent); --card: color-mix(in srgb, var(--m-ink) 6%, var(--m-bg)); }
+.fp * { box-sizing: border-box; }
+.fp .fnav { display: flex; justify-content: space-between; align-items: center; padding: 20px 44px; border-bottom: 1px solid var(--line); }
+.fp .flogo { font: 700 21px var(--m-display); display: flex; gap: 10px; align-items: center; }
+.fp .flogo i { width: 22px; height: 22px; border-radius: calc(var(--m-r) / 2 + 3px); background: var(--m-main); display: inline-block; }
+.fp .flinks { display: flex; gap: 26px; font-size: 14px; opacity: .78; }
+.fp .fbtn { display: inline-block; background: var(--m-main); color: var(--m-on); padding: 11px 20px; border-radius: var(--m-r); font-weight: 700; font-size: 14px; }
+.fp .fghost { display: inline-block; border: 2px solid currentColor; padding: 9px 18px; border-radius: var(--m-r); font-weight: 700; font-size: 14px; }
+.fp .fhero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 44px; padding: 58px 44px 46px; align-items: center; }
+.fp .fkick { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--m-accent); font-weight: 700; margin-bottom: 14px; }
+.fp h5 { font: 700 54px/1.02 var(--m-display); margin: 0 0 18px; letter-spacing: -.01em; }
+.fp .fsub { opacity: .75; font-size: 17px; max-width: 40ch; margin: 0 0 26px; }
+.fp .fbtns { display: flex; gap: 12px; align-items: center; }
+.fp .fart { height: 300px; border-radius: var(--m-r); position: relative; overflow: hidden;
+  background: radial-gradient(circle at 70% 30%, color-mix(in srgb, var(--m-accent) 85%, #fff) 0 18%, transparent 19%),
+              linear-gradient(160deg, color-mix(in srgb, var(--m-main) 70%, #fff) 0%, var(--m-main) 55%, color-mix(in srgb, var(--m-main) 60%, #000) 100%); }
+.fp .fart::before { content: ""; position: absolute; left: -10%; right: -10%; bottom: -40%; height: 75%; border-radius: 50%; background: color-mix(in srgb, var(--m-main) 45%, #000); opacity: .55; }
+.fp .fart::after { content: ""; position: absolute; left: 12%; bottom: 14%; width: 38%; height: 44%; border-radius: var(--m-r) var(--m-r) 0 0; background: color-mix(in srgb, var(--m-bg) 92%, var(--m-main)); box-shadow: 140px 30px 0 -10px color-mix(in srgb, var(--m-accent) 80%, var(--m-bg)); }
+.fp .fbadge { position: absolute; z-index: 1; left: 18px; top: 18px; background: var(--m-bg); color: var(--m-ink); font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+.fp .fserv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 0 44px 34px; }
+.fp .fserv div { background: var(--card); padding: 22px; border-radius: var(--m-r); }
+.fp .fserv b { display: block; width: 36px; height: 36px; border-radius: calc(var(--m-r) / 2 + 6px); background: var(--m-accent); margin-bottom: 14px; }
+.fp .fserv strong { display: block; font: 700 17px var(--m-display); margin-bottom: 4px; }
+.fp .fserv span { font-size: 14px; opacity: .72; }
+.fp .fquote { margin: 0 44px 40px; padding: 22px 26px; border-left: 4px solid var(--m-accent); background: var(--card); border-radius: 0 var(--m-r) var(--m-r) 0; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+.fp .fquote q { font-size: 17px; font-style: italic; }
+.fp .fquote small { white-space: nowrap; color: var(--m-accent); font-weight: 700; letter-spacing: 2px; }
+/* Bold: the hero is a solid block of the main colour with huge type */
+.fp.s-bold .fhero { background: var(--m-main); color: var(--m-on); grid-template-columns: 1.35fr .65fr; padding-block: 64px; margin-bottom: 34px; }
+.fp.s-bold h5 { font-size: 76px; text-transform: uppercase; line-height: .95; font-weight: 800; }
+.fp.s-bold .fhero .fbtn { background: var(--m-accent); color: var(--m-ink); }
+.fp.s-bold .fkick { color: inherit; opacity: .8; }
+.fp.s-bold .fart { height: 280px; background: var(--m-accent); border-radius: var(--m-r); }
+.fp.s-bold .fart::before { background: var(--m-ink); opacity: .9; height: 45%; border-radius: 0; left: 0; right: 0; bottom: 0; }
+.fp.s-bold .fart::after { background: var(--m-on); box-shadow: none; left: 18%; width: 30%; height: 62%; bottom: 0; border-radius: 0; }
+.fp.s-bold .fserv div { border-top: 6px solid var(--m-main); }
+/* Elegant: centred serif, thin rules, quiet buttons */
+.fp.s-elegant .fnav { justify-content: center; flex-direction: column; gap: 10px; padding-block: 24px; }
+.fp.s-elegant .flinks { text-transform: uppercase; letter-spacing: .2em; font-size: 11px; }
+.fp.s-elegant .flogo i, .fp.s-elegant .fnav .fbtn { display: none; }
+.fp.s-elegant .flogo { font-weight: 400; font-size: 26px; letter-spacing: .06em; }
+.fp.s-elegant .fhero { grid-template-columns: 1fr; text-align: center; justify-items: center; padding-top: 50px; gap: 30px; }
+.fp.s-elegant h5 { font-weight: 400; font-size: 58px; }
+.fp.s-elegant h5 em { font-style: italic; color: var(--m-main); }
+.fp.s-elegant .fsub { margin-inline: auto; }
+.fp.s-elegant .fbtns { justify-content: center; }
+.fp.s-elegant .fbtn, .fp.s-elegant .fghost { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 600; }
+.fp.s-elegant .fart { width: 100%; height: 200px; }
+.fp.s-elegant .fserv div { background: none; border-top: 1px solid var(--m-ink); border-radius: 0; text-align: center; }
+.fp.s-elegant .fserv b { width: 8px; height: 8px; margin: 0 auto 14px; border-radius: 50%; }
+.fp.s-elegant .fquote { border: 0; background: none; justify-content: center; flex-direction: column; text-align: center; }
+/* Playful: soft blobs, a tinted hero card and a sticker */
+.fp.s-playful .fhero { margin: 26px 44px 34px; padding: 44px; background: color-mix(in srgb, var(--m-accent) 20%, var(--m-bg)); border-radius: 36px; }
+.fp.s-playful .fart { border-radius: 46% 54% 40% 60% / 55% 45% 55% 45%; height: 280px; }
+.fp.s-playful .fart::after { border-radius: 50%; width: 34%; height: 34%; left: 16%; bottom: 30%; }
+.fp.s-playful .fbadge { left: auto; right: 6px; top: 6px; transform: rotate(8deg); background: var(--m-accent); color: var(--m-ink); padding: 14px 16px; border-radius: 50%; width: 92px; height: 92px; display: grid; place-items: center; text-align: center; line-height: 1.1; }
+.fp.s-playful .fserv div { border-radius: 26px; }
+.fp.s-playful .fserv b { border-radius: 50%; }
+.fp.s-playful .fquote { border: 0; border-radius: 26px; }
+/* Studio: magazine grid with big image tiles */
+.fp.s-studio .fnav { border-bottom: 2px solid var(--m-ink); }
+.fp.s-studio .flinks { text-transform: uppercase; font-size: 12px; letter-spacing: .12em; opacity: 1; }
+.fp.s-studio .fhero { grid-template-columns: .8fr 1.2fr; align-items: end; }
+.fp.s-studio h5 { font-size: 62px; text-transform: uppercase; line-height: .92; font-weight: 800; letter-spacing: -.02em; }
+.fp.s-studio .fart { height: 330px; border-radius: 0; background: none; display: grid; grid-template-columns: 1.3fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; }
+.fp.s-studio .fart::before, .fp.s-studio .fart::after { display: none; }
+.fp.s-studio .fart u { display: block; background: linear-gradient(150deg, color-mix(in srgb, var(--m-main) 55%, #fff), var(--m-main)); }
+.fp.s-studio .fart u:first-child { grid-row: span 2; background: linear-gradient(200deg, color-mix(in srgb, var(--m-accent) 70%, #fff), color-mix(in srgb, var(--m-main) 80%, #000)); }
+.fp.s-studio .fart u:last-child { background: var(--m-accent); }
+.fp.s-studio .fserv div { background: none; border-top: 2px solid var(--m-ink); border-radius: 0; padding-inline: 0; }
+.fp.s-studio .fserv b { display: none; }
+.fp.s-studio .fquote { border-left: 0; border-top: 2px solid var(--m-ink); background: none; border-radius: 0; padding-inline: 0; }
+/* Illustrated scenes inside the style previews (one per business type) */
+.fp .fart.has-scene::before, .fp .fart.has-scene::after { display: none; }
+.fp .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fp .scene .m { fill: var(--m-main); } .fp .scene .a { fill: var(--m-accent); } .fp .scene .k { fill: var(--m-ink); }
+.fp .scene .b { fill: var(--m-bg); } .fp .scene .cd { fill: var(--card); }
+.fp .scene .dk { fill: color-mix(in srgb, var(--m-main) 45%, #000); }
+.fp .scene .lt { fill: color-mix(in srgb, var(--m-main) 35%, #fff); }
+.fp .scene .steel { fill: #c9d0d8; } .fp .scene .steel2 { fill: #8b949e; }
+/* tool hire: digger arm digs, mixer drum turns */
+.fp .scene .arm { transform-origin: 150px 182px; animation: k-dig 3.2s ease-in-out infinite; }
+.fp .scene .drum { transform-origin: 322px 186px; animation: k-spin 3.5s linear infinite; }
+.fp .scene .dust { animation: k-dust 3.2s ease-out infinite; transform-origin: 262px 246px; }
+@keyframes k-dig { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(7deg); } }
+@keyframes k-spin { to { transform: rotate(360deg); } }
+@keyframes k-dust { 0%, 45% { opacity: 0; transform: scale(.4); } 60% { opacity: .7; } 100% { opacity: 0; transform: scale(1.4) translateY(-8px); } }
+/* coffee: steam rises, espresso drips */
+.fp .scene .steam path { fill: none; stroke: var(--m-bg); stroke-width: 7; stroke-linecap: round; opacity: 0; animation: k-steam 3s ease-in-out infinite; }
+.fp .scene .steam path:nth-child(2) { animation-delay: 1s; } .fp .scene .steam path:nth-child(3) { animation-delay: 2s; }
+@keyframes k-steam { 0% { opacity: 0; transform: translateY(14px); } 35% { opacity: .85; } 100% { opacity: 0; transform: translateY(-26px); } }
+.fp .scene .drip { animation: k-drip 1.4s ease-in infinite; }
+@keyframes k-drip { 0% { transform: translateY(0); opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(34px); opacity: 0; } }
+/* barbers: pole stripes climb, clippers buzz, neon flickers */
+.fp .scene .stripes { animation: k-pole 1.6s linear infinite; }
+@keyframes k-pole { from { transform: translateY(0); } to { transform: translateY(-36px); } }
+.fp .scene .clip { animation: k-buzz .18s steps(2) infinite; transform-origin: 255px 95px; }
+@keyframes k-buzz { 0% { transform: rotate(-24deg) translate(0, 0); } 100% { transform: rotate(-24deg) translate(1.5px, -1px); } }
+.fp .scene .neon { fill: none; stroke: var(--m-accent); stroke-width: 1.6; font: 800 22px var(--m-display); letter-spacing: 2px;
+  filter: drop-shadow(0 0 6px var(--m-accent)); animation: k-flicker 4s linear infinite; }
+@keyframes k-flicker { 0%, 18%, 22%, 60%, 100% { opacity: 1; } 20%, 61% { opacity: .35; } }
+/* wigs: sparkles twinkle, tags sway */
+.fp .scene .spark { animation: k-twinkle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.fp .scene .spark:nth-of-type(2n) { animation-delay: .8s; } .fp .scene .spark:nth-of-type(3n) { animation-delay: 1.6s; }
+@keyframes k-twinkle { 0%, 100% { opacity: .2; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+.fp .scene .tag { transform-box: fill-box; transform-origin: top center; animation: k-sway 3s ease-in-out infinite; }
+@keyframes k-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+.fp.s-night .fart.has-scene .fbadge { left: auto; top: auto; right: 18px; bottom: 18px; }
+.fp.s-playful .fart.has-scene .fbadge { right: 44px; top: 26px; }
+.fp .fart.has-scene { background: linear-gradient(160deg, color-mix(in srgb, var(--m-main) 70%, #fff) 0%, var(--m-main) 55%, color-mix(in srgb, var(--m-main) 60%, #000) 100%); }
+.fp.s-elegant .fart.has-scene { height: 230px; background: linear-gradient(180deg, color-mix(in srgb, var(--m-accent) 22%, var(--m-bg)), color-mix(in srgb, var(--m-main) 10%, var(--m-bg))); }
+.fp.s-night .fart.has-scene { background: radial-gradient(circle at 70% 20%, color-mix(in srgb, var(--m-accent) 30%, transparent), transparent 55%), color-mix(in srgb, var(--m-bg) 80%, #000); }
+/* Night: dark page, glowing colours */
+.fp.s-night .fart { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--m-accent) 90%, #fff) 0 10%, color-mix(in srgb, var(--m-accent) 40%, transparent) 25%, transparent 55%),
+  radial-gradient(circle at 30% 80%, color-mix(in srgb, var(--m-main) 70%, transparent), transparent 60%), color-mix(in srgb, var(--m-bg) 80%, #000); border: 1px solid var(--line); }
+.fp.s-night .fart::before { opacity: .25; }
+.fp.s-night .fart::after { background: none; border: 2px solid var(--m-accent); box-shadow: 0 0 24px var(--m-accent); }
+.fp.s-night h5 em { font-style: normal; color: var(--m-accent); text-shadow: 0 0 22px color-mix(in srgb, var(--m-accent) 60%, transparent); }
+.fp.s-night .fbtn { box-shadow: 0 0 22px color-mix(in srgb, var(--m-main) 55%, transparent); }
+.fp.s-night .fserv div { border: 1px solid var(--line); }
+.viewer { position: fixed; inset: 0; z-index: 90; background: rgba(5,7,12,.94); display: grid; grid-template-rows: auto 1fr; padding: 14px; gap: 10px; }
+.viewer[hidden] { display: none; }
+.viewer .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #fff; flex-wrap: wrap; }
+.viewer .top .btn { background: #fff; color: #0d1424; border-color: #fff; padding: 8px 16px; }
+.viewer .scroll { overflow: auto; border-radius: 14px; }
+.viewer .frame { aspect-ratio: auto; border: 0; }
+
+/* overrides for the preview frames */
+.frame { border-bottom: 1px solid var(--line); }
+.viewer { background: rgba(9,11,15,.94); }
+.viewer .top .btn { background: #fff; color: #11141b; border-color: #fff; padding: 10px 16px; }
+.viewer .scroll { border-radius: var(--r); }
+
+/* Colour lab */
+.lab { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(18px, 3vw, 32px); display: grid; gap: 28px; }
+.pickers { display: grid; grid-template-columns: repeat(3, 1fr) 1.3fr; gap: 16px; align-items: end; }
+@media (max-width: 900px) { .pickers { grid-template-columns: repeat(3, 1fr); } .pickers .presets { grid-column: 1 / -1; } }
+@media (max-width: 560px) { .pickers { grid-template-columns: 1fr; } }
+.pick { display: grid; gap: 6px; min-width: 0; }
+.pick label { font-weight: 650; font-size: .92rem; }
+.pick .field { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--line); border-radius: var(--r); padding: 6px 10px 6px 6px; background: var(--bg); transition: border-color .2s ease; }
+.pick .field:focus-within { border-color: var(--accent); }
+.pick input[type="color"] { width: 44px; height: 38px; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 8px; flex: none; }
+.pick input[type="text"] { font: 500 .95rem var(--mono); border: 0; background: transparent; color: var(--ink); width: 100%; min-width: 0; text-transform: uppercase; outline: none; }
+.pick small { color: var(--muted); font-size: .82rem; }
+.presets { display: grid; gap: 8px; min-width: 0; }
+.presets .list { display: flex; gap: 8px; flex-wrap: wrap; }
+.preset { display: flex; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--line); cursor: pointer; padding: 0; background: none; height: 32px; transition: transform .15s ease, border-color .15s ease; }
+.preset:hover { transform: translateY(-1px); border-color: var(--ink); }
+.preset span { width: 22px; }
+.labtools { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.checks { display: flex; gap: 8px; flex-wrap: wrap; }
+.check { display: inline-flex; gap: 8px; align-items: center; font-size: .86rem; padding: 7px 12px; border-radius: 8px; background: var(--sunk); }
+.check::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.check.pass { color: var(--good); } .check.fail { color: var(--bad); }
+.check b { font-family: var(--mono); font-weight: 500; }
+.check { color: var(--ink); } .check.pass::before { background: var(--good); } .check.fail::before { background: var(--bad); }
+.check.pass b { color: var(--good); } .check.fail b { color: var(--bad); }
+.templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 900px) { .templates { grid-template-columns: 1fr; } }
+.tpl { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.tpl .frame { border: 1px solid var(--line); border-radius: var(--r); }
+.tpl:has(input:checked) .frame { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+.tpl .cap { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tpl .cap p { color: var(--muted); font-size: .88rem; flex-basis: 100%; }
+.tpl input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; }
+.tpl label { display: flex; gap: 8px; align-items: center; font-weight: 650; cursor: pointer; }
+.lab > .labtools:last-child { border-top: 1px solid var(--line); padding-top: 22px; justify-content: space-between; }
+
+/* Quote */
+.quote { display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; align-items: start; }
+@media (max-width: 900px) { .quote { grid-template-columns: 1fr; } }
+.packs { display: grid; gap: 10px; }
+.pack { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r); padding: 18px 20px; cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease; }
+.pack:hover { border-color: color-mix(in srgb, var(--ink) 35%, var(--line)); }
+.pack:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+.pack input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 3px; }
+.pack h3 { margin-bottom: 4px; }
+.pack p { color: var(--muted); font-size: .93rem; }
+.pack .price { font: 700 1.3rem var(--display); letter-spacing: -0.03em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.badge { display: inline-block; margin-left: 8px; padding: 3px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent);
+  font: 600 .72rem var(--body); vertical-align: 2px; letter-spacing: 0; }
+.addons-title { margin: 30px 0 12px; }
+.addons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (max-width: 560px) { .addons { grid-template-columns: 1fr; } }
+.addon { display: flex; gap: 10px; align-items: center; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r); padding: 12px 14px; font-size: .95rem; cursor: pointer; transition: border-color .2s ease; }
+.addon:has(input:checked) { border-color: var(--accent); }
+.addon input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; flex: none; }
+.addon span { flex: 1; }
+.addon em { font-style: normal; font-family: var(--mono); font-size: .85rem; color: var(--muted); white-space: nowrap; }
+.addon input[type="number"] { width: 56px; font: 500 .9rem var(--mono); padding: 5px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.care-addon { grid-column: 1 / -1; background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.care-why { grid-column: 1 / -1; }
+.care-why summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 8px; padding: 6px 0; color: var(--accent); font-weight: 600; font-size: .9rem; }
+.care-why summary::-webkit-details-marker { display: none; }
+.care-why summary span { display: none; }
+.care-why summary::after { content: "+"; font-family: var(--mono); }
+.care-why[open] summary::after { content: "\2212"; }
+.care-why ul { margin: 6px 0 0; padding: 16px 18px 16px 34px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); display: grid; gap: 8px; }
+.care-why li { color: var(--muted); font-size: .93rem; }
+.care-why li b { color: var(--ink); }
+.total { position: sticky; top: 92px; background: var(--ink); color: var(--bg); border-radius: var(--r); padding: 28px; display: grid; gap: 16px; }
+.total .label { color: inherit; opacity: .7; font-weight: 550; }
+.total .big { font: 750 clamp(2.8rem, 6vw, 3.8rem)/1 var(--display); letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
+.total dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; margin: 0; font-size: .93rem; border-top: 1px solid color-mix(in srgb, var(--bg) 18%, transparent); padding-top: 16px; }
+.total dt { opacity: .72; }
+.total dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: .88rem; }
+.total small { opacity: .72; }
+.total .btn { background: var(--bg); color: var(--ink); border-color: var(--bg); justify-self: start; }
+.total .btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Client area: ruled rows */
+.account { display: grid; border-top: 1px solid var(--line); }
+.account article { display: grid; grid-template-columns: 200px 1fr 210px; gap: 12px 32px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.account p { color: var(--muted); max-width: 62ch; }
+.account .btn { justify-self: end; }
+@media (max-width: 760px) { .account article { grid-template-columns: 1fr; } .account .btn { justify-self: start; } }
+.secure-note { margin-top: 18px; color: var(--muted); font-size: .9rem; max-width: 70ch; }
+.addr { font-family: var(--mono); font-size: .92em; color: var(--ink); user-select: all; }
+
+/* FAQ */
+.faq { display: grid; max-width: 860px; border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; padding: 20px 0; font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; list-style: none; display: flex; justify-content: space-between; gap: 14px; align-items: center; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font: 500 1.3rem var(--mono); color: var(--muted); transition: transform .25s ease; flex: none; }
+.faq details[open] summary::after { transform: rotate(45deg); color: var(--accent); }
+.faq details p { margin: 0 0 20px; color: var(--muted); max-width: 66ch; }
+
+/* Brief */
+.brief { display: grid; grid-template-columns: 1.25fr .75fr; gap: 28px; align-items: start; }
+@media (max-width: 900px) { .brief { grid-template-columns: 1fr; } }
+form.vision { display: grid; gap: 16px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(18px, 3vw, 30px); }
+.f { display: grid; gap: 6px; min-width: 0; }
+.f label { font-weight: 650; font-size: .92rem; }
+.f input, .f textarea, .f select { font: 1rem var(--body); padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; transition: border-color .2s ease, box-shadow .2s ease; }
+.f input:focus, .f textarea:focus, .f select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.f input::placeholder, .f textarea::placeholder { color: color-mix(in srgb, var(--muted) 85%, var(--bg)); }
+.f textarea { min-height: 128px; resize: vertical; }
+.f small { color: var(--muted); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
+.err { color: var(--bad); font-weight: 600; min-height: 1.4em; font-size: .93rem; }
+form.vision .btn { justify-self: start; }
+.summary { position: sticky; top: 92px; border-top: 2px solid var(--ink); padding-top: 18px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.summary .label { margin-bottom: 8px; }
+.summary .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding: 10px 0; flex-wrap: wrap; }
+.summary .row span:first-child { color: var(--muted); }
+.summary .dots { display: flex; gap: 6px; }
+.summary .dots b { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); }
+.summary p { margin-top: 12px; color: var(--muted); font-size: .92rem; }
+.sent { background: var(--bg); border: 1.5px solid var(--good); border-radius: var(--r); padding: 18px; display: grid; gap: 10px; }
+.sent pre { white-space: pre-wrap; font: .85rem var(--mono); background: var(--sunk); padding: 12px; border-radius: 8px; max-height: 260px; overflow: auto; margin: 0; }
+.sent .btn { justify-self: start; }
+
+/* Footer */
+footer { border-top: 1px solid var(--line); padding-block: 44px; color: var(--muted); font-size: .92rem; }
+footer .wrap { display: flex; justify-content: space-between; gap: 18px 28px; flex-wrap: wrap; align-items: center; }
+footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
+footer nav a { color: var(--muted); text-decoration: none; }
+footer nav a:hover { color: var(--ink); }
+
+/* Sign-up pop-up */
+.gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #0b0d12 60%, transparent); backdrop-filter: blur(8px); }
+.gate[hidden] { display: none; }
+.gate .card { background: var(--surface); color: var(--ink); border-radius: var(--r); padding: clamp(24px, 4vw, 36px); width: min(440px, 100%); display: grid; gap: 16px; box-shadow: 0 40px 90px -30px rgba(0,0,0,.55); animation: gate-in .45s cubic-bezier(.3,.7,.4,1); }
+@keyframes gate-in { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+.gate .card .logo { pointer-events: none; }
+.gate h2 { font-size: 1.85rem; }
+.gate p { color: var(--muted); }
+.gate .consent { display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; color: var(--muted); cursor: pointer; }
+.gate .consent input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 2px; flex: none; }
+.gate .fine { font-size: .8rem; }
+.gate .btn { width: 100%; }
+
+
+/* Real photos inside the style previews. A light wash of the main colour keeps each photo tied to the palette. */
+.fp .fart.has-photo { background: color-mix(in srgb, var(--m-main) 40%, #222); }
+.fp .fart.has-photo::before, .fp .fart.has-photo::after { display: none; }
+.fp .fart .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.fp .fart .tint { position: absolute; inset: 0; background: var(--m-main); mix-blend-mode: color; opacity: .22; pointer-events: none; }
+.fp .fart .fbadge { z-index: 2; }
+.fp.s-elegant .fart.has-photo { height: 230px; }
+.fp.s-night .fart.has-photo .photo { filter: brightness(.8) contrast(1.05); }
+.fp.s-night .fart.has-photo .tint { mix-blend-mode: soft-light; opacity: .45; background: var(--m-accent); }
+.fp.s-night .fart.has-photo .fbadge { left: auto; top: auto; right: 18px; bottom: 18px; }
+.fp.s-playful .fart.has-photo .fbadge { right: 44px; top: 26px; }
+.fp.s-bold .fart.has-photo { border-radius: var(--m-r); }
+.fp.s-studio .fart u { background-size: cover !important; background-position: center !important; }
+
+/* Full-screen menu: big links over photos that change as you point at each one */
+.menu-btn { display: inline-flex; align-items: center; gap: 10px; font: 600 .92rem var(--body); color: var(--ink); background: transparent;
+  border: 1.5px solid var(--line); border-radius: var(--r); padding: 10px 14px; cursor: pointer; transition: border-color .2s ease; }
+.menu-btn:hover { border-color: var(--ink); }
+.burger { width: 16px; height: 10px; position: relative; display: inline-block; }
+.burger::before, .burger::after { content: ""; position: absolute; left: 0; right: 0; height: 2px; border-radius: 2px; background: currentColor; }
+.burger::before { top: 0; } .burger::after { bottom: 0; }
+.bar .right { display: flex; gap: 10px; align-items: center; }
+@media (max-width: 480px) { .bar .right .btn { display: none; } }
+.menu { position: fixed; inset: 0; z-index: 95; color: #fff; background: #0b0d12; overflow: hidden;
+  opacity: 0; visibility: hidden; transition: opacity .4s ease, visibility 0s linear .4s; }
+.menu.open { opacity: 1; visibility: visible; transition: opacity .4s ease; }
+.menu-bg { position: absolute; inset: -40px; --px: 0px; --py: 0px; }
+.menu-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0;
+  transform: translate3d(var(--px, 0px), var(--py, 0px), 0) scale(1.1); transition: opacity .7s ease, transform 1.2s cubic-bezier(.2,.7,.3,1); }
+.menu-bg img.on { opacity: 1; transform: translate3d(var(--px, 0px), var(--py, 0px), 0) scale(1.03); }
+.menu::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(9,11,15,.92) 0%, rgba(9,11,15,.7) 45%, rgba(9,11,15,.3) 100%); }
+.menu-in { position: relative; z-index: 2; display: grid; grid-template-rows: 68px 1fr auto; min-height: 100dvh; padding-bottom: 28px; }
+.menu-top { display: flex; justify-content: space-between; align-items: center; }
+.menu .logo { color: #fff; }
+.menu .menu-btn { color: #fff; border-color: rgba(255,255,255,.3); }
+.menu .menu-btn:hover { border-color: #fff; }
+.menu-links { display: grid; align-content: center; justify-items: start; gap: 2px; padding-block: 24px; }
+.menu-links a { --i: 0; color: #fff; text-decoration: none; display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;
+  font: 700 clamp(2.3rem, 7vw, 5.4rem)/1.04 var(--display); letter-spacing: -0.05em; opacity: .42;
+  transition: opacity .3s ease, transform .45s cubic-bezier(.3,.7,.4,1); }
+.menu-links a small { font: 500 1rem var(--body); letter-spacing: 0; opacity: 0; transform: translateX(-10px); transition: opacity .3s ease, transform .4s ease; }
+.menu-links a.on, .menu-links a:focus-visible { opacity: 1; transform: translateX(12px); }
+.menu-links a.on small, .menu-links a:focus-visible small { opacity: .85; transform: none; }
+.menu-links a:focus-visible { outline-color: #fff; }
+.menu.open .menu-links a { animation: menu-rise .7s cubic-bezier(.3,.7,.4,1) both; animation-delay: calc(var(--i) * 55ms + 80ms); }
+@keyframes menu-rise { from { opacity: 0; transform: translateY(26px); } }
+.menu-foot { display: flex; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap; color: rgba(255,255,255,.72); font-size: .9rem; }
+.menu-foot a { color: #fff; }
+.menu-foot .addr { color: #fff; }
+@media (hover: none) { .menu-links a { opacity: .9; } .menu-links a small { opacity: .75; transform: none; } }
+.credit { font-size: .82rem; }
+.credit a { color: inherit; }
+
+
+/* Business types: tall photo cards that filter the style gallery */
+.types .head { margin-bottom: 28px; }
+.strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 1180px; margin: 0 auto; padding-inline: var(--gutter); }
+.type { display: block; text-decoration: none; position: relative; aspect-ratio: 3 / 4; border-radius: var(--r); overflow: hidden; border: 0; padding: 0; cursor: pointer; text-align: left;
+  background: #1b1e26; color: #fff; isolation: isolate; font: inherit; }
+.type img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.2,.7,.3,1); z-index: 0; }
+.type::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(9,11,15,0) 40%, rgba(9,11,15,.82) 100%); }
+.type span { position: absolute; z-index: 2; left: 18px; right: 18px; bottom: 16px; display: grid; gap: 2px; }
+.type strong { font: 700 1.35rem/1.1 var(--display); letter-spacing: -0.03em; }
+.type small { font-size: .88rem; opacity: .85; }
+.type:hover img, .type:focus-visible img { transform: scale(1.06); }
+.type:active { transform: scale(.99); }
+@media (max-width: 900px) {
+  .strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 62%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; scrollbar-width: none; }
+  .strip::-webkit-scrollbar { display: none; }
+  .type { scroll-snap-align: start; }
+}
+@media (max-width: 480px) { .strip { grid-auto-columns: 78%; } }
+.logo-note { color: var(--muted); font-size: .86rem; }
+
+/* Reveal on scroll (motivated: each section arrives as you reach it) */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s cubic-bezier(.3,.7,.4,1); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" hidden>
+  <form class="card" id="gate-form" novalidate>
+    <span class="logo"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic</span>
+    <h2 id="gate-title">Join to explore our designs</h2>
+    <p>Enter your email to open the style gallery, colour lab and instant quotes. No password needed.</p>
+    <div class="f">
+      <label for="gate-email">Your email</label>
+      <input id="gate-email" type="email" autocomplete="email" inputmode="email" placeholder="you@yourbusiness.co.uk" required>
+      <p class="err" id="gate-err" role="alert"></p>
+    </div>
+    <label class="consent"><input type="checkbox" id="gate-consent"> Send me design tips, offers and news from Kinetic Web Designs by email. You can unsubscribe at any time.</label>
+    <button class="btn accent" type="submit" id="gate-go">Continue</button>
+    <p class="fine">We check your email address is real before you continue. We never share it.</p>
+  </form>
+</div>
+
+<header class="bar" id="bar">
+  <div class="wrap">
+    <a class="logo" href="#top"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic</a>
+    <nav aria-label="Main">
+      <a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#account">Client area</a><a href="#faq">FAQ</a>
+    </nav>
+    <div class="right"><a class="btn accent" href="#vision">Start a project</a>
+      <button class="menu-btn" type="button" id="menu-open" aria-expanded="false" aria-controls="menu"><span class="burger" aria-hidden="true"></span>Menu</button></div>
+  </div>
+</header>
+
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Site menu" inert>
+  <div class="menu-bg" id="menu-bg" aria-hidden="true"></div>
+  <div class="menu-in wrap">
+    <div class="menu-top"><span class="logo"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic</span>
+      <button class="menu-btn" type="button" id="menu-close">Close</button></div>
+    <nav class="menu-links" id="menu-links" aria-label="Site menu links"></nav>
+    <div class="menu-foot"><span>Email <span class="addr">alfredw.lsx@gmail.com</span></span><span class="credit">Photos from <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></span></div>
+  </div>
+</div>
+
+<main id="main">
+<div class="hero" id="top">
+  <div class="wrap">
+    <div class="copy">
+      <h1>Your website, built around <em>your colours.</em></h1>
+      <p class="lede">Pick a style, test three colours on a real page and see your price before you ask.</p>
+      <div class="ctas"><a class="btn" href="#lab">Try the colour lab</a><a class="textlink" href="#quote">Get a price</a></div>
+    </div>
+    <figure class="showcase" style="margin:0">
+      <div id="hero-stage"></div>
+      <figcaption class="caption" aria-live="polite"><span class="dots"><b id="hs1"></b><b id="hs2"></b><b id="hs3"></b></span><span id="hs-name">Harbour</span><button type="button" id="hero-pause">Pause</button></figcaption>
+    </figure>
+  </div>
+</div>
+
+<section class="promise-band" aria-label="What you can count on">
+  <div class="wrap">
+    <ul class="promises">
+      <li><strong>Your price, up front</strong><span>Fixed prices for what's listed, from £395.</span></li>
+      <li><strong>3 designs to choose from</strong><span>All in your colours, before anything is built.</span></li>
+      <li><strong>Made for phones first</strong><span>Fast, easy to read and easy to tap on any screen.</span></li>
+      <li><strong>A reply in 2 working days</strong><span>With your designs, a fixed quote and a start date.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="types" aria-labelledby="types-title">
+  <div class="wrap"><div class="head"><h2 id="types-title">Made for businesses like yours</h2>
+    <p class="lede">Tap your kind of business to see the styles that suit it.</p></div></div>
+  <div class="strip" id="type-strip"></div>
+</section>
+
+<section aria-labelledby="how-title">
+  <div class="wrap">
+    <div class="head"><h2 id="how-title">From your idea to a live site in five steps</h2></div>
+    <ol class="steps">
+      <li><h3>Tell us your vision</h3><p>How you'd like it to look and what it needs to do, in your own words.</p></li>
+      <li><h3>Pick 3 colours</h3><p>Choose a main colour, a background and an accent in our colour lab.</p></li>
+      <li><h3>Choose a template</h3><p>We send you 3 designs showing your colours used 3 different ways.</p></li>
+      <li><h3>We build it</h3><p>Your chosen design becomes a fast site that works on every phone.</p></li>
+      <li><h3>Words, invoice, launch</h3><p>We write the copy with you, invoice clearly and put you live.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="styles" aria-labelledby="styles-title">
+  <div class="wrap">
+    <div class="head"><h2 id="styles-title">Find a style you like</h2>
+      <p class="lede">Each style is a full front page. Tap the colour dots to see it in different colours, or try it in your own. Pick one and the colour lab below uses it.</p></div>
+    <div class="filters" role="group" aria-label="Filter styles by business">
+      <button class="chip" aria-pressed="true" data-f="all">All</button>
+      <button class="chip" aria-pressed="false" data-f="food">Food & drink</button>
+      <button class="chip" aria-pressed="false" data-f="beauty">Hair & beauty</button>
+      <button class="chip" aria-pressed="false" data-f="trades">Trades</button>
+      <button class="chip" aria-pressed="false" data-f="shops">Shops</button>
+    </div>
+    <div class="styles" id="style-grid"></div>
+  </div>
+</section>
+
+<section id="lab" aria-labelledby="lab-title">
+  <div class="wrap">
+    <div class="head"><h2 id="lab-title">Test how your colours work</h2>
+      <p class="lede">Choose three colours. We show them on three templates, each using your palette a different way, and check the text stays easy to read.</p></div>
+    <div class="lab">
+      <div class="pickers">
+        <div class="pick"><label for="c1t">Main colour</label><div class="field"><input type="color" id="c1" aria-label="Main colour picker"><input type="text" id="c1t" maxlength="7" spellcheck="false"></div><small>Buttons and headlines</small></div>
+        <div class="pick"><label for="c2t">Background</label><div class="field"><input type="color" id="c2" aria-label="Background colour picker"><input type="text" id="c2t" maxlength="7" spellcheck="false"></div><small>The page behind everything</small></div>
+        <div class="pick"><label for="c3t">Accent</label><div class="field"><input type="color" id="c3" aria-label="Accent colour picker"><input type="text" id="c3t" maxlength="7" spellcheck="false"></div><small>Highlights and small details</small></div>
+        <div class="presets"><span class="label">Ready-made palettes</span><div class="list" id="presets"></div></div>
+      </div>
+      <div class="labtools">
+        <button class="btn ghost" type="button" id="shuffle">Suggest a palette</button>
+        <button class="btn ghost" type="button" id="logo-pick">Use colours from my logo</button>
+        <input type="file" id="logo-file" accept="image/*" hidden>
+        <span class="logo-note" id="logo-note" aria-live="polite">Your logo stays on your device.</span>
+        <div class="checks" id="checks" aria-live="polite"></div>
+      </div>
+      <div class="templates" id="templates"></div>
+      <div class="labtools"><span class="eyebrow" id="style-note">Style: Clean</span><a class="btn accent" href="#vision" id="use-palette">Use these colours in my brief</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="quote" aria-labelledby="quote-title">
+  <div class="wrap">
+    <div class="head"><h2 id="quote-title">See your price before you ask</h2>
+      <p class="lede">Prices are fixed for what's listed. Half is paid up front to book your start date and the rest when your site goes live.</p></div>
+    <div class="quote">
+      <div>
+        <div class="packs" role="radiogroup" aria-label="Website package" id="packs"></div>
+        <h3 class="addons-title">Add-ons</h3>
+        <div class="addons" id="addons"></div>
+      </div>
+      <aside class="total" aria-live="polite">
+        <span class="label">Your estimate</span>
+        <div class="big" id="q-total">£895</div>
+        <dl id="q-lines"></dl>
+        <small id="q-time">Ready in 2 to 4 weeks</small>
+        <a class="btn" href="#vision">Add to my brief</a>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section id="account" aria-labelledby="account-title">
+  <div class="wrap">
+    <div class="head"><h2 id="account-title">Your hosting and care plan</h2>
+      <p class="lede">£20 a month by Direct Debit or card. No long contract: start, change or cancel whenever you like.</p></div>
+    <div class="account">
+      <article><h3>Start your plan</h3><p>Set up your £20 monthly Direct Debit or card payment in a couple of minutes. Your first payment is taken when your website goes live.</p>
+        <a class="btn accent" id="plan-start" href="#">Start hosting and care</a></article>
+      <article><h3>Sign in and manage</h3><p>Sign in with the email you used to sign up. We'll send you a secure link to see your payments, download receipts, update your details or cancel.</p>
+        <a class="btn" id="plan-manage" href="#">Sign in to my plan</a></article>
+      <article><h3>Cancel any time</h3><p>Cancel from your plan page, by emailing <span class="addr">alfredw.lsx@gmail.com</span>, or through your own bank. If you leave, we hand your website and domain over to you.</p>
+        <a class="btn ghost" id="plan-cancel" href="#">Cancel my plan</a></article>
+    </div>
+    <p class="secure-note">Payments and bank details are handled by Stripe's secure pages. We never see or store your bank or card details. Direct Debits are protected by the Direct Debit Guarantee.</p>
+  </div>
+</section>
+
+<section id="faq" aria-labelledby="faq-title">
+  <div class="wrap">
+    <div class="head"><h2 id="faq-title">Good to know before you start</h2></div>
+    <div class="faq">
+      <details><summary>How long does it take?</summary><p>A Starter website takes 1 to 2 weeks, a Business website 2 to 4 weeks and an Online shop 4 to 6 weeks, counted from your go-ahead.</p></details>
+      <details><summary>How do I pay?</summary><p>Half is paid up front to book your start date, and the rest when your site goes live. You get a clear invoice for each.</p></details>
+      <details><summary>What do I need to give you?</summary><p>Your vision in your own words, your three colours, and your logo and photos if you have them. No logo? Logo design is £150. No photos? Photo editing and stock images are £100.</p></details>
+      <details><summary>Can I ask for changes?</summary><p>Yes. Starter websites include 2 rounds of changes and Business websites and shops include 3.</p></details>
+      <details><summary>What's in monthly hosting and care?</summary><p>Your domain name, fast and secure hosting, security updates, backups and small text changes, all for £20 a month. Need lots of big videos or downloads? Extra file storage is £5 a month per 10 GB.</p></details>
+      <details><summary>Who owns my website and domain?</summary><p>You do. Your domain is registered in your name and your accounts belong to you. If you ever leave, we hand everything over.</p></details>
+      <details><summary>Do you write the words too?</summary><p>We write the copy with you. If you'd like us to write whole pages for you, copywriting is £60 a page.</p></details>
+      <details><summary>Will people find me on Google?</summary><p>Starter websites include the Google basics. Business websites and shops add help with your Google Business Profile, and Local Google setup is £150 as an add-on.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="vision" aria-labelledby="vision-title">
+  <div class="wrap">
+    <div class="head"><h2 id="vision-title">Tell us how you'd like your website to look</h2>
+      <p class="lede">Describe it in your own words. We bring your thoughts to life, send you three designs in your colours, then build the one you choose.</p></div>
+    <div class="brief">
+      <form class="vision" id="vision-form" novalidate>
+        <div class="two">
+          <div class="f"><label for="v-name">Your name</label><input id="v-name" autocomplete="name" required></div>
+          <div class="f"><label for="v-biz">Business name</label><input id="v-biz" autocomplete="organization" required></div>
+        </div>
+        <div class="two">
+          <div class="f"><label for="v-email">Email</label><input id="v-email" type="email" autocomplete="email" required></div>
+          <div class="f"><label for="v-phone">Phone (optional)</label><input id="v-phone" type="tel" autocomplete="tel"></div>
+        </div>
+        <div class="f"><label for="v-what">What does your business do?</label><input id="v-what" placeholder="e.g. a barber shop in Stockport"></div>
+        <div class="f"><label for="v-look">How would you like it to look and feel?</label><textarea id="v-look" placeholder="Calm and premium, lots of photos of our work, easy to book…" required></textarea></div>
+        <div class="f"><label for="v-like">Websites you like (optional)</label><input id="v-like" placeholder="Links or names, and what you like about them"></div>
+        <div class="f"><label for="v-when">When would you like it live?</label>
+          <select id="v-when"><option>As soon as possible</option><option>Within a month</option><option>In 1 to 3 months</option><option>Just exploring</option></select></div>
+        <p class="err" id="v-err" role="alert"></p>
+        <button class="btn accent" type="submit">Send my brief</button>
+        <div id="v-done" hidden></div>
+      </form>
+      <aside class="summary" aria-label="What's included in your brief">
+        <span class="label">Included with your brief</span>
+        <div class="row"><span>Style</span><strong id="s-style">Clean</strong></div>
+        <div class="row"><span>Colours</span><span class="dots"><b id="s1"></b><b id="s2"></b><b id="s3"></b></span></div>
+        <div class="row"><span>Template</span><strong id="s-tpl">Light & airy</strong></div>
+        <div class="row"><span>Package</span><strong id="s-pack">Business website</strong></div>
+        <div class="row"><span>Estimate</span><strong id="s-total">£895</strong></div>
+        <p>Within two working days we reply with three designs in your colours, a fixed quote and a start date. Prefer email? Write to <span class="addr">alfredw.lsx@gmail.com</span>.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="logo" href="#top"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic Web Designs</a>
+    <nav aria-label="Footer"><a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#faq">FAQ</a><a href="#account">Client area</a><a href="#vision">Start a project</a></nav>
+    <span>Email <a class="addr" href="mailto:alfredw.lsx@gmail.com">alfredw.lsx@gmail.com</a></span>
+    <span class="credit">Photos from <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></span>
+  </div>
+</footer>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewer-title" hidden>
+  <div class="top"><strong id="viewer-title">Preview</strong><button class="btn" type="button" id="viewer-close">Close</button></div>
+  <div class="scroll" id="viewer-page"></div>
+</div>
+<script>
+(() => {
+  // Where sign-ups and briefs go once the site is hosted (a form endpoint). Empty: kept in this browser only.
+  const SIGNUP_ENDPOINT = "";
+  const BRIEF_ENDPOINT = "";
+  // Stripe links for the client area: a Payment Link for the £20 plan and the customer portal sign-in link.
+  // Empty: the buttons open an email to us instead.
+  const PLAN_SUBSCRIBE_LINK = "";
+  const PLAN_PORTAL_LINK = "";
+  const mailto = subject => "mailto:alfredw.lsx@gmail.com?subject=" + encodeURIComponent(subject);
+  [["#plan-start", PLAN_SUBSCRIBE_LINK, "Start my hosting and care plan"],
+   ["#plan-manage", PLAN_PORTAL_LINK, "My hosting and care plan"],
+   ["#plan-cancel", PLAN_PORTAL_LINK, "Cancel my hosting and care plan"]].forEach(([id, link, subject]) => {
+    const a = document.querySelector(id);
+    if (!a) return;
+    a.href = link || mailto(subject);
+    if (link) { a.target = "_blank"; a.rel = "noopener"; }
+  });
+  const $ = (s, el = document) => el.querySelector(s);
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem("kwd-" + k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem("kwd-" + k, JSON.stringify(v)); } catch {} }
+  };
+  const money = n => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+
+  // ---------- colour maths ----------
+  const hexOk = h => /^#[0-9a-f]{6}$/i.test(h);
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const lum = h => { const c = rgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+  const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const onColour = h => contrast(h, "#ffffff") >= contrast(h, "#111111") ? "#ffffff" : "#111111";
+  const mix = (a, b, t) => "#" + rgb(a).map((v, i) => Math.round(v + (rgb(b)[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  const inkFor = bg => lum(bg) > .35 ? mix("#0f1115", bg, .08) : mix("#f6f7f9", bg, .06);
+  const hsl = (h, s, l) => { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return "#" + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join(""); };
+
+  const PALETTES = [
+    { name: "Harbour", c: ["#1f4e79", "#f4f7fa", "#f2a541"] },
+    { name: "Fig & clay", c: ["#7a2e3a", "#fbf3ee", "#d9a441"] },
+    { name: "Fern", c: ["#2f6b4f", "#f3f6f1", "#e07a5f"] },
+    { name: "Midnight", c: ["#8fb3ff", "#10131c", "#ffcf5c"] },
+    { name: "Salon", c: ["#1c1a1d", "#faf6f6", "#c58b9b"] },
+    { name: "Workshop", c: ["#0b4f8a", "#f6f8fa", "#f2a516"] }
+  ];
+  const STYLES = [
+    { id: "clean", name: "Clean", for: ["trades", "shops"], desc: "Plenty of white space, simple type and soft corners. Lets your photos and products lead.",
+      display: "'Figtree', system-ui, sans-serif", body: "'Figtree', system-ui, sans-serif", r: "12px", sample: "Simple. Clear. Yours." },
+    { id: "bold", name: "Bold", for: ["trades", "food"], desc: "Big chunky headlines and solid blocks of colour. Hard to miss on a phone.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "4px", sample: "Call us. We'll be there." },
+    { id: "elegant", name: "Elegant", for: ["beauty", "shops"], desc: "A refined serif, fine lines and calm spacing. Feels premium and unhurried, like a wig boutique.",
+      display: "Georgia, 'Times New Roman', serif", body: "'Figtree', sans-serif", r: "2px", sample: "Treatments, beautifully done." },
+    { id: "playful", name: "Playful", for: ["food", "shops"], desc: "Rounded shapes, pill buttons and a friendly tone. Great for coffee shops and cafes.",
+      display: "'Trebuchet MS', 'Figtree', sans-serif", body: "'Figtree', sans-serif", r: "22px", sample: "Come in, the kettle's on!" },
+    { id: "studio", name: "Studio", for: ["beauty", "shops"], desc: "Big photos, tight type and an editorial grid, like a magazine for your brand.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "0px", sample: "New season. New look." },
+    { id: "night", name: "Night", for: ["beauty", "food"], desc: "A dark background that makes colours glow. Suits barbers, bars and late openers.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "10px", sample: "Open late. Book tonight.", dark: true }
+  ];
+  const TEMPLATES = [
+    { id: "light", name: "Light & airy", note: "Your background leads; the main colour is for buttons and headings." },
+    { id: "block", name: "Bold block", note: "Your main colour fills the page; the accent makes buttons pop." },
+    { id: "dark", name: "After dark", note: "A deep version of your main colour, with the accent glowing on top." }
+  ];
+
+  const state = Object.assign({ c: PALETTES[0].c.slice(), style: "clean", tpl: "light", pack: "business", addons: {}, extraPages: 1, care: true },
+    store.get("state") || {});
+  const save = () => store.set("state", state);
+
+  // ---------- mini site renderer ----------
+  function miniVars(el, v) { for (const [k, val] of Object.entries(v)) el.style.setProperty(k, val); }
+  function templateVars(tpl, [main, bg, acc], style) {
+    let pageBg = bg, mainC = main;
+    if (tpl === "block") pageBg = main, mainC = acc;
+    if (tpl === "dark") pageBg = mix(main, "#05070b", .82), mainC = acc;
+    if (style.dark && tpl === "light") pageBg = mix(bg, "#05070b", .9);
+    const ink = inkFor(pageBg);
+    return { "--m-bg": pageBg, "--m-ink": ink, "--m-main": mainC, "--m-on": onColour(mainC), "--m-accent": tpl === "light" ? acc : mix(acc, ink, .1),
+      "--m-display": style.display, "--m-font": style.body, "--m-r": style.r };
+  }
+  const miniHTML = (biz, line, cta) => `<div class="chrome"><span></span><span></span><span></span></div><div class="in">
+    <div class="nav"><span>${biz}</span><small>Menu · Visit · Book</small></div><h4>${line}</h4><span class="pill">${cta}</span>
+    <div class="cards"><div><b></b>Opening hours</div><div><b></b>What we do</div><div><b></b>Find us</div></div></div>`;
+
+
+  // ---------- front-page previews ----------
+  const PAGES = {
+    clean: { biz: "Northside Tool Hire", links: ["Hire", "Buy", "Delivery", "Contact"], cta: "Call to hire", kick: "Hire by the day or the week",
+      h: "Pro tools for hire, delivered to site.", sub: "Mini diggers, mixers, breakers and access gear. Same-day delivery across the city.", b1: "Browse tools", b2: "Hire prices",
+      badge: "Same-day delivery", scene: "hire", serv: [["Mini diggers", "From £95 a day"], ["Cement mixers", "From £25 a day"], ["Power tools", "Drills, saws and breakers"]],
+      quote: "Digger on site by 8am and collected the same evening.", pal: 5 },
+    bold: { biz: "Rapid Plumbing", links: ["Services", "Areas", "Reviews"], cta: "Call 24/7", kick: "Emergency callouts",
+      h: "Leak? We're on our way.", sub: "Gas Safe engineers across the city. Fixed price, no call-out fee.", b1: "Book a plumber", b2: "Get a price",
+      badge: "", serv: [["Boilers", "Repairs and servicing"], ["Bathrooms", "Fitted in a week"], ["Emergencies", "Out within the hour"]],
+      quote: "Turned up in 40 minutes and fixed it first time.", pal: 0 },
+    elegant: { biz: "CROWN & CO.", links: ["Wigs", "Lace fronts", "Fittings", "Book"], cta: "Book", kick: "Wigs · Lace fronts · Private fittings",
+      h: "Find your <em>crown</em>.", sub: "Human hair and synthetic wigs, cut and styled for you in a calm private studio.", b1: "Book a fitting", b2: "Shop wigs",
+      badge: "", scene: "wigs", serv: [["Human hair wigs", "Cut and styled for you"], ["Lace fronts", "A natural hairline"], ["Private fittings", "Unhurried, one to one"]],
+      quote: "They found my perfect wig and made me feel amazing.", pal: 4 },
+    playful: { biz: "Bean & Steam", links: ["Menu", "Beans", "Find us"], cta: "Order ahead", kick: "Coffee · Brunch · Cake",
+      h: "Fresh coffee, poured with love.", sub: "Beans roasted down the road, bakes out of the oven at 7am and the comfiest sofas in town.", b1: "See the menu", b2: "Order ahead",
+      badge: "New autumn blend!", scene: "coffee", serv: [["Flat whites", "Roasted in town"], ["Fresh bakes", "Out of the oven at 7am"], ["Order ahead", "Skip the queue"]],
+      quote: "Best flat white in town and the cakes are huge.", pal: 1 },
+    studio: { biz: "ATELIER NINE", links: ["New in", "Women", "Men", "Journal"], cta: "Bag (0)", kick: "Autumn / Winter",
+      h: "New season. New look.", sub: "Small-batch clothing made in Britain. Free returns on every order.", b1: "Shop the edit", b2: "Lookbook",
+      badge: "", serv: [["Free delivery", "On orders over £50"], ["Made in Britain", "Small workshops"], ["Easy returns", "30 days, no fuss"]],
+      quote: "Beautifully made. I wear it every week.", pal: 1 },
+    night: { biz: "Midnight Barbers", links: ["Cuts", "Prices", "Barbers"], cta: "Book", kick: "Open till midnight",
+      h: "Sharp cuts. <em>Open late.</em>", sub: "Skin fades, beard trims and hot towel shaves. Walk-ins welcome after 6pm.", b1: "Book tonight", b2: "Prices",
+      badge: "Walk-ins welcome", scene: "barber", serv: [["Skin fade", "£18 · 40 minutes"], ["Beard trim", "£10 · 20 minutes"], ["Hot towel shave", "£22 · 30 minutes"]],
+      quote: "Only place I trust with my fade.", pal: 3 }
+  };
+  // Illustrated scenes for the style previews, so each example looks like a real kind of business.
+  const SCENES = {
+    hire: `<svg class="scene" viewBox="0 0 400 300" aria-hidden="true">
+      <rect class="dk" x="0" y="248" width="400" height="52"/>
+      <g class="dust"><circle class="lt" cx="262" cy="246" r="9"/><circle class="lt" cx="276" cy="240" r="6"/><circle class="lt" cx="250" cy="241" r="5"/></g>
+      <rect class="k" x="38" y="222" width="150" height="28" rx="14"/>
+      <circle class="steel2" cx="54" cy="236" r="8"/><circle class="steel2" cx="86" cy="236" r="8"/><circle class="steel2" cx="118" cy="236" r="8"/><circle class="steel2" cx="150" cy="236" r="8"/><circle class="steel2" cx="172" cy="236" r="8"/>
+      <rect class="a" x="52" y="196" width="122" height="28" rx="5"/>
+      <rect class="a" x="58" y="150" width="70" height="50" rx="8"/>
+      <rect class="b" x="66" y="158" width="44" height="32" rx="4" opacity=".85"/>
+      <rect class="k" x="40" y="190" width="18" height="30" rx="4"/>
+      <g class="arm">
+        <path d="M150 182 L222 118" stroke="var(--m-accent)" stroke-width="15" stroke-linecap="round"/>
+        <path d="M222 118 L258 196" stroke="var(--m-accent)" stroke-width="11" stroke-linecap="round"/>
+        <path class="k" d="M248 192 L276 196 L272 222 Q256 226 244 214 Z"/>
+        <circle class="k" cx="150" cy="182" r="7"/><circle class="k" cx="222" cy="118" r="6"/>
+      </g>
+      <g><rect class="steel2" x="300" y="214" width="8" height="34"/><rect class="steel2" x="338" y="214" width="8" height="34"/>
+        <circle class="k" cx="352" cy="242" r="9"/><circle class="steel" cx="352" cy="242" r="4"/>
+        <g class="drum"><circle class="lt" cx="322" cy="186" r="36"/>
+          <path d="M296 160 L348 212 M322 150 L322 222 M286 186 L358 186" stroke="var(--m-main)" stroke-width="6" opacity=".55"/>
+          <circle class="dk" cx="322" cy="186" r="10"/></g>
+        <path class="k" d="M350 160 l24 -16 l7 10 l-24 16 z"/></g>
+      <g transform="translate(196 228)"><path class="b" d="M0 20 a22 20 0 0 1 44 0 z"/><rect class="b" x="-6" y="18" width="56" height="6" rx="3"/><rect class="a" x="19" y="2" width="6" height="16" rx="2"/></g>
+    </svg>`,
+    coffee: `<svg class="scene" viewBox="0 0 400 300" aria-hidden="true">
+      <rect class="k" x="34" y="232" width="150" height="12" rx="6" opacity=".85"/>
+      <rect class="dk" x="44" y="72" width="130" height="122" rx="16"/>
+      <rect class="steel" x="44" y="62" width="130" height="18" rx="8"/>
+      <circle class="a" cx="80" cy="108" r="13"/><circle class="b" cx="80" cy="108" r="5"/>
+      <circle class="steel" cx="122" cy="108" r="7"/><circle class="steel" cx="146" cy="108" r="7"/>
+      <rect class="steel" x="86" y="150" width="46" height="14" rx="5"/><rect class="steel2" x="126" y="153" width="40" height="8" rx="4"/>
+      <rect x="106" y="166" width="5" height="10" rx="2" fill="#5b3420" class="drip"/>
+      <path class="b" d="M88 204 h42 v14 a10 10 0 0 1 -10 10 h-22 a10 10 0 0 1 -10 -10 z"/><path d="M130 208 q12 2 0 12" stroke="var(--m-bg)" stroke-width="4" fill="none"/>
+      <rect class="b" x="80" y="226" width="58" height="6" rx="3"/>
+      <ellipse class="dk" cx="282" cy="244" rx="86" ry="12" opacity=".6"/>
+      <path class="b" d="M214 150 h134 v52 a40 40 0 0 1 -40 40 h-54 a40 40 0 0 1 -40 -40 z"/>
+      <path d="M348 168 q34 4 30 30 q-4 22 -34 22" stroke="var(--m-bg)" stroke-width="12" fill="none"/>
+      <ellipse cx="281" cy="152" rx="67" ry="13" fill="#6b3f22"/>
+      <ellipse cx="281" cy="152" rx="52" ry="9" fill="#e7cfae"/>
+      <path d="M281 160 c-14 -8 -12 -16 -4 -15 c3 0 4 3 4 3 c0 0 1 -3 4 -3 c8 -1 10 7 -4 15z" fill="#6b3f22" opacity=".7"/>
+      <rect class="a" x="214" y="186" width="134" height="12" opacity=".9"/>
+      <g class="steam"><path d="M258 132 q-10 -14 0 -26 q10 -12 0 -26"/><path d="M281 128 q-10 -14 0 -26 q10 -12 0 -26"/><path d="M304 132 q-10 -14 0 -26 q10 -12 0 -26"/></g>
+      <g fill="#4a2a17"><ellipse cx="200" cy="262" rx="9" ry="6" transform="rotate(-20 200 262)"/><ellipse cx="372" cy="266" rx="9" ry="6" transform="rotate(30 372 266)"/><ellipse cx="352" cy="276" rx="8" ry="5" transform="rotate(-40 352 276)"/></g>
+    </svg>`,
+    barber: `<svg class="scene" viewBox="0 0 400 300" aria-hidden="true">
+      <rect class="k" x="0" y="262" width="400" height="38" opacity=".08"/>
+      <text class="neon" x="386" y="44" text-anchor="end">OPEN LATE</text>
+      <rect class="steel" x="26" y="58" width="36" height="12" rx="6"/><rect class="steel" x="26" y="214" width="36" height="12" rx="6"/>
+      <circle class="steel" cx="44" cy="52" r="9"/>
+      <svg x="30" y="70" width="28" height="144"><rect width="28" height="144" fill="#f4f4f4"/>
+        <g class="stripes">${Array.from({ length: 8 }, (_, i) => `<path d="M-10 ${i * 36} L38 ${i * 36 - 30} L38 ${i * 36 - 18} L-10 ${i * 36 + 12} Z" fill="${i % 2 ? "#1f4fa8" : "#d23232"}"/>`).join("")}</g></svg>
+      <rect class="steel2" x="40" y="226" width="8" height="36"/>
+      <g opacity=".45" transform="translate(268 120) scale(.62)">
+        <rect class="m" x="40" y="0" width="70" height="110" rx="14"/><rect class="m" x="20" y="104" width="110" height="34" rx="12"/>
+        <rect class="steel2" x="68" y="138" width="14" height="60"/><ellipse class="steel2" cx="75" cy="200" rx="46" ry="9"/></g>
+      <ellipse class="k" cx="170" cy="262" rx="74" ry="9" opacity=".25"/>
+      <rect class="m" x="138" y="70" width="66" height="22" rx="10"/>
+      <rect class="m" x="126" y="96" width="92" height="96" rx="16"/>
+      <rect class="m" x="106" y="186" width="132" height="34" rx="14"/>
+      <rect class="steel" x="96" y="168" width="34" height="9" rx="4"/><rect class="steel" x="214" y="168" width="34" height="9" rx="4"/>
+      <rect class="steel" x="162" y="220" width="18" height="34"/><ellipse class="steel" cx="171" cy="256" rx="56" ry="8"/>
+      <rect class="steel2" x="206" y="226" width="40" height="7" rx="3"/>
+      <g class="clip"><rect x="242" y="70" width="30" height="88" rx="14" fill="#e9edf2"/><rect class="a" x="242" y="104" width="30" height="16"/>
+        <rect x="244" y="62" width="26" height="12" rx="3" fill="#8b949e"/>
+        <path d="M246 62 v-6 M251 62 v-6 M256 62 v-6 M261 62 v-6 M266 62 v-6" stroke="#c9d0d8" stroke-width="2.5"/>
+        <path d="M257 158 q4 40 -30 60" stroke="#8b949e" stroke-width="3" fill="none"/></g>
+      <g transform="translate(330 196) rotate(35)"><circle cx="-8" cy="22" r="8" fill="none" stroke="#c9d0d8" stroke-width="4"/><circle cx="8" cy="22" r="8" fill="none" stroke="#c9d0d8" stroke-width="4"/>
+        <path d="M-4 15 L6 -30 M4 15 L-6 -30" stroke="#e9edf2" stroke-width="4" stroke-linecap="round"/></g>
+    </svg>`,
+    wigs: `<svg class="scene" viewBox="0 0 800 230" aria-hidden="true">
+      <rect class="k" x="60" y="206" width="680" height="7" rx="3" opacity=".35"/>
+      ${[[190, "long"], [400, "bob"], [610, "curl"]].map(([x, w]) => `<g transform="translate(${x} 0)">
+        ${w === "long" ? `<path d="M-44 70 q-6 -50 44 -54 q50 4 44 54 q8 60 -6 104 q-14 10 -38 -6 q-24 16 -38 6 q-14 -44 -6 -104z" fill="#3a2418"/>` : ""}
+        ${w === "curl" ? Array.from({ length: 16 }, (_, i) => { const a = i / 16 * Math.PI * 2; return `<circle cx="${Math.round(Math.cos(a) * 46)}" cy="${Math.round(76 + Math.sin(a) * 50)}" r="20" fill="#1d1411"/>`; }).join("") + `<circle cx="0" cy="40" r="34" fill="#1d1411"/>` : ""}
+        <rect x="-11" y="122" width="22" height="34" fill="#e3d2c2"/>
+        <path d="M-50 196 q0 -40 50 -44 q50 4 50 44 z" fill="#ead9c9"/>
+        <ellipse cx="0" cy="84" rx="34" ry="44" fill="#efe0d1"/>
+        <path d="M-14 92 q4 3 8 0 M6 92 q4 3 8 0" stroke="#b9a493" stroke-width="2" fill="none"/>
+        ${w === "long" ? `<path d="M-38 74 q8 -46 38 -46 q34 0 40 40 q-30 -22 -78 6z" fill="#3a2418"/>` : ""}
+        ${w === "bob" ? `<path d="M-46 112 q-10 -86 46 -90 q56 4 46 90 l-16 2 q4 -50 -20 -64 q-20 26 -60 22 q-4 20 0 42z" fill="#d6b06a"/>` : ""}
+        <rect class="b" x="-46" y="196" width="92" height="10" rx="3"/>
+        <g class="tag"><path d="M34 140 v18" stroke="var(--m-ink)" stroke-width="1.5"/><rect class="a" x="18" y="158" width="34" height="20" rx="4"/></g>
+      </g>`).join("")}
+      <path class="a spark" d="M300 40 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4z"/>
+      <path class="a spark" d="M510 28 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3z"/>
+      <path class="a spark" d="M712 70 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4z"/>
+      <path class="a spark" d="M96 52 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3z"/>
+    </svg>`
+  };
+  // Real photos (free Unsplash licence) for each example business.
+  const IMG = (id, w = 900) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=72`;
+  const PHOTOS = {
+    clean: "photo-1630288214173-a119cf823388",    // excavator on site
+    bold: "photo-1676210134190-3f2c0d5cf58d",     // plumber at a water heater
+    elegant: "photo-1634315775834-3e1ac73de6b6",  // wigs on display
+    playful: "photo-1461988366670-48e401bafb0a",  // espresso machine
+    studio: ["photo-1441984904996-e0b6ba687e04", "photo-1441986300917-64674bd600d8", "photo-1540221652346-e5dd6b50f3e7"],  // boutique
+    night: "photo-1782596747899-e522836b328e"     // barbershop after dark
+  };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function frontPage(style, colours, tpl) {
+    const p = PAGES[style.id] || PAGES.clean;
+    const v = templateVars(tpl || (style.dark ? "dark" : "light"), colours, style);
+    const vars = Object.entries(v).map(([k, val]) => `${k}:${val}`).join(";");
+    const ph = PHOTOS[style.id];
+    const art = style.id === "studio" ? ph.map(id => `<u style="background-image:url('${IMG(id, 600)}')"></u>`).join("")
+      : (p.badge ? `<span class="fbadge">${p.badge}</span>` : "") + `<img class="photo" src="${IMG(ph)}" alt="" decoding="async"><span class="tint"></span>`;
+    return `<div class="fp s-${style.id}" style="${esc(vars)}" aria-hidden="true">
+      <div class="fnav"><span class="flogo"><i></i>${p.biz}</span><span class="flinks">${p.links.map(l => `<span>${l}</span>`).join("")}</span><span class="fbtn">${p.cta}</span></div>
+      <div class="fhero"><div><div class="fkick">${p.kick}</div><h5>${p.h}</h5><p class="fsub">${p.sub}</p>
+        <div class="fbtns"><span class="fbtn">${p.b1}</span><span class="fghost">${p.b2}</span></div></div><div class="fart${style.id === "studio" ? "" : " has-photo"}">${art}</div></div>
+      <div class="fserv">${p.serv.map(([a, b]) => `<div><b></b><strong>${a}</strong><span>${b}</span></div>`).join("")}</div>
+      <div class="fquote"><q>${p.quote}</q><small>★★★★★</small></div></div>`;
+  }
+  // Scale each 960px page to its frame's width.
+  const fit = new ResizeObserver(entries => entries.forEach(e => {
+    const k = e.contentRect.width / 960; e.target.style.setProperty("--k", k);
+    if (e.target.closest(".viewer")) e.target.style.height = e.target.firstElementChild.offsetHeight * k + "px";  // the whole page, not a crop
+  }));
+  function frame(html, label) { return `<div class="frame" role="img" aria-label="${esc(label)}">${html}</div>`; }
+  function fitAll(root) { root.querySelectorAll(".frame").forEach(f => fit.observe(f)); }
+  const cardPal = {};
+  const palOf = s => cardPal[s.id] === "yours" ? state.c : PALETTES[cardPal[s.id] ?? PAGES[s.id].pal].c;
+
+  // ---------- styles gallery ----------
+  const FOR = { food: "food & drink", beauty: "hair & beauty", trades: "trades", shops: "shops" };
+  function renderStyles(filter = "all") {
+    const grid = $("#style-grid");
+    grid.innerHTML = STYLES.filter(s => filter === "all" || s.for.includes(filter)).map(s => {
+      const chosen = cardPal[s.id] ?? PAGES[s.id].pal;
+      return `<article class="style${state.style === s.id ? " picked" : ""}">
+        ${frame(frontPage(s, palOf(s)), `${s.name} style front page for ${PAGES[s.id].biz}`).replace("</div>\n", "</div>\n")}
+        <div class="meta"><h3>${s.name}</h3><p>${s.desc}</p>
+          <div class="swatches" role="group" aria-label="Colour options for ${s.name}">${PALETTES.map((p, i) => `<button class="sw" type="button" data-sw="${s.id}" data-i="${i}" aria-pressed="${chosen === i}" title="${p.name}" aria-label="Show ${s.name} in ${p.name} colours">${p.c.map(c => `<span style="background:${c}"></span>`).join("")}</button>`).join("")}<button class="sw yours" type="button" data-sw="${s.id}" data-i="yours" aria-pressed="${chosen === "yours"}">Your colours</button></div>
+          <span class="for">Good for: ${s.for.map(f => FOR[f]).join(", ")}</span>
+          <div class="labtools"><button class="btn ${state.style === s.id ? "accent" : "ghost"}" type="button" data-style="${s.id}" aria-pressed="${state.style === s.id}">${state.style === s.id ? "Chosen" : "Use this style"}</button>
+          <button class="btn ghost" type="button" data-view="${s.id}">View full size</button></div></div>
+      </article>`;
+    }).join("");
+    fitAll(grid);
+  }
+  function openViewer(style, colours, tpl) {
+    const v = $("#viewer");
+    $("#viewer-title").textContent = `${style.name} style · ${PAGES[style.id].biz}`;
+    $("#viewer-page").innerHTML = frame(frontPage(style, colours, tpl), `${style.name} style front page, full size`);
+    v.hidden = false; fitAll(v); $("#viewer-close").focus();
+  }
+  $("#viewer-close").addEventListener("click", () => { $("#viewer").hidden = true; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $("#viewer").hidden = true; });
+  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
+    renderStyles(c.dataset.f);
+  }));
+  $("#style-grid").addEventListener("click", e => {
+    const sw = e.target.closest("[data-sw]");
+    if (sw) { cardPal[sw.dataset.sw] = sw.dataset.i === "yours" ? "yours" : +sw.dataset.i; renderStyles(document.querySelector('.chip[aria-pressed="true"]').dataset.f); return; }
+    const view = e.target.closest("[data-view]");
+    if (view) { const st = STYLES.find(x => x.id === view.dataset.view); openViewer(st, palOf(st)); return; }
+    const b = e.target.closest("[data-style]"); if (!b) return;
+    const st = STYLES.find(x => x.id === b.dataset.style);
+    state.style = st.id; state.c = palOf(st).slice(); save();
+    renderStyles(document.querySelector('.chip[aria-pressed="true"]').dataset.f); renderLab();
+    document.getElementById("lab").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  });
+
+  // ---------- colour lab ----------
+  $("#presets").innerHTML = PALETTES.map((p, i) => `<button class="preset" type="button" data-p="${i}" title="${p.name}" aria-label="Use the ${p.name} palette">${p.c.map(c => `<span style="background:${c}"></span>`).join("")}</button>`).join("");
+  $("#presets").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (b) { state.c = PALETTES[b.dataset.p].c.slice(); save(); renderLab(); } });
+  [1, 2, 3].forEach(n => {
+    $("#c" + n).addEventListener("input", e => { state.c[n - 1] = e.target.value; save(); renderLab(); });
+    $("#c" + n + "t").addEventListener("change", e => {
+      let v = e.target.value.trim(); if (!v.startsWith("#")) v = "#" + v;
+      if (hexOk(v)) { state.c[n - 1] = v.toLowerCase(); save(); }
+      renderLab();
+    });
+  });
+  $("#shuffle").addEventListener("click", () => {
+    const h = Math.floor(Math.random() * 360), dark = Math.random() < .25;
+    state.c = [hsl(h, 55 + Math.random() * 25, dark ? 70 : 32), dark ? hsl(h, 25, 8) : hsl(h, 30, 97), hsl((h + 150 + Math.random() * 60) % 360, 80, 58)];
+    save(); renderLab();
+  });
+  function renderLab() {
+    const style = STYLES.find(s => s.id === state.style) || STYLES[0];
+    state.c.forEach((c, i) => { $("#c" + (i + 1)).value = c; $("#c" + (i + 1) + "t").value = c.toUpperCase(); });
+    const [main, bg, acc] = state.c;
+    const checks = [
+      ["Text on background", contrast(inkFor(bg), bg), 4.5], ["Button text", contrast(onColour(main), main), 4.5],
+      ["Main colour on background", contrast(main, bg), 3], ["Accent stands out", contrast(acc, bg), 1.6]
+    ];
+    $("#checks").innerHTML = checks.map(([label, r, need]) => `<span class="check ${r >= need ? "pass" : "fail"}">${label} <b>${r.toFixed(1)}:1 ${r >= need ? "Easy to read" : "Too faint"}</b></span>`).join("");
+    $("#templates").innerHTML = TEMPLATES.map(t => `<div class="tpl">${frame(frontPage(style, state.c, t.id), `${t.name} template in your colours`)}
+      <div class="cap"><label><input type="radio" name="tpl" value="${t.id}" ${state.tpl === t.id ? "checked" : ""}> ${t.name}</label><button class="btn ghost" type="button" data-tview="${t.id}" style="padding:6px 14px;font-size:.85rem">View full size</button><p>${t.note}</p></div></div>`).join("");
+    fitAll($("#templates"));
+    $("#style-note").textContent = "Style: " + style.name;
+    summary();
+  }
+  $("#templates").addEventListener("click", e => { const b = e.target.closest("[data-tview]"); if (b) openViewer(STYLES.find(x => x.id === state.style) || STYLES[0], state.c, b.dataset.tview); });
+  $("#templates").addEventListener("change", e => { if (e.target.name === "tpl") { state.tpl = e.target.value; save(); summary(); } });
+
+  // ---------- quote ----------
+  const PACKS = [
+    { id: "starter", name: "Starter website", price: 395, weeks: "1 to 2 weeks", desc: "One page made for phones, contact form, tap-to-call and Google basics. 2 rounds of changes." },
+    { id: "business", name: "Business website", price: 895, popular: true, weeks: "2 to 4 weeks", desc: "Up to 5 pages, Google Business Profile help, share previews and secure hosting setup. 3 rounds of changes." },
+    { id: "shop", name: "Online shop", price: 1595, weeks: "4 to 6 weeks", desc: "Everything in Business, plus a shop with up to 20 products, card payments and delivery options." }
+  ];
+  const ADDONS = [
+    { id: "logo", name: "Logo design", price: 150 }, { id: "copy", name: "Copywriting, per page", price: 60, per: "pages" },
+    { id: "booking", name: "Online booking", price: 200 }, { id: "seo", name: "Local Google setup", price: 150 },
+    { id: "photos", name: "Photo editing and stock images", price: 100 }, { id: "extra", name: "Extra pages", price: 120, per: "extra" }
+  ];
+  $("#packs").innerHTML = PACKS.map(p => `<label class="pack"><input type="radio" name="pack" value="${p.id}" ${state.pack === p.id ? "checked" : ""}>
+    <span><h3>${p.name}${p.popular ? '<span class="badge">Recommended</span>' : ""}</h3><p>${p.desc}</p></span><span class="price">${money(p.price)}</span></label>`).join("");
+  $("#addons").innerHTML = ADDONS.map(a => `<label class="addon"><input type="checkbox" data-a="${a.id}" ${state.addons[a.id] ? "checked" : ""}><span>${a.name}</span>
+    ${a.per ? `<input type="number" min="1" max="20" value="${state.addons[a.id] || 1}" data-q="${a.id}" aria-label="How many">` : ""}<em>${money(a.price)}</em></label>`).join("") +
+    `<label class="addon care-addon"><input type="checkbox" id="care" ${state.care ? "checked" : ""}><span><b>Hosting and care, paid monthly</b><br>Your domain, hosting, security checks, updates, backups and small changes</span><em>£20/mo</em></label>
+    <details class="care-why"><summary aria-label="Why hosting and care matters"><span aria-hidden="true">•••</span> Why it matters</summary><ul>
+      <li><b>Your site stays online.</b> We renew your domain and hosting for you, so your website never expires or disappears.</li>
+      <li><b>Kept safe.</b> Regular security checks and updates keep hackers and spam out and your padlock (HTTPS) working.</li>
+      <li><b>Backed up.</b> If anything ever goes wrong, we restore your site quickly from a recent backup.</li>
+      <li><b>Problems fixed for you.</b> If something breaks, we put it right at no extra cost.</li>
+      <li><b>Small changes included.</b> New prices, opening hours, photos or text, updated whenever you ask.</li>
+      <li><b>Fast and found on Google.</b> We keep your site quick and working on new phones and browsers, which helps customers find you.</li>
+      <li><b>One person to call, no long contract.</b> Cancel any time with a month's notice.</li>
+    </ul></details>`;
+  $("#packs").addEventListener("change", e => { state.pack = e.target.value; save(); quote(); });
+  $("#addons").addEventListener("change", e => {
+    const id = e.target.dataset.a || e.target.dataset.q;
+    if (e.target.dataset.a) state.addons[id] = e.target.checked ? (+($(`[data-q="${id}"]`)?.value) || 1) : 0;
+    else if (state.addons[id]) state.addons[id] = Math.max(1, Math.min(20, +e.target.value || 1));
+    save(); quote();
+  });
+  $("#care").checked = state.care;
+  $("#care").addEventListener("change", e => { state.care = e.target.checked; save(); quote(); });
+  let shownTotal = null;
+  function showTotal(t) {
+    const el = $("#q-total");
+    if (shownTotal === null || matchMedia("(prefers-reduced-motion: reduce)").matches) { shownTotal = t; el.textContent = money(t); return; }
+    const from = shownTotal, start = performance.now(); shownTotal = t;
+    const step = now => {
+      if (shownTotal !== t) return;
+      const k = Math.min(1, (now - start) / 450), ease = 1 - Math.pow(1 - k, 3);
+      el.textContent = money(k < 1 ? Math.round(from + (t - from) * ease) : t);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    setTimeout(() => { if (shownTotal === t) el.textContent = money(t); }, 600);  // lands on the exact total even if animation is paused
+  }
+  function quote() {
+    const p = PACKS.find(x => x.id === state.pack) || PACKS[1];
+    const lines = [[p.name, p.price]];
+    ADDONS.forEach(a => { const q = state.addons[a.id]; if (q) lines.push([a.name + (a.per ? ` × ${q}` : ""), a.price * (a.per ? q : 1)]); });
+    const total = lines.reduce((s, [, v]) => s + v, 0);
+    showTotal(total);
+    $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${money(v)}</dd>`).join("") +
+      `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care (monthly, from go-live)</dt><dd>£20/month</dd>` : "");
+    $("#q-time").textContent = "Ready in " + p.weeks + " from your go-ahead";
+    state.total = total; summary();
+  }
+
+  // ---------- brief ----------
+  function summary() {
+    const style = STYLES.find(s => s.id === state.style) || STYLES[0];
+    $("#s-style").textContent = style.name;
+    ["#s1", "#s2", "#s3"].forEach((s, i) => $(s).style.background = state.c[i]);
+    $("#s-tpl").textContent = (TEMPLATES.find(t => t.id === state.tpl) || TEMPLATES[0]).name;
+    $("#s-pack").textContent = (PACKS.find(p => p.id === state.pack) || PACKS[1]).name;
+    $("#s-total").textContent = money(state.total || 895) + (state.care ? " + £20/month" : "");
+  }
+  const draft = store.get("brief") || {};
+  ["name", "biz", "email", "phone", "what", "look", "like", "when"].forEach(k => {
+    const el = $("#v-" + k); if (draft[k]) el.value = draft[k];
+    el.addEventListener("input", () => { draft[k] = el.value; store.set("brief", draft); });
+  });
+  async function post(url, data) {
+    if (!url) return false;
+    try { const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(data) }); return r.ok; }
+    catch { return false; }
+  }
+  $("#vision-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = k => $("#v-" + k).value.trim();
+    if (!f("name") || !f("biz") || !f("look")) { $("#v-err").textContent = "Please add your name, business name and how you'd like it to look."; return; }
+    if (!EMAIL.test(f("email"))) { $("#v-err").textContent = "Please check your email address."; return; }
+    $("#v-err").textContent = "";
+    const style = STYLES.find(s => s.id === state.style) || STYLES[0];
+    const brief = { type: "brief", name: f("name"), business: f("biz"), email: f("email"), phone: f("phone"), what: f("what"), look: f("look"),
+      inspiration: f("like"), when: f("when"), style: style.name, colours: { main: state.c[0], background: state.c[1], accent: state.c[2] },
+      template: $("#s-tpl").textContent, package: $("#s-pack").textContent, estimate: $("#s-total").textContent, sent: new Date().toISOString() };
+    const ok = await post(BRIEF_ENDPOINT, brief);
+    const text = `Website brief for ${brief.business}\nFrom: ${brief.name} (${brief.email}${brief.phone ? ", " + brief.phone : ""})\nWhat they do: ${brief.what || "-"}\nLook and feel: ${brief.look}\nSites they like: ${brief.inspiration || "-"}\nWhen: ${brief.when}\nStyle: ${brief.style}\nColours: ${brief.colours.main}, ${brief.colours.background}, ${brief.colours.accent}\nTemplate: ${brief.template}\nPackage: ${brief.package}\nEstimate: ${brief.estimate}`;
+    const done = $("#v-done"); done.hidden = false; done.className = "sent";
+    done.innerHTML = ok ? `<strong>Thanks, ${brief.name}. Your brief is with us.</strong><p>We'll reply to ${brief.email} with three designs in your colours.</p>`
+      : `<strong>Your brief is ready.</strong><p>Copy it and email it to <span class="addr">alfredw.lsx@gmail.com</span>, and we'll reply with three designs in your colours.</p><pre id="brief-text"></pre><button class="btn ghost" type="button" id="copy-brief">Copy brief</button>`;
+    if (!ok) {
+      $("#brief-text").textContent = text;
+      $("#copy-brief").addEventListener("click", async ev => {
+        try { await navigator.clipboard.writeText(text); ev.target.textContent = "Copied"; }
+        catch { const r = document.createRange(); r.selectNodeContents($("#brief-text")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); ev.target.textContent = "Selected: press Ctrl+C"; }
+      });
+    }
+  });
+
+  // ---------- email sign-up gate ----------
+  const EMAIL = /^[^\s@<>()",;:]+@([a-z0-9-]+\.)+[a-z]{2,}$/i;
+  const THROWAWAY = ["mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com", "temp-mail.org", "yopmail.com", "trashmail.com",
+    "sharklasers.com", "getnada.com", "dispostable.com", "maildrop.cc", "throwawaymail.com", "fakeinbox.com", "mintemail.com", "emailondeck.com"];
+  const TYPOS = { "gmial.com": "gmail.com", "gmai.com": "gmail.com", "gmail.co": "gmail.com", "gamil.com": "gmail.com", "hotmial.com": "hotmail.com",
+    "hotmail.co": "hotmail.co.uk", "outlok.com": "outlook.com", "yahooo.com": "yahoo.com", "icloud.co": "icloud.com" };
+  async function domainTakesMail(domain) {
+    // Asks public DNS whether the domain has a mail server. "unknown" if DNS can't be reached from here.
+    try {
+      const ask = async t => (await (await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=${t}`, { signal: AbortSignal.timeout(5000) })).json());
+      const mx = await ask("MX");
+      if (mx.Status === 3) return "no";
+      if ((mx.Answer || []).some(a => a.type === 15 && !/^0 \.?$/.test(a.data))) return "yes";
+      const a = await ask("A");
+      return (a.Answer || []).length ? "yes" : "no";
+    } catch { return "unknown"; }
+  }
+  const gate = $("#gate");
+  if (!store.get("member")) { gate.hidden = false; document.documentElement.style.overflow = "hidden"; setTimeout(() => $("#gate-email").focus(), 50); }
+  $("#gate-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const err = $("#gate-err"), email = $("#gate-email").value.trim().toLowerCase(), domain = email.split("@")[1] || "";
+    if (!EMAIL.test(email)) { err.textContent = "That doesn't look like an email address. Check it and try again."; return; }
+    if (TYPOS[domain]) { err.textContent = `Did you mean ${email.split("@")[0]}@${TYPOS[domain]}? Please check the spelling.`; return; }
+    if (THROWAWAY.includes(domain)) { err.textContent = "Please use your real email address, not a temporary one."; return; }
+    $("#gate-go").disabled = true; err.textContent = "Checking your email address…";
+    const ok = await domainTakesMail(domain);
+    $("#gate-go").disabled = false;
+    if (ok === "no") { err.textContent = `We couldn't find an email service at ${domain}. Please check the address and try again.`; return; }
+    err.textContent = "";
+    const member = { email, marketing: $("#gate-consent").checked, joined: new Date().toISOString() };
+    store.set("member", member);
+    post(SIGNUP_ENDPOINT, { type: "signup", ...member });
+    if (!$("#v-email").value) { $("#v-email").value = email; draft.email = email; store.set("brief", draft); }
+    gate.hidden = true; document.documentElement.style.overflow = "";
+  });
+
+
+  // ---------- hero: a real front page, cycling through the styles in their own colours ----------
+  const heroStage = $("#hero-stage"), pauseBtn = $("#hero-pause");
+  let hi = 0, heroTimer = null;
+  function hero() {
+    const s = STYLES[hi % STYLES.length], pal = PALETTES[PAGES[s.id].pal];
+    heroStage.innerHTML = frame(frontPage(s, pal.c), `${s.name} style front page for ${PAGES[s.id].biz}`);
+    fitAll(heroStage);
+    ["#hs1", "#hs2", "#hs3"].forEach((x, i) => $(x).style.background = pal.c[i]);
+    $("#hs-name").textContent = `${PAGES[s.id].biz}, ${s.name} style in ${pal.name}`;
+  }
+  function play(on) {
+    clearInterval(heroTimer); heroTimer = on ? setInterval(() => { hi++; hero(); }, 4200) : null;
+    pauseBtn.textContent = on ? "Pause" : "Play";
+  }
+  pauseBtn.addEventListener("click", () => play(!heroTimer));
+  hero(); play(!matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  // ---------- business types: photo cards that filter the gallery ----------
+  const TYPE_IMG = id => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=700&h=930&q=70`;
+  const TYPES = [
+    ["food", "Food & drink", "Cafes, bistros, bakeries", "photo-1518473537958-1d1b23cac484"],
+    ["beauty", "Hair & beauty", "Barbers, salons, wig studios", "photo-1759134248487-e8baaf31e33e"],
+    ["trades", "Trades", "Plumbers, builders, tool hire", "photo-1597974380476-fbf652dfe188"],
+    ["shops", "Shops", "Boutiques and online stores", "photo-1441984904996-e0b6ba687e04"]
+  ];
+  $("#type-strip").innerHTML = TYPES.map(([f, name, note, id]) => `<a class="type" href="#styles" data-type="${f}">
+    <img src="${TYPE_IMG(id)}" alt="" decoding="async"><span><strong>${name}</strong><small>${note}</small></span></a>`).join("");
+  $("#type-strip").addEventListener("click", e => {
+    const b = e.target.closest("[data-type]"); if (!b) return; e.preventDefault();
+    document.querySelector(`.chip[data-f="${b.dataset.type}"]`).click();
+    $("#styles").scrollIntoView();
+  });
+
+  // ---------- colour lab: pull three colours out of a logo or photo (all in the browser, nothing is uploaded) ----------
+  const sat = h => { const [r, g, b] = rgb(h).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx === 0 ? 0 : (mx - mn) / mx; };
+  const dist = (a, b) => { const x = rgb(a), y = rgb(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+  const toHex = (r, g, b) => "#" + [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("");
+  function paletteFrom(img) {
+    const c = document.createElement("canvas"), n = 72, k = Math.min(1, n / Math.max(img.width, img.height));
+    c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+    const ctx = c.getContext("2d", { willReadFrequently: true }); ctx.drawImage(img, 0, 0, c.width, c.height);
+    const d = ctx.getImageData(0, 0, c.width, c.height).data, counts = new Map();
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) continue;
+      const key = toHex(d[i] & 0xf0 | 8, d[i + 1] & 0xf0 | 8, d[i + 2] & 0xf0 | 8);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([hx]) => hx);
+    const picked = [];
+    ranked.forEach(hx => { if (picked.length < 8 && picked.every(p => dist(p, hx) > 70)) picked.push(hx); });
+    if (!picked.length) return null;
+    const colourful = picked.filter(hx => sat(hx) > .28 && lum(hx) > .02 && lum(hx) < .6);
+    const main = colourful[0] || picked.slice().sort((a, b) => lum(a) - lum(b))[0];
+    const light = picked.find(hx => lum(hx) > .82 && sat(hx) < .25);
+    const bg = light || mix(main, "#ffffff", .94);
+    const accent = colourful.find(hx => hx !== main && dist(hx, main) > 110) || picked.find(hx => hx !== main && hx !== bg && dist(hx, main) > 110 && dist(hx, bg) > 110);
+    return [main, bg, accent || mix(main, "#ffc94a", .7)];
+  }
+  $("#logo-pick").addEventListener("click", () => $("#logo-file").click());
+  $("#logo-file").addEventListener("change", e => {
+    const file = e.target.files[0]; if (!file) return;
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const p = paletteFrom(img); URL.revokeObjectURL(url);
+      if (!p) { $("#logo-note").textContent = "We couldn't find colours in that image. Try another one."; return; }
+      state.c = p; save(); renderLab();
+      $("#logo-note").textContent = `Colours taken from ${file.name}. Adjust them above if you like.`;
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); $("#logo-note").textContent = "That file isn't an image we can read. Try a PNG or JPG."; };
+    img.src = url; e.target.value = "";
+  });
+
+  renderStyles(); renderLab(); quote();
+})();
+
+// Header rule appears once you scroll; sections fade in as you reach them.
+(() => {
+  const bar = document.getElementById("bar");
+  const onScroll = () => bar.classList.toggle("scrolled", scrollY > 8);
+  addEventListener("scroll", onScroll, { passive: true }); onScroll();
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { x.target.classList.add("in"); io.unobserve(x.target); } }),
+    { rootMargin: "0px 0px -6% 0px" });
+  document.querySelectorAll("main section .head, main section .wrap > *:not(.head)").forEach(el => { el.classList.add("reveal"); io.observe(el); });
+})();
+// Full-screen menu: each link shows its own photo behind; the photo drifts gently with the pointer.
+(() => {
+  const IMG = id => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1800&q=70`;
+  const ITEMS = [
+    ["#styles", "Styles", "Six full front pages to try", "photo-1441986300917-64674bd600d8"],
+    ["#lab", "Colour lab", "Test your three colours", "photo-1716471330459-063b3baf247e"],
+    ["#quote", "Quote", "See your price before you ask", "photo-1504608245011-62d9758c1bb9"],
+    ["#account", "Client area", "Hosting and care plan", "photo-1524561506982-601111bed7a6"],
+    ["#faq", "FAQ", "Good to know before you start", "photo-1518473537958-1d1b23cac484"],
+    ["#vision", "Start a project", "Tell us your vision", "photo-1759134248487-e8baaf31e33e"]
+  ];
+  const menu = document.getElementById("menu"), bg = document.getElementById("menu-bg"), links = document.getElementById("menu-links");
+  const openBtn = document.getElementById("menu-open"), closeBtn = document.getElementById("menu-close");
+  links.innerHTML = ITEMS.map(([href, name, note], i) => `<a href="${href}" data-i="${i}" style="--i:${i}">${name}<small>${note}</small></a>`).join("");
+  let loaded = false;
+  function show(i) {
+    if (!loaded) { bg.innerHTML = ITEMS.map(([, , , id]) => `<img src="${IMG(id)}" alt="" decoding="async">`).join(""); loaded = true; }
+    bg.querySelectorAll("img").forEach((im, n) => im.classList.toggle("on", n === i));
+    links.querySelectorAll("a").forEach((a, n) => a.classList.toggle("on", n === i));
+  }
+  function open() {
+    show(0); menu.inert = false; menu.classList.add("open"); openBtn.setAttribute("aria-expanded", "true");
+    document.documentElement.style.overflow = "hidden"; setTimeout(() => closeBtn.focus(), 30);
+  }
+  function close(focusBack = true) {
+    menu.classList.remove("open"); menu.inert = true; openBtn.setAttribute("aria-expanded", "false");
+    document.documentElement.style.overflow = ""; if (focusBack) openBtn.focus();
+  }
+  openBtn.addEventListener("click", open);
+  addEventListener("load", () => setTimeout(() => { if (!loaded) show(-1); }, 1500));  // fetch the menu photos early so they appear instantly
+  closeBtn.addEventListener("click", () => close());
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && menu.classList.contains("open")) close(); });
+  links.addEventListener("pointerover", e => { const a = e.target.closest("a"); if (a) show(+a.dataset.i); });
+  links.addEventListener("focusin", e => { const a = e.target.closest("a"); if (a) show(+a.dataset.i); });
+  links.addEventListener("click", e => {
+    const a = e.target.closest("a"); if (!a) return;
+    e.preventDefault(); close(false);
+    const target = document.querySelector(a.getAttribute("href"));
+    setTimeout(() => { target.scrollIntoView(); history.replaceState(null, "", a.getAttribute("href")); }, 0);
+  });
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    menu.addEventListener("pointermove", e => {
+      bg.style.setProperty("--px", ((e.clientX / innerWidth) - .5) * -30 + "px");
+      bg.style.setProperty("--py", ((e.clientY / innerHeight) - .5) * -30 + "px");
+    }, { passive: true });
+  }
+})();
+document.addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.style.visibility = "hidden"; }, true);
+</script>
+</html>
