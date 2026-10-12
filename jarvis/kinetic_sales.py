@@ -42,10 +42,10 @@ DEFAULT_PRICES = {
         "starter": {"name": "Starter website", "price": 395,
                     "includes": "A one-page website made for phones, contact form, tap-to-call, Google basics "
                                 "(title, description, business details) and 2 rounds of changes."},
-        "business": {"name": "Business website", "price": 895,
-                     "includes": "Up to 5 pages made for phones, contact form, tap-to-call, Google Business Profile "
-                                 "help, share previews, a fast secure (HTTPS) setup and 3 rounds of changes."},
-        "shop": {"name": "Online shop", "price": 1595,
+        "business": {"name": "Business website", "price": 1295,
+                     "includes": "Up to 5 pages made for phones, contact form, tap-to-call, basic Google Business "
+                                 "Profile linking, share previews, a fast secure (HTTPS) setup and 3 rounds of changes."},
+        "shop": {"name": "Online shop", "price": 2195,
                  "includes": "Everything in the business website plus a shop with up to 20 products, card payments "
                              "set up with your own provider, delivery options and order emails."},
     },
@@ -54,10 +54,10 @@ DEFAULT_PRICES = {
         "copywriting": {"name": "Copywriting (per page)", "price": 60},
         "extra_page": {"name": "Extra page", "price": 120},
         "booking": {"name": "Online booking", "price": 200},
-        "seo": {"name": "Local Google setup", "price": 150},
+        "seo": {"name": "Full Google Business Profile setup and optimisation", "price": 150},
         "photos": {"name": "Photo editing and stock images", "price": 100},
     },
-    "care_plan": {"name": "Monthly hosting and care", "price": 20,
+    "care_plan": {"name": "Monthly hosting and care", "price": 39,
                   "includes": "Your domain name, hosting, security updates, backups and small text changes each "
                               "month."},
     "deposit_percent": 50,
@@ -191,6 +191,9 @@ def client_and_prospect(settings: Settings, args: dict) -> tuple[str, dict | Non
     return (p["name"] if p else st.need(who, "client", 80)), p
 
 
+REBUILD_OFF = 20
+REBUILD_PACKAGES = ("business", "shop")
+
 def quote_lines(settings: Settings, args: dict) -> tuple[list[tuple[str, int, float]], float, str]:
     """[(description, qty, unit price)], monthly care price (0 if none) and the package key."""
     p = prices(settings)
@@ -225,8 +228,10 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     lines, care, package = quote_lines(settings, args)
     p = prices(settings)
     subtotal = sum(q * u for _, q, u in lines)
-    discount = st.number(args.get("discount"), "discount", True, subtotal) if args.get("discount") else 0.0
-    total = round(subtotal - discount, 2)
+    # Clients who already have a website get 20% off a business site or shop rebuild, as the website promises.
+    rebuild = round(lines[0][2] * REBUILD_OFF / 100, 2) if args.get("existing_website") is True and package in REBUILD_PACKAGES else 0.0
+    discount = st.number(args.get("discount"), "discount", True, subtotal - rebuild) if args.get("discount") else 0.0
+    total = round(subtotal - rebuild - discount, 2)
     deposit = round(total * p["deposit_percent"] / 100, 2)
     rows = st.rows_of(settings, st.QUOTES)
     qid = st.next_id(rows)
@@ -246,6 +251,9 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     table = ["<table><tr><th>Item</th><th class=n>Qty</th><th class=n>Price</th><th class=n>Total</th></tr>"]
     table += [f"<tr><td>{escape(d)}</td><td class=n>{q}</td><td class=n>{st.gbp(u)}</td><td class=n>{st.gbp(q * u)}</td></tr>"
               for d, q, u in lines]
+    if rebuild:
+        table.append(f"<tr><td>Existing website: {REBUILD_OFF}% off the {escape(lines[0][0].split(': ')[0])}</td><td></td><td></td>"
+                     f"<td class=n>-{st.gbp(rebuild)}</td></tr>")
     if discount:
         table.append(f"<tr><td>Discount</td><td></td><td></td><td class=n>-{st.gbp(discount)}</td></tr>")
     table.append(f"<tr class=total><td>Total</td><td></td><td></td><td class=n>{st.gbp(total)}</td></tr></table>")
@@ -265,13 +273,16 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
              "<li>Your domain name is registered in your name, so it is yours. It is included with hosting and "
              "care; without it, the domain and any paid plugins or shop fees are paid by you, at cost.</li>",
              "<li>Changes beyond the included rounds are charged at an agreed hourly rate.</li>",
-             f"<li>Prices {'exclude VAT' if vat else 'have no VAT to add'}.</li>", "</ul>",
+             f"<li>Prices {'exclude VAT' if vat else 'have no VAT to add'}.</li>",
+             "<li>If you are buying as a private individual rather than a business, you can cancel within 14 days "
+             "of saying yes. If you ask me to start work sooner and then cancel, you pay only for the work done.</li>",
+             "</ul>",
              f"<footer>Quote {number} · valid until {st.long_date(valid)}</footer>"]
     html = st.doc_html(settings, f"Quote {number} for {name}", "\n".join(body))
     path = st.write(settings, ("Clients", name), f"Quote {number}.html", html)
     rows.append({"id": qid, "number": number, "client": name, "package": package, "total": total, "deposit": deposit,
                  "care": care, "date": st.today().isoformat(), "valid_until": valid.isoformat(), "status": "draft",
-                 "lines": [[d, q, u] for d, q, u in lines], "discount": discount, "file": st.where(settings, path)})
+                 "lines": [[d, q, u] for d, q, u in lines], "discount": discount, "rebuild_discount": rebuild, "file": st.where(settings, path)})
     st.save(settings, st.QUOTES, rows)
     text = (f"Quote {number} for {name}: {st.gbp(total)}" + (f", with a {st.gbp(deposit)} deposit" if deposit else "")
             + (f" and an optional {st.gbp(care)} a month care plan" if care else "") +
@@ -678,6 +689,8 @@ def tool_definitions() -> list[dict]:
                     "description": {"type": "string"}, "price": {"type": "number"}}}},
                 "care_plan": {"type": "boolean", "description": "quote: offer the monthly care plan (default true)."},
                 "discount": {"type": "number", "description": "quote: pounds off."},
+                "existing_website": {"type": "boolean", "description": "quote: true when the client already has a "
+                                     "website; takes 20% off a business or shop package, as the Kinetic website offers."},
                 "notes": {"type": "string", "description": "quote: a personal opening line."},
                 "quote": {"type": "string", "description": "Quote number like Q-0001, or the client."},
                 "status": {"type": "string", "enum": QUOTE_STATUSES},
