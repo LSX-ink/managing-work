@@ -216,6 +216,9 @@ def test_welcome_emails_after_the_deposit_invoice(s):
     sales(s, action="my_details", owner="Lee", phone="0161 111 1111")
     sales(s, action="quote", client="Sal's Cafe", package="business", addons=["logo"])
     out = inv(s, action="invoice", quote="Q-0001")
+    assert "plus £20 a month for hosting and care from go-live" in out
+    html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Sal's Cafe" / "Invoice INV-0001.html").read_text(encoding="utf-8")
+    assert "Monthly hosting and care, £20 a month" in html and "Not included in the amount due" in html
     assert "welcome emails for Q-0001" in out and any(b["label"] == "Welcome emails" for b in out.card["buttons"])
     sales(s, action="domain_owner", client="Sal's Cafe", domain="salscafe.co.uk")
     shown = sales(s, action="welcome_emails", quote="Q-0001", contact_name="Sal")

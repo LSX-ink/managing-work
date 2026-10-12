@@ -275,6 +275,7 @@ nav a:hover { color: var(--accent); }
 .addon { display: flex; gap: 10px; align-items: center; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: .95rem; }
 .addon input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
 .addon span { flex: 1; }
+.care-addon { grid-column: 1 / -1; border-color: var(--accent); }
 .addon em { font-style: normal; font-family: var(--mono); font-size: .85rem; color: var(--muted); }
 .addon input[type="number"] { width: 56px; font: 500 .9rem var(--mono); padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
 .total { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); background: var(--ink); color: var(--bg); border-radius: 20px; padding: 26px; display: grid; gap: 14px; }
@@ -472,7 +473,6 @@ footer nav a:hover { color: var(--ink); }
         <div class="packs" role="radiogroup" aria-label="Website package" id="packs"></div>
         <h3 style="margin-top:26px">Add-ons</h3>
         <div class="addons" id="addons"></div>
-        <label class="addon" style="margin-top:10px"><input type="checkbox" id="care" checked><span>Monthly hosting and care: your domain name, hosting, security updates, backups and small text changes</span><em>£20/mo</em></label>
       </div>
       <aside class="total" aria-live="polite">
         <span class="eyebrow" style="color:inherit;opacity:.75">Your estimate</span>
@@ -803,7 +803,8 @@ footer nav a:hover { color: var(--ink); }
   $("#packs").innerHTML = PACKS.map(p => `<label class="pack"><input type="radio" name="pack" value="${p.id}" ${state.pack === p.id ? "checked" : ""}>
     <span><h3>${p.name}${p.popular ? '<span class="badge">Recommended</span>' : ""}</h3><p>${p.desc}</p></span><span class="price">${money(p.price)}</span></label>`).join("");
   $("#addons").innerHTML = ADDONS.map(a => `<label class="addon"><input type="checkbox" data-a="${a.id}" ${state.addons[a.id] ? "checked" : ""}><span>${a.name}</span>
-    ${a.per ? `<input type="number" min="1" max="20" value="${state.addons[a.id] || 1}" data-q="${a.id}" aria-label="How many">` : ""}<em>${money(a.price)}</em></label>`).join("");
+    ${a.per ? `<input type="number" min="1" max="20" value="${state.addons[a.id] || 1}" data-q="${a.id}" aria-label="How many">` : ""}<em>${money(a.price)}</em></label>`).join("") +
+    `<label class="addon care-addon"><input type="checkbox" id="care" ${state.care ? "checked" : ""}><span><b>Hosting and care, paid monthly</b><br>Your domain, hosting, security checks, updates, backups and small changes</span><em>£20/mo</em></label>`;
   $("#packs").addEventListener("change", e => { state.pack = e.target.value; save(); quote(); });
   $("#addons").addEventListener("change", e => {
     const id = e.target.dataset.a || e.target.dataset.q;
@@ -820,7 +821,7 @@ footer nav a:hover { color: var(--ink); }
     const total = lines.reduce((s, [, v]) => s + v, 0);
     $("#q-total").textContent = money(total);
     $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${money(v)}</dd>`).join("") +
-      `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care</dt><dd>£20/month</dd>` : "");
+      `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care (monthly, from go-live)</dt><dd>£20/month</dd>` : "");
     $("#q-time").textContent = "Ready in " + p.weeks + " from your go-ahead";
     state.total = total; summary();
   }

@@ -108,9 +108,13 @@ def invoice(settings: Settings, args: dict) -> screen.Shown:
     else:
         pay = f"<div class=note><b>Pay by bank transfer</b><br>[Add your bank details]<br>Reference: {number}</div>"
     vat = f"<p>VAT number: {escape(me['vat_number'])}</p>" if me["vat_number"] else "<p>No VAT is charged.</p>"
+    q = next((r for r in st.rows_of(settings, st.QUOTES) if r["number"] == quote_no), {}) if quote_no else {}
+    monthly = (f"<div class=note><b>Monthly: {escape(kinetic_sales.prices(settings)['care_plan']['name'])}, "
+               f"{st.gbp(q['care'])} a month</b><br>Paid separately by Direct Debit or card, starting the month your "
+               f"website goes live. Not included in the amount due above.</div>") if q.get("care") else ""
     body = [f"<h2>Invoice {number}</h2>",
             '<div class="meta">' + "".join(f"<div><b>{k}</b>{escape(v)}</div>" for k, v in meta) + "</div>",
-            "".join(table), pay, vat,
+            "".join(table), pay, monthly, vat,
             f"<footer>Payment is due by {st.long_date(due)}. Thank you for your business.</footer>"]
     path = st.write(settings, ("Clients", client), f"Invoice {number}.html",
                     st.doc_html(settings, f"Invoice {number} for {client}", "\n".join(body)))
@@ -118,8 +122,9 @@ def invoice(settings: Settings, args: dict) -> screen.Shown:
                  "issued": issued.isoformat(), "due": due.isoformat(), "status": "unpaid", "paid_on": "",
                  "lines": [[d, q, u] for d, q, u in lines], "file": st.where(settings, path)})
     st.save(settings, st.INVOICES, rows)
-    text = f"Invoice {number} for {client}: {st.gbp(total)}, due {st.long_date(due)}. Saved in {st.where(settings, path)}; " \
-           f"open it and print to PDF to send it. {st.NOT_SENT}"
+    text = f"Invoice {number} for {client}: {st.gbp(total)}, due {st.long_date(due)}" + \
+        (f", plus {st.gbp(q['care'])} a month for hosting and care from go-live" if q.get("care") else "") + \
+        f". Saved in {st.where(settings, path)}; open it and print to PDF to send it. {st.NOT_SENT}"
     if not (me["sort_code"] and me["account_number"]):
         text += " Your bank details aren't saved yet, so add them with 'set my bank details' and make it again, or " \
                 "fill them in before sending."
