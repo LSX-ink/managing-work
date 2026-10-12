@@ -182,15 +182,15 @@ def test_quote_from_audited_prospect_lists_fixes(s):
     finder(s, action="find", town="Stockport")
     out = sales(s, action="quote", client="Joe's Barbers", package="business", addons=["logo", "extra_page"],
                 extra_pages=2, discount=40)
-    assert "Q-0001" in out and "£1,245" in out and "£622.50 deposit" in out and "Nothing has been sent" in out
+    assert "Q-0001" in out and "£1,645" in out and "£822.50 deposit" in out and "Nothing has been sent" in out
     html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Joe's Barbers" / "Quote Q-0001.html").read_text(encoding="utf-8")
     assert "What your new website fixes" in html and "No padlock" in html and "Logo design" in html
     assert "<script" not in html
     q = st.rows_of(s, st.QUOTES)[0]
-    assert q["total"] == 1245 and q["status"] == "draft"
+    assert q["total"] == 1645 and q["status"] == "draft"
     sales(s, action="quote_status", quote="Q-0001", status="sent")
     assert next(r for r in st.rows_of(s, st.PROSPECTS) if r["name"] == "Joe's Barbers")["status"] == "contacted"
-    assert "1 open worth £1,245" in sales(s, action="quotes")
+    assert "1 open worth £1,645" in sales(s, action="quotes")
 
 
 def test_domain_owner_details_after_a_quote_is_accepted(s):
@@ -216,18 +216,18 @@ def test_welcome_emails_after_the_deposit_invoice(s):
     sales(s, action="my_details", owner="Lee", phone="0161 111 1111")
     sales(s, action="quote", client="Sal's Cafe", package="business", addons=["logo"])
     out = inv(s, action="invoice", quote="Q-0001")
-    assert "plus £20 a month for hosting and care from go-live" in out
+    assert "plus £39 a month for hosting and care from go-live" in out
     html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Sal's Cafe" / "Invoice INV-0001.html").read_text(encoding="utf-8")
-    assert "Monthly hosting and care, £20 a month" in html and "Not included in the amount due" in html
+    assert "Monthly hosting and care, £39 a month" in html and "Not included in the amount due" in html
     assert "welcome emails for Q-0001" in out and any(b["label"] == "Welcome emails" for b in out.card["buttons"])
     sales(s, action="domain_owner", client="Sal's Cafe", domain="salscafe.co.uk")
     shown = sales(s, action="welcome_emails", quote="Q-0001", contact_name="Sal")
     assert "Give me their email address" in shown and "Nothing has been sent" in shown
     body = shown.card["text"]
     assert "Subject: Thank you for choosing Kinetic Web Designs: your order is confirmed" in body
-    assert "Dear Sal," in body and "- Logo design" in body and "Total: £1,045" in body
-    assert "Deposit to start (50%): £522.50, invoice INV-0001" in body and "3 rounds of changes" in body
-    assert "Subject: Next steps required from you" in body and "Hosting and care: £20 a month" in body
+    assert "Dear Sal," in body and "- Logo design" in body and "Total: £1,445" in body
+    assert "Deposit to start (50%): £722.50, invoice INV-0001" in body and "3 rounds of changes" in body
+    assert "Subject: Next steps required from you" in body and "Hosting and care: £39 a month" in body
     assert 'register salscafe.co.uk in my name' in body and "Lee\nKinetic Web Designs\n0161 111 1111" in body
     assert "insurance" not in body.lower() and 'reply "Yes to hosting and care"' in body
     folder = memory.root(s) / "Kinetic Web Designs" / "Clients" / "Sal's Cafe"
@@ -328,12 +328,12 @@ def test_registered_with_alfred(s):
 def test_existing_website_takes_20_percent_off_business_and_shop(s):
     out = sales(s, action="quote", client="Ada's Cafe", package="business", existing_website=True)
     q = st.rows_of(s, st.QUOTES)[0]
-    assert q["total"] == 716 and q["rebuild_discount"] == 179 and "£716" in out
+    assert q["total"] == 1036 and q["rebuild_discount"] == 259 and "£1,036" in out
     html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Ada's Cafe" / "Quote Q-0001.html").read_text(encoding="utf-8")
-    assert "Existing website: 20% off" in html and "-£179" in html
+    assert "Existing website: 20% off" in html and "-£259" in html
     sales(s, action="quote", client="Shop Co", package="shop", existing_website=True, discount=76)
-    assert st.rows_of(s, st.QUOTES)[1]["total"] == 1200
+    assert st.rows_of(s, st.QUOTES)[1]["total"] == 1680
     sales(s, action="quote", client="Tiny", package="starter", existing_website=True)
     assert st.rows_of(s, st.QUOTES)[2]["total"] == 395  # starter sites don't get it
     sales(s, action="quote", client="Bo", package="business", existing_website="yes")
-    assert st.rows_of(s, st.QUOTES)[3]["total"] == 895  # only a real true counts
+    assert st.rows_of(s, st.QUOTES)[3]["total"] == 1295  # only a real true counts

@@ -42,10 +42,10 @@ DEFAULT_PRICES = {
         "starter": {"name": "Starter website", "price": 395,
                     "includes": "A one-page website made for phones, contact form, tap-to-call, Google basics "
                                 "(title, description, business details) and 2 rounds of changes."},
-        "business": {"name": "Business website", "price": 895,
+        "business": {"name": "Business website", "price": 1295,
                      "includes": "Up to 5 pages made for phones, contact form, tap-to-call, basic Google Business "
                                  "Profile linking, share previews, a fast secure (HTTPS) setup and 3 rounds of changes."},
-        "shop": {"name": "Online shop", "price": 1595,
+        "shop": {"name": "Online shop", "price": 2195,
                  "includes": "Everything in the business website plus a shop with up to 20 products, card payments "
                              "set up with your own provider, delivery options and order emails."},
     },
@@ -57,7 +57,7 @@ DEFAULT_PRICES = {
         "seo": {"name": "Full Google Business Profile setup and optimisation", "price": 150},
         "photos": {"name": "Photo editing and stock images", "price": 100},
     },
-    "care_plan": {"name": "Monthly hosting and care", "price": 20,
+    "care_plan": {"name": "Monthly hosting and care", "price": 39,
                   "includes": "Your domain name, hosting, security updates, backups and small text changes each "
                               "month."},
     "deposit_percent": 50,
@@ -273,7 +273,10 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
              "<li>Your domain name is registered in your name, so it is yours. It is included with hosting and "
              "care; without it, the domain and any paid plugins or shop fees are paid by you, at cost.</li>",
              "<li>Changes beyond the included rounds are charged at an agreed hourly rate.</li>",
-             f"<li>Prices {'exclude VAT' if vat else 'have no VAT to add'}.</li>", "</ul>",
+             f"<li>Prices {'exclude VAT' if vat else 'have no VAT to add'}.</li>",
+             "<li>If you are buying as a private individual rather than a business, you can cancel within 14 days "
+             "of saying yes. If you ask me to start work sooner and then cancel, you pay only for the work done.</li>",
+             "</ul>",
              f"<footer>Quote {number} · valid until {st.long_date(valid)}</footer>"]
     html = st.doc_html(settings, f"Quote {number} for {name}", "\n".join(body))
     path = st.write(settings, ("Clients", name), f"Quote {number}.html", html)
