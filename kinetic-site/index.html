@@ -357,6 +357,91 @@ footer nav a:hover { color: var(--ink); }
 .gate .consent { display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; color: var(--muted); }
 .gate .consent input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 2px; flex: none; }
 .gate .fine { font-size: .78rem; }
+/* ===== 21st.dev-style layer: dark premium look, aurora hero, glass cards with a spotlight, shimmer buttons,
+   beam-bordered estimate and scroll reveals. Content and behaviour above are unchanged. ===== */
+:root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
+  --bg: #07090f; --surface: rgba(255,255,255,.035); --sunk: #11151f; --ink: #f4f6fb; --muted: #9aa3b5; --line: rgba(255,255,255,.09);
+  --accent: #8b7bff; --accent-ink: #0a0b12; --signal: #ffd166; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
+  --glow: 139,123,255;
+}
+body { background:
+  radial-gradient(1200px 600px at 80% -10%, rgba(var(--glow),.16), transparent 60%),
+  radial-gradient(900px 500px at -10% 30%, rgba(56,189,248,.08), transparent 60%), var(--bg);
+  background-attachment: fixed; }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 56px 56px; mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%); }
+main, footer, .bar { position: relative; z-index: 1; }
+::selection { background: rgba(var(--glow),.45); }
+
+/* floating glass nav */
+.bar { background: transparent; border: 0; backdrop-filter: none; padding-top: 12px; }
+.bar .wrap { background: rgba(12,14,22,.6); backdrop-filter: blur(16px) saturate(140%); border: 1px solid var(--line);
+  border-radius: 999px; padding: 10px 10px 10px 22px; box-shadow: 0 10px 40px -20px rgba(0,0,0,.8); max-width: 1120px; }
+nav a { color: var(--muted); } nav a:hover { color: var(--ink); }
+.logo i { box-shadow: 0 0 18px rgba(var(--glow),.7); }
+
+/* aurora hero */
+html, body { overflow-x: clip; }
+.hero { position: relative; isolation: isolate; }
+.hero::before, .hero::after { content: ""; position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(90px);
+  opacity: .35; z-index: -1; animation: drift 18s ease-in-out infinite alternate; pointer-events: none; }
+.hero::before { background: radial-gradient(circle, #6d5dfc, transparent 65%); top: -30vmax; left: -10vmax; }
+.hero::after { background: radial-gradient(circle, #22d3ee, transparent 65%); bottom: -35vmax; right: -15vmax; animation-delay: -9s; opacity: .22; }
+@keyframes drift { to { transform: translate(8vmax, 6vmax) scale(1.15); } }
+.hero .eyebrow { justify-self: start; border: 1px solid var(--line); background: rgba(255,255,255,.04); padding: 6px 14px; border-radius: 999px;
+  color: var(--ink); letter-spacing: .08em; }
+.hero .eyebrow::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #5fd39a;
+  margin-right: 9px; box-shadow: 0 0 10px #5fd39a; vertical-align: 1px; }
+.hero h1 { letter-spacing: -0.03em; background: linear-gradient(180deg, #fff 30%, #a9b0c2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero h1 em { background: linear-gradient(90deg, #a78bfa, #60a5fa, #22d3ee, #a78bfa); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: flow 8s linear infinite; }
+@keyframes flow { to { background-position: 300% 0; } }
+.mini { box-shadow: 0 0 0 1px var(--line), 0 40px 120px -30px rgba(var(--glow),.55); transform: perspective(1200px) rotateY(-8deg) rotateX(4deg);
+  transition: transform .6s cubic-bezier(.2,.8,.2,1), background .6s ease, color .6s ease; }
+.stage:hover .mini { transform: none; }
+
+/* shimmer buttons */
+.btn { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: var(--ink); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: rgba(255,255,255,.18); }
+.btn:not(.ghost) { background: #f4f6fb; color: #07090f; border-color: #f4f6fb; }
+.btn.accent { position: relative; overflow: hidden; isolation: isolate; color: #fff; border: 0; padding: 13px 24px;
+  background: linear-gradient(135deg, #7c6cff, #4f7cff); box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 10px 30px -10px rgba(var(--glow),.9); }
+.btn.accent::after { content: ""; position: absolute; inset: 0; z-index: -1; transform: translateX(-120%);
+  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%); animation: shine 3.2s ease-in-out infinite; }
+@keyframes shine { 60%, 100% { transform: translateX(120%); } }
+
+/* glass cards with a pointer spotlight */
+.promises li, .steps li, .style, .pack, .addon, .faq details, .account article, .total, .care-why ul, .lab, .vision form, .summary, .sent {
+  --mx: 50%; --my: 50%; position: relative; background:
+    radial-gradient(420px circle at var(--mx) var(--my), rgba(var(--glow),.12), transparent 45%), rgba(255,255,255,.03);
+  border: 1px solid var(--line); backdrop-filter: blur(6px); transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease; }
+.promises li:hover, .steps li:hover, .style:hover, .pack:hover, .addon:hover, .account article:hover {
+  border-color: rgba(var(--glow),.45); box-shadow: 0 20px 60px -30px rgba(var(--glow),.6); }
+.steps li { border-top: 1px solid var(--line); border-radius: var(--r); }
+.steps li::before { color: #a78bfa; }
+.care-addon { border-color: rgba(var(--glow),.6); box-shadow: 0 0 0 1px rgba(var(--glow),.25), 0 0 40px -12px rgba(var(--glow),.7); }
+.badge { background: linear-gradient(90deg, #ffd166, #ff9f6b); }
+
+/* the estimate panel gets a travelling beam border */
+.total { background: #0b0d16; border: 1px solid transparent; overflow: hidden; isolation: isolate; color: var(--ink); }
+.total::before { content: ""; position: absolute; inset: -60%; z-index: -2;
+  background: conic-gradient(from 0deg, transparent 0 70%, #a78bfa 80%, #22d3ee 90%, transparent 100%); animation: spin 6s linear infinite; }
+.total::after { content: ""; position: absolute; inset: 1px; border-radius: inherit; z-index: -1; background: #0b0d16; }
+@keyframes spin { to { transform: rotate(1turn); } }
+.total .btn { background: linear-gradient(90deg, #ffd166, #ff9f6b); border: 0; color: #1a1300; }
+
+/* forms */
+input, textarea, select { background: rgba(255,255,255,.04); color: var(--ink); border-color: var(--line); }
+.gate { background: rgba(4,5,10,.7); backdrop-filter: blur(10px); }
+.gate .card { background: #0d1019; border: 1px solid var(--line); box-shadow: 0 40px 120px -40px rgba(var(--glow),.7); }
+
+/* scroll reveal */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+.reveal.in { opacity: 1; transform: none; }
+footer { border-top: 1px solid var(--line); }
+@media (max-width: 720px) { .bar .wrap { border-radius: 18px; } .mini { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } .hero::before, .hero::after, .total::before { animation: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -925,6 +1010,22 @@ footer nav a:hover { color: var(--ink); }
   });
 
   renderStyles(); renderLab(); quote();
+})();
+
+// 21st.dev-style touches: pointer spotlight on cards and sections that fade in as you scroll.
+(() => {
+  const cards = ".promises li, .steps li, .style, .pack, .addon, .faq details, .account article, .total, .care-why ul, .lab, .summary";
+  document.addEventListener("pointermove", e => {
+    const el = e.target.closest && e.target.closest(cards);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", (e.clientX - r.left) + "px");
+    el.style.setProperty("--my", (e.clientY - r.top) + "px");
+  }, { passive: true });
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { x.target.classList.add("in"); io.unobserve(x.target); } }),
+    { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll("main section .head, main section .wrap > *:not(.head)").forEach(el => { el.classList.add("reveal"); io.observe(el); });
 })();
 </script>
 
