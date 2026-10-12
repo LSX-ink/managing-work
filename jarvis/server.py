@@ -15,7 +15,6 @@ import time
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, urlparse
 
-import anthropic
 import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -28,6 +27,7 @@ import tiktokstudio
 import tiktokstudio_store
 import memory
 import nowplaying
+import omniroute
 import pc
 import screen
 import station
@@ -65,7 +65,7 @@ MAX_ALERTS = 30  # notifications kept for the page
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.client = anthropic.AsyncAnthropic(max_retries=4)  # ride out short busy spells before giving up
+    app.state.client = omniroute.make_client(settings, max_retries=4)  # ride out short busy spells before giving up
     app.state.http = httpx.AsyncClient(timeout=30)
     app.state.pages = {}  # open pages: id(WebSocket) -> (WebSocket, its speak function, its Brain)
     app.state.alerts = []  # notifications shown on the page, newest last

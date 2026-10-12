@@ -13,7 +13,8 @@ hands Alfred a guide's text to follow. Taste Skill (MIT, from github.com/Leonxln
 rules that stop AI-looking pages (taste-skill, minimalist-skill, brutalist-skill, soft-skill, redesign-skill,
 brandkit...), read the same way. skills/anime holds anime-mj (MIT, from github.com/jawhnycooke/claude-code-anime-mj),
 an anime and manga prompt builder with manga artist and studio styles, and higgsfield-anime, the user's own prompt
-template for Higgsfield.
+template for Higgsfield. skills/business holds pricing-strategy (MIT, from github.com/sickn33/antigravity-awesome-skills):
+pricing, tiers, value metrics and price rises for a product or service.
 
 Any other folder dropped into skills/ with */SKILL.md guides is picked up too, named after its folder. skillscan checks
 every library first: blocked ones are refused, and a new or changed one is scanned the first time guides are listed
@@ -31,7 +32,8 @@ from config import Settings
 
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
-GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic"}  # labels
+GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic",
+                   "business": "Business"}  # labels
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -188,7 +190,9 @@ def tool_definitions() -> list[dict]:
                        "app: a clear aesthetic direction, bold typography and colour, nothing templated; read it "
                        "first when building or restyling a website), theme-factory (10 ready-made colour and font themes for "
                        "pages, slides and posters; the themes are its files, e.g. file 'ocean-depths.md', "
-                       "'midnight-galaxy.md'; or make a custom one). New libraries dropped into skills/ appear here too. Call "
+                       "'midnight-galaxy.md'; or make a custom one). Business: pricing-strategy (setting or changing prices for a "
+                       "product, service or website package: value-based pricing, tiers, value metric, free trial "
+                       "or freemium, price rises; ends with a pricing plan). New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",

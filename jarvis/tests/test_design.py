@@ -44,7 +44,7 @@ def guide(args):
 
 def test_guide_list_and_read():
     listing = guide({})
-    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 31
+    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 32
     assert "Taste Skill guides:" in listing and "taste-skill:" in listing
     assert guide({"guide": "taste-skill"}).startswith("taste-skill/SKILL.md")
     out = guide({"guide": "animate", "file": "RECIPES.md"})
@@ -55,6 +55,8 @@ def test_guide_list_and_read():
     assert "Anthropic guides:" in listing and "frontend-design:" in listing
     assert "Frontend Design" in guide({"guide": "frontend-design"})
     assert "#1a2332" in guide({"guide": "theme-factory", "file": "ocean-depths.md"})
+    assert "Business guides:" in listing and "pricing-strategy:" in listing
+    assert "Van Westendorp" in guide({"guide": "pricing-strategy"})
     long = guide({"guide": "write-swift"})
     assert "call again with offset 20000" in long
     assert "offset" not in guide({"guide": "write-swift", "offset": 40000}).split("\n\n", 1)[1][-60:]
