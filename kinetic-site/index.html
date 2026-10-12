@@ -464,7 +464,7 @@ footer nav a:hover { color: var(--ink); }
         <div class="packs" role="radiogroup" aria-label="Website package" id="packs"></div>
         <h3 style="margin-top:26px">Add-ons</h3>
         <div class="addons" id="addons"></div>
-        <label class="addon" style="margin-top:10px"><input type="checkbox" id="care" checked><span>Monthly hosting and care: your domain name, hosting, security updates, backups and small text changes</span><em>£35/mo</em></label>
+        <label class="addon" style="margin-top:10px"><input type="checkbox" id="care" checked><span>Monthly hosting and care: your domain name, hosting, security updates, backups and small text changes</span><em>£20/mo</em></label>
       </div>
       <aside class="total" aria-live="polite">
         <span class="eyebrow" style="color:inherit;opacity:.75">Your estimate</span>
@@ -485,7 +485,7 @@ footer nav a:hover { color: var(--ink); }
       <details><summary>How do I pay?</summary><p>Half is paid up front to book your start date, and the rest when your site goes live. You get a clear invoice for each.</p></details>
       <details><summary>What do I need to give you?</summary><p>Your vision in your own words, your three colours, and your logo and photos if you have them. No logo? Logo design is £150. No photos? Photo editing and stock images are £100.</p></details>
       <details><summary>Can I ask for changes?</summary><p>Yes. Starter websites include 2 rounds of changes and Business websites and shops include 3.</p></details>
-      <details><summary>What's in monthly hosting and care?</summary><p>Your domain name, fast and secure hosting, security updates, backups and small text changes, all for £35 a month. Need lots of big videos or downloads? Extra file storage is £5 a month per 10 GB.</p></details>
+      <details><summary>What's in monthly hosting and care?</summary><p>Your domain name, fast and secure hosting, security updates, backups and small text changes, all for £20 a month. Need lots of big videos or downloads? Extra file storage is £5 a month per 10 GB.</p></details>
       <details><summary>Who owns my website and domain?</summary><p>You do. Your domain is registered in your name and your accounts belong to you. If you ever leave, we hand everything over.</p></details>
       <details><summary>Do you write the words too?</summary><p>We write the copy with you. If you'd like us to write whole pages for you, copywriting is £60 a page.</p></details>
       <details><summary>Will people find me on Google?</summary><p>Starter websites include the Google basics. Business websites and shops add help with your Google Business Profile, and Local Google setup is £150 as an add-on.</p></details>
@@ -783,7 +783,7 @@ footer nav a:hover { color: var(--ink); }
     const total = lines.reduce((s, [, v]) => s + v, 0);
     $("#q-total").textContent = money(total);
     $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${money(v)}</dd>`).join("") +
-      `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care</dt><dd>£35/month</dd>` : "");
+      `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care</dt><dd>£20/month</dd>` : "");
     $("#q-time").textContent = "Ready in " + p.weeks + " from your go-ahead";
     state.total = total; summary();
   }
@@ -795,7 +795,7 @@ footer nav a:hover { color: var(--ink); }
     ["#s1", "#s2", "#s3"].forEach((s, i) => $(s).style.background = state.c[i]);
     $("#s-tpl").textContent = (TEMPLATES.find(t => t.id === state.tpl) || TEMPLATES[0]).name;
     $("#s-pack").textContent = (PACKS.find(p => p.id === state.pack) || PACKS[1]).name;
-    $("#s-total").textContent = money(state.total || 895) + (state.care ? " + £35/month" : "");
+    $("#s-total").textContent = money(state.total || 895) + (state.care ? " + £20/month" : "");
   }
   const draft = store.get("brief") || {};
   ["name", "biz", "email", "phone", "what", "look", "like", "when"].forEach(k => {

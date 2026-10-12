@@ -52,7 +52,7 @@ DEFAULT_PRICES = {
         "seo": {"name": "Local Google setup", "price": 150},
         "photos": {"name": "Photo editing and stock images", "price": 100},
     },
-    "care_plan": {"name": "Monthly hosting and care", "price": 35,
+    "care_plan": {"name": "Monthly hosting and care", "price": 20,
                   "includes": "Your domain name, hosting, security updates, backups and small text changes each "
                               "month."},
     "deposit_percent": 50,
