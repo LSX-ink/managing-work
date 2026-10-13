@@ -507,9 +507,31 @@ _PARTS = {"half": 0.5, "a half": 0.5, "one half": 0.5, "a third": 1 / 3, "one th
           "double": 2, "twice": 2, "triple": 3, "treble": 3}
 
 
+_CLOCK_FORMAT = re.compile(_NAME + r"(?:what(?:'s| is) |convert |change )?(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>am|pm|a\.m\.|p\.m\.)?"
+                           r" (?:in|to|as) (?:the )?(?P<fmt>12|24|twelve|twenty four)[ -]hour(?: time| clock| format)?" + _END, re.I)
+_AVERAGE = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?:the )?(?:average|mean) of (?P<nums>-?\d[\d,.]*(?:(?:,? and |, | )-?\d[\d,.]*)+)"
+                      + _END, re.I)
+
+
+def _clock_format(m: re.Match) -> str | None:
+    hour, minute, ap = int(m.group("h")), int(m.group("m") or 0), (m.group("ap") or "").lower().replace(".", "")
+    if minute > 59 or hour > 23 or (ap and not 1 <= hour <= 12):
+        return None
+    if ap:
+        hour = hour % 12 + (12 if ap == "pm" else 0)
+    if m.group("fmt").lower() in ("24", "twenty four"):
+        return f"That's {hour:02d}:{minute:02d}."
+    return f"That's {_say_clock(hour, minute)}."
+
+
 def _number_facts(said: str) -> str | None:
     """'Half of 90', 'is 97 a prime number?', 'what's 7 factorial?', 'round 3.14159 to 2 decimal places'."""
     said = spoken_numbers(said)
+    if m := _CLOCK_FORMAT.match(said):
+        return _clock_format(m)
+    if m := _AVERAGE.match(said):
+        nums = [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", re.sub(r"(?<=\d),(?=\d{3}\b)", "", m.group("nums")))]
+        return f"The average is {calcmaths.fmt(round(sum(nums) / len(nums), 4))}."
     if m := _FRACTION.match(said):
         value = float(m.group("n").replace(",", "")) * _PARTS[m.group("part").lower()]
         return f"That's {calcmaths.fmt(round(value, 4))}."

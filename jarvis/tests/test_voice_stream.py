@@ -496,6 +496,19 @@ def test_dates_of_weekdays_and_yesterday_are_instant():
     assert instant_answer("when is my dentist", en, now) is None
 
 
+def test_clock_formats_and_averages_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's 15:45 in 12 hour time", en) == "That's 3:45 pm."
+    assert instant_answer("what is 3:45 pm in 24 hour time", en) == "That's 15:45."
+    assert instant_answer("what's 12 am in 24 hour time", en) == "That's 00:00."
+    assert instant_answer("what's 25:00 in 12 hour time", en) is None
+    assert instant_answer("what's the average of 4, 8 and 12", en) == "The average is 8."
+    assert instant_answer("what's the mean of ten, twenty and thirty", en) == "The average is 20."
+    assert instant_answer("average of 1,000 and 2,000", en) == "The average is 1,500."
+    assert instant_answer("what's the average of my scores", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
