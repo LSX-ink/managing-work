@@ -524,9 +524,47 @@ def _clock_format(m: re.Match) -> str | None:
     return f"That's {_say_clock(hour, minute)}."
 
 
+_TO_ROMAN = re.compile(_NAME + r"(?:what(?:'s| is) |write |convert |how do you write )?(?P<n>\d[\d,]*) (?:in|to|as) roman(?: numerals?)?" + _END, re.I)
+_FROM_ROMAN = re.compile(_NAME + r"(?:(?:what number is|what(?:'s| is) the roman numeral|convert the roman numeral) (?P<r>[MDCLXVI]+)"
+                         r"|(?:what(?:'s| is) |convert )(?P<r2>[MDCLXVI]+) (?:in|to|as) (?:numbers?|normal numbers|digits))" + _END)
+_TO_BASE = re.compile(_NAME + r"(?:what(?:'s| is) |convert |write )?(?P<n>\d[\d,]*) (?:in|to|as|into) (?P<base>binary|hex|hexadecimal|octal)" + _END, re.I)
+_ROMAN = ((1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"), (90, "XC"), (50, "L"), (40, "XL"),
+          (10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I"))
+
+
+def _to_roman(n: int) -> str:
+    out = ""
+    for value, letters in _ROMAN:
+        count, n = divmod(n, value)
+        out += letters * count
+    return out
+
+
+def _from_roman(text: str) -> int | None:
+    values = {"M": 1000, "D": 500, "C": 100, "L": 50, "X": 10, "V": 5, "I": 1}
+    total = sum(-values[a] if values[a] < values[b] else values[a] for a, b in zip(text, text[1:])) + values[text[-1]]
+    return total if 0 < total < 4000 and _to_roman(total) == text else None  # only properly written numerals
+
+
+def _number_bases(said: str) -> str | None:
+    """'What's 1984 in Roman numerals?', 'what number is MMXXVI?', 'what's 10 in binary?'"""
+    if m := _TO_ROMAN.match(said):
+        n = int(m.group("n").replace(",", ""))
+        return f"{n:,} is {', '.join(_to_roman(n))}." if 0 < n < 4000 else None
+    if (m := _FROM_ROMAN.match(said)) and (n := _from_roman(text := m.group("r") or m.group("r2"))):
+        return f"{text} is {n:,}."
+    if m := _TO_BASE.match(said):
+        n, base = int(m.group("n").replace(",", "")), m.group("base").lower()
+        digits = format(n, "b" if base == "binary" else "o" if base == "octal" else "X")
+        return f"{n:,} in {'hex' if base.startswith('hex') else base} is {' '.join(digits)}." if len(digits) <= 16 else None
+    return None
+
+
 def _number_facts(said: str) -> str | None:
     """'Half of 90', 'is 97 a prime number?', 'what's 7 factorial?', 'round 3.14159 to 2 decimal places'."""
     said = spoken_numbers(said)
+    if (found := _number_bases(said)) is not None:
+        return found
     if m := _CLOCK_FORMAT.match(said):
         return _clock_format(m)
     if m := _AVERAGE.match(said):
