@@ -509,6 +509,19 @@ def test_clock_formats_and_averages_are_instant():
     assert instant_answer("what's the average of my scores", en) is None
 
 
+def test_roman_numerals_and_binary_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's 1984 in roman numerals", en) == "1,984 is M, C, M, L, X, X, X, I, V."
+    assert instant_answer("what is XIV in numbers", en) == "XIV is 14."
+    assert instant_answer("what number is MMXXVI", en) == "MMXXVI is 2,026."
+    assert instant_answer("what number is IIII", en) is None  # not a proper numeral
+    assert instant_answer("what is MIX", en) is None  # could be the word "mix"
+    assert instant_answer("what's 10 in binary", en) == "10 in binary is 1 0 1 0."
+    assert instant_answer("what's 255 in hex", en) == "255 in hex is F F."
+    assert instant_answer("what's 5000 in roman numerals", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
