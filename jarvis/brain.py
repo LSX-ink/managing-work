@@ -560,6 +560,32 @@ def _number_bases(said: str) -> str | None:
     return None
 
 
+_REPEAT = re.compile(r"(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )?(?:please )?(?:repeat after me|repeat this|repeat the following|say after me)[,:]? (?P<words>.+)$", re.I)
+_COUNT = re.compile(_NAME + r"(?:can you |please )?count (?:(?P<down>down )?from (?P<a>\d+)(?: (?:to|down to) (?P<b>\d+))?|(?:up )?to (?P<to>\d+))" + _END, re.I)
+
+
+def _echo_and_count(said: str, raw: str) -> str | None:
+    """'Repeat after me: …' says the words back exactly; 'count to 10', 'count down from 10'."""
+    if m := _REPEAT.match(raw.strip()):
+        words = m.group("words").strip()
+        return words if words and len(words) <= 300 else None
+    if not (m := _COUNT.match(spoken_numbers(said))):
+        return None
+    if m.group("to"):
+        a, b = 1, int(m.group("to"))
+    else:
+        a = int(m.group("a"))
+        b = int(m.group("b")) if m.group("b") else (0 if m.group("down") else None)
+        if b is None:
+            return None  # "count from 5": to what? Claude asks
+    if abs(b - a) > 30:
+        return None  # too long to be worth saying aloud
+    lift_off = b == 0 and a > 0 and not m.group("b")  # "count down from 10" ends in a lift off, not a zero
+    b = 1 if lift_off else b
+    step = 1 if b >= a else -1
+    return ", ".join(str(n) for n in range(a, b + step, step)) + (". Lift off!" if lift_off else ".")
+
+
 def _number_facts(said: str) -> str | None:
     """'Half of 90', 'is 97 a prime number?', 'what's 7 factorial?', 'round 3.14159 to 2 decimal places'."""
     said = spoken_numbers(said)
@@ -1108,6 +1134,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return None
     said = tidy_request(text)
     now = now or time.localtime()
+    if (found := _echo_and_count(said, text)) is not None:
+        return found
     if _ASK_TIME.match(said):
         hour = now.tm_hour % 12 or 12
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
