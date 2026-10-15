@@ -522,6 +522,19 @@ def test_roman_numerals_and_binary_are_instant():
     assert instant_answer("what's 5000 in roman numerals", en) is None
 
 
+def test_repeat_after_me_and_counting_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("repeat after me the quick brown fox", en) == "the quick brown fox"
+    assert instant_answer("Alfred, repeat after me: what time is it?", en) == "what time is it?"
+    assert instant_answer("count to five", en) == "1, 2, 3, 4, 5."
+    assert instant_answer("count down from 5", en) == "5, 4, 3, 2, 1. Lift off!"
+    assert instant_answer("count from 3 to 7", en) == "3, 4, 5, 6, 7."
+    assert instant_answer("count down from 5 to 1", en) == "5, 4, 3, 2, 1."
+    assert instant_answer("count to 100", en) is None
+    assert instant_answer("count the words in this", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
