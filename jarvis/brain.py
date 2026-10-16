@@ -685,6 +685,8 @@ def _units_answer(said: str) -> str | None:
         if not (calcunits._key(a) in temps and calcunits._key(b) in temps):
             if calcunits.find(a)[0] != calcunits.find(b)[0]:
                 return None  # cups to grams and the like need the ingredient: Claude asks
+        if calcunits._key(a) == calcunits._key(b) and calcunits._key(a) not in temps:
+            return f"That's {n} {b}."  # '3 hours 20 minutes in minutes' arrives here as '200 minutes in minutes'
         said_back = calcunits.convert(value, a, b)
     except ValueError:
         return None  # a word that isn't a unit: not a conversion after all
@@ -904,13 +906,58 @@ def _date_maths(said: str, today: dt.date) -> str | None:
 
 
 _UNTIL_CLOCK = re.compile(_NAME + r"(?:how long (?:is it |have I got |do I have )?|how many (?:minutes|hours) (?:is it |have I got |do I have )?|"
-                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r")" + _END, re.I)
+                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r"|(?P<word>midnight|midday|noon))" + _END, re.I)
 _TIME_IN = re.compile(_NAME + r"(?:what time will it be|what(?:'s| is| will be) the time|what time is it) in " + _AMOUNT
                       + r" (minutes?|mins?|hours?|hrs?)(?: time)?" + _END, re.I)
 
 
 def _say_clock(hour: int, minute: int) -> str:
     return f"{hour % 12 or 12}{f':{minute:02d}' if minute else ''} {'am' if hour < 12 else 'pm'}"
+
+
+_COUNTDOWN = re.compile(_NAME + r"(?:how many (?P<unit>days|weeks|working days|work days|weekdays|school days)|how long) "
+                        r"(?:is it |are there |are left |left |have I got |do I have )?(?:until|till|til|to|before) (?:"
+                        + _DATE_SAID + r"|(?P<next>next )?(?P<wd>monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
+                        r"|(?P<named>[a-z' ]+?))(?: (?P<y>\d{4}))?" + _END, re.I)
+
+
+def _countdown(said: str, today: dt.date) -> str | None:
+    """'How many weeks until Christmas?', 'how many working days until Friday?', 'how long until the 30th of October?'"""
+    if not (m := _COUNTDOWN.match(said)):
+        return None
+    unit = (m.group("unit") or "days").lower()
+    if m.group("wd"):
+        ahead = (_WEEKDAYS.index(m.group("wd").lower()) - today.weekday()) % 7 or 7
+        target = today + dt.timedelta(days=ahead)
+        name = f"{target:%A}, the {_ordinal(target.day)} of {target:%B}"
+    else:
+        if m.group("named") and unit == "days":
+            return None  # 'how many days until Christmas' has its own answer
+        year = int(m.group("y")) if m.group("y") else today.year
+        if not (target := _said_date(m, year)):
+            return None
+        if target < today and not m.group("y"):
+            target = _said_date(m, year + 1)
+        if not target or target < today:
+            return None
+        key = (m.group("named") or "").strip().lower().removeprefix("the ")
+        when = f"{target:%A} the {_ordinal(target.day)} of {target:%B}{f' {target.year}' if target.year != today.year else ''}"
+        name = f"{key.title().replace(chr(39) + 'S', chr(39) + 's')}, on {when}" if key else when.replace(" the ", ", the ", 1)
+    days = (target - today).days
+    if days == 0:
+        return "That's today!"
+    if unit in ("working days", "work days", "weekdays", "school days"):
+        work = sum((today + dt.timedelta(days=i)).weekday() < 5 for i in range(1, days))
+        word = "school days" if unit == "school days" else "working days"
+        short = name.split(",")[0] if m.group("wd") or m.group("named") else f"the {_ordinal(target.day)} of {target:%B}"
+        return f"{work} {word[:-1] if work == 1 else word} before {short}, not counting today or bank holidays."
+    if unit == "weeks":
+        weeks, extra = divmod(days, 7)
+        if not weeks:
+            return f"Less than a week: {days} day{'s' if days != 1 else ''} until {name}."
+        rest = f" and {extra} day{'s' if extra != 1 else ''}" if extra else ""
+        return f"{weeks} week{'s' if weeks != 1 else ''}{rest} until {name}."
+    return f"{days} day{'s' if days != 1 else ''} until {name}."
 
 
 def _clock_maths(said: str, now: time.struct_time) -> str | None:
@@ -922,7 +969,9 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
         return f"It'll be {_say_clock(later.hour, later.minute)}{day}."
     if not (m := _UNTIL_CLOCK.match(said)):
         return None
-    if m.group("h24"):
+    if m.group("word"):
+        hour, minute = (0 if m.group("word").lower() == "midnight" else 12), 0
+    elif m.group("h24"):
         hour, minute = int(m.group("h24")), int(m.group("m24"))
     else:
         hour, minute = int(m.group("h")), int(m.group("m") or 0)
@@ -934,14 +983,14 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
         target += dt.timedelta(days=1)
     hours, minutes = divmod(int((target - here).total_seconds() // 60), 60)
     parts = [f"{n} {unit}{'s' if n != 1 else ''}" for n, unit in ((hours, "hour"), (minutes, "minute")) if n]
-    return f"{' and '.join(parts)} until {_say_clock(hour, minute)}."
+    return f"{' and '.join(parts)} until {m.group('word').lower() if m.group('word') else _say_clock(hour, minute)}."
 
 
 def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
     if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)
-                  or _calendar_facts(said, today) or _weekday_date(said, today)) is not None:
+                  or _calendar_facts(said, today) or _weekday_date(said, today) or _countdown(said, today)) is not None:
         return found
     if (found := _time_difference(said)) is not None:
         return found

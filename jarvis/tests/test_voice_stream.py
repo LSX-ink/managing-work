@@ -535,6 +535,31 @@ def test_repeat_after_me_and_counting_are_instant():
     assert instant_answer("count the words in this", en) is None
 
 
+def test_countdowns_in_weeks_working_days_and_to_midnight_are_instant():
+    import time
+
+    from brain import instant_answer
+    now = time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")  # a Friday
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("how many weeks until Christmas?", en, now) == "10 weeks until Christmas, on Friday the 25th of December."
+    assert instant_answer("how many weeks until halloween?", en, now) == (
+        "2 weeks and 1 day until Halloween, on Saturday the 31st of October.")
+    assert instant_answer("Alfred, how many working days until Christmas?", en, now) == (
+        "49 working days before Christmas, not counting today or bank holidays.")
+    assert instant_answer("how many working days until Friday?", en, now) == (
+        "4 working days before Friday, not counting today or bank holidays.")
+    assert instant_answer("how many days until Monday?", en, now) == "3 days until Monday, the 19th of October."
+    assert instant_answer("how many days until Friday?", en, now) == "7 days until Friday, the 23rd of October."
+    assert instant_answer("how many days until the 30th of October?", en, now) == "14 days until Friday, the 30th of October."
+    assert instant_answer("how many days until Christmas?", en, now) == (
+        "70 days until Christmas, on Friday the 25th of December.")  # unchanged
+    assert instant_answer("how long until midnight?", en, now) == "15 hours until midnight."
+    assert instant_answer("how many hours until noon?", en, now) == "3 hours until noon."
+    assert instant_answer("what's 3 hours 20 minutes in minutes?", en, now) == "That's 200 minutes."
+    assert instant_answer("how long until my birthday?", en, now) is None  # Claude knows (or asks)
+    assert instant_answer("how many days until the 30th of February?", en, now) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
