@@ -216,9 +216,9 @@ def test_welcome_emails_after_the_deposit_invoice(s):
     sales(s, action="my_details", owner="Lee", phone="0161 111 1111")
     sales(s, action="quote", client="Sal's Cafe", package="business", addons=["logo"])
     out = inv(s, action="invoice", quote="Q-0001")
-    assert "plus £20 a month for hosting and care from go-live" in out
+    assert "plus £25 a month for hosting and care from go-live" in out
     html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Sal's Cafe" / "Invoice INV-0001.html").read_text(encoding="utf-8")
-    assert "Monthly hosting and care, £20 a month" in html and "Not included in the amount due" in html
+    assert "Monthly hosting and care, £25 a month" in html and "Not included in the amount due" in html
     assert "welcome emails for Q-0001" in out and any(b["label"] == "Welcome emails" for b in out.card["buttons"])
     sales(s, action="domain_owner", client="Sal's Cafe", domain="salscafe.co.uk")
     shown = sales(s, action="welcome_emails", quote="Q-0001", contact_name="Sal")
@@ -227,7 +227,7 @@ def test_welcome_emails_after_the_deposit_invoice(s):
     assert "Subject: Thank you for choosing Kinetic Web Designs: your order is confirmed" in body
     assert "Dear Sal," in body and "- Logo design" in body and "Total: £1,045" in body
     assert "Deposit to start (50%): £522.50, invoice INV-0001" in body and "3 rounds of changes" in body
-    assert "Subject: Next steps required from you" in body and "Hosting and care: £20 a month" in body
+    assert "Subject: Next steps required from you" in body and "Hosting and care: £25 a month" in body
     assert 'register salscafe.co.uk in my name' in body and "Lee\nKinetic Web Designs\n0161 111 1111" in body
     assert "insurance" not in body.lower() and 'reply "Yes to hosting and care"' in body
     folder = memory.root(s) / "Kinetic Web Designs" / "Clients" / "Sal's Cafe"
@@ -337,3 +337,14 @@ def test_existing_website_takes_20_percent_off_business_and_shop(s):
     assert st.rows_of(s, st.QUOTES)[2]["total"] == 395  # starter sites don't get it
     sales(s, action="quote", client="Bo", package="business", existing_website="yes")
     assert st.rows_of(s, st.QUOTES)[3]["total"] == 895  # only a real true counts
+
+
+def test_care_plan_is_priced_by_package(s):
+    p = ks.prices(s)
+    assert [ks.care_price(p, k) for k in ("starter", "business", "shop")] == [20, 25, 30]
+    for i, pk in enumerate(("starter", "business", "shop")):
+        sales(s, action="quote", client=f"Shop {i}", package=pk)
+    assert [q["care"] for q in st.rows_of(s, st.QUOTES)] == [20, 25, 30]
+    sales(s, action="set_price", item="care_plan", package="shop", price=35)
+    assert [ks.care_price(ks.prices(s), k) for k in ("starter", "business", "shop")] == [20, 25, 35]
+    assert "£20 starter, £25 business, £35 shop" in sales(s, action="prices")
