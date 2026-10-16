@@ -58,6 +58,7 @@ DEFAULT_PRICES = {
         "photos": {"name": "Photo editing and stock images", "price": 100},
     },
     "care_plan": {"name": "Monthly hosting and care", "price": 20,
+                  "by_package": {"starter": 20, "business": 25, "shop": 30},
                   "includes": "Your domain name, hosting, security updates, backups and small text changes each "
                               "month."},
     "deposit_percent": 50,
@@ -121,21 +122,35 @@ def prices(settings: Settings) -> dict:
     for key in ("deposit_percent", "valid_days"):
         if isinstance(saved.get(key), (int, float)):
             out[key] = saved[key]
-    if isinstance((saved.get("care_plan") or {}).get("price"), (int, float)):
-        out["care_plan"]["price"] = saved["care_plan"]["price"]
+    # Care is priced per package; an old single saved price is ignored so the new tiers take effect.
+    for key, val in ((saved.get("care_plan") or {}).get("by_package") or {}).items():
+        if key in out["care_plan"]["by_package"] and isinstance(val, (int, float)):
+            out["care_plan"]["by_package"][key] = val
+    out["care_plan"]["price"] = out["care_plan"]["by_package"]["starter"]
     return out
+
+
+def care_price(p: dict, package: str) -> float:
+    """Monthly hosting and care for a package: £20 starter, £25 business, £30 shop by default."""
+    return float(p["care_plan"]["by_package"].get(package, p["care_plan"]["by_package"]["business"]))
+
+
+def care_text(p: dict) -> str:
+    c = p["care_plan"]["by_package"]
+    return f"{st.gbp(c['starter'])} starter, {st.gbp(c['business'])} business, {st.gbp(c['shop'])} shop"
 
 
 def show_prices(settings: Settings, args: dict, prefix: str = "") -> screen.Shown:
     p = prices(settings)
     rows = [[v["name"], st.gbp(v["price"]), v["includes"]] for v in p["packages"].values()]
     rows += [[v["name"], st.gbp(v["price"]), "add-on"] for v in p["addons"].values()]
-    rows.append([p["care_plan"]["name"], st.gbp(p["care_plan"]["price"]) + "/month", p["care_plan"]["includes"]])
+    rows += [[f"{p['care_plan']['name']} ({p['packages'][k]['name']})", st.gbp(v) + "/month", p["care_plan"]["includes"]]
+             for k, v in p["care_plan"]["by_package"].items()]
     custom = " These are starting prices; say \"set my business website price to 950\" to use your own." \
         if not st.load(settings, st.PRICES, {}) else ""
     text = (f"{prefix} Your website prices: starter {st.gbp(p['packages']['starter']['price'])}, business "
             f"{st.gbp(p['packages']['business']['price'])}, shop {st.gbp(p['packages']['shop']['price'])}, care plan "
-            f"{st.gbp(p['care_plan']['price'])} a month, {st.num(p['deposit_percent'])}% deposit.{custom}").strip()
+            f"a month {care_text(p)}, {st.num(p['deposit_percent'])}% deposit.{custom}").strip()
     return st.table(text, "Kinetic Web Designs prices", ["Item", "Price", "Includes"], rows)
 
 
@@ -148,7 +163,13 @@ def set_price(settings: Settings, args: dict) -> screen.Shown:
     elif item in ("valid_days", "valid"):
         saved["valid_days"] = int(st.number(args.get("price"), "number of days", False, 365))
     elif item in ("care", "care_plan", "monthly"):
-        saved["care_plan"] = {"price": st.number(args.get("price"), "price")}
+        pk = str(args.get("package") or "").lower().replace("online_shop", "shop").replace(" website", "")
+        if pk and pk not in p["care_plan"]["by_package"]:
+            raise ValueError("Care plan prices are for starter, business or shop.")
+        tiers = dict(p["care_plan"]["by_package"])
+        for key in ([pk] if pk else tiers):
+            tiers[key] = st.number(args.get("price"), "price")
+        saved["care_plan"] = {"by_package": tiers}
     else:
         item = {"business_website": "business", "starter_website": "starter", "online_shop": "shop",
                 "logo_design": "logo", "page": "extra_page"}.get(item, item)
@@ -219,7 +240,7 @@ def quote_lines(settings: Settings, args: dict) -> tuple[list[tuple[str, int, fl
     for extra in args.get("custom_items") or []:
         if isinstance(extra, dict) and extra.get("description"):
             lines.append((st.clean(extra["description"], 160), 1, st.number(extra.get("price"), "item price")))
-    care = float(p["care_plan"]["price"]) if args.get("care_plan", True) else 0.0
+    care = care_price(p, package) if args.get("care_plan", True) else 0.0
     return lines, care, package
 
 
@@ -405,7 +426,7 @@ def welcome_emails(settings: Settings, args: dict) -> screen.Shown:
     invoices = [i for i in st.rows_of(settings, st.INVOICES) if i.get("quote") == q["number"] and i["status"] != "cancelled"]
     invoice_no = invoices[0]["number"] if invoices else "[Invoice number]"
     domain = st.load(settings, st.DOMAIN_OWNERS, {}).get(name, {}).get("domain") or "your domain name"
-    care = q.get("care") or float(p["care_plan"]["price"])
+    care = q.get("care") or care_price(p, q.get("package") or "business")
     sign = "\n".join(x for x in ("Kind regards,", me["owner"] or "[Your name]", me["name"],
                                   " · ".join(x for x in (me["phone"], me["email"]) if x)) if x)
     rounds = 2 if q["package"] == "starter" else 3
@@ -702,8 +723,8 @@ def tool_definitions() -> list[dict]:
                                                         "emails in Alfred's drafts."},
                 "owner_ok": {"type": "boolean", "description": "domain_owner: true once the client has said in "
                                                                "writing to register it in their name."},
-                "item": {"type": "string", "description": "set_price: starter, business, shop, an add-on, care_plan, "
-                                                          "deposit (percent) or valid_days."},
+                "item": {"type": "string", "description": "set_price: starter, business, shop, an add-on, care_plan "
+                                                          "(add package to change one tier), deposit (percent) or valid_days."},
                 "price": {"type": "number"},
                 "kind": {"type": "string", "description": "mockup: the trade, e.g. cafe, barber, plumber."},
                 "tagline": {"type": "string"}, "services": {"type": "array", "items": {"type": "string"}},
