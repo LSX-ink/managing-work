@@ -560,6 +560,19 @@ def test_countdowns_in_weeks_working_days_and_to_midnight_are_instant():
     assert instant_answer("how many days until the 30th of February?", en, now) is None
 
 
+def test_alphabet_positions_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what letter comes after G?", en) == "H comes after G."
+    assert instant_answer("what letter is before m", en) == "L comes before M."
+    assert instant_answer("what comes after Z?", en) == "Nothing, Z is the last letter of the alphabet."
+    assert instant_answer("Alfred, what's the 5th letter of the alphabet?", en) == "The 5th letter is E."
+    assert instant_answer("what's the 30th letter of the alphabet?", en) == "The alphabet only has 26 letters."
+    assert instant_answer("what number letter is K?", en) == "K is the 11th letter of the alphabet."
+    assert instant_answer("where does R come in the alphabet?", en) == "R is the 18th letter of the alphabet."
+    assert instant_answer("what comes after the weekend?", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
