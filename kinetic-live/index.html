@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Kinetic Web Designs</title>
+<script>window.KX_FRAMES=90</script><title>Kinetic Web Designs</title>
 <meta name="description" content="Kinetic Web Designs builds websites around your colours: pick a style, test three colours in our colour lab, get an instant quote and tell us your vision.">
 <link rel="canonical" href="https://kineticwebdesigns.co.uk/">
 <meta name="theme-color" content="#2a46d1">
@@ -2361,6 +2361,9 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   const CLIPS = window.KX_CLIP = window.KX_CLIP || {}, clipWant = {};
   function clipLoad(name) {
     if (clipWant[name]) return; clipWant[name] = 1;
+    // Live site: frames are plain webp files (clips/<name>/000.webp), so nothing looks like packed script.
+    if (window.KX_FRAMES) { CLIPS[name] = Array.from({ length: window.KX_FRAMES }, (_, i) => { const im = new Image(); im.src = `clips/${name}/${String(i).padStart(3, "0")}.webp`; return im; });
+      CLIPS[name][0].decode().then(() => { CLIPS[name].ready = 1; document.querySelectorAll(`.gclip[data-clip="${name}"]`).forEach(c => c._i = -1); pxKick(); }).catch(() => {}); return; }
     const sc = document.createElement("script"); sc.src = "clips/" + name + ".js"; sc.async = true;
     sc.onload = () => { const fr = CLIPS[name]; if (!fr) return; CLIPS[name] = fr.map(u => { const im = new Image(); im.src = u; return im; });
       CLIPS[name][0].decode().catch(() => {}).then(() => { CLIPS[name].ready = 1; document.querySelectorAll(`.gclip[data-clip="${name}"]`).forEach(c => c._i = -1); pxKick(); }); };
