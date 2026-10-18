@@ -1959,8 +1959,8 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
           <div class="gstats"><span><b>4.9 ★</b>1,200+ reviews</span><span><b>6</b>Master barbers</span><span><b>Late</b>Thu to Sat</span></div>` },
       { sec: "visit", html: `<p class="mk">Book your chair</p><h2>Your next look <em>starts here.</em></h2><p class="ms">Pick a barber, a day and a time. It takes less than a minute.</p>
           <div class="mbtns"><button type="button" class="mb1" data-go="book">Book appointment</button></div>` }
-    ], [{ k: "barber-hero", r: [0, 0], clip: "barber-chair" }, { k: "barber-tools", r: [1, 2], m: "tools", cls: "gsoft" }, { k: "barber-shears", r: [3, 3], clip: "barber-snip" },
-      { k: "barber-rays", r: [4, 4] }, { k: "barber-ring", r: [5, 5], m: "grow", html: kimg("barber-ring") + '<i class="ghalo"></i>' }]) : `
+    ], [{ k: "barber-hero", r: [0, 0], clip: "barber-chair" }, { k: "barber-tools", r: [1, 2], cls: "gsoft", clip: "barber-tools" }, { k: "barber-shears", r: [3, 3], clip: "barber-snip" },
+      { k: "barber-rays", r: [4, 4] }, { k: "barber-ring", r: [5, 5], m: "grow", html: kclip("barber-ring", "barber-ring") + '<i class="ghalo"></i>' }]) : `
     <section class="mh scn" data-mode="hero" data-sec="top"><div class="mcopy"><p class="mk">${p.kick}</p><h1>The cut<br>that <em>crowns</em><br>you.</h1><p class="ms">${p.sub}</p>
       <div class="mbtns"><button type="button" class="mb1" data-go="book">Book appointment</button><button type="button" class="mb2" data-go="svc">Our services</button></div>
       <div class="gstats"><span><b>4.9 ★</b>1,200+ reviews</span><span><b>6</b>Master barbers</span><span><b>Late</b>Thu to Sat</span></div></div><div class="mstage">${barberHero(u)}</div></section>
@@ -2453,8 +2453,8 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       { sec: "ritual", html: `<h2>Let it <em>bloom.</em></h2><div class="gside">${gnum("3")}<p class="ms">Hot water in circles, a thirty second bloom, then a slow pour. Four minutes, start to finish.</p></div>` },
       { sec: "taste", html: `<h2>Make <em>time</em> taste.</h2><div class="gside">${gnum("4")}<h3>Our brew ritual</h3><p class="ms">Caramel and coffee poured together, so every sip has both.</p></div>` },
       { sec: "today", cls: "gch-svc", html: `<p class="mk">On the bar today</p><h2>Today's <em>pour.</em></h2><div class="gcards">${BREW_MENU.slice(0, 3).map(pcard).join("")}</div>` }
-    ], [{ k: "brew-bean", r: [0, 1], clip: "brew-crack" }, { k: "brew-dripper", r: [2, 2], clip: "brew-pour" }, { k: "brew-ribbon", r: [3, 3], m: "pour" },
-      { k: "brew-latte", r: [4, 4], m: "grow", html: kimg("brew-latte") + [["Origin", "Guji, Ethiopia"], ["Flavour", "Jasmine, peach"], ["Roast", "Light"]].map(([a, b], i) => `<span class="gtag gtag${i}"><b>${a}</b>${b}</span>`).join("") }]) +
+    ], [{ k: "brew-bean", r: [0, 1], clip: "brew-crack" }, { k: "brew-dripper", r: [2, 2], clip: "brew-pour" }, { k: "brew-ribbon", r: [3, 3], clip: "brew-ribbon" },
+      { k: "brew-latte", r: [4, 4], m: "grow", html: kclip("brew-latte", "brew-latte") + [["Origin", "Guji, Ethiopia"], ["Flavour", "Jasmine, peach"], ["Roast", "Light"]].map(([a, b], i) => `<span class="gtag gtag${i}"><b>${a}</b>${b}</span>`).join("") }]) +
       gshop("menu", "The menu", "Coffee <em>&amp;</em> beans", BREW_MENU) +
       gbook({ img: "brew-latte", kick: "Order ahead", title: "Skip <em>the queue.</em>", svc: "Heart flat white", picks: [["Size", ["Small", "Regular", "Large"], 1], ["Milk", ["Whole", "Oat", "None"], 0], ["Collect", ["Now", "+10 min", "+20 min"], 1]],
         btn: "Place order", done: "Ordered", thanks: "We'll call your name." }) +
@@ -2469,7 +2469,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       { sec: "picks", cls: "gch-svc", html: `<p class="mk">Scooped today</p><h2>Pick your <em>cone.</em></h2>
           <div class="gcards">${[["desserts-cones", "£3.90", "Pistachio crunch", "Sicilian pistachio, praline"], ["desserts-drip", "£4.20", "Chocolate shell", "Vanilla, set dark chocolate"], ["desserts-dip", "£4.50", "Hazelnut dip", "Waffle cone, hazelnut sauce"]].map(pcard).join("")}</div>` },
       { sec: "sundae", html: `<p class="mk">The finale</p><h2>The sundae <em>to end</em> all sundaes.</h2><p class="ms">Three scoops, warm sauce, toasted hazelnuts, cream and a wafer. Made to share, rarely shared.</p>${btns(["Order a sundae", "favs"])}` }
-    ], [{ k: "desserts-drip", r: [0, 0], clip: "desserts-choc" }, { k: "desserts-dip", r: [1, 1], clip: "desserts-dip" }, { k: "desserts-cones", r: [2, 2], m: "drift", cls: "gsoft" }, { k: "desserts-sundae", r: [3, 3], m: "rise" }]));
+    ], [{ k: "desserts-drip", r: [0, 0], clip: "desserts-choc" }, { k: "desserts-dip", r: [1, 1], clip: "desserts-dip" }, { k: "desserts-cones", r: [2, 2], cls: "gsoft", clip: "desserts-cones" }, { k: "desserts-sundae", r: [3, 3], clip: "desserts-sundae" }]));
   }
 
   // Beauty: the jar on the peony, the lid lifts, the cream, then the range.
@@ -2480,7 +2480,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       { sec: "whip", html: `<p class="mk">The texture</p><h2>Whipped <em>moisture.</em></h2><p class="ms">Squalane, rose water and peony extract, whipped light so it melts in rather than sitting on top.</p>` },
       { sec: "range", cls: "gch-svc", html: `<p class="mk">Feel it, see it</p><h2>Glow, <em>every day.</em></h2>
           <div class="gcards">${[["beauty-jar", "£34", "Rose barrier cream", "50ml jar"], ["beauty-cream", "£29", "Peony night mask", "75ml jar"], ["beauty-range", "£78", "The ritual set", "Cream, serum, balm"]].map(pcard).join("")}</div>` }
-    ], [{ k: "beauty-jar", r: [0, 1], clip: "beauty-open" }, { k: "beauty-cream", r: [2, 2], clip: "beauty-swirl" }, { k: "beauty-range", r: [3, 3], m: "drift", cls: "gsoft" }]));
+    ], [{ k: "beauty-jar", r: [0, 1], clip: "beauty-open" }, { k: "beauty-cream", r: [2, 2], clip: "beauty-swirl" }, { k: "beauty-range", r: [3, 3], cls: "gsoft", clip: "beauty-range" }]));
   }
 
   // Fashion: one jacket at a time swings along an orbit and the whole page takes its colour.
@@ -2489,7 +2489,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     const dots = i => `<div class="gways" role="group" aria-label="Colourways">${JACKETS.map(([, n, c], j) => `<button type="button" data-go="${j ? "ch" + j : "top0"}" aria-pressed="${i === j}" aria-label="${n}" style="--c:${c}"></button>`).join("")}</div>`;
     return withStory(driftSite(u, p), story(JACKETS.map(([k, n], i) => ({ sec: i ? "ch" + i : "", html: `<p class="mk">0${i + 1} / 05 · ${n}</p><p class="gjname">Halo puffer <b>£189</b></p>
           <div class="mbtns"><button type="button" class="mb1" data-add data-msg="Added ✓">Add to bag</button><button type="button" class="mb2" data-go="drop">Sizes</button></div>${dots(i)}` })),
-      JACKETS.map(([k], i) => k === "fashion-orange" ? { k, r: [i, i], clip: "fashion-spin" } : { k, r: [i, i], m: "arc" }),
+      JACKETS.map(([k], i) => ({ k, r: [i, i], clip: k === "fashion-orange" ? "fashion-spin" : k })),
       `<div class="gfix"><p class="mk">${p.kick}</p><h1>Wear the<br>weather<br>well.</h1></div>
        <svg class="gorbit" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="55" cy="34" rx="52" ry="22" transform="rotate(-14 55 34)"/><circle cx="12" cy="50" r=".8"/><circle cx="96" cy="14" r=".8"/></svg>`)
       .replace('class="gstory"', `class="gstory" data-cw='${JSON.stringify(JACKETS.map(j => [j[2], j[3]]))}'`));
@@ -2503,7 +2503,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       { sec: "meadow", html: `<p class="mk">Where it starts</p><h2>One flower <em>at a time.</em></h2><p class="ms">Our bees work the wildflower meadows on the valley farm, three miles from the shop.</p>` },
       { sec: "lid", html: `<p class="mk">Raw and unheated</p><h2>Straight <em>from</em> the comb.</h2><p class="ms">Spun cold and jarred by hand, so it keeps the pollen, the flavour and the gold.</p>${btns(["Shop jars", "jars"])}` },
       { sec: "deli", html: `<p class="mk">The larder</p><h2>Honey, bread <em>&amp;</em> cheese.</h2><p class="ms">Sourdough at dawn, cheese from the valley and a jar to take home.</p>${btns(["See the larder", "larder"])}` }
-    ], [{ k: "honey-jar", r: [0, 0], m: "zoom", cls: "gsoft" }, { k: "honey-bee", r: [1, 1], cls: "gphoto", clip: "honey-bee" }, { k: "honey-land", r: [2, 2], m: "rise" }, { k: "honey-deli", r: [3, 3], m: "grow", cls: "gphoto" }], hex + hex.replace('class="ghex"', 'class="ghex ghex2"')));
+    ], [{ k: "honey-jar", r: [0, 0], cls: "gsoft", clip: "honey-jar" }, { k: "honey-bee", r: [1, 1], cls: "gphoto", clip: "honey-bee" }, { k: "honey-land", r: [2, 2], m: "rise" }, { k: "honey-deli", r: [3, 3], cls: "gphoto", clip: "honey-deli" }], hex + hex.replace('class="ghex"', 'class="ghex ghex2"')));
   }
 
   // Wigs: dark plum velvet, gold light, the unit on its stand, the lace, the silk, then fittings.
@@ -2516,7 +2516,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       { sec: "silk", html: `<p class="mk">Human hair</p><h2>Movement <em>like silk.</em></h2><p class="ms">Single-donor hair that holds a curl, takes colour and lasts for years with care.</p>` },
       { sec: "range", cls: "gch-svc", html: `<p class="mk">In the studio</p><h2>Choose <em>your unit.</em></h2><div class="gcards">${WIG_UNITS.slice(0, 3).map(pcard).join("")}</div>` },
       { sec: "fit", html: `<p class="mk">Private fittings</p><h2>One chair. <em>Your hour.</em></h2><p class="ms">We cut, colour and style the unit on you, then show you how to keep it looking new.</p>${btns(["Book a fitting", "book"])}` }
-    ], [{ k: "wigs-wig", r: [0, 0], clip: "wigs-flow" }, { k: "wigs-lace", r: [1, 1], m: "drift" }, { k: "wigs-silk", r: [2, 3], m: "float", cls: "gsoft" }, { k: "wigs-range", r: [4, 4], m: "grow", cls: "gphoto" }]) +
+    ], [{ k: "wigs-wig", r: [0, 0], clip: "wigs-flow" }, { k: "wigs-lace", r: [1, 1], clip: "wigs-lace" }, { k: "wigs-silk", r: [2, 3], cls: "gsoft", clip: "wigs-silk" }, { k: "wigs-range", r: [4, 4], cls: "gphoto", clip: "wigs-range" }]) +
       gshop("units", "The collection", "Ready <em>to wear</em>", [0, 2, 3].map(i => WIG_UNITS[i])) +
       gbook({ img: "wigs-wig", kick: "Private fittings", title: "Your crown, <em>fitted.</em>", svc: "Fitting and styling", picks: [["Stylist", ["Amara", "Zainab", "Grace"], 0], ["Day", ["Thu", "Fri", "Sat"], 2], ["Time", ["10:00", "12:30", "15:00", "17:30"], 1]] }) +
       gfoot(p.biz, ["The Arcade, 9 Market Street", ["Studio hours", "Tue to Sat 10 to 6 · late Thursday"], ["Fittings", "By appointment, about an hour"]]);
@@ -2532,7 +2532,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       { sec: "svc", cls: "gch-svc", html: `<p class="mk">Fixed prices</p><h2>${t.svcH}</h2><div class="gcards">${t.svc.map(([img, pr, n, m], i) => scard(t.id + "-" + img, pr, n, m, n, "Book")).join("")}</div>` },
       { sec: "work", html: `<p class="mk">${t.workK}</p><h2>${t.workH}</h2><p class="ms">${t.workP}</p><div class="gstats">${t.stats.map(([b, s]) => `<span><b>${b}</b>${s}</span>`).join("")}</div>` },
       { sec: "go", html: `<p class="mk">Book online</p><h2>${t.endH}</h2><p class="ms">${t.endP}</p>${btns([t.cta, "book"])}` }
-    ], [{ k: hero, r: [0, 0], m: t.clip ? "" : t.m0, cls: t.c0 || "", clip: t.clip }, { k: kit, r: [1, 2], m: "tools", cls: "gsoft" }, { k: job, r: [3, 4], m: t.m3 || "grow", cls: t.c3 || "" }]) +
+    ], [{ k: hero, r: [0, 0], m: t.clip ? "" : t.m0, cls: t.c0 || "", clip: t.clip }, { k: kit, r: [1, 2], cls: "gsoft", clip: kit }, { k: job, r: [3, 4], cls: t.c3 || "", clip: job }]) +
       gbook({ img: job, kick: t.cta, title: t.bookH, svc: t.svc[0][2], picks: t.picks, done: "Booked in", thanks: t.thanks }) +
       gfoot(p.biz, t.foot);
   }
@@ -2634,7 +2634,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       { sec: "studio", cls: "gch-svc", html: `<p class="mk">This week</p><h2>Find <em>your</em> class.</h2><div class="gcards">${PILATES.slice(0, 3).map(pcard).join("")}</div>` },
       { sec: "first", html: `${gnum("04")}<p class="mk">New here?</p><h2>Your first class is <em>on us.</em></h2><p class="ms">Roll out a mat, meet the team and see how you feel. Grip socks and water provided.</p>${btns(["Claim my free class", "book"])}` }
     ], [{ k: "pilates-reformer", r: [0, 0], clip: "pilates-reformer" }, { k: "pilates-kit", r: [1, 1], clip: "pilates-kit" },
-      { k: "pilates-studio", r: [2, 2], m: "grow", cls: "gphoto" }, { k: "pilates-mat", r: [3, 3], clip: "pilates-mat" }]) +
+      { k: "pilates-studio", r: [2, 2], cls: "gphoto", clip: "pilates-studio" }, { k: "pilates-mat", r: [3, 3], clip: "pilates-mat" }]) +
       gshop("classes", "Prices", "Classes <em>&amp;</em> passes", PILATES) +
       gbook({ img: "pilates-studio", kick: "Book a class", title: "Save <em>your spot.</em>", svc: "Reformer class", picks: [["Class", ["Reformer", "Mat", "Private"], 0], ["Day", ["Mon", "Wed", "Sat"], 2], ["Time", ["07:00", "12:15", "18:30"], 2]],
         btn: "Book class", done: "Booked", thanks: "See you on the mat." }) +
@@ -2650,7 +2650,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       { sec: "treat", cls: "gch-svc", html: `<p class="mk">Treatments</p><h2>Choose <em>your hour.</em></h2><div class="gcards">${SPA.slice(0, 3).map(pcard).join("")}</div>` },
       { sec: "after", html: `${gnum("IV")}<p class="mk">Afterwards</p><h2>Leave <em>lighter.</em></h2><p class="ms">Stay as long as you like in the relaxation room, with herbal tea and nowhere to be.</p>${btns(["Book a treatment", "book"])}` }
     ], [{ k: "spa-stones", r: [0, 0], clip: "spa-stones" }, { k: "spa-oil", r: [1, 1], clip: "spa-oil" },
-      { k: "spa-room", r: [2, 2], m: "grow", cls: "gphoto" }, { k: "spa-bowl", r: [3, 3], clip: "spa-bowl" }]) +
+      { k: "spa-room", r: [2, 2], cls: "gphoto", clip: "spa-room" }, { k: "spa-bowl", r: [3, 3], clip: "spa-bowl" }]) +
       gshop("gifts", "Treatments and gifts", "Something <em>to look forward to</em>", SPA) +
       gbook({ img: "spa-room", kick: "Book a treatment", title: "Your <em>quiet hour.</em>", svc: "Hot stone massage", picks: [["Treatment", ["Hot stone", "Aromatherapy", "Facial"], 0], ["Day", ["Thu", "Fri", "Sun"], 1], ["Time", ["11:00", "14:30", "18:00"], 1]],
         btn: "Book treatment", done: "Booked", thanks: "We'll have the room warm for you." }) +
