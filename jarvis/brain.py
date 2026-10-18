@@ -1052,6 +1052,29 @@ def _spelt(word: str) -> str:
     return ", ".join(out)
 
 
+_LETTER_NEXT = re.compile(_NAME + r"what (?:letter )?(?:comes |is |goes )?(?P<way>after|before) (?:the letter )?[\"']?(?P<l>[a-z])[\"']?"
+                          r"(?: in the alphabet)?" + _END, re.I)
+_LETTER_NTH = re.compile(_NAME + r"what(?:'s| is) the (?P<n>\d{1,2})(?:st|nd|rd|th) letter (?:of|in) the alphabet" + _END, re.I)
+_LETTER_POS = re.compile(_NAME + r"(?:what (?:number|position) (?:letter )?is (?:the letter )?[\"']?(?P<l>[a-z])[\"']?(?: in the alphabet)?"
+                         r"|where (?:is|does) (?:the letter )?(?P<l2>[a-z])(?: come| sit)? in the alphabet)" + _END, re.I)
+
+
+def _alphabet_answer(said: str) -> str | None:
+    """'What letter comes after G?', 'what's the 5th letter of the alphabet?', 'what number letter is K?'"""
+    if m := _LETTER_NEXT.match(said):
+        i = ord(m.group("l").lower()) - 97 + (1 if m.group("way").lower() == "after" else -1)
+        if not 0 <= i < 26:
+            return f"Nothing, {m.group('l').upper()} is the {'last' if i > 25 else 'first'} letter of the alphabet."
+        return f"{chr(65 + i)} comes {m.group('way').lower()} {m.group('l').upper()}."
+    if m := _LETTER_NTH.match(said):
+        n = int(m.group("n"))
+        return f"The {_ordinal(n)} letter is {chr(64 + n)}." if 1 <= n <= 26 else "The alphabet only has 26 letters."
+    if m := _LETTER_POS.match(said):
+        letter = (m.group("l") or m.group("l2")).upper()
+        return f"{letter} is the {_ordinal(ord(letter) - 64)} letter of the alphabet."
+    return None
+
+
 def _spelling_answer(said: str) -> str | None:
     """'How do you spell necessary?' and 'how many letters in banana?': no need to ask Claude."""
     if m := _SPELL.match(said):
@@ -1194,7 +1217,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said)
-            or _units_answer(said) or _fun_answer(said) or _spelling_answer(said))
+            or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _alphabet_answer(said))
 
 
 def time_of_day(hour: int | None = None) -> str:
