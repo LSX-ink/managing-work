@@ -573,6 +573,26 @@ def test_alphabet_positions_are_instant():
     assert instant_answer("what comes after the weekend?", en) is None
 
 
+def test_relative_days_month_year_and_weekend_are_instant():
+    import time
+
+    from brain import instant_answer
+    now = time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")  # a Friday
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's the day after tomorrow?", en, now) == "The day after tomorrow is Sunday the 18th of October."
+    assert instant_answer("what was the date the day before yesterday?", en, now) == (
+        "The day before yesterday was Wednesday the 14th of October.")
+    assert instant_answer("what day was it 3 days ago?", en, now) == "3 days ago was Tuesday the 13th of October."
+    assert instant_answer("what was the date a week ago?", en, now) == "A week ago was Friday the 9th of October."
+    assert instant_answer("Alfred, what month is it?", en, now) == "It's October 2026."
+    assert instant_answer("what year is it?", en, now) == "It's 2026."
+    assert instant_answer("is it the weekend?", en, now) == "Not yet, it's Friday. The weekend starts tomorrow."
+    assert instant_answer("is it the weekend?", en, time.strptime("2026-10-17 09:00", "%Y-%m-%d %H:%M")) == "Yes, it's Saturday."
+    assert instant_answer("is it a weekday?", en, now) == "Yes, it's Friday."
+    assert instant_answer("what's the last day of the month?", en, now) == "The last day of October is Saturday the 31st."
+    assert instant_answer("what is the first day of next month?", en, now) == "The first day of November is Sunday the 1st."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
