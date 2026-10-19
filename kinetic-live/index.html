@@ -65,7 +65,7 @@
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 88px; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media (prefers-reduced-motion: kx-off) { html { scroll-behavior: auto; } }
 html, body { overflow-x: clip; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 .wrap { max-width: 1180px; margin: 0 auto; padding-inline: var(--gutter); }
@@ -705,7 +705,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .k-hive .mf { background: color-mix(in srgb, var(--m-main) 14%, var(--m-bg)); }
 @container (max-width: 640px) { .k-hive .hcols { grid-template-columns: minmax(0, 1fr); } .k-hive .hgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .k-hive h1 { font-size: 50px; } }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: kx-off) {
   .site .scn { --p: .85 !important; }
   .k-nocturne .mh.scn { --p: 1 !important; } .site .mscroll { display: none; } .k-bloom .mh.scn { --p: .72 !important; } .k-hive .mh.scn, .k-hive .hjars.scn { --p: 1 !important; }
   .site .bfloat, .site .dfloat, .site .hwing, .site .csteam path, .site .mscroll::after { animation: none !important; }
@@ -744,7 +744,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .site .gringimg { transform: scale(calc(.9 + var(--p) * .12)); filter: brightness(calc(.6 + var(--p) * .5)); }
 .site .ghalo { position: absolute; inset: 8% 10% 22%; border-radius: 50%; box-shadow: 0 0 60px 6px color-mix(in srgb, var(--m-main) 45%, transparent); opacity: calc(var(--p) * .55); mix-blend-mode: screen; animation: ghalo 3.2s ease-in-out infinite; pointer-events: none; }
 @keyframes ghalo { 50% { box-shadow: 0 0 90px 14px color-mix(in srgb, var(--m-main) 55%, transparent); } }
-@media (prefers-reduced-motion: reduce) { .site .ghalo { animation: none; } }
+@media (prefers-reduced-motion: kx-off) { .site .ghalo { animation: none; } }
 @container (max-width: 640px) {
   .site .gcraft { grid-template-columns: minmax(0, 1fr); } .site .gcwrap { max-width: 300px; }
   .site .gtag { display: none; }
@@ -783,7 +783,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .site .gcue { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: var(--m-main); z-index: 4; }
 .site .gcue::after { content: ""; display: block; width: 1px; height: 22px; margin: 6px auto 0; background: linear-gradient(var(--m-main), transparent); animation: gcue 1.6s ease-in-out infinite; }
 @keyframes gcue { 50% { transform: translateY(6px); opacity: .4; } }
-@media (prefers-reduced-motion: reduce) { .site .gcue::after { animation: none; } }
+@media (prefers-reduced-motion: kx-off) { .site .gcue::after { animation: none; } }
 .site .gmark { position: absolute; left: 0; width: 1px; height: 1px; }
 .site .gmenu .ggrid2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 @container (max-width: 640px) {
@@ -816,7 +816,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .site .gtag b { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; opacity: .6; font-weight: 600; }
 .site .gtag0 { left: 6%; top: 18%; rotate: -8deg; } .site .gtag1 { right: 4%; top: 40%; rotate: 6deg; animation-delay: -1.6s; } .site .gtag2 { left: 14%; bottom: 14%; rotate: 4deg; animation-delay: -3.2s; }
 @keyframes gtag { 50% { translate: 0 -8px; } }
-@media (prefers-reduced-motion: reduce) { .site .gtag { animation: none; } }
+@media (prefers-reduced-motion: kx-off) { .site .gtag { animation: none; } }
 /* Roast: huge condensed serif on oat cream, a side column with the step number. */
 .k-playful .gscript { font: italic 400 26px/1 var(--m-display); letter-spacing: 0; text-transform: none; }
 .k-playful .gch h1, .k-playful .gch h2 { font: 400 clamp(54px, 8.6cqi, 100px)/.84 var(--m-display); text-transform: uppercase; letter-spacing: -.01em; margin-bottom: 0; }
@@ -873,7 +873,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .type.tshots img { opacity: 0; transition: opacity .9s ease, transform 600ms var(--ease-out); object-position: top center; }
 .type.tshots img.on { opacity: 1; }
 .type .tlook { font-style: normal; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; opacity: .75; margin-top: 4px; }
-@media (prefers-reduced-motion: reduce) { .type.tshots img { transition: none; } }
+@media (prefers-reduced-motion: kx-off) { .type.tshots img { transition: none; } }
 .k-bold .mbag, .k-crafted .mbag, .k-splash .mbag, .k-fresh .mbag, .k-clean .mbag { display: none; }
 @container (max-width: 640px) { .site .gtag { display: none; } .k-playful .gch:first-child h1 { font-size: 50px; } }
 
@@ -987,7 +987,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .slogan .pulse i { position: absolute; right: -.34em; top: .14em; width: .16em; height: .16em; border-radius: 50%; background: var(--accent); }
 .slogan .pulse i::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--accent); animation: kpulse 1.6s ease-out infinite; }
 @keyframes kpulse { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(3.2); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .slogan .pulse i::after { animation: none; } }
+@media (prefers-reduced-motion: kx-off) { .slogan .pulse i::after { animation: none; } }
 .about-do { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--line); }
 .about-do li { display: grid; gap: 4px; padding: 18px 0; border-bottom: 1px solid var(--line); }
 .about-do b { font: 650 1.08rem var(--display); letter-spacing: -0.015em; }
@@ -1176,7 +1176,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 /* Reveal on scroll (motivated: each section arrives as you reach it) */
 .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s var(--ease-out); }
 .reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: kx-off) {
   .reveal { opacity: 1; transform: none; }
   /* gentler reduced-motion rules live at the end of the motion pass */
 }
@@ -1233,7 +1233,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 .style, .tpl .frame { transition: border-color var(--ui) ease, box-shadow var(--ui) ease; }
 
 /* Reduced motion: fewer and gentler, not zero. Keep fades that explain a change, drop movement and loops. */
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: kx-off) {
   .fp .scene *, .fp .scene { animation: none !important; }
   .btn, .chip, .sw, .preset, .pack, .addon, .type, .type img, .menu-links a, .menu-links a small, .menu-bg img, .reveal { transform: none !important; }
   .showcase .fp { animation: fade-only 200ms ease; }
@@ -1255,7 +1255,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   border-top: 1px dashed var(--line); margin-top: 4px; }
 .addon-info:not([hidden]) { animation: info-in 200ms var(--ease-out); }
 @keyframes info-in { from { opacity: 0; transform: translateY(-4px); } }
-@media (prefers-reduced-motion: reduce) { .addon-info:not([hidden]) { animation: fade-only 160ms ease; } }
+@media (prefers-reduced-motion: kx-off) { .addon-info:not([hidden]) { animation: fade-only 160ms ease; } }
 </style>
 
 <a class="skip" href="#main">Skip to content</a>
@@ -2317,7 +2317,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   const siteHTML = (style, p, vars) => `<div class="site k-${style.id}" style="${esc(vars)}">${SITES[style.id]("x" + (++siteUid), p).replace(/(<section class="mh[^>]*>)([\s\S]*?)(<\/section>)/, '$1<div class="mpin">$2</div>$3')}</div>`;
 
   // ---------- scroll-linked scenes: one rAF loop, passive listeners, eased toward the scroll position ----------
-  const pxReduce = matchMedia("(prefers-reduced-motion: reduce)");
+  const pxReduce = matchMedia("(prefers-reduced-motion: kx-off)");
   var pxRaf = 0;
   function pxKick() { if (!pxRaf) pxRaf = requestAnimationFrame(pxTick); }
   function pxTick() {
@@ -2934,7 +2934,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   let shownTotal = null;
   function showTotal(t) {
     const el = $("#q-total");
-    if (shownTotal === null || matchMedia("(prefers-reduced-motion: reduce)").matches) { shownTotal = t; el.textContent = money(t); return; }
+    if (shownTotal === null || matchMedia("(prefers-reduced-motion: kx-off)").matches) { shownTotal = t; el.textContent = money(t); return; }
     const from = shownTotal, start = performance.now(); shownTotal = t;
     const step = now => {
       if (shownTotal !== t) return;
@@ -3082,7 +3082,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     const imgs = [...card.querySelectorAll("img")]; if (imgs.length < 2) return;
     let i = 0, hold = false;
     const step = () => {
-      if (hold || document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (hold || document.hidden || matchMedia("(prefers-reduced-motion: kx-off)").matches) return;
       imgs[i].classList.remove("on"); i = (i + 1) % imgs.length; imgs[i].classList.add("on");
       card.dataset.look = imgs[i].dataset.l; card.dataset.tab = imgs[i].dataset.t;
       const st = STYLES.find(x => x.id === imgs[i].dataset.l); card.querySelector(".tlook").textContent = `${st.name} · ${PAGES[st.id].biz}`;
@@ -3146,7 +3146,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   const bar = document.getElementById("bar");
   const onScroll = () => bar.classList.toggle("scrolled", scrollY > 8);
   addEventListener("scroll", onScroll, { passive: true }); onScroll();
-  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: kx-off)").matches) return;
   const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { x.target.classList.add("in"); io.unobserve(x.target); } }),
     { rootMargin: "0px 0px -6% 0px" });
   document.querySelectorAll("main section .head, main section .wrap > *:not(.head)").forEach(el => { el.classList.add("reveal"); io.observe(el); });
@@ -3191,7 +3191,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     const target = document.querySelector(a.getAttribute("href"));
     setTimeout(() => { target.scrollIntoView(); history.replaceState(null, "", a.getAttribute("href")); }, 0);
   });
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (!matchMedia("(prefers-reduced-motion: kx-off)").matches) {
     menu.addEventListener("pointermove", e => {
       bg.style.setProperty("--px", ((e.clientX / innerWidth) - .5) * -30 + "px");
       bg.style.setProperty("--py", ((e.clientY / innerHeight) - .5) * -30 + "px");
@@ -3224,7 +3224,7 @@ document.addEventListener("click", e => {
   "use strict";
   const D = document, H = D.documentElement;
   const q1 = (s, el = D) => el.querySelector(s), qa = (s, el = D) => [...el.querySelectorAll(s)];
-  const RM = matchMedia("(prefers-reduced-motion: reduce)");
+  const RM = matchMedia("(prefers-reduced-motion: kx-off)");
   const FINE = matchMedia("(hover: hover) and (pointer: fine)");
   const rm = () => RM.matches;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -3406,7 +3406,7 @@ html.kw-fx .lab, html.kw-fx form.vision { box-shadow: calc(var(--lx, 0) * -22px)
 @media (prefers-color-scheme: dark) { html.kw-fx .lab, html.kw-fx form.vision { box-shadow: calc(var(--lx, 0) * -22px) calc(var(--ly, 0) * -14px + 22px) 46px -20px rgba(0,0,0,.85); } }
 
 /* reduced motion: keep the look, drop the motion */
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: kx-off) {
   html.kw-fx .style, html.kw-fx .kd-rig { transform: none !important; }
   html .btn, html .chip, html .menu-btn { translate: none !important; }
   html.kw-fx .hero .copy > *, .kd-shape { translate: none !important; }
@@ -3488,7 +3488,7 @@ html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,v
 @keyframes kE-fade{from{opacity:0}to{opacity:1}}
 @keyframes kE-rays{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.05)}}
 
-@media (prefers-reduced-motion:reduce){
+@media (prefers-reduced-motion:kx-off){
   .kE-time .seg,.kE-pay .split b,.kE-donut circle.seg{transition:opacity .15s ease!important}
   .kE-hint .rays{animation:none!important}
   .kE-time .seg,.kE-pay .split b{transform:none!important}
