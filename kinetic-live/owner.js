@@ -54,16 +54,16 @@ function renderLogin(error = "", forgot = false) {
     <div class="login"><form id="loginForm" novalidate>
       <h2>Owner's log in</h2>
       <p class="hint">Only the owner of ${esc(CFG.siteName)} can log in here. Your first login details come from Kinetic Web Designs by email.</p>
-      <label class="f" for="lgEmail">Email<input class="t" id="lgEmail" type="email" autocomplete="username" required></label>
+      <label class="f" for="lgUser">Username<input class="t" id="lgUser" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
       <label class="f" for="lgPw">Password<input class="t" id="lgPw" type="password" autocomplete="current-password" required></label>
       ${error ? `<p class="err" role="alert">${esc(error)}</p>` : ""}
       <button class="btn accent" type="submit">Log in</button>
       <button class="linkish" type="button" data-act="forgot">Forgot your password?</button>
       ${forgot ? `<p class="hint" role="status">Message Kinetic Web Designs and we'll reset it. You'll get a new temporary password by email, and you'll choose your own private one when you log in. We can reset your password, but we can never see it.</p>` : ""}
     </form></div>`;
-  const last = sessionStorageGet("kk-email");
-  if (last) $("#lgEmail").value = last;
-  (last ? $("#lgPw") : $("#lgEmail")).focus();
+  const last = sessionStorageGet("kk-user");
+  if (last) $("#lgUser").value = last;
+  (last ? $("#lgPw") : $("#lgUser")).focus();
 }
 function renderChangePw(first, error = "") {
   document.title = first ? "Choose your password" : "Change password";
@@ -362,7 +362,8 @@ async function vStatements() {
 async function vAccount() {
   const acc = await api("/api/owner/account");
   return `<section class="panel"><h2>Your login</h2>
-    <label class="f">Email<input class="t" value="${esc(acc.email)}" readonly></label>
+    <label class="f">Username<input class="t" value="${esc(acc.username || "")}" readonly></label>
+    <p class="hint">Keep your username private. Statements go to ${esc(acc.email)}.</p>
     <div><button class="btn ghost" type="button" data-act="chpw">Change password</button></div>
     <p class="hint">Forgot it? Message Kinetic Web Designs and we'll send you a new temporary password. We can reset your password, but we can never see it.</p></section>
     <section class="panel"><div class="hd"><h2>Monthly statement emails</h2>${statementsToggle(acc)}</div>
@@ -450,11 +451,11 @@ document.addEventListener("submit", async e => {
   const btn = e.target.querySelector("[type=submit]"); if (btn) btn.disabled = true;
   try {
     if (e.target.id === "loginForm") {
-      const email = $("#lgEmail").value.trim().toLowerCase(), password = $("#lgPw").value;
-      if (!email || !password) return renderLogin("Enter your email and password.");
-      sessionStorageSet("kk-email", email);
+      const username = $("#lgUser").value.trim().toLowerCase(), password = $("#lgPw").value;
+      if (!username || !password) return renderLogin("Enter your username and password.");
+      sessionStorageSet("kk-user", username);
       try {
-        const r = await api("/api/auth/login", { method: "POST", body: { email, password } });
+        const r = await api("/api/auth/login", { method: "POST", body: { username, password } });
         ME = await api("/api/auth/me");
         if (r.mustChange) renderChangePw(true); else renderOwner();
       } catch (x) { renderLogin(x.message); }

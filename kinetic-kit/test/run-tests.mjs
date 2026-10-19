@@ -46,10 +46,10 @@ function sql(dir, command) {
   const out = sh(`${WR} d1 execute kit-test-db --local --json --command ${JSON.stringify(command)}`, dir);
   return JSON.parse(out.slice(out.indexOf("[")))[0].results;
 }
-function createOwner(dir, email) {
+function createOwner(dir, email, username) {
   const f = path.join(dir, "reset-" + email.replace(/\W/g, "_") + ".sql");
-  const out = sh(`node ${JSON.stringify(path.join(KIT, "tools/owner-password.mjs"))} ${email} --db kit-test-db --out ${JSON.stringify(f)}`, dir);
-  const pw = /^\s{4}(\S+)\s*$/m.exec(out)[1];
+  const out = sh(`node ${JSON.stringify(path.join(KIT, "tools/owner-password.mjs"))} ${email} --username ${username} --db kit-test-db --out ${JSON.stringify(f)}`, dir);
+  const pw = /Temporary password:\s*\n\s{4}(\S+)/.exec(out)[1];
   const file = fs.readFileSync(f, "utf8");
   if (file.includes(pw)) throw new Error("temporary password leaked into the SQL file");
   sh(`${WR} d1 execute kit-test-db --local --file ${JSON.stringify(f)}`, dir);
@@ -84,10 +84,10 @@ async function webhook(event, header) {
   const payload = JSON.stringify(event);
   return fetch(`${BASE}/api/stripe/webhook`, { method: "POST", headers: { "Content-Type": "application/json", "Stripe-Signature": header ?? stripeSign(payload) }, body: payload });
 }
-async function login(page, email, password) {
+async function login(page, username, password) {
   await page.waitForSelector("#loginForm");
   await page.$eval("#loginForm", f => { f.dataset.old = "1"; });
-  await page.fill("#lgEmail", email); await page.fill("#lgPw", password);
+  await page.fill("#lgUser", username); await page.fill("#lgPw", password);
   const res = page.waitForResponse(r => r.url().endsWith("/api/auth/login"));
   await page.click("#loginForm [type=submit]");
   const r = await res;
@@ -124,8 +124,9 @@ async function main() {
   sql(site, "INSERT INTO texts (key, label, value, multiline, sort) VALUES ('hero', 'Big heading', 'Made for the cold', 0, 1)");
 
   const ownerEmail = "owner@loftline.test", lockEmail = "lockme@loftline.test";
-  const tempPw = createOwner(site, ownerEmail);
-  const lockPw = createOwner(site, lockEmail);
+  const ownerUser = "loftline.owner", lockUser = "lockme.owner";
+  const tempPw = createOwner(site, ownerEmail, ownerUser);
+  const lockPw = createOwner(site, lockEmail, lockUser);
   const u = sql(site, "SELECT email, pw_hash, must_change FROM users ORDER BY id");
   check("owner-password.mjs stores only a PBKDF2 hash (100k iterations, per-user salt)",
     u.length === 2 && u.every(r => /^pbkdf2-sha256\$100000\$[A-Za-z0-9+/=]{24}\$[A-Za-z0-9+/=]{44}$/.test(r.pw_hash) && r.must_change === 1) && u[0].pw_hash.split("$")[2] !== u[1].pw_hash.split("$")[2]
@@ -147,21 +148,23 @@ async function main() {
   await page.waitForSelector("#loginForm");
   let lastErr = "";
   for (let i = 0; i < 5; i++) {
-    await login(page, lockEmail, "wrong-password-" + i);
+    await login(page, lockUser, "wrong-password-" + i);
     lastErr = await page.textContent(".err");
   }
   check("5 wrong passwords lock the login", /locked/i.test(lastErr), lastErr);
-  const lockedStatus = await login(page, lockEmail, lockPw);
+  const lockedStatus = await login(page, lockUser, lockPw);
   check("right password is refused while locked", lockedStatus === 429 && /locked/i.test(await page.textContent(".err")));
   const lockRow = sql(site, `SELECT locked_until FROM users WHERE email = '${lockEmail}'`)[0];
   check("lock lasts about 15 minutes", lockRow.locked_until > Date.now() + 14 * 6e4 && lockRow.locked_until < Date.now() + 16 * 6e4);
-  const unknown = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", Origin: BASE }, body: JSON.stringify({ email: "nobody@x.test", password: "whatever123" }) });
+  const unknown = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", Origin: BASE }, body: JSON.stringify({ username: "nobody.here", password: "whatever123" }) });
   check("unknown email gets the same 401 as a wrong password", unknown.status === 401);
   const xsite = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://evil.example" }, body: "{}" });
   check("cross-site login POST is refused", xsite.status === 403);
 
   // ---------- first login + forced password change ----------
-  await login(page, ownerEmail, tempPw);
+  const byEmail = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", Origin: BASE }, body: JSON.stringify({ username: ownerEmail, password: tempPw }) });
+  check("the public email is not a login (only the private username is)", byEmail.status === 401);
+  await login(page, ownerUser, tempPw);
   await page.waitForSelector("#pwForm");
   check("first login with the temporary password asks for a new one", /Choose your own password/.test(await page.textContent("#pwForm h2")));
   const before = await page.evaluate(async () => (await fetch("/api/owner/account")).status);
@@ -181,7 +184,7 @@ async function main() {
   const tabNames = await page.$$eval(".oa-tabs button", b => b.map(x => x.textContent));
   check("owner area opens after the change, with shop tabs", tabNames.join("|") === "Products & stock|Text|Analytics|Transactions|Monthly statements|Account", tabNames.join("|"));
   check("must_change cleared in D1", sql(site, `SELECT must_change FROM users WHERE email = '${ownerEmail}'`)[0].must_change === 0);
-  const oldLogin = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", Origin: BASE }, body: JSON.stringify({ email: ownerEmail, password: tempPw }) });
+  const oldLogin = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", Origin: BASE }, body: JSON.stringify({ username: ownerUser, password: tempPw }) });
   check("temporary password no longer works", oldLogin.status === 401);
 
   // ---------- products ----------
@@ -405,7 +408,7 @@ async function kineticLive(browser) {
   const vars = {}; for (const m of toml.matchAll(/^([A-Z_]+)\s*=\s*"([^"]*)"/gm)) vars[m[1]] = m[2];
   fs.writeFileSync(path.join(dir, "wrangler.toml"), toml.replace("REPLACE_WITH_D1_DATABASE_ID", DBID).replace('database_name = "kinetic-db"', 'database_name = "kit-test-db"'));
   sh(`${WR} d1 execute kit-test-db --local --file ${JSON.stringify(path.join(KIT, "schema.sql"))}`, dir);
-  const pw = createOwner(dir, "alfred@kinetic.test");
+  const pw = createOwner(dir, "alfred@kinetic.test", "kinetic.owner");
   const binds = Object.entries(vars).map(([k, v]) => `-b ${JSON.stringify(`${k}=${v}`)}`).join(" ");
   const ok = await start(`${WR} pages dev . --port ${LPORT} --ip 127.0.0.1 --d1 DB=${DBID} ${binds}`, dir, `http://127.0.0.1:${LPORT}/api/config`, path.join(TMP, "kinetic-dev.log"));
   check("kinetic-live serves with the kit under pages dev", ok);
@@ -436,7 +439,7 @@ async function kineticLive(browser) {
   check("kinetic: sent brief is counted as a quote request", (await qev).status() === 204);
   await page.goto(B + "/owner");
   await page.waitForSelector("#loginForm");
-  await login(page, "alfred@kinetic.test", pw);
+  await login(page, "kinetic.owner", pw);
   await page.waitForSelector("#pwForm"); await changePw(page, "kinetic-owner-pass");
   await page.waitForSelector(".kpi");
   const tabs = await page.$$eval(".oa-tabs button", b => b.map(x => x.textContent));

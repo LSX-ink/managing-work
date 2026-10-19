@@ -77,7 +77,7 @@ export async function verifyPassword(password, stored) {
   const h = await pbkdf2(password, salt, iterations);
   return timingSafeEqual(h, want);
 }
-// Burns the same time as a real check, so unknown emails can't be told apart by timing.
+// Burns the same time as a real check, so unknown usernames can't be told apart by timing.
 export const DUMMY_HASH = "pbkdf2-sha256$100000$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
 // ---------- sessions ----------
@@ -106,7 +106,7 @@ export async function getSession(env, request) {
   if (!token || token.length > 100) return null;
   const id = await sha256hex(token);
   const row = await env.DB.prepare(
-    `SELECT s.id AS sid, s.expires_at, u.id, u.email, u.must_change, u.opted_out, u.opted_out_at
+    `SELECT s.id AS sid, s.expires_at, u.id, u.username, u.email, u.must_change, u.opted_out, u.opted_out_at
        FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?`).bind(id).first();
   if (!row || row.expires_at < Date.now()) return null;
   return row;

@@ -1,16 +1,16 @@
-// POST /api/auth/login  { email, password }
+// POST /api/auth/login  { username, password }  (the email is only for statements, never a login)
 import { handle, json, err, readJson, verifyPassword, DUMMY_HASH, createSession, sessionCookie,
   sameOrigin, MAX_FAILED, LOCK_MINUTES, SESSION_DAYS } from "../../_lib/util.js";
 
 export const onRequestPost = handle(async ({ request, env }) => {
   if (!sameOrigin(request)) return err("Forbidden", 403);
   const body = await readJson(request, 4096);
-  const email = String(body.email || "").trim().toLowerCase().slice(0, 200);
+  const username = String(body.username || "").trim().toLowerCase().slice(0, 200);
   const password = String(body.password || "").slice(0, 200);
-  const bad = () => err("That email and password don't match. Try again, or ask Kinetic Web Designs to reset it.", 401);
-  if (!email || !password) return bad();
+  const bad = () => err("That username and password don't match. Try again, or ask Kinetic Web Designs to reset it.", 401);
+  if (!username || !password) return bad();
 
-  const user = await env.DB.prepare("SELECT id, pw_hash, must_change, failed, locked_until FROM users WHERE email = ?").bind(email).first();
+  const user = await env.DB.prepare("SELECT id, pw_hash, must_change, failed, locked_until FROM users WHERE username = ?").bind(username).first();
   if (!user) { await verifyPassword(password, DUMMY_HASH); return bad(); }
 
   const now = Date.now();

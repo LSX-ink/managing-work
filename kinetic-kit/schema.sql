@@ -6,7 +6,8 @@
 --   pbkdf2-sha256$<iterations>$<salt base64>$<hash base64>
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  email         TEXT NOT NULL UNIQUE COLLATE NOCASE,   -- where statements go; NOT the login
+  username      TEXT,                                  -- the login: private, never shown on the site
   pw_hash       TEXT NOT NULL,
   must_change   INTEGER NOT NULL DEFAULT 1,   -- 1 = still on a temporary password
   failed        INTEGER NOT NULL DEFAULT 0,   -- failed logins in a row
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    INTEGER NOT NULL DEFAULT (CAST(strftime('%s','now') AS INTEGER) * 1000),
   pw_changed_at INTEGER
 );
+CREATE UNIQUE INDEX IF NOT EXISTS users_username ON users(username);
 
 -- Sessions: the cookie holds a random token; only its SHA-256 is stored here.
 CREATE TABLE IF NOT EXISTS sessions (

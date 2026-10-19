@@ -81,7 +81,7 @@ Run these in the client site's folder (the one with `index.html`). The commands 
    ```
 5. The owner's first login:
    ```
-   node path\to\kinetic-kit\tools\owner-password.mjs owner@business.co.uk --db client-db
+   node path\to\kinetic-kit\tools\owner-password.mjs owner@business.co.uk --db client-db   (prints a private username + temporary password)
    ```
    It prints a temporary password **once** (send it to the owner) and the exact `wrangler d1 execute … --file …` command to run. Delete the .sql file afterwards (it only holds the hash).
    **Password reset** is the same command again: new temporary password, forced change at next login, failed-login counter and lock cleared, all sessions ended.
