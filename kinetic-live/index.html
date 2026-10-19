@@ -1398,16 +1398,16 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 <section id="account" aria-labelledby="account-title">
   <div class="wrap">
     <div class="head"><h2 id="account-title">Your hosting and care plan</h2>
-      <p class="lede">£20 a month for a Starter website, £25 for a Business website or £30 for an Online shop, by Direct Debit or card. No long contract: start, change or cancel whenever you like.</p></div>
+      <p class="lede">£20 a month for a Starter website, £25 for a Business website or £30 for an Online shop, paid monthly by card. No long contract: start, change or cancel whenever you like.</p></div>
     <div class="account">
-      <article><h3>Start your plan</h3><p>Set up your monthly Direct Debit or card payment in a couple of minutes. Your first payment is taken when your website goes live.</p>
-        <a class="btn accent" id="plan-start" href="#">Start hosting and care</a></article>
+      <article><h3>Start your plan</h3><p>Pick your website type and set up your monthly card payment in a couple of minutes, once your website is live.</p>
+        <div class="plan-picks" style="display:flex;flex-wrap:wrap;gap:8px"><a class="btn accent" id="plan-start" href="#">Starter · £20 a month</a><a class="btn accent" id="plan-start-business" href="#">Business · £25 a month</a><a class="btn accent" id="plan-start-shop" href="#">Online shop · £30 a month</a></div></article>
       <article><h3>Sign in and manage</h3><p>Sign in with the email you used to sign up. We'll send you a secure link to see your payments, download receipts, update your details or cancel.</p>
         <a class="btn" id="plan-manage" href="#">Sign in to my plan</a></article>
       <article><h3>Cancel any time</h3><p>Cancel from your plan page, by emailing <span class="addr">alfredw.lsx@gmail.com</span>, or through your own bank. If you leave, we hand your website and domain over to you.</p>
         <a class="btn ghost" id="plan-cancel" href="#">Cancel my plan</a></article>
     </div>
-    <p class="secure-note">Payments and bank details are handled by Stripe's secure pages. We never see or store your bank or card details. Direct Debits are protected by the Direct Debit Guarantee.</p>
+    <p class="secure-note">Payments and bank details are handled by Stripe's secure pages. We never see or store your bank or card details.</p>
   </div>
 </section>
 
@@ -1533,10 +1533,14 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   const BRIEF_ENDPOINT = "";
   // Stripe links for the client area: a Payment Link for the monthly plan and the customer portal sign-in link.
   // Empty: the buttons open an email to us instead.
-  const PLAN_SUBSCRIBE_LINK = "";
+  const PLAN_SUBSCRIBE_LINK = "https://buy.stripe.com/8x2eVe3klezJ50Z1vk7wA00";
+  const PLAN_SUBSCRIBE_BUSINESS = "https://buy.stripe.com/14A7sMg77ajt3WVde27wA01";
+  const PLAN_SUBSCRIBE_SHOP = "https://buy.stripe.com/dRm3cwaMNbnx2SRgqe7wA02";
   const PLAN_PORTAL_LINK = "";
   const mailto = subject => "mailto:alfredw.lsx@gmail.com?subject=" + encodeURIComponent(subject);
   [["#plan-start", PLAN_SUBSCRIBE_LINK, "Start my hosting and care plan"],
+   ["#plan-start-business", PLAN_SUBSCRIBE_BUSINESS, "Start my hosting and care plan (Business)"],
+   ["#plan-start-shop", PLAN_SUBSCRIBE_SHOP, "Start my hosting and care plan (Online shop)"],
    ["#plan-manage", PLAN_PORTAL_LINK, "My hosting and care plan"],
    ["#plan-cancel", PLAN_PORTAL_LINK, "Cancel my hosting and care plan"]].forEach(([id, link, subject]) => {
     const a = document.querySelector(id);
