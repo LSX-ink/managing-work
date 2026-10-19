@@ -3057,7 +3057,8 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     pauseBtn.textContent = on ? "Pause" : "Play";
   }
   pauseBtn.addEventListener("click", () => play(!heroTimer));
-  hero(); play(!matchMedia("(prefers-reduced-motion: reduce)").matches);
+  // Always starts playing, on phones too (even with Reduce Motion on); the Pause button stops it.
+  hero(); play(true);
 
   // ---------- business types: photo cards that filter the gallery ----------
   const TYPE_IMG = id => window.KINETIC_PHOTOS[id] || `https://images.unsplash.com/${id}?auto=format&fit=crop&w=700&h=930&q=70`;
