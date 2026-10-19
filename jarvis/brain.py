@@ -960,6 +960,50 @@ def _countdown(said: str, today: dt.date) -> str | None:
     return f"{days} day{'s' if days != 1 else ''} until {name}."
 
 
+_DAY_AFTER = re.compile(_NAME + r"what(?:'s| is| was| will be) (?:the )?(?:date |day )?(?:on )?the day (?P<way>after tomorrow|before yesterday)"
+                        r"|" + _NAME + r"what (?:date|day) (?:is|was|will be) (?:it )?(?:on )?the day (?P<way2>after tomorrow|before yesterday)" + _END, re.I)
+_AGO = re.compile(_NAME + r"what (?:date |day )?(?:was it|was the date|was the day|date was it|day was it|was) (?P<n>\d+|a|an|one) "
+                  r"(?P<unit>days?|weeks?) ago" + _END, re.I)
+_THIS_MONTH = re.compile(_NAME + r"what (?P<what>month|year) (?:is it|are we in|is this)(?: now| right now)?" + _END, re.I)
+_WEEKEND = re.compile(_NAME + r"is it (?:the )?(?P<what>weekend|a weekday|a work day|a working day)(?: today| yet)?" + _END, re.I)
+_MONTH_END = re.compile(_NAME + r"what(?:'s| is) the (?P<which>last|first) day of (?:the|this|next) month" + _END, re.I)
+
+
+def _relative_day(said: str, today: dt.date) -> str | None:
+    """'What's the day after tomorrow?', 'what was the date 3 days ago?', 'what month is it?', 'is it the weekend?'"""
+    def full(t: dt.date) -> str:
+        return f"{t:%A} the {_ordinal(t.day)} of {t:%B}{f' {t.year}' if t.year != today.year else ''}"
+    if m := _DAY_AFTER.match(said):
+        after = (m.group("way") or m.group("way2")).lower().startswith("after")
+        t = today + dt.timedelta(days=2 if after else -2)
+        return f"The day {'after tomorrow is' if after else 'before yesterday was'} {full(t)}."
+    if m := _AGO.match(said):
+        n = 1 if m.group("n").lower() in ("a", "an", "one") else int(m.group("n"))
+        days = n * (7 if m.group("unit").lower().startswith("week") else 1)
+        if days > 3660:
+            return None
+        amount = f"A {m.group('unit').lower().rstrip('s')}" if n == 1 else f"{n} {m.group('unit').lower().rstrip('s')}s"
+        return f"{amount} ago was {full(today - dt.timedelta(days=days))}."
+    if m := _THIS_MONTH.match(said):
+        return f"It's {today:%B} {today.year}." if m.group("what").lower() == "month" else f"It's {today.year}."
+    if m := _WEEKEND.match(said):
+        weekend = today.weekday() >= 5
+        if m.group("what").lower() == "weekend":
+            if weekend:
+                return f"Yes, it's {today:%A}."
+            left = 5 - today.weekday()
+            return f"Not yet, it's {today:%A}. The weekend starts {'tomorrow' if left == 1 else f'in {left} days'}."
+        return f"{'No' if weekend else 'Yes'}, it's {today:%A}."
+    if m := _MONTH_END.match(said):
+        first = (today.replace(day=1) + dt.timedelta(days=32)).replace(day=1)
+        if "next" in said.lower():
+            t = first if m.group("which").lower() == "first" else (first + dt.timedelta(days=32)).replace(day=1) - dt.timedelta(days=1)
+        else:
+            t = today.replace(day=1) if m.group("which").lower() == "first" else first - dt.timedelta(days=1)
+        return f"The {m.group('which').lower()} day of {t:%B} is {t:%A} the {_ordinal(t.day)}."
+    return None
+
+
 def _clock_maths(said: str, now: time.struct_time) -> str | None:
     """'How long until 5 pm?' and 'what time will it be in 3 hours?': worked out from the clock on the spot."""
     here = dt.datetime(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
@@ -990,7 +1034,8 @@ def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
     if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)
-                  or _calendar_facts(said, today) or _weekday_date(said, today) or _countdown(said, today)) is not None:
+                  or _calendar_facts(said, today) or _weekday_date(said, today) or _countdown(said, today)
+                  or _relative_day(said, today)) is not None:
         return found
     if (found := _time_difference(said)) is not None:
         return found
