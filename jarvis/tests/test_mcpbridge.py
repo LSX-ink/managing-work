@@ -96,3 +96,50 @@ def test_a_server_that_wont_start(tmp_path, monkeypatch):
     monkeypatch.setenv("JARVIS_MCP_CONFIG", str(config))
     with pytest.raises(ValueError, match="couldn't start the broken MCP"):
         run(action="tools", server="broken")
+
+
+class FakeHiggsfield:
+    """Answers jobs_wait like Higgsfield: still running until the `done_on`th ask."""
+
+    name = "higgsfield"
+
+    def __init__(self, done_on=3, structured=True):
+        self.done_on, self.structured, self.asks = done_on, structured, []
+
+    def request(self, method, params, timeout):
+        self.asks.append(params)
+        state = {"all_terminal": len(self.asks) >= self.done_on, "poll_after_seconds": 4,
+                 "jobs": [{"index": 0, "status": "completed" if len(self.asks) >= self.done_on else "in_progress"}]}
+        if self.structured:
+            return {"structuredContent": state, "content": [{"type": "text", "text": "status"}]}
+        return {"content": [{"type": "text", "text": json.dumps(state)}]}
+
+
+@pytest.mark.parametrize("structured", [True, False])
+def test_waits_for_higgsfield_jobs_in_one_call(structured):
+    server, naps = FakeHiggsfield(structured=structured), []
+    result = mcpbridge.wait_for_jobs(server, {"jobs": [{"index": 0, "job_id": "x"}], "timeout_seconds": 0},
+                                     sleep=naps.append)
+    assert len(server.asks) == 3 and naps == [4.0, 4.0]
+    assert all(a["arguments"]["timeout_seconds"] == 15 for a in server.asks)
+    assert mcpbridge.wait_state(result)[0] is True
+
+
+def test_higgsfield_wait_gives_up_at_the_limit():
+    server = FakeHiggsfield(done_on=99)
+    result = mcpbridge.wait_for_jobs(server, {"jobs": []}, limit=0, sleep=lambda s: None)
+    assert len(server.asks) == 1 and mcpbridge.wait_state(result)[0] is False
+
+
+def test_unreadable_wait_answer_is_returned_as_is():
+    assert mcpbridge.wait_state({"content": [{"type": "text", "text": "not json"}]}) is None
+    assert mcpbridge.wait_state({"structuredContent": {"jobs": []}}) is None
+
+
+def test_run_tool_routes_higgsfield_jobs_wait(monkeypatch):
+    server = FakeHiggsfield(done_on=2)
+    server.tools = [{"name": "jobs_wait"}]
+    monkeypatch.setattr(mcpbridge, "get_server", lambda name: server)
+    monkeypatch.setattr(mcpbridge.time, "sleep", lambda s: None)
+    out = run(action="call", server="higgsfield", tool="jobs_wait", arguments={"jobs": [{"index": 0, "job_id": "x"}]})
+    assert len(server.asks) == 2 and out == "status"

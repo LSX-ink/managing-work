@@ -298,3 +298,11 @@ async def test_running_out_of_steps_reports_progress_instead_of_a_canned_line(mo
     assert wrap["tool_choice"] == {"type": "none"}
     assert "used every step" in wrap["messages"][-1]["content"][-1]["text"]
     assert said == ["I've checked your list twice; the sorting is still to do."]
+
+
+def test_conversation_is_cached():
+    """Each tool round resends the history; the top-level breakpoint caches it, alongside the tools' one."""
+    opts = request_options(SETTINGS)
+    assert opts["cache_control"] == {"type": "ephemeral"}
+    marked = [t for t in opts["tools"] if "cache_control" in t]
+    assert len(marked) == 1  # two breakpoints in all, well under the limit of four
