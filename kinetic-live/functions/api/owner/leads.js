@@ -2,6 +2,7 @@
 // DELETE /api/owner/leads?kind=signups|briefs&id=<id>        -> remove one row
 import { handle, json, err } from "../../_lib/util.js";
 import { mailReady } from "../../_lib/mail.js";
+import { STEPS } from "../../_lib/drip.js";
 
 const csvCell = v => {
   let s = String(v ?? "");
@@ -18,14 +19,16 @@ export const onRequestGet = handle(async ({ request, env }) => {
 
   if (kind === "signups") {
     const { results } = await env.DB.prepare(
-      "SELECT id, email, marketing, created_at AS created, updated_at AS updated, welcomed_at AS welcomed FROM signups ORDER BY created_at DESC LIMIT ?").bind(limit).all();
+      `SELECT id, email, marketing, created_at AS created, updated_at AS updated, welcomed_at AS welcomed,
+              drip_step AS dripStep, drip_last_at AS dripLast, drip_stopped AS dripStopped FROM signups ORDER BY created_at DESC LIMIT ?`).bind(limit).all();
     if (csv) {
       const lines = [["email", "marketing_consent", "signed_up", "last_seen", "welcome_sent"].join(",")]
         .concat(results.map(r => [r.email, r.marketing ? "yes" : "no", iso(r.created), iso(r.updated), iso(r.welcomed)].map(csvCell).join(",")));
       return download(lines, "signups");
     }
     const totals = await env.DB.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(marketing), 0) AS m FROM signups").first();
-    return json({ kind, mail: mailReady(env), total: totals.n, marketing: totals.m, rows: results.map(r => ({ ...r, marketing: !!r.marketing })) });
+    return json({ kind, mail: mailReady(env), total: totals.n, marketing: totals.m, dripSteps: STEPS.map(s => ({ day: s.day, subject: s.subject })),
+      rows: results.map(r => ({ ...r, marketing: !!r.marketing })) });
   }
 
   const { results } = await env.DB.prepare(
@@ -47,6 +50,15 @@ export const onRequestDelete = handle(async ({ request, env }) => {
   const id = +u.searchParams.get("id");
   if (!["signups", "briefs"].includes(kind) || !(id > 0)) return err("Bad request", 400);
   await env.DB.prepare(`DELETE FROM ${kind} WHERE id = ?`).bind(id).run();
+  return json({ ok: true });
+});
+
+// PATCH /api/owner/leads?kind=signups&id=<id>&action=stopdrip -> stop the follow-up series for one person
+export const onRequestPatch = handle(async ({ request, env }) => {
+  const u = new URL(request.url);
+  const id = +u.searchParams.get("id");
+  if (u.searchParams.get("kind") !== "signups" || u.searchParams.get("action") !== "stopdrip" || !(id > 0)) return err("Bad request", 400);
+  await env.DB.prepare("UPDATE signups SET drip_stopped = 'owner' WHERE id = ? AND drip_stopped IS NULL").bind(id).run();
   return json({ ok: true });
 });
 

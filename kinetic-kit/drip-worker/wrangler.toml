@@ -1,0 +1,24 @@
+# Kinetic follow-up email series. Shares the site's D1 database.
+# Deploy (only after the wording is approved):  npx wrangler deploy   (in this folder)
+# Secret:  npx wrangler secret put RESEND_API_KEY
+# Switch on by setting DRIP_ENABLED = "1" below and redeploying.
+name = "kinetic-drip"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = false
+
+# 09:00 UTC every day
+[triggers]
+crons = ["0 9 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kinetic-db"
+database_id = "2af23fc8-7fa2-49dd-b896-d3240bc1f1aa"
+
+[vars]
+DRIP_ENABLED = ""   # OFF until the owner approves the wording
+SITE_NAME = "Kinetic Web Designs"
+SITE_URL = "https://kineticwebdesigns.co.uk"
+MAIL_FROM = "Kinetic Web Designs <hello@kineticwebdesigns.co.uk>"
+NOTIFY_TO = "alfredw.lsx@gmail.com"   # replies go here

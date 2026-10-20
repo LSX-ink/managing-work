@@ -346,11 +346,17 @@ async function vLeads() {
 
   if (leadKind === "signups") {
     return `<section class="panel"><div class="hd"><h2>Sign-ups</h2>${csv}</div>${seg}${mailNote}
-      <p class="hint">${num(d.total)} ${d.total === 1 ? "person has" : "people have"} signed up; ${num(d.marketing)} said yes to tips, offers and news. Only send marketing to those people.</p>
-      ${d.rows.length ? `<div class="tbl"><table><thead><tr><th>Signed up</th><th>Email</th><th>Marketing</th><th>Welcome</th><th></th></tr></thead><tbody>
+      <p class="hint">${num(d.total)} ${d.total === 1 ? "person has" : "people have"} signed up; ${num(d.marketing)} said yes to tips, offers and news. Only those people get the follow-up series.</p>
+      ${(d.dripSteps || []).length ? `<p class="hint">Follow-up series: ${d.dripSteps.map((s, i) =>
+        `<a href="/api/owner/drip-preview?step=${i + 1}" target="_blank" rel="noopener">email ${i + 1} (day ${s.day})</a>`).join(" · ")}</p>` : ""}
+      ${d.rows.length ? `<div class="tbl"><table><thead><tr><th>Signed up</th><th>Email</th><th>Marketing</th><th>Welcome</th><th>Series</th><th></th></tr></thead><tbody>
       ${d.rows.map(r => `<tr><td>${when(r.created)}</td><td>${esc(r.email)}</td>
         <td>${r.marketing ? `<span class="pill paid">Yes</span>` : `<span class="pill">No</span>`}</td>
-        <td>${r.welcomed ? "Sent" : `<span class="hint">Not sent</span>`}</td><td class="n">${del(r)}</td></tr>`).join("")}
+        <td>${r.welcomed ? "Sent" : `<span class="hint">Not sent</span>`}</td>
+        <td>${!r.marketing ? `<span class="hint">-</span>` : r.dripStopped
+          ? `<span class="hint">${esc({ done: "Finished", unsubscribed: "Unsubscribed", brief: "Stopped: sent a brief", paid: "Stopped: paid", owner: "Stopped by you" }[r.dripStopped] || r.dripStopped)}</span>`
+          : `${r.dripStep ? `Email ${r.dripStep} of ${(d.dripSteps || []).length} sent` : "Waiting for email 1"} <button class="btn ghost sm" type="button" data-act="stopdrip" data-id="${r.id}">Stop</button>`}</td>
+        <td class="n">${del(r)}</td></tr>`).join("")}
       </tbody></table></div>` : `<div class="empty"><b>No sign-ups yet</b>Emails from the sign-up box on your website show here.</div>`}</section>`;
   }
   const field = (l, v) => v ? `<div><span class="hint">${esc(l)}</span><div style="white-space:pre-wrap">${esc(v)}</div></div>` : "";
@@ -421,6 +427,9 @@ document.addEventListener("click", async e => {
       case "txf": txFilter = b.dataset.f; loadTab(true); break;
       case "leadkind": leadKind = b.dataset.k; confirmLead = null; loadTab(true); break;
       case "leaddel": confirmLead = +b.dataset.id; loadTab(true); break;
+      case "stopdrip":
+        await api(`/api/owner/leads?kind=signups&id=${+b.dataset.id}&action=stopdrip`, { method: "PATCH" });
+        toast("Follow-up emails stopped for this person"); loadTab(true); break;
       case "leadno": confirmLead = null; loadTab(true); break;
       case "leadyes":
         await api(`/api/owner/leads?kind=${leadKind}&id=${+b.dataset.id}`, { method: "DELETE" });
