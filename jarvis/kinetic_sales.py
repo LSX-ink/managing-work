@@ -4,6 +4,8 @@ client over, and first-contact outreach drafts.
 quote: builds a quote for a website package (starter, business or shop) with add-ons and a monthly care plan from your
 own prices (kinetic-prices.json; sensible UK freelance defaults until you set yours). If the client is a prospect Alfred
 audited, the quote lists what the new site fixes. Saved as a printable HTML page in Kinetic Web Designs/Clients/<client>.
+Prices stay in pounds; for a client abroad the quote also shows a rough local-currency total (kinetic_world). Payment is
+always half when we start building, half once everything's complete: no instalments or buy-now-pay-later.
 
 mockup: a one-page, phone-friendly concept home page for the business, in colours that suit its trade or in a design
 system saved by extract_design_system (style_from). Saved in Kinetic Web Designs/Mockups/<business>/index.html. It uses
@@ -17,10 +19,14 @@ welcome_emails: after the deposit invoice, two emails for a new client: a thank-
 they'll receive, then "Next steps required from you" (domain owner details, their content and the hosting and care
 plan). With the client's email address they go into Alfred's drafts for the user to send.
 
-outreach: a short first message (email, letter, phone call, walk-in or social DM) built from the audit. Drafts only:
-nothing is ever sent. UK rules on unsolicited marketing email (PECR) are summarised in the note it adds.
+outreach: a short first message (email, letter, phone call, walk-in or social DM) built from the audit, with the
+starting price in the prospect's currency and the payment terms. For a prospect abroad it is written in their language
+(from their country, or the one asked for) with the English version underneath. Drafts only: nothing is ever sent.
+The note it adds sums up that country's rules on unasked-for marketing (PECR, GDPR, CAN-SPAM, CASL, POPIA, PIPL...),
+and where cold email isn't allowed it drafts a social media DM instead.
 """
 
+import asyncio
 import json
 import re
 from datetime import timedelta
@@ -28,6 +34,7 @@ from html import escape
 
 import alfred_mail
 import kinetic_store as st
+import kinetic_world as world
 import memory
 import screen
 from config import Settings
@@ -151,6 +158,11 @@ def show_prices(settings: Settings, args: dict, prefix: str = "") -> screen.Show
     text = (f"{prefix} Your website prices: starter {st.gbp(p['packages']['starter']['price'])}, business "
             f"{st.gbp(p['packages']['business']['price'])}, shop {st.gbp(p['packages']['shop']['price'])}, care plan "
             f"a month {care_text(p)}, {st.num(p['deposit_percent'])}% deposit.{custom}").strip()
+    cur = world.currency_of(world.country_code(args.get("country")))
+    if cur != "GBP":
+        text += (f" In {world.CURRENCIES[cur][1]} that's roughly: " + ", ".join(
+            f"{k} {world.local_price(v['price'], cur, '')}" for k, v in p["packages"].items()) +
+            ". You still charge in pounds.")
     return st.table(text, "Kinetic Web Designs prices", ["Item", "Price", "Includes"], rows)
 
 
@@ -212,6 +224,14 @@ def client_and_prospect(settings: Settings, args: dict) -> tuple[str, dict | Non
     return (p["name"] if p else st.need(who, "client", 80)), p
 
 
+def country_of(args: dict, prospect: dict | None) -> str:
+    """The client's two-letter country: the one asked for, else the prospect's, else home (the UK)."""
+    asked = world.country_code(args.get("country"))
+    if args.get("country") and not asked and not (prospect or {}).get("country"):
+        return ""  # a country with no rules or rate on file: pounds and the general note
+    return asked or (prospect or {}).get("country") or world.HOME
+
+
 REBUILD_OFF = 20
 REBUILD_PACKAGES = ("business", "shop")
 
@@ -254,6 +274,8 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     discount = st.number(args.get("discount"), "discount", True, subtotal - rebuild) if args.get("discount") else 0.0
     total = round(subtotal - rebuild - discount, 2)
     deposit = round(total * p["deposit_percent"] / 100, 2)
+    cur = world.currency_of(country_of(args, prospect))
+    about = f" (about {world.money(world.convert(total, cur), cur)})" if cur != "GBP" else ""
     rows = st.rows_of(settings, st.QUOTES)
     qid = st.next_id(rows)
     number = f"Q-{qid:04d}"
@@ -279,6 +301,11 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
         table.append(f"<tr><td>Discount</td><td></td><td></td><td class=n>-{st.gbp(discount)}</td></tr>")
     table.append(f"<tr class=total><td>Total</td><td></td><td></td><td class=n>{st.gbp(total)}</td></tr></table>")
     body += ["<h2>Price</h2>", "".join(table)]
+    terms = world.payment_terms(p["deposit_percent"])
+    body.append(f"<p class=note>You pay {escape(terms, False)}. Prices are in pounds (GBP)"
+                + (f"; {st.gbp(total)} is about {world.money(world.convert(total, cur), cur)} in "
+                   f"{world.CURRENCIES[cur][1]} at a rough exchange rate, and your bank converts it when you pay"
+                   if about else "") + ".</p>")
     if care:
         body.append(f"<p>Optional {escape(p['care_plan']['name'].lower())}: {st.gbp(care)} a month. "
                     f"{escape(p['care_plan']['includes'])} Cancel any time with a month's notice.</p>")
@@ -305,9 +332,9 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
                  "care": care, "date": st.today().isoformat(), "valid_until": valid.isoformat(), "status": "draft",
                  "lines": [[d, q, u] for d, q, u in lines], "discount": discount, "rebuild_discount": rebuild, "file": st.where(settings, path)})
     st.save(settings, st.QUOTES, rows)
-    text = (f"Quote {number} for {name}: {st.gbp(total)}" + (f", with a {st.gbp(deposit)} deposit" if deposit else "")
+    text = (f"Quote {number} for {name}: {st.gbp(total)}{about}" + (f", with a {st.gbp(deposit)} deposit" if deposit else "")
             + (f" and an optional {st.gbp(care)} a month care plan" if care else "") +
-            f". Saved in {st.where(settings, path)}; open it and print to PDF to send it. {st.NOT_SENT}")
+            f". They pay {terms}. Saved in {st.where(settings, path)}; open it and print to PDF to send it. {st.NOT_SENT}")
     return st.file_shown(settings, path, text, [
         {"label": "Mark as sent", "say": f"Mark quote {number} as sent."},
         {"label": "Deposit invoice", "say": f"Make the deposit invoice for quote {number}."}])
@@ -610,21 +637,24 @@ def mockup(settings: Settings, args: dict) -> screen.Shown:
 
 # ---- outreach ----------------------------------------------------------------------
 
-PECR = ("UK rules: you can email a limited company at a work address without asking first, but sole traders and "
-        "partnerships count as people, so for them a call, visit or letter is safer. Always say who you are and how to "
-        "opt out, and stop if they ask.")
+TRANSLATED = ("email", "letter", "dm")  # what the prospect reads; phone and walk-in scripts are for the user
 
 
-def outreach(settings: Settings, args: dict) -> screen.Shown:
+def outreach_draft(settings: Settings, args: dict) -> dict:
+    """The English draft and what goes with it: who, which channel, the country, its rules note and language."""
     name, prospect = client_and_prospect(settings, args)
     p = prospect or {}
     me = st.business(settings)
-    channel = args.get("channel") or "email"
+    country = country_of(args, prospect)
+    home = country in ("", world.HOME)
+    channel = args.get("channel") or world.default_channel(country)
     if channel not in CHANNELS:
         raise ValueError("Which kind of message? " + ", ".join(CHANNELS) + ".")
+    language = world.language_code(args.get("language"), country)
     contact = st.clean(args.get("contact_name"), 40)
     hello = f"Hi {contact}," if contact else "Hi there,"
     sign = me["owner"] or "[your name]"
+    designer = "a local web designer" if home else "a web designer based in the UK, working with businesses worldwide"
     a = p.get("audit") or {}
     if not p.get("website"):
         hook = (f"I searched for {name} online and couldn't find a website, only {'your Facebook page' if p.get('facebook') else 'a map listing'}. "
@@ -638,42 +668,68 @@ def outreach(settings: Settings, args: dict) -> screen.Shown:
         hook = f"I had a look at your website ({st.domain(p['website'])}) and spotted a few quick wins."
         points = [f"{x['problem'][0].lower() + x['problem'][1:]}: {x['why'][0].lower() + x['why'][1:]}" for x in a["problems"][:3]]
     else:
-        hook = f"I'm a local web designer and I'd love to help {name} win more customers online."
+        hook = f"I'm {designer} and I'd love to help {name} win more customers online."
         points = ["a modern, phone-friendly site", "getting found on Google"]
     offer = ("I've put together a free example of what a new home page could look like for you. No obligation; happy "
              "to send it over or show you on my phone.") if args.get("mockup", True) else \
         "I'd be happy to show you some ideas, free and with no obligation."
+    pr = prices(settings)
+    start = world.local_price(pr["packages"]["starter"]["price"], world.currency_of(country))
+    price = f"Websites start from {start}, and you pay {world.payment_terms(pr['deposit_percent'])}."
     bullets = "\n".join(f"- {x[0].upper() + x[1:]}" for x in points)
-    opt_out = "If you'd rather not hear from me, just reply 'no thanks' and I won't contact you again."
+    opt_out = world.OPT_OUT
     if channel == "email":
         subject = f"A quick idea for {name}'s website" if p.get("website") else f"Helping {name} get found online"
+        # CAN-SPAM and CASL want a postal address in every sales email
+        address = me["address"] or ("[your postal address]" if world.rules_of(country) in ("us", "ca") else "")
         body = (f"Subject: {subject}\n\n{hello}\n\n{hook}\n\nA couple of things I'd suggest:\n{bullets}\n\n{offer}\n\n"
-                f"Would a 10-minute chat this week be useful?\n\nThanks,\n{sign}\n{me['name']}"
-                + "".join(f"\n{x}" for x in (me["phone"], me["website"], me["address"]) if x) + f"\n\n{opt_out}")
+                f"{price}\n\nWould a 10-minute chat this week be useful?\n\nThanks,\n{sign}\n{me['name']}"
+                + "".join(f"\n{x}" for x in (me["phone"], me["website"], address) if x) + f"\n\n{opt_out}")
     elif channel == "letter":
         body = (f"{me['name']}\n{me['address'] or '[your address]'}\n{st.long_date(st.today())}\n\nTo the owner, {name}\n\n"
-                f"{hello.replace('Hi', 'Dear')}\n\n{hook}\n\nWhat I'd suggest:\n{bullets}\n\n{offer}\n\nYou can reach me on "
-                f"{me['phone'] or '[your phone]'} or {me['email'] or '[your email]'}.\n\nKind regards,\n{sign}\n\n{opt_out}")
+                f"{hello.replace('Hi', 'Dear')}\n\n{hook}\n\nWhat I'd suggest:\n{bullets}\n\n{offer}\n\n{price}\n\n"
+                f"You can reach me on {me['phone'] or '[your phone]'} or {me['email'] or '[your email]'}.\n\n"
+                f"Kind regards,\n{sign}\n\n{opt_out}")
     elif channel == "phone":
         body = (f"Phone script for {name}{(' (' + p['phone'] + ')') if p.get('phone') else ''}\n\n"
-                f"1. \"Hi, is that the owner? My name's {sign} from {me['name']}, a local web designer. Have you got two minutes?\"\n"
+                f"1. \"Hi, is that the owner? My name's {sign} from {me['name']}, {designer}. Have you got two minutes?\"\n"
                 f"2. If yes: \"{hook}\"\n3. \"I'd suggest:\"\n{bullets}\n4. \"{offer}\"\n"
-                "5. Ask: \"Could I pop in or send it over this week?\" Agree a time and get their email.\n"
-                "6. If not now: thank them, ask if you can check back in a few months, and note it.\n"
+                f"5. If they ask about price: \"{price}\"\n"
+                "6. Ask: \"Could I send it over this week?\" Agree a time and get their email.\n"
+                "7. If not now: thank them, ask if you can check back in a few months, and note it.\n"
                 "If they say no, thank them and don't call again.")
     elif channel == "visit":
         body = (f"Walk-in script for {name}{(', ' + p['address']) if p.get('address') else ''}\n\n"
                 "Go at a quiet time (mid-morning or mid-afternoon), and bring the mock-up on your phone.\n\n"
                 f"\"Hi, I'm {sign}, a web designer just round the corner. {hook} I made you a free example; can I show you "
-                f"in 30 seconds?\"\n\nPoints to mention:\n{bullets}\n\nLeave your card or number and ask for the best "
-                "email to send the example to. If they're busy, ask when's better.")
+                f"in 30 seconds?\"\n\nPoints to mention:\n{bullets}\n\nIf they ask about price: \"{price}\"\n\nLeave your "
+                "card or number and ask for the best email to send the example to. If they're busy, ask when's better.\n"
+                "If they say no, thank them and don't come back.")
     else:
         body = (f"{hello} {hook} I've made a free example home page for {name} to show what it could look like. Happy to "
-                f"send it over? No obligation. {sign}, {me['name']}")
-    path = st.write(settings, ("Clients", name), f"Outreach {channel} {st.today().isoformat()}.md", body + "\n")
-    note = PECR if channel in ("email", "dm") else "Be friendly and brief, and take no for an answer."
-    return st.text_card(f"I drafted a {channel} for {name} and saved it in {st.where(settings, path)}. {st.NOT_SENT} "
-                        f"Once you've sent it, tell me and I'll mark them as contacted. {note}",
+                f"send it over? No obligation. {price} {sign}, {me['name']}\n\n{opt_out}")
+    note = world.compliance_note(country) if channel in ("email", "dm", "letter") else \
+        "Be friendly and brief, and take no for an answer."
+    return {"name": name, "channel": channel, "country": country, "language": language, "body": body, "note": note}
+
+
+async def outreach(settings: Settings, args: dict) -> screen.Shown:
+    d = outreach_draft(settings, args)
+    name, channel, body, language = d["name"], d["channel"], d["body"], d["language"]
+    said = ""
+    if language != "en" and channel in TRANSLATED:
+        local = await world.translate(settings, body, language)
+        if local:
+            body = f"{local}\n\n----------\nEnglish version:\n\n{body}"
+            said = f" in {world.LANGUAGES[language]} with the English underneath"
+        else:
+            said = f" in English only, as I couldn't translate it into {world.LANGUAGES[language]} just now"
+    path = await asyncio.to_thread(st.write, settings, ("Clients", name),
+                                   f"Outreach {channel} {st.today().isoformat()}.md", body + "\n")
+    where_ = f" ({world.country_name(d['country'])})" if d["country"] not in ("", world.HOME) else ""
+    article = "an" if channel == "email" else "a"
+    return st.text_card(f"I drafted {article} {channel} for {name}{where_}{said} and saved it in {st.where(settings, path)}. "
+                        f"{st.NOT_SENT} Once you've sent it, tell me and I'll mark them as contacted. {d['note']}",
                         f"Outreach: {name}", body, [
                             {"label": "Mark contacted", "say": f"Mark prospect {name} as contacted."},
                             {"label": "Make the mock-up", "say": f"Mock up a home page for {name}."}])
@@ -695,7 +751,11 @@ def tool_definitions() -> list[dict]:
                        "user sends them). mockup: a free concept home page for a business, optionally "
                        "in a design system saved by extract_design_system (style_from); for a creative one, read the "
                        "client-websites design guide first and add 21st.dev sections (sections, section_css). outreach: a first message "
-                       "draft (email, letter, phone script, walk-in script, dm) from the audit. Drafts only: never "
+                       "draft (email, letter, phone script, walk-in script, dm) from the audit, for prospects anywhere "
+                       "in the world: the price in their currency, written in their language (from their country, or "
+                       "language) with English underneath, and a note on that country's email rules. Payment terms "
+                       "are always half when we start building, half once everything's complete; never offer "
+                       "monthly instalments or Klarna. Drafts only: never "
                        "send anything, and only mark a quote sent when the user says they sent it.",
         "input_schema": {
             "type": "object",
@@ -739,6 +799,11 @@ def tool_definitions() -> list[dict]:
                                                                 "var(--ink), var(--brand), var(--accent), var(--head)."},
                 "channel": {"type": "string", "enum": CHANNELS},
                 "contact_name": {"type": "string", "description": "outreach: the owner's first name if known."},
+                "country": {"type": "string", "description": "prices, quote, outreach: the client's country, e.g. "
+                                                             "'Nigeria', 'USA', 'South Korea' (default: the saved "
+                                                             "prospect's country, else the UK)."},
+                "language": {"type": "string", "description": "outreach: write it in this language (a code like fr, "
+                                                              "de, es, pt, zh, ko, or a name); default the country's."},
                 "mockup": {"type": "boolean", "description": "outreach: offer a free mock-up (default true)."},
                 **{k: {"type": "string"} for k in DETAILS},
             },
@@ -748,8 +813,10 @@ def tool_definitions() -> list[dict]:
     }]
 
 
-def run_tool(name: str, args: dict, settings: Settings, http=None):
+async def run_tool(name: str, args: dict, settings: Settings, http=None):
+    if args.get("action") == "outreach":  # async: it may ask Claude for a translation
+        return await outreach(settings, args)
     handlers = {"prices": show_prices, "set_price": set_price, "my_details": my_details, "quote": quote,
                 "quotes": quotes, "quote_status": quote_status, "domain_owner": domain_owner,
                 "welcome_emails": welcome_emails, "mockup": mockup, "outreach": outreach}
-    return st.dispatch(handlers, args.get("action"), settings, args, "web design sales")
+    return await asyncio.to_thread(st.dispatch, handlers, args.get("action"), settings, args, "web design sales")
