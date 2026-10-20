@@ -586,6 +586,56 @@ def _echo_and_count(said: str, raw: str) -> str | None:
     return ", ".join(str(n) for n in range(a, b + step, step)) + (". Lift off!" if lift_off else ".")
 
 
+_N1 = r"(?P<a>-?\d[\d,]*(?:\.\d+)?)"
+_N2 = r"(?P<b>-?\d[\d,]*(?:\.\d+)?)"
+_PERCENT_OF = re.compile(_NAME + r"(?:what(?:'s| is) " + _N1 + r" as a percent(?:age)? of " + _N2
+                         + r"|what percent(?:age)? (?:is|of) " + _N1.replace("a>", "a2>") + r" (?:is |of |out of )" + _N2.replace("b>", "b2>")
+                         + r"|what percent(?:age)? is " + _N1.replace("a>", "a3>") + r" out of " + _N2.replace("b>", "b3>") + r")" + _END, re.I)
+_CHANGE_BY = re.compile(_NAME + r"(?:what(?:'s| is) )?(?P<way>increase|decrease|raise|reduce|lower) " + _N1 + r" by " + _N2 + r" ?(?:%|percent)" + _END, re.I)
+_ODD_EVEN = re.compile(_NAME + r"is " + _N1 + r" (?:an? )?(?P<kind>odd|even)(?: number)?" + _END, re.I)
+_ROOT_SQUARE = re.compile(_NAME + r"what(?:'s| is) (?:the )?(?P<kind>cube root|square|cube) of " + _N1 + _END, re.I)
+_GOES_INTO = re.compile(_NAME + r"(?:how many times (?:does|will|can) " + _N1 + r" go into " + _N2
+                        + r"|what(?:'s| is) the remainder (?:of|when|if) " + _N2.replace("b>", "b2>") + r" (?:is )?divided by " + _N1.replace("a>", "a2>") + r")" + _END, re.I)
+
+
+def _say_num(x: float) -> str:
+    return f"{round(x, 4):,g}" if abs(x) < 1e15 else f"{x:g}"
+
+
+def _more_maths(said: str) -> str | None:
+    """'What percentage is 30 of 120?', 'increase 80 by 10%', 'is 12 even?', 'cube root of 27', 'how many times does 7 go into 50?'"""
+    said = spoken_numbers(said)
+    num = lambda m, *names: next(float(m.group(n).replace(",", "")) for n in names if m.group(n))
+    if m := _PERCENT_OF.match(said):
+        part, whole = num(m, "a", "a2", "a3"), num(m, "b", "b2", "b3")
+        return None if whole == 0 else f"{_say_num(part)} is {_say_num(part / whole * 100)}% of {_say_num(whole)}."
+    if m := _CHANGE_BY.match(said):
+        value, pc = num(m, "a"), num(m, "b")
+        up = m.group("way").lower() in ("increase", "raise")
+        return f"That's {_say_num(value * (1 + pc / 100) if up else value * (1 - pc / 100))}."
+    if m := _ODD_EVEN.match(said):
+        n = num(m, "a")
+        if n != int(n):
+            return f"{_say_num(n)} isn't a whole number, so it's neither odd nor even."
+        actual = "even" if int(n) % 2 == 0 else "odd"
+        return f"{'Yes' if actual == m.group('kind').lower() else 'No'}, {_say_num(n)} is {actual}."
+    if m := _ROOT_SQUARE.match(said):
+        n, kind = num(m, "a"), m.group("kind").lower()
+        if kind == "cube root":
+            root = math.copysign(round(abs(n) ** (1 / 3), 10), n)
+            return f"The cube root of {_say_num(n)} is {_say_num(root)}."
+        return f"{_say_num(n)} {'squared' if kind == 'square' else 'cubed'} is {_say_num(n ** (2 if kind == 'square' else 3))}."
+    if m := _GOES_INTO.match(said):
+        d, n = num(m, "a", "a2"), num(m, "b", "b2")
+        if d == 0 or d != int(d) or n != int(n):
+            return None
+        q, r = divmod(int(n), int(d))
+        if m.group("b2"):
+            return f"The remainder is {r}. {int(n)} divided by {int(d)} is {q:,} remainder {r}."
+        return f"{q:,} time{'s' if q != 1 else ''}{f', with {r} left over' if r else ' exactly'}."
+    return None
+
+
 def _number_facts(said: str) -> str | None:
     """'Half of 90', 'is 97 a prime number?', 'what's 7 factorial?', 'round 3.14159 to 2 decimal places'."""
     said = spoken_numbers(said)
@@ -1261,7 +1311,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := _calendar_answer(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said)
             or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said))
 

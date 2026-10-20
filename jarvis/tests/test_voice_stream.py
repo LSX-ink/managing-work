@@ -593,6 +593,22 @@ def test_relative_days_month_year_and_weekend_are_instant():
     assert instant_answer("what is the first day of next month?", en, now) == "The first day of November is Sunday the 1st."
 
 
+def test_percentages_odd_even_roots_and_remainders_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what percentage is 30 of 120?", en) == "30 is 25% of 120."
+    assert instant_answer("what's 50 as a percentage of 200?", en) == "50 is 25% of 200."
+    assert instant_answer("increase 80 by 10%", en) == "That's 88."
+    assert instant_answer("decrease 250 by 20 percent", en) == "That's 200."
+    assert instant_answer("is 12 even?", en) == "Yes, 12 is even."
+    assert instant_answer("Alfred, is 7 even?", en) == "No, 7 is odd."
+    assert instant_answer("what's the cube root of 27?", en) == "The cube root of 27 is 3."
+    assert instant_answer("what's the square of 12?", en) == "12 squared is 144."
+    assert instant_answer("how many times does 7 go into 50?", en) == "7 times, with 1 left over."
+    assert instant_answer("how many times does 5 go into 20?", en) == "4 times exactly."
+    assert instant_answer("what's the remainder of 17 divided by 5?", en) == "The remainder is 2. 17 divided by 5 is 3 remainder 2."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
