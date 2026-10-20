@@ -1,9 +1,11 @@
 """Kinetic Web Designs client finder: find local businesses with no website or a weak one, and audit any website.
 
-find: looks a town up on OpenStreetMap (Nominatim), lists independent businesses of a kind near it (Overpass API; big
+find: looks a town or city anywhere in the world up on OpenStreetMap (Nominatim; give the country too when the name
+is ambiguous, e.g. "Lagos, Nigeria" or "Seoul"), lists independent businesses of a kind near it (Overpass API; big
 chains with a brand tag are skipped), then audits the websites of the first few. The results are ranked best bet first:
 no website, then a website that doesn't load, then the lowest score. They're kept in kinetic-prospects.json and written
-up as a report in Kinetic Web Designs/Prospects.
+up as a report in Kinetic Web Designs/Prospects. Each prospect keeps its country (from the map, or the one given), so
+quotes and outreach can use the local currency, language and email rules (see kinetic_world).
 
 audit: reads one public website with plain HTTP (no scripts run, nothing is sent) and scores it out of 100 on what a
 small business owner would care about: the padlock, working on phones, speed, being found on Google, tap-to-call, a
@@ -25,6 +27,7 @@ import httpx
 import design_extract
 import freelance_clients
 import kinetic_store as st
+import kinetic_world as world
 import screen
 from config import Settings
 
@@ -284,7 +287,7 @@ def kind_label(tags: dict) -> str:
     return "business"
 
 
-def business_of(element: dict, town: str) -> dict | None:
+def business_of(element: dict, town: str, country: str = "") -> dict | None:
     tags = element.get("tags") or {}
     name = st.clean(tags.get("name"), 80)
     if not name or tags.get("brand") or tags.get("brand:wikidata") or tags.get("disused") == "yes":
@@ -292,28 +295,33 @@ def business_of(element: dict, town: str) -> dict | None:
     website = tags.get("website") or tags.get("contact:website") or tags.get("url") or ""
     address = ", ".join(x for x in (" ".join(filter(None, (tags.get("addr:housenumber"), tags.get("addr:street")))),
                                     tags.get("addr:city"), tags.get("addr:postcode")) if x)
-    return {"name": name, "kind": kind_label(tags), "town": town, "website": st.clean(website, 200),
+    return {"name": name, "kind": kind_label(tags), "town": town, "country": country, "website": st.clean(website, 200),
             "phone": st.clean(tags.get("phone") or tags.get("contact:phone"), 40),
             "email": st.clean(tags.get("email") or tags.get("contact:email"), 80), "address": st.clean(address, 160),
             "facebook": st.clean(tags.get("contact:facebook") or tags.get("facebook"), 200),
             "osm": f"{element.get('type', '')}/{element.get('id', '')}"}
 
 
-async def geocode(http: httpx.AsyncClient, place: str) -> tuple[float, float, str]:
+async def geocode(http: httpx.AsyncClient, place: str) -> tuple[float, float, str, str]:
+    """(latitude, longitude, town name, two-letter country code or "") for a place anywhere in the world."""
     try:
-        r = await http.get(NOMINATIM, params={"q": place, "format": "jsonv2", "limit": 1}, headers=OSM_HEADERS,
-                           timeout=15)
+        r = await http.get(NOMINATIM, params={"q": place, "format": "jsonv2", "limit": 1, "addressdetails": 1},
+                           headers={**OSM_HEADERS, "Accept-Language": "en"}, timeout=15)
         r.raise_for_status()
         found = r.json()
     except (httpx.HTTPError, ValueError):
         raise ValueError("I couldn't look that place up on the map right now; try again in a minute.") from None
     if not found:
-        raise ValueError(f"I couldn't find {place} on the map. Try a town and county, or a postcode.")
+        raise ValueError(f"I couldn't find {place} on the map. Try adding the country, e.g. 'Lagos, Nigeria', or a "
+                         "postcode.")
     hit = found[0]
-    return float(hit["lat"]), float(hit["lon"]), st.clean(hit.get("display_name", place).split(",")[0], 60)
+    code = str((hit.get("address") or {}).get("country_code") or "").upper()
+    return (float(hit["lat"]), float(hit["lon"]), st.clean(hit.get("display_name", place).split(",")[0], 60),
+            code if re.fullmatch(r"[A-Z]{2}", code) else "")
 
 
-async def nearby(http: httpx.AsyncClient, lat: float, lon: float, radius: int, kind: str, town: str) -> list[dict]:
+async def nearby(http: httpx.AsyncClient, lat: float, lon: float, radius: int, kind: str, town: str,
+                 country: str = "") -> list[dict]:
     try:
         r = await http.post(OVERPASS, data={"data": overpass_query(lat, lon, radius, kind)}, headers=OSM_HEADERS,
                             timeout=40)
@@ -323,7 +331,7 @@ async def nearby(http: httpx.AsyncClient, lat: float, lon: float, radius: int, k
         raise ValueError("The OpenStreetMap business search is busy; try again in a minute.") from None
     out, seen = [], set()
     for e in elements:
-        b = business_of(e, town)
+        b = business_of(e, town, country)
         if b and (key := (b["name"].lower(), b["address"].lower())) not in seen:
             seen.add(key)
             out.append(b)
@@ -374,8 +382,9 @@ def merge(settings: Settings, found: list[dict]) -> list[dict]:
     return out
 
 
-def report_md(town: str, kind: str, rows: list[dict]) -> str:
-    lines = [f"# Web design prospects: {kind} near {town}", "", f"Found by Alfred on {st.today().isoformat()} from "
+def report_md(town: str, kind: str, rows: list[dict], country: str = "") -> str:
+    where_ = f"{town}, {world.country_name(country)}" if country else town
+    lines = [f"# Web design prospects: {kind} near {where_}", "", f"Found by Alfred on {st.today().isoformat()} from "
              "OpenStreetMap. Best bets first. Check each business is still trading before you contact them.", "",
              "| # | Business | Type | Website | Score | Biggest problem | Phone | Address |",
              "|---|---|---|---|---|---|---|---|"]
@@ -402,11 +411,15 @@ COLUMNS = ["#", "Business", "Type", "Website", "Score", "Biggest problem", "Stat
 
 
 async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> screen.Shown:
-    place = st.need(args.get("town"), "town or postcode", 80)
+    place = st.need(args.get("town"), "town, city or postcode", 80)
+    asked = st.clean(args.get("country"), 60)
+    if asked and asked.lower() not in place.lower():
+        place = f"{place}, {asked}"
     kind = kind_key(args.get("kind"))
     radius = int(min(max(st.number(args.get("radius_km") or 3, "distance"), 0.5), 15) * 1000)
-    lat, lon, town = await geocode(http, place)
-    found = await nearby(http, lat, lon, radius, kind, town)
+    lat, lon, town, country = await geocode(http, place)
+    country = country or world.country_code(asked)  # the map's answer first; it knows "Lagos" is in Nigeria
+    found = await nearby(http, lat, lon, radius, kind, town, country)
     if not found:
         raise ValueError(f"OpenStreetMap has no independent {kind} listed within {radius // 1000} km of {town}. "
                          "Try a bigger distance or another kind of business.")
@@ -424,7 +437,7 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
     await asyncio.gather(*(check(b) for b in to_check))
     rows = sorted(merge(settings, found), key=rank_key)
     label = "businesses" if kind == "mixed" else kind
-    path = st.write(settings, ("Prospects",), f"{town} {label} {st.today().isoformat()}.md", report_md(town, label, rows),
+    path = st.write(settings, ("Prospects",), f"{town} {label} {st.today().isoformat()}.md", report_md(town, label, rows, country),
                     replace=True)
     none = sum(1 for p in rows if not p.get("website"))
     weak = sum(1 for p in rows if p.get("audit") and p["audit"]["grade"] in ("weak", "down"))
@@ -478,6 +491,9 @@ def prospects(settings: Settings, args: dict) -> screen.Shown:
     rows = st.rows_of(settings, st.PROSPECTS)
     if args.get("town"):
         rows = [r for r in rows if str(args["town"]).lower() in (r.get("town", "") + " " + r.get("address", "")).lower()]
+    if args.get("country"):
+        code = world.country_code(args["country"])
+        rows = [r for r in rows if r.get("country") == code or (code == world.HOME and not r.get("country"))]
     if args.get("status"):
         rows = [r for r in rows if r.get("status") == args["status"]]
     if not rows:
@@ -493,7 +509,8 @@ def prospect(settings: Settings, args: dict) -> screen.Shown:
         raise ValueError("I can't find that prospect. Say its number or name.")
     score, problem = headline(p)
     body = "\n".join(x for x in [
-        f"{p['name']} ({p['kind']}){', ' + p['town'] if p.get('town') else ''}",
+        f"{p['name']} ({p['kind']}){', ' + p['town'] if p.get('town') else ''}"
+        f"{', ' + world.country_name(p['country']) if p.get('country') else ''}",
         f"Website: {p.get('website') or 'none'}  |  Score: {score}  |  Status: {p.get('status', 'new')}",
         f"Phone: {p['phone']}" if p.get("phone") else "", f"Email: {p['email']}" if p.get("email") else "",
         f"Address: {p['address']}" if p.get("address") else "", f"Facebook: {p['facebook']}" if p.get("facebook") else "",
@@ -548,8 +565,9 @@ def forget(settings: Settings, args: dict) -> str:
 def tool_definitions() -> list[dict]:
     return [{
         "name": "web_client_finder",
-        "description": "Kinetic Web Designs client finder, to win paid website work. find: local independent "
-                       "businesses (cafes, hairdressers, trades, garages, shops...) near a town from OpenStreetMap, "
+        "description": "Kinetic Web Designs client finder, to win paid website work, anywhere in the world. find: "
+                       "local independent businesses (cafes, hairdressers, trades, garages, shops...) near a town or "
+                       "city in any country from OpenStreetMap (e.g. salons in Lagos, barbers in Seoul), "
                        "with their websites audited and ranked best bet first (no website, broken site, lowest score). "
                        "audit: score any public website out of 100 with plain-words problems to pitch (padlock, "
                        "phones, speed, Google, tap-to-call, old footer). prospects / prospect: the saved list or one "
@@ -560,8 +578,11 @@ def tool_definitions() -> list[dict]:
             "type": "object",
             "properties": {
                 "action": {"type": "string", "enum": ACTIONS},
-                "town": {"type": "string", "description": "find: a town, area or postcode, e.g. 'Stockport'. "
-                                                          "prospects: filter by town."},
+                "town": {"type": "string", "description": "find: a town, city, area or postcode anywhere, e.g. "
+                                                          "'Stockport', 'Lagos' or 'Seoul'. prospects: filter by town."},
+                "country": {"type": "string", "description": "find: the country, when the user names one or the "
+                                                             "town is ambiguous, e.g. 'Nigeria', 'South Korea', 'USA'. "
+                                                             "prospects: filter by country."},
                 "kind": {"type": "string", "description": "find: " + ", ".join(KINDS) + " or mixed (default)."},
                 "radius_km": {"type": "number", "description": "find: how far around the town, 0.5 to 15 km (default 3)."},
                 "audit_limit": {"type": "integer", "description": f"find: websites to audit (default {DEFAULT_AUDITS}, "

@@ -11,7 +11,9 @@ import kinetic_find as kf
 import kinetic_invoices as ki
 import kinetic_sales as ks
 import kinetic_store as st
+import kinetic_world as world
 import freelance_store
+import helpers
 import memory
 import tools
 from config import Settings
@@ -87,7 +89,7 @@ def finder(s, **args):
 
 
 def sales(s, **args):
-    return ks.run_tool("web_design_sales", args, s)
+    return asyncio.run(ks.run_tool("web_design_sales", args, s))
 
 
 def inv(s, **args):
@@ -348,3 +350,110 @@ def test_care_plan_is_priced_by_package(s):
     sales(s, action="set_price", item="care_plan", package="shop", price=35)
     assert [ks.care_price(ks.prices(s), k) for k in ("starter", "business", "shop")] == [20, 25, 35]
     assert "£20 starter, £25 business, £35 shop" in sales(s, action="prices")
+
+
+# ---- worldwide outreach --------------------------------------------------------------
+
+def test_local_prices_convert_from_pounds_and_round_to_friendly_numbers():
+    assert world.local_price(395, "USD") == "about $499 (£395)"
+    assert world.local_price(395, "GBP") == "£395"
+    assert world.convert(895, "USD") == 1099 and world.convert(395, "KRW") == 690_000
+    assert world.friendly(497.7) == 499 and world.friendly(691_250) == 690_000 and world.friendly(42) == 40
+    for code in ("USD", "EUR", "NGN", "ZAR", "KES", "GHS", "CNY", "KRW", "CAD", "AUD", "AED", "INR"):
+        assert world.RATES_FROM_GBP[code] > 0 and code in world.CURRENCIES
+        assert world.local_price(395, code).endswith("(£395)")
+    with pytest.raises(ValueError, match="rate"):
+        world.convert(10, "XYZ")
+
+
+def test_countries_map_to_currency_and_language():
+    cases = {"UK": ("GB", "GBP", "en"), "Germany": ("DE", "EUR", "de"), "france": ("FR", "EUR", "fr"),
+             "Spain": ("ES", "EUR", "es"), "Portugal": ("PT", "EUR", "pt"), "Italy": ("IT", "EUR", "it"),
+             "Netherlands": ("NL", "EUR", "nl"), "USA": ("US", "USD", "en"), "Canada": ("CA", "CAD", "en"),
+             "Nigeria": ("NG", "NGN", "en"), "South Africa": ("ZA", "ZAR", "en"), "Kenya": ("KE", "KES", "en"),
+             "Ghana": ("GH", "GHS", "en"), "China": ("CN", "CNY", "zh"), "Korea": ("KR", "KRW", "ko"),
+             "Australia": ("AU", "AUD", "en"), "UAE": ("AE", "AED", "ar"), "India": ("IN", "INR", "en")}
+    for name, (code, currency, language) in cases.items():
+        assert world.country_code(name) == code
+        assert world.currency_of(code) == currency and world.language_of(code) == language
+    assert world.country_code("Atlantis") == "" and world.currency_of("") == "GBP" and world.language_of("") == "en"
+    assert world.currency_of("SE") == "GBP"  # no rate for kronor yet, so pounds only
+    assert world.language_code(None, "KR") == "ko" and world.language_code("Chinese") == "zh"
+    assert world.language_code("fr", "GB") == "fr"
+    with pytest.raises(ValueError, match="Which language"):
+        world.language_code("Klingon")
+
+
+def test_each_country_gets_its_own_email_rules_note():
+    expect = {"GB": ["PECR", "sole traders"], "FR": ["GDPR", "Germany and Austria", "contact form"],
+              "DE": ["GDPR", "consent", "DM"], "US": ["CAN-SPAM", "postal address", "opt out"],
+              "CA": ["CASL", "consent", "DM", "contact form"], "NG": ["NDPR"], "ZA": ["POPIA"],
+              "KE": ["Data Protection Act"], "CN": ["PIPL", "don't send cold email", "Douyin", "Xiaohongshu", "WeChat"],
+              "KR": ["PIPA", "don't send cold email", "Instagram", "Naver", "KakaoTalk"]}
+    for code, bits in expect.items():
+        note = world.compliance_note(code)
+        for bit in bits:
+            assert bit in note, (code, bit)
+    assert world.compliance_note("") == world.compliance_note("GB")
+    assert "opt-out" in world.compliance_note("BR")  # anywhere else gets the general advice
+    assert [world.default_channel(c) for c in ("GB", "US", "DE", "CN", "KR", "CA")] == \
+        ["email", "email", "dm", "dm", "dm", "dm"]
+
+
+def test_payment_terms_are_half_and_half_never_monthly(s):
+    terms = "half when we start building, half once everything's complete"
+    assert world.payment_terms(50) == terms
+    assert world.payment_terms(30) == "30% when we start building, the rest once everything's complete"
+    sales(s, action="quote", client="Ada", package="starter")
+    out = sales(s, action="quote", client="Ada", package="business", country="USA")
+    assert terms in out and "£895 (about $1,099)" in out
+    html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Ada" / "Quote Q-0002.html").read_text(encoding="utf-8")
+    assert terms in html and "about $1,099 in US dollars" in html
+    for channel in ks.CHANNELS:
+        body = sales(s, action="outreach", client="Ada", channel=channel).card["text"]
+        assert terms in body
+        assert "klarna" not in body.lower() and "monthly payment" not in body.lower()
+    assert "In US dollars that's roughly: starter $499 (£395)" in sales(s, action="prices", country="US")
+
+
+class FakeClaude:
+    def __init__(self):
+        self.asked = []
+        self.messages = self
+
+    async def create(self, **kw):
+        self.asked.append(kw)
+        return type("R", (), {"content": [type("B", (), {"type": "text", "text": "안녕하세요 (Korean draft)"})()]})()
+
+
+def test_finder_works_worldwide_and_keeps_the_country(s, monkeypatch):
+    out = finder(s, action="find", town="Lagos", country="Nigeria", kind="salons")
+    assert "near Stockport" in out  # the mock map always answers Stockport; the country still sticks
+    rows = st.rows_of(s, st.PROSPECTS)
+    assert rows and all(r["country"] == "NG" for r in rows)
+    assert kf.kind_key("salons") == "hairdressers" and kf.kind_key("barbers") == "hairdressers"
+    assert [r[1] for r in finder(s, action="prospects", country="Nigeria").card["rows"]]
+    with pytest.raises(ValueError, match="No prospects"):
+        finder(s, action="prospects", country="Kenya")
+    email = sales(s, action="outreach", client="Sal's Cafe", channel="email")
+    assert "Websites start from about ₦770,000 (£395)" in email.card["text"] and "NDPR" in email
+    assert email.card["text"].endswith(world.OPT_OUT) and "a web designer based in the UK" not in email.card["text"]
+
+
+def test_outreach_abroad_is_translated_with_english_underneath(s, monkeypatch):
+    fake = FakeClaude()
+    monkeypatch.setattr(helpers, "_client", fake)
+    out = sales(s, action="outreach", client="Seoul Barbers", country="South Korea")
+    body = out.card["text"]
+    assert out.card["title"] == "Outreach: Seoul Barbers" and "drafted a dm for Seoul Barbers (South Korea) in Korean" in out
+    assert body.startswith("안녕하세요") and "English version:" in body and body.endswith(world.OPT_OUT)
+    assert "KakaoTalk" in out and "about ₩690,000 (£395)" in body and "Nothing has been sent" in out
+    assert "Korean" in fake.asked[0]["messages"][0]["content"] and fake.asked[0]["model"] == s.model
+    us = sales(s, action="outreach", client="Austin Tacos", country="USA").card["text"]
+    assert "[your postal address]" in us and "CAN-SPAM" not in us and len(fake.asked) == 1  # English: no call
+    fr = sales(s, action="outreach", client="Café Lyon", country="France", language="de", channel="letter")
+    assert "in German" in fr and fake.asked[-1]["messages"][0]["content"].count("German") == 1
+    monkeypatch.setattr(helpers, "_client", None)
+    plain = sales(s, action="outreach", client="Bar Madrid", country="Spain", channel="email")
+    assert "couldn't translate it into Spanish" in plain and "English version" not in plain.card["text"]
+    assert "€459" in plain.card["text"] and plain.card["text"].endswith(world.OPT_OUT)
