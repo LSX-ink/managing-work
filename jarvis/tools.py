@@ -227,7 +227,6 @@ import study_write
 import tiktokstudio
 import money_research
 import sports_games
-import station
 import sports_live
 import sports_scoring
 import sports_teams
@@ -296,7 +295,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 ABILITIES = [todo, habits, money, notesearch, screen, helpers]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
-ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, station, alfredmem}  # headline abilities, never searched for
+ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, alfredmem}  # headline abilities, never searched for
 ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
@@ -361,7 +360,6 @@ ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn
 ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
 ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
-ABILITIES += [station]  # the station world behind the HUD
 ABILITIES += [design, design_extract, design_contrast, design_palette, design_type, design_motion, design_kit, design_logo, design_social,
               design_layout, design_audit, design_components,
               skillscan]  # design tools

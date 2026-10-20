@@ -2654,3 +2654,17 @@ def test_lore_rewinds_the_tape_after_the_flash_forward(s, tmp_path, monkeypatch)
                              capture_output=True, text=True).stderr
         return float(re.search(r"max_volume: (-?[\d.]+)", out).group(1))
     assert peak("tape") > -30 and peak("plain") < -60  # the tape whirr
+
+
+def test_video_making_is_never_hidden_behind_tool_search():
+    from dataclasses import replace
+
+    import brain
+    import tiktokstudio
+    import tools
+    from config import Settings
+
+    assert tiktokstudio in tools.ALWAYS_LOADED
+    loaded = {t["name"] for t in brain.request_options(replace(Settings(), model="claude-opus-5"))["tools"]
+              if "name" in t and not t.get("defer_loading")}
+    assert "tiktok_studio" in loaded
