@@ -109,6 +109,7 @@ import design_logo
 import design_social
 import design_layout
 import design_audit
+import design_components
 import kinetic_find
 import kinetic_invoices
 import kinetic_sales
@@ -362,7 +363,7 @@ ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market,
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [station]  # the station world behind the HUD
 ABILITIES += [design, design_extract, design_contrast, design_palette, design_type, design_motion, design_kit, design_logo, design_social,
-              design_layout, design_audit,
+              design_layout, design_audit, design_components,
               skillscan]  # design tools
 ABILITIES += [alfred_mail]  # Alfred's own email account
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, invoice
