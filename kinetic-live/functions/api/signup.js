@@ -2,7 +2,7 @@
 // is set up, sends a one-off welcome. Offers and news go only to people who ticked the box.
 import { handle, err, json, readJson, sameOrigin, siteConfig } from "../_lib/util.js";
 import { isBot, visitorId } from "../_lib/visitor.js";
-import { sendMail, escHtml, EMAIL } from "../_lib/mail.js";
+import { sendMail, escHtml, EMAIL, signatureHtml, signatureText } from "../_lib/mail.js";
 
 const PER_HOUR = 5;
 
@@ -66,6 +66,8 @@ We hope you'll stay with us. If you have any questions, just reply to this email
 
 The ${site.siteName} team
 
+${signatureText()}
+
 --
 You're receiving this because you signed up at ${host(base)}.
 ${unsub ? `Unsubscribe from tips, offers and news: ${unsub}` : "This is a one-off welcome. We won't send you marketing emails."}`;
@@ -88,7 +90,8 @@ function welcomeHtml(site, base, unsub) {
 </ul>
 <p style="margin:0 0 18px"><a href="${b}/#styles" style="display:inline-block;background:#2a47d2;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:9px;font-weight:700">Explore the designs</a></p>
 <p style="margin:0 0 14px">We hope you'll stay with us. If you have any questions, just reply to this email.</p>
-<p style="margin:0">The ${n} team</p>
+<p style="margin:0 0 18px">The ${n} team</p>
+${signatureHtml(b)}
 </div>
 <p style="font-size:12.5px;color:#7a7068;margin:16px 4px 0">You're receiving this because you signed up at ${escHtml(host(base))}.
 ${unsub ? `<a href="${escHtml(unsub)}" style="color:#7a7068">Unsubscribe</a> from tips, offers and news.` : "This is a one-off welcome. We won't send you marketing emails."}</p>
