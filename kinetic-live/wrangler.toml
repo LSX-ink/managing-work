@@ -1,6 +1,7 @@
 # Cloudflare Pages config for kineticwebdesigns.co.uk (Kinetic kit owner area).
 # Pages uploads this file with the site, so it holds no secrets. Secrets:
 #   npx wrangler pages secret put STRIPE_WEBHOOK_SECRET --project-name kinetic
+#   npx wrangler pages secret put RESEND_API_KEY --project-name kinetic   (welcome + brief emails)
 name = "kinetic"
 pages_build_output_dir = "."
 compatibility_date = "2025-01-01"
@@ -12,11 +13,14 @@ SHOP = "0"          # no shop: the Products tab stays hidden
 TEXT = "0"          # the page is built from premium/, so no Text tab
 CURRENCY = "gbp"
 EVENTS = "signup:Sign-ups,quote:Quote requests"
+# Emails (sent only once RESEND_API_KEY is set; the MAIL_FROM domain must be verified in Resend)
+MAIL_FROM = "Kinetic Web Designs <hello@kineticwebdesigns.co.uk>"
+NOTIFY_TO = "alfredw.lsx@gmail.com"   # new briefs go here, and replies to welcome emails
 
 [[d1_databases]]
 binding = "DB"
 database_name = "kinetic-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "2af23fc8-7fa2-49dd-b896-d3240bc1f1aa"
 
 # No R2 bucket: Kinetic's own site has no product photos. Add one if a shop is ever turned on:
 # [[r2_buckets]]

@@ -1546,8 +1546,8 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 <script>
 (() => {
   // Where sign-ups and briefs go once the site is hosted (a form endpoint). Empty: kept in this browser only.
-  const SIGNUP_ENDPOINT = "";
-  const BRIEF_ENDPOINT = "";
+  const SIGNUP_ENDPOINT = "/api/signup";
+  const BRIEF_ENDPOINT = "/api/brief";
   // Stripe links for the client area: a Payment Link for the monthly plan and the customer portal sign-in link.
   // Empty: the buttons open an email to us instead.
   const PLAN_SUBSCRIBE_LINK = "https://buy.stripe.com/8x2eVe3klezJ50Z1vk7wA00";

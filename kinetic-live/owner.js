@@ -8,7 +8,7 @@ const app = $("#app");
 
 let CFG = { siteName: "Your website", shop: false, text: false, events: [], currency: "gbp", stripe: false, photos: false };
 let ME = null;
-let tab = null, range = "day", txFilter = "all", confirmDel = null;
+let tab = null, range = "day", txFilter = "all", confirmDel = null, leadKind = "briefs", confirmLead = null;
 let catalog = null; // { lists: [...] } while on the Products tab
 
 const money = (minor, cur = CFG.currency) => {
@@ -85,7 +85,7 @@ function tabs() {
   const t = [];
   if (CFG.shop) t.push(["products", "Products & stock"]);
   if (CFG.text) t.push(["text", "Text"]);
-  t.push(["analytics", "Analytics"], ["transactions", "Transactions"], ["statements", "Monthly statements"], ["account", "Account"]);
+  t.push(["analytics", "Analytics"], ["leads", "Sign-ups & briefs"], ["transactions", "Transactions"], ["statements", "Monthly statements"], ["account", "Account"]);
   return t;
 }
 function renderOwner() {
@@ -103,7 +103,7 @@ async function loadTab(keepScroll) {
   const y = keepScroll ? window.scrollY : 0;
   const t = tab;
   try {
-    const html = await ({ products: vProducts, text: vText, analytics: vAnalytics, transactions: vTx, statements: vStatements, account: vAccount })[t]();
+    const html = await ({ products: vProducts, text: vText, analytics: vAnalytics, leads: vLeads, transactions: vTx, statements: vStatements, account: vAccount })[t]();
     if (t !== tab || !body()) return;
     body().innerHTML = html;
     // on narrow screens charts scroll sideways: start at the newest end
@@ -330,6 +330,42 @@ async function vTx() {
     </tbody></table></div>` : `<div class="empty"><b>${d.any ? "Nothing here for this filter" : "No payments yet"}</b>${d.any ? "" : "Payments show here as soon as someone pays."}</div>`}</section>`;
 }
 
+// ---------- Sign-ups & briefs ----------
+async function vLeads() {
+  const d = await api(`/api/owner/leads?kind=${leadKind}`);
+  const when = t => new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const seg = `<div class="seg" role="group" aria-label="Show">${[["briefs", "Briefs"], ["signups", "Sign-ups"]].map(([k, l]) =>
+    `<button type="button" data-act="leadkind" data-k="${k}" aria-pressed="${leadKind === k}">${l}</button>`).join("")}</div>`;
+  const csv = d.total ? `<a class="btn ghost sm" href="/api/owner/leads?kind=${leadKind}&amp;format=csv" download>Download CSV</a>` : "";
+  const mailNote = d.mail
+    ? `<div class="status"><span class="dot"></span>${leadKind === "briefs" ? "New briefs are emailed to you as they arrive" : "New sign-ups get a welcome email"}</div>`
+    : `<div class="status"><span class="dot off"></span>Email isn't set up yet: everything is saved here, but no emails are sent.</div>`;
+  const del = r => confirmLead === r.id
+    ? `<span class="hint">Delete?</span> <button class="btn sm" type="button" data-act="leadyes" data-id="${r.id}">Delete</button> <button class="btn ghost sm" type="button" data-act="leadno">Keep</button>`
+    : `<button class="btn ghost sm" type="button" data-act="leaddel" data-id="${r.id}" aria-label="Delete">Delete</button>`;
+
+  if (leadKind === "signups") {
+    return `<section class="panel"><div class="hd"><h2>Sign-ups</h2>${csv}</div>${seg}${mailNote}
+      <p class="hint">${num(d.total)} ${d.total === 1 ? "person has" : "people have"} signed up; ${num(d.marketing)} said yes to tips, offers and news. Only send marketing to those people.</p>
+      ${d.rows.length ? `<div class="tbl"><table><thead><tr><th>Signed up</th><th>Email</th><th>Marketing</th><th>Welcome</th><th></th></tr></thead><tbody>
+      ${d.rows.map(r => `<tr><td>${when(r.created)}</td><td>${esc(r.email)}</td>
+        <td>${r.marketing ? `<span class="pill paid">Yes</span>` : `<span class="pill">No</span>`}</td>
+        <td>${r.welcomed ? "Sent" : `<span class="hint">Not sent</span>`}</td><td class="n">${del(r)}</td></tr>`).join("")}
+      </tbody></table></div>` : `<div class="empty"><b>No sign-ups yet</b>Emails from the sign-up box on your website show here.</div>`}</section>`;
+  }
+  const field = (l, v) => v ? `<div><span class="hint">${esc(l)}</span><div style="white-space:pre-wrap">${esc(v)}</div></div>` : "";
+  return `<section class="panel"><div class="hd"><h2>Briefs</h2>${csv}</div>${seg}${mailNote}
+    ${d.rows.length ? d.rows.map(r => { const b = r.data || {}; const col = Object.values(b.colours || {}).filter(Boolean);
+      return `<details class="panel" style="margin-top:10px"><summary><b>${esc(r.business)}</b> · ${esc(r.name)} <span class="hint">· ${when(r.created)}</span></summary>
+      <div style="display:grid;gap:8px;margin-top:10px">
+        <div><a href="mailto:${esc(r.email)}">${esc(r.email)}</a>${r.phone ? ` · <a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>` : ""}</div>
+        ${field("What they do", b.what)}${field("Current website", b.currentSite)}${field("Look and feel", b.look)}${field("Sites they like", b.inspiration)}
+        ${field("When", b.when)}${field("Style", b.style)}${field("Template", b.template)}${field("Package", b.package)}${field("Estimate", b.estimate)}
+        ${col.length ? `<div><span class="hint">Colours</span><div>${col.map(c => `<span style="display:inline-block;width:18px;height:18px;border-radius:4px;vertical-align:middle;margin-right:4px;background:${esc(c)}"></span>${esc(c)} `).join("")}</div></div>` : ""}
+        <div>${del(r)}</div></div></details>`; }).join("")
+      : `<div class="empty"><b>No briefs yet</b>Briefs sent from "Start your website" on your site show here.</div>`}</section>`;
+}
+
 // ---------- Monthly statements ----------
 function statementsToggle(acc) {
   return acc.statements
@@ -383,6 +419,12 @@ document.addEventListener("click", async e => {
       case "tab": tab = b.dataset.tab; confirmDel = null; ME && !ME.mustChange ? renderOwner() : null; break;
       case "range": range = b.dataset.range; loadTab(true); break;
       case "txf": txFilter = b.dataset.f; loadTab(true); break;
+      case "leadkind": leadKind = b.dataset.k; confirmLead = null; loadTab(true); break;
+      case "leaddel": confirmLead = +b.dataset.id; loadTab(true); break;
+      case "leadno": confirmLead = null; loadTab(true); break;
+      case "leadyes":
+        await api(`/api/owner/leads?kind=${leadKind}&id=${+b.dataset.id}`, { method: "DELETE" });
+        confirmLead = null; toast("Deleted"); loadTab(true); break;
       case "stock": await patchItem(it, { inStock: !it.inStock }); toast(!it.inStock ? `${it.name} is back in stock` : `${it.name} shows as out of stock`); break;
       case "visible": await patchItem(it, { visible: !it.visible }); toast(!it.visible ? `${it.name} is on your website` : `${it.name} is hidden from your website`); break;
       case "del": confirmDel = it.id; rerenderProducts(); break;
