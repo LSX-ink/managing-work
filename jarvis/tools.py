@@ -116,6 +116,7 @@ import kinetic_calendar
 import kinetic_find
 import kinetic_invoices
 import kinetic_outreach
+import kinetic_reach
 import kinetic_sales
 import kinetic_site
 import skillscan
@@ -372,6 +373,7 @@ ABILITIES += [alfred_mail, alfred_replies]  # Alfred's own email account and rep
 ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, track outreach, invoice
 ABILITIES += [kinetic_briefing, kinetic_calendar]  # Kinetic: morning money briefing, content calendar
+ABILITIES += [kinetic_reach]  # Kinetic: trade of the week and its base mock-up, walk-in routes, mock-up videos
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film

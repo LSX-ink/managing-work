@@ -141,8 +141,9 @@ def before_draft(settings: Settings, name: str, prospect: dict | None) -> str:
 
 
 def drafted(settings: Settings, name: str, prospect: dict | None, channel: str, country: str,
-            contact_name: str = "") -> None:
-    """Called by kinetic_sales after a first-message draft: the lead becomes "drafted" (never moves a lead back)."""
+            contact_name: str = "", mockup: bool | None = None) -> None:
+    """Called by kinetic_sales after a first-message draft: the lead becomes "drafted" (never moves a lead back).
+    mockup notes whether the free mock-up went with it, for the briefing's "mock-ups sent" number."""
     rows = st.rows_of(settings, st.OUTREACH)
     _, prospect, row = resolve(settings, rows, (prospect or {}).get("name") or name)
     row = row or new_row(rows, name, prospect, country)
@@ -153,6 +154,8 @@ def drafted(settings: Settings, name: str, prospect: dict | None, channel: str, 
     row["country"] = row.get("country") or country
     if contact_name:
         row["contact_name"] = contact_name
+    if mockup is not None:
+        row["mockup"] = bool(mockup)
     st.save(settings, st.OUTREACH, rows)
 
 
@@ -374,7 +377,8 @@ def follow_up_draft(settings: Settings, args: dict) -> dict:
     contact = st.clean(args.get("contact_name") or row.get("contact_name"), 40)
     hello = f"Hi {contact}," if contact else "Hi there,"
     sign = st.sign_off(me)
-    first = {"email": "email", "letter": "letter", "dm": "message", "phone": "call", "visit": "visit"}.get(
+    first = {"email": "email", "letter": "letter", "dm": "message", "whatsapp": "WhatsApp message", "phone": "call",
+             "visit": "visit"}.get(
         row.get("channel") or "", "message")
     offer = ("The free example home page I made for you is still yours to see, with no obligation."
              if args.get("mockup", True) else "I'd still be happy to share a few free ideas, with no obligation.")
@@ -393,6 +397,7 @@ def follow_up_draft(settings: Settings, args: dict) -> dict:
         nudge = f"I'm just following up on my {first} from {st.short(sent)} about {name}'s website. I know how busy " \
                 "running a business is, so I'll keep this short."
         bow_out = "If now isn't the right time, that's absolutely fine."
+    offer = f"{offer} {st.PREVIEW}"  # every follow-up says it too
     opt_out = world.OPT_OUT
     subject = f"Last note: {name}'s website" if last else f"Following up: {name}'s website"
     if channel == "email":

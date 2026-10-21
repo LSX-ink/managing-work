@@ -343,13 +343,18 @@ def business_of(element: dict, town: str, country: str = "") -> dict | None:
     website = tags.get("website") or tags.get("contact:website") or tags.get("url") or ""
     address = ", ".join(x for x in (" ".join(filter(None, (tags.get("addr:housenumber"), tags.get("addr:street")))),
                                     tags.get("addr:city"), tags.get("addr:postcode")) if x)
+    where_ = element.get("center") if isinstance(element.get("center"), dict) else element  # ways have a centre
+    try:
+        lat, lon = round(float(where_["lat"]), 6), round(float(where_["lon"]), 6)
+    except (KeyError, TypeError, ValueError):
+        lat = lon = None
     return split_social({
         "name": name, "kind": kind_label(tags), "town": town, "country": country, "website": st.clean(website, 200),
         "phone": st.clean(tags.get("phone") or tags.get("contact:phone"), 40),
         "email": st.clean(tags.get("email") or tags.get("contact:email"), 80), "address": st.clean(address, 160),
         "facebook": st.clean(tags.get("contact:facebook") or tags.get("facebook"), 200),
         "instagram": st.clean(tags.get("contact:instagram") or tags.get("instagram"), 200),
-        "osm": f"{element.get('type', '')}/{element.get('id', '')}"})
+        "osm": f"{element.get('type', '')}/{element.get('id', '')}", "lat": lat, "lon": lon})
 
 
 async def geocode(http: httpx.AsyncClient, place: str) -> tuple[float, float, str, str]:
@@ -481,6 +486,78 @@ def headline(p: dict) -> tuple[str, str]:
     return f"{a['score']}/100", a["problems"][0]["problem"] if a["problems"] else "Strong site"
 
 
+BOOKABLE = ("hair", "barber", "beauty", "nail", "salon", "spa", "massage", "tattoo", "lash", "brow", "dentist",
+            "physio", "chiro", "clinic", "gym", "fitness", "restaurant", "vet", "groom")  # trades people book
+PLAIN = [  # (audit problem starts with, plain words for a first line, the same for a short DM, a short label),
+    # most persuasive first
+    ("Not made for phones", "is hard to use on a phone: it shows as a tiny desktop page, and most of your "
+                            "customers are on their phones", "is hard to use on a phone, where most of your "
+                                                             "customers are", "broken on phones"),
+    ("No online booking", "has no way to book online, so people who want to book in the evening go elsewhere",
+     "has no online booking, so evening bookers go elsewhere", "no online booking"),
+    ("No padlock", "shows as \"Not secure\" in browsers, which puts customers off and pushes you down Google",
+     "shows as \"Not secure\" in browsers, which puts customers off", "\"Not secure\" warning"),
+    ("Slow to load", "is slow to load on a phone, and over half of phone visitors give up after 3 seconds",
+     "is slow on phones, and most people give up after 3 seconds", "slow on phones"),
+    ("No easy way to get in touch", "has no easy way to get in touch: no contact form, email link or contact page",
+     "has no easy way to get in touch", "no way to get in touch"),
+    ("Phone number isn't tap-to-call", "doesn't let customers tap to ring you from their phone",
+     "doesn't let customers tap to ring you", "no tap-to-call"),
+    ("Footer says", "says © {year} at the bottom, which makes the business look closed",
+     "says © {year} at the bottom, which looks closed", "out-of-date footer"),
+    ("Built with very old tech", "is built with very old code that phones handle badly",
+     "is built with old code that phones handle badly", "very old tech"),
+]
+
+
+def bookable(p: dict) -> bool:
+    text = f"{p.get('kind', '')} {p.get('name', '')}".lower()
+    return any(word in text for word in BOOKABLE)
+
+
+def biggest_problem(p: dict) -> dict:
+    """The lead's single biggest problem in plain words, for the first line of a first message:
+    {"key", "label" (a few words), "line" (a sentence to them), "short" (the same for a DM)}. Empty when nothing
+    stands out."""
+    name = p.get("name") or "your business"
+    only = social_only(p)
+    if not p.get("website") or only:
+        if only:
+            return {"key": "social", "label": f"{only} only, no website",
+                    "line": f"I couldn't find a website for {name}, only your {only} page, so people searching on "
+                            "Google are finding someone else first.",
+                    "short": f"I couldn't find a website for {name}, only your {only} page, so Google searchers "
+                             "find someone else first."}
+        return {"key": "none", "label": "no website",
+                "line": f"I searched for {name} online and couldn't find a website, only a map listing, so people "
+                        "searching on Google are finding someone else first.",
+                "short": f"I couldn't find a website for {name}, so people searching on Google find someone else "
+                         "first."}
+    site = st.domain(p["website"]) or p["website"]
+    a = p.get("audit") or {}
+    if a.get("grade") == "down":
+        return {"key": "down", "label": "website won't load",
+                "line": f"I tried your website ({site}) and it won't load, so customers may be giving up and going "
+                        "elsewhere.",
+                "short": f"Your website ({site}) won't load, so customers may be giving up."}
+    names = [x.get("problem", "") for x in a.get("problems") or []]
+    if a and bookable(p) and not a.get("booking"):
+        names.append("No online booking")
+    for start, words, brief, label in PLAIN:
+        hit = next((n for n in names if n.startswith(start)), "")
+        if hit:
+            year = (re.search(r"\d{4}", hit) or [""])[0]
+            return {"key": start, "label": label.replace("{year}", year),
+                    "line": f"Your website ({site}) {words.replace('{year}', year)}.",
+                    "short": f"Your website ({site}) {brief.replace('{year}', year)}."}
+    if names:
+        top = (a.get("problems") or [{}])[0]
+        line = f"I had a look at your website ({site}): {names[0][0].lower() + names[0][1:]}."
+        return {"key": "other", "label": names[0].lower(), "line": f"{line} {top.get('why', '')}".strip(),
+                "short": line}
+    return {}
+
+
 def merge(settings: Settings, found: list[dict]) -> list[dict]:
     """Add or refresh prospects in kinetic-prospects.json; returns the stored rows for found."""
     rows = st.rows_of(settings, st.PROSPECTS)
@@ -538,7 +615,9 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
     asked = st.clean(args.get("country"), 60)
     if asked and asked.lower() not in place.lower():
         place = f"{place}, {asked}"
-    kind = kind_key(args.get("kind"))
+    week = st.trade_of_week(settings)
+    kind = kind_key(args.get("kind") or week.get("kind"))  # no trade given: the trade of the week
+    weekly = f" (this week's trade, {week['label']})" if week and not args.get("kind") else ""
     radius = int(min(max(st.number(args.get("radius_km") or 3, "distance"), 0.5), 15) * 1000)
     found, source, fell_back = [], "OpenStreetMap", ""
     if settings.google_places_key:
@@ -577,7 +656,7 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
     weak = sum(1 for p in rows if p.get("audit") and p["audit"]["grade"] in ("weak", "down"))
     unchecked = sum(1 for p in rows if p.get("website") and not p.get("audit"))
     best = [f"{p['name']} ({headline(p)[1].lower()})" for p in rows[:3]]
-    text = (f"I found {len(rows)} independent {label} near {town}: {none} with no website and {weak} with a weak or "
+    text = (f"I found {len(rows)} independent {label}{weekly} near {town}: {none} with no website and {weak} with a weak or "
             f"broken one. Best bets: {', '.join(best)}.")
     if unchecked:
         text += f" I didn't check {unchecked} other website{'s' if unchecked != 1 else ''}; ask me to audit any of them."
@@ -726,7 +805,8 @@ def tool_definitions() -> list[dict]:
                 "country": {"type": "string", "description": "find: the country, when the user names one or the "
                                                              "town is ambiguous, e.g. 'Nigeria', 'South Korea', 'USA'. "
                                                              "prospects: filter by country."},
-                "kind": {"type": "string", "description": "find: " + ", ".join(KINDS) + " or mixed (default)."},
+                "kind": {"type": "string", "description": "find: " + ", ".join(KINDS) + " or mixed (default: the trade "
+                                                          "of the week if one is set, else mixed)."},
                 "radius_km": {"type": "number", "description": "find: how far around the town, 0.5 to 15 km (default 3)."},
                 "audit_limit": {"type": "integer", "description": f"find: websites to audit (default {DEFAULT_AUDITS}, "
                                                                 f"max {MAX_AUDITS})."},

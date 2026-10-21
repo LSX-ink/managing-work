@@ -2,8 +2,8 @@
 
 Data lives in the memory folder: kinetic-prospects.json (businesses found and their website audits), kinetic-prices.json
 (your package prices), kinetic-business.json (your business details for quotes and invoices), kinetic-quotes.json,
-kinetic-invoices.json, kinetic-domain-owners.json (who each client's domain is registered to) and kinetic-outreach.json
-(who has been messaged, when, and how they answered). Documents are saved
+kinetic-invoices.json, kinetic-domain-owners.json (who each client's domain is registered to), kinetic-outreach.json
+(who has been messaged, when, and how they answered) and kinetic-trade-week.json (the trade of the week). Documents are saved
 under the "Kinetic Web Designs" memory folder, in Prospects, Audits, Mockups and Clients/<client>. Nothing here sends an email,
 posts anything or takes a payment: every message is a draft the user sends themselves.
 """
@@ -24,11 +24,13 @@ QUOTES = "kinetic-quotes.json"
 INVOICES = "kinetic-invoices.json"
 DOMAIN_OWNERS = "kinetic-domain-owners.json"
 OUTREACH = "kinetic-outreach.json"
+TRADE_WEEK = "kinetic-trade-week.json"
 MAX_ROWS = 2000
 NOT_SENT = "Nothing has been sent; you send it yourself when you're happy with it."
 SIGNER = "Alfred"  # every draft is signed by Alfred for the business, never with the user's own name
 SITE = "https://kineticwebdesigns.co.uk"
 PLAN_LINK = SITE + "/#quote"  # the site's quote section, with the Stripe hosting-and-care plan buttons
+PREVIEW = "See your design before you pay anything."  # in every first message, follow-up, DM, script and quote
 
 
 def number(value, what: str, allow_zero: bool = False, top: float = 1_000_000) -> float:
@@ -100,6 +102,13 @@ def business(settings: Settings) -> dict:
            "bank_name": "", "sort_code": "", "account_number": "", "vat_number": "", "plan_link": "", **found}
     out["plan_link"] = out["plan_link"] or PLAN_LINK
     return out
+
+
+def trade_of_week(settings: Settings) -> dict:
+    """The trade of the week ({"label": "barbers", "kind": finder kind, "trade": mock-up trade, "set": date}),
+    or {} when none is set. Changed by voice through kinetic_reach ("this week is barbers")."""
+    found = load(settings, TRADE_WEEK, {})
+    return found if isinstance(found, dict) and found.get("kind") and found.get("trade") else {}
 
 
 def sign_off(me: dict) -> str:

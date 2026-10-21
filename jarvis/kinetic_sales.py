@@ -19,8 +19,14 @@ welcome_emails: after the deposit invoice, two emails for a new client: a thank-
 they'll receive, then "Next steps required from you" (domain owner details, their content and the hosting and care
 plan). With the client's email address they go into Alfred's drafts for the user to send.
 
-outreach: a short first message (email, letter, phone call, walk-in or social DM) built from the audit, with the
-starting price in the prospect's currency and the payment terms. For a prospect abroad it is written in their language
+outreach: a short first message (email, letter, phone call, walk-in, Instagram DM or WhatsApp) built from the audit.
+It opens with the lead's single biggest problem in plain words (no website, a site that won't load, no online booking,
+broken on phones, Instagram only...), then "so I made you this" and their free mock-up, then "see your design before
+you pay anything", the starting price in the prospect's currency and the payment terms. With no channel asked for,
+the lead type picks it (kinetic_world.lead_channels): no website or only a social page gets an Instagram DM and a
+WhatsApp message (each under 400 characters), a weak website gets an email and a short phone script, and where cold
+email isn't allowed (sole traders in the UK, Germany, Canada...) a phone script and a DM. With JARVIS_KINETIC_VIDEO
+on, a 30-second phone video of the mock-up is made too (kinetic_video) and named in the draft to attach. For a prospect abroad it is written in their language
 (from their country, or the one asked for) with the English version underneath. Drafts only: nothing is ever sent.
 The note it adds sums up that country's rules on unasked-for marketing (PECR, GDPR, CAN-SPAM, CASL, POPIA, PIPL...),
 and where cold email isn't allowed it drafts a social media DM instead. Each draft is recorded in the outreach tracker
@@ -46,7 +52,7 @@ NAMES = {"web_design_sales"}
 ACTIONS = ["prices", "set_price", "my_details", "quote", "quotes", "quote_status", "domain_owner",
            "welcome_emails", "mockup", "outreach"]
 QUOTE_STATUSES = ["draft", "sent", "accepted", "declined"]
-CHANNELS = ["email", "letter", "phone", "visit", "dm"]
+CHANNELS = ["email", "letter", "phone", "visit", "dm", "whatsapp"]
 DEFAULT_PRICES = {
     "packages": {
         "starter": {"name": "Starter website", "price": 395,
@@ -321,7 +327,9 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     body = [f"<h2>Quote {number} for {escape(name)}</h2>",
             '<div class="meta">' + "".join(f"<div><b>{k}</b>{escape(v)}</div>" for k, v in (
                 ("Quote number", number), ("Date", st.short(st.today())), ("Valid until", st.short(valid)),
-                ("Time to build", WEEKS[package]))) + "</div>"]
+                ("Time to build", WEEKS[package]))) + "</div>",
+            f"<p class=note><b>{escape(st.PREVIEW)}</b> You see a free design of your new home page first, and "
+            "only pay once you're happy to go ahead.</p>"]
     if args.get("notes"):
         body.append(f"<p>{escape(st.clean(args['notes'], 600))}</p>")
     if fixes:
@@ -612,8 +620,29 @@ def clean_css(css: str) -> str:
     return re.sub(r"expression\s*\(|(?:java|vb)script\s*:|-moz-binding", "", text, flags=re.I)
 
 
+CONTACT_TEXT = "Opening hours, address and a map go here, so people can find you in seconds."
+
+
+def call_button(phone: str) -> str:
+    """The mock-up's call button: tap-to-call with their number, else a link to the contact section."""
+    tel = re.sub(r"[^\d+]", "", phone)
+    return (f'<a class="btn" href="tel:{escape(tel)}">Call {escape(phone)}</a>' if tel else
+            '<a class="btn" href="#contact">Get in touch</a>')
+
+
+def service_card(service: str) -> str:
+    e = escape
+    return (f'<div class="card"><span class="dot"></span><h3>{e(service)}</h3><p>Tell customers what makes your '
+            f'{e(service.lower())} worth choosing, in a sentence or two.</p></div>')
+
+
+def contact_text(address: str) -> str:
+    return (f"<p>Find us at {escape(address)}. Opening hours and a map go here, so people can find you in seconds.</p>"
+            if address else f"<p>{CONTACT_TEXT}</p>")
+
+
 def mockup_html(name: str, trade: str, tagline: str, services: list[str], phone: str, town: str, look: dict | None,
-                maker: str, sections: list[str] = (), section_css: str = "") -> str:
+                maker: str, sections: list[str] = (), section_css: str = "", address: str = "") -> str:
     bg, ink, brand, accent, head, body, default_tag = TRADE_LOOKS[trade]
     if look:
         bg, ink, brand, accent = (safe_css(look.get(k), d) for k, d in
@@ -621,10 +650,8 @@ def mockup_html(name: str, trade: str, tagline: str, services: list[str], phone:
         head, body = safe_css(look.get("head"), head), safe_css(look.get("body"), body)
     tagline = tagline or default_tag
     e = escape
-    tel = re.sub(r"[^\d+]", "", phone)
-    call = f'<a class="btn" href="tel:{e(tel)}">Call {e(phone)}</a>' if tel else '<a class="btn" href="#contact">Get in touch</a>'
-    cards = "".join(f'<div class="card"><span class="dot"></span><h3>{e(s)}</h3><p>Tell customers what makes your '
-                    f'{e(s.lower())} worth choosing, in a sentence or two.</p></div>' for s in services[:6])
+    call = call_button(phone)
+    cards = "".join(service_card(s) for s in services[:6])
     where_ = f" in {e(town)}" if town else ""
     css = f""":root{{--bg:{bg};--ink:{ink};--brand:{brand};--accent:{accent};--head:{head};--body:{body}}}
 *{{box-sizing:border-box;margin:0}}body{{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.6}}
@@ -660,7 +687,7 @@ Swap this line for what you do best and who you do it for.</p><div>{call}<a clas
 <div class="band">Open today · Friendly local service{where_}</div>
 <div class="wrap"><section id="services"><h2>What we do</h2><div class="grid">{cards}</div></section>
 {extra}<section><h2>What customers say</h2><p class="quote">"Space for a real review from one of your customers."<small>Your happy customer</small></p></section>
-<section id="contact"><h2>Visit or get in touch</h2><p>Opening hours, address and a map go here, so people can find you in seconds.</p><br>{call}</section>
+<section id="contact"><h2>Visit or get in touch</h2>{contact_text(address)}<br>{call}</section>
 <footer>Concept home page for {e(name)} by {e(maker)}. Placeholder words only; not the live site.</footer></div>
 </body></html>
 """
@@ -670,11 +697,23 @@ def mockup(settings: Settings, args: dict) -> screen.Shown:
     name, prospect = client_and_prospect(settings, args)
     p = prospect or {}
     trade = trade_of(args.get("kind") or p.get("kind") or name)
+    if not any(args.get(k) for k in ("style_from", "sections", "section_css", "tagline")):
+        import kinetic_reach  # here, not at the top: it imports this module
+        made = kinetic_reach.from_base(settings, name, p, trade, args)  # the trade's base design, swapped: fast
+        if made:
+            path, label = made
+            return st.file_shown(settings, path, f"I made a concept home page for {name} from the {label} base design, "
+                                 f"with their name, colours, phone, address and services swapped in. It's in "
+                                 f"{st.where(settings, path)}; open it on your phone and PC to check it, then show it "
+                                 "to them as a free sample.", [
+                                     {"label": "Write outreach", "say": f"Write an outreach message for {name}."},
+                                     {"label": "Quote them", "say": f"Quote {name} for a new website."}])
     services = [st.clean(s, 40) for s in (args.get("services") or []) if st.clean(s)] or SERVICES[trade]
     look = look_from(settings, str(args.get("style_from") or "").strip())
     html = mockup_html(name, trade, st.clean(args.get("tagline"), 90), services, st.clean(args.get("phone") or p.get("phone"), 30),
                        st.clean(args.get("town") or p.get("town"), 40), look, st.business(settings)["name"],
-                       [x for x in args.get("sections") or [] if isinstance(x, str)], str(args.get("section_css") or ""))
+                       [x for x in args.get("sections") or [] if isinstance(x, str)], str(args.get("section_css") or ""),
+                       st.clean(p.get("address"), 160))
     path = st.write(settings, ("Mockups", name), "index.html", html, replace=True)
     style = f" in the style of {args['style_from']}" if look else f" in a {trade} look"
     return st.file_shown(settings, path, f"I made a concept home page for {name}{style}. It's in {st.where(settings, path)}; "
@@ -685,7 +724,10 @@ def mockup(settings: Settings, args: dict) -> screen.Shown:
 
 # ---- outreach ----------------------------------------------------------------------
 
-TRANSLATED = ("email", "letter", "dm")  # what the prospect reads; phone and walk-in scripts are for the user
+TRANSLATED = ("email", "letter", "dm", "whatsapp")  # what the prospect reads; phone and walk-in scripts are for the user
+DM_LIMIT = 400  # a DM or WhatsApp message stays under this many characters (before the opt-out line)
+LABELS = {"email": "Email", "letter": "Letter", "phone": "Phone script", "visit": "Walk-in script",
+          "dm": "Instagram DM", "whatsapp": "WhatsApp message"}
 
 
 def mockup_file(name: str) -> str:
@@ -704,15 +746,56 @@ def outreach_mockup(settings: Settings, args: dict) -> str:
     return st.where(settings, st.write(settings, ("Mockups", name), mockup_file(name), html, replace=True))
 
 
-def outreach_draft(settings: Settings, args: dict) -> dict:
+def no_site(p: dict) -> bool:
+    import kinetic_find  # here, not at the top: kinetic_find reaches this module through the tracker
+    return not p.get("website") or bool(kinetic_find.social_only(p))
+
+
+def channels_for(args: dict, prospect: dict | None, country: str, name: str) -> list[str]:
+    """Which messages to draft, first one first: the one asked for, else by lead type (kinetic_world.lead_channels:
+    a DM and WhatsApp for no website or social only, an email and a phone script for a weak website, and a phone
+    script and a DM where cold email isn't allowed), else the country's default for a business not in the finder."""
+    if args.get("channel"):
+        if args["channel"] not in CHANNELS:
+            raise ValueError("Which kind of message? " + ", ".join(CHANNELS) + ".")
+        return [args["channel"]]
+    if prospect:
+        return world.lead_channels(country, no_site(prospect), name)
+    return [world.default_channel(country)]
+
+
+def hook_of(name: str, p: dict, designer: str, short: bool = False) -> str:
+    """The first line: the lead's single biggest problem in plain words (from the audit); short for a DM."""
+    import kinetic_find  # here, not at the top: kinetic_find reaches this module through the tracker
+    found = kinetic_find.biggest_problem({**p, "name": name})
+    return found.get("short" if short else "line") or (
+        f"I'm with Kinetic Web Designs and I'd love to help {name} win more customers online." if short else
+        f"I'm with Kinetic Web Designs, {designer}, and I'd love to help {name} win more customers online.")
+
+
+def short_message(hello: str, intro: str, hook: str, made: str, attached: str, video: str, start: str, terms: str,
+                  sign: str) -> str:
+    """A DM or WhatsApp message under DM_LIMIT characters: shortened (file name, then price) only if it must be."""
+    for file_part, price in ((attached, True), ("", True), ("", False)):
+        text = " ".join(x for x in (hello, intro, hook, f"{made}{file_part if made else ''}{video}." if made else "",
+                                    st.PREVIEW, f"From {start}, you pay {terms}." if price else "", sign) if x)
+        if len(text) <= DM_LIMIT:
+            break
+    return text
+
+
+def outreach_draft(settings: Settings, args: dict, channel: str = "", video: str = "") -> dict:
     """The English draft and what goes with it: who, which channel, the country, its rules note and language.
-    Every first message opens with the free home page mock-up ("I made this for you") unless mockup is false."""
+    Every first message opens with the lead's biggest problem, then "so I made you this" and the free home page
+    mock-up (unless mockup is false), and says "see your design before you pay anything". video is the mock-up
+    video's file name, when there is one."""
     name, prospect = client_and_prospect(settings, args)
     p = prospect or {}
     me = st.business(settings)
     country = country_of(args, prospect)
     home = country in ("", world.HOME)
-    channel = args.get("channel") or world.default_channel(country)
+    plan = channels_for(args, prospect, country, name)
+    channel = channel or plan[0]
     if channel not in CHANNELS:
         raise ValueError("Which kind of message? " + ", ".join(CHANNELS) + ".")
     language = world.language_code(args.get("language"), country)
@@ -721,110 +804,160 @@ def outreach_draft(settings: Settings, args: dict) -> dict:
     sign = st.sign_off(me)
     designer = "a local web designer" if home else "a web designer based in the UK, working with businesses worldwide"
     a = p.get("audit") or {}
-    social = "Instagram" if p.get("instagram") and not p.get("facebook") else "Facebook" if p.get("facebook") else ""
     if not p.get("website"):
-        hook = (f"I searched for {name} online and couldn't find a website, only "
-                f"{'your ' + social + ' page' if social else 'a map listing'}. "
-                "That means people searching on Google tonight are finding someone else first.")
         points = ["a simple site that works on phones, with your hours, prices and a tap-to-call button",
                   "set up so you show up properly on Google and Google Maps"]
     elif a.get("grade") == "down":
-        hook = f"I tried to visit your website ({st.domain(p['website'])}) and it didn't load, so customers may be giving up."
         points = ["getting a fast, secure site back up", "making sure it works on phones and shows on Google"]
     elif a.get("problems"):
-        hook = f"I had a look at your website ({st.domain(p['website'])}) and spotted a few quick wins."
         points = [f"{x['problem'][0].lower() + x['problem'][1:]}: {x['why'][0].lower() + x['why'][1:]}" for x in a["problems"][:3]]
     else:
-        hook = f"I'm with Kinetic Web Designs, {designer}, and I'd love to help {name} win more customers online."
         points = ["a modern, phone-friendly site", "getting found on Google"]
+    hook = hook_of(name, p, designer)
     gift = args.get("mockup", True)
     file = mockup_file(name)
-    made = f"I made this for you: a free example of a new home page for {name}."
-    opener = {"email": f"{made} It's attached ({file}), so you can open it on your phone. No obligation at all.",
-              "dm": f"{made} I've attached it ({file}); open it on your phone. No obligation.",
+    made = f"So I made you this: a free example of a new home page for {name}."
+    film = f" There's a 30-second video of it on a phone too ({video})." if video and gift else ""
+    opener = {"email": f"{made} It's attached ({file}), so you can open it on your phone. No obligation at all.{film}",
               "letter": f"{made} It's printed and enclosed with this letter ({file}), and I'm happy to email you the "
                         "live version to open on your phone. No obligation at all.",
               }.get(channel, made) if gift else ""
     offer = "" if gift else "I'd be happy to show you some ideas, free and with no obligation."
     pr = prices(settings)
     start = world.local_price(pr["packages"]["starter"]["price"], world.currency_of(country))
-    price = f"Websites start from {start}, and you pay {world.payment_terms(pr['deposit_percent'])}."
+    terms = world.payment_terms(pr["deposit_percent"])
+    price = f"Websites start from {start}, and you pay {terms}."
     bullets = "\n".join(f"- {x[0].upper() + x[1:]}" for x in points)
     opt_out = world.OPT_OUT
-    lead_in = opener or hook
-    rest = hook if opener else ""
+    first = f"{hook} {opener}" if opener else f"{hook}\n\n{offer}"
     if channel == "email":
         subject = f"I made this for {name}" if gift else \
             (f"A quick idea for {name}'s website" if p.get("website") else f"Helping {name} get found online")
         # CAN-SPAM and CASL want a postal address in every sales email
         address = me["address"] or ("[your postal address]" if world.rules_of(country) in ("us", "ca") else "")
-        body = (f"Subject: {subject}\n\n{hello}\n\n{lead_in}\n\n" + (f"{rest}\n\n" if rest else "") +
-                f"A couple of things I'd suggest:\n{bullets}\n\n" + (f"{offer}\n\n" if offer else "") +
-                f"{price}\n\nWould a 10-minute chat this week be useful?\n\nThanks,\n{sign}"
+        body = (f"Subject: {subject}\n\n{hello}\n\n{first}\n\n{st.PREVIEW}\n\n"
+                f"A couple of things I'd suggest:\n{bullets}\n\n{price}\n\n"
+                f"Would a 10-minute chat this week be useful?\n\nThanks,\n{sign}"
                 + "".join(f"\n{x}" for x in (me["phone"], me["website"], address) if x) + f"\n\n{opt_out}")
     elif channel == "letter":
         body = (f"{me['name']}\n{me['address'] or '[your address]'}\n{st.long_date(st.today())}\n\nTo the owner, {name}\n\n"
-                f"{hello.replace('Hi', 'Dear')}\n\n{lead_in}\n\n" + (f"{rest}\n\n" if rest else "") +
-                f"What I'd suggest:\n{bullets}\n\n" + (f"{offer}\n\n" if offer else "") + f"{price}\n\n"
+                f"{hello.replace('Hi', 'Dear')}\n\n{first}\n\n{st.PREVIEW}\n\n"
+                f"What I'd suggest:\n{bullets}\n\n{price}\n\n"
                 f"You can reach us on {me['phone'] or '[your phone]'} or {me['email'] or '[your email]'}.\n\n"
                 f"Kind regards,\n{sign}\n\n{opt_out}")
     elif channel == "phone":
-        ask = (f"I made this for you: a free example of a new home page for {name}. Could I email it over so you can "
-               "see it on your phone?") if gift else offer
+        ask = f"{hook} {made} Could I send it over so you can see it on your phone?" if gift else f"{hook} {offer}"
         body = (f"Phone script for {name}{(' (' + p['phone'] + ')') if p.get('phone') else ''}\n\n"
                 f"1. \"Hi, is that the owner? I'm calling from {me['name']}, {designer}. Have you got two minutes?\"\n"
-                f"2. If yes: \"{ask}\"\n3. \"{hook}\"\n4. \"I'd suggest:\"\n{bullets}\n"
+                f"2. If yes: \"{ask}\"\n3. \"{st.PREVIEW}\"\n4. \"I'd suggest:\"\n{bullets}\n"
                 f"5. If they ask about price: \"{price}\"\n"
-                "6. Ask: \"What's the best email to send it to?\" Agree a time to talk it through.\n"
+                "6. Ask: \"What's the best way to send it: WhatsApp or email?\" Agree a time to talk it through.\n"
                 "7. If not now: thank them, ask if you can check back in a few months, and note it.\n"
                 "If they say no, thank them and don't call again.")
     elif channel == "visit":
         body = (f"Walk-in script for {name}{(', ' + p['address']) if p.get('address') else ''}\n\n"
                 "Go at a quiet time (mid-morning or mid-afternoon), and bring the mock-up on your phone"
                 + (f" ({file})" if gift else "") + ".\n\n"
-                f"\"Hi, I'm from {me['name']}, a web designer just round the corner. "
-                + (f"I made this for you: a free example of a new home page for {name}. Can I show you in 30 seconds? "
-                   if gift else "") + f"{hook}\"\n\nPoints to mention:\n{bullets}\n\nIf they ask about price: "
-                f"\"{price}\"\n\nLeave your card or number and ask for the best email to send the example to. If "
-                "they're busy, ask when's better.\nIf they say no, thank them and don't come back.")
-    else:
-        body = (f"{hello} {lead_in} " + (f"{rest} " if rest else "") + (f"{offer} " if offer else "") +
-                f"{price} {sign}\n\n{opt_out}")
-    note = world.compliance_note(country) if channel in ("email", "dm", "letter") else \
-        "Be friendly and brief, and take no for an answer."
-    return {"name": name, "channel": channel, "country": country, "language": language, "body": body, "note": note}
+                f"\"Hi, I'm from {me['name']}, a web designer just round the corner. {hook} "
+                + (f"{made} Can I show you in 30 seconds? " if gift else f"{offer} ") + f"{st.PREVIEW}\"\n\n"
+                f"Points to mention:\n{bullets}\n\nIf they ask about price: \"{price}\"\n\nLeave your card or "
+                "number and ask for the best WhatsApp or email to send the example to. If they're busy, ask when's "
+                "better.\nIf they say no, thank them and don't come back.")
+    else:  # dm or whatsapp: short, with the same hook
+        hi = hello[:-1] + "!"
+        intro = f"It's {st.SIGNER} from {me['name']}." if channel == "whatsapp" else ""
+        brief = hook_of(name, p, designer, short=True)
+        clip = " and a 30-second video of it" if video and gift else ""
+        if gift:
+            text = short_message(hi, intro, brief, "So I made you this: a free home page mock-up", f" ({file})", clip,
+                                 start, terms, sign)
+        else:
+            text = short_message(hi, intro, f"{brief} {offer}", "", "", "", start, terms, sign)
+        body = f"{text}\n\n{opt_out}"
+    written = channel in ("email", "dm", "whatsapp", "letter") or any(c in ("dm", "whatsapp") for c in plan)
+    note = world.compliance_note(country) if written else "Be friendly and brief, and take no for an answer."
+    return {"name": name, "channel": channel, "channels": plan, "country": country, "language": language,
+            "body": body, "note": note, "hook": hook}
+
+
+def next_weekly_lead(settings: Settings) -> str:
+    """The best uncontacted lead of the trade of the week, as a prospect number ("" when there isn't one)."""
+    import kinetic_find  # here, not at the top: kinetic_find reaches this module through the tracker
+    week = st.trade_of_week(settings)
+    if not week:
+        return ""
+    fresh = {r.get("prospect") for r in tracker.all_leads(settings) if r.get("status") == "new" and r.get("prospect")}
+    rows = [p for p in st.rows_of(settings, st.PROSPECTS) if p.get("id") in fresh and
+            trade_of(f"{p.get('kind', '')} {p['name']}") == week["trade"]]
+    return str(sorted(rows, key=kinetic_find.rank_key)[0]["id"]) if rows else ""
+
+
+async def translated(settings: Settings, body: str, language: str, channel: str) -> tuple[str, str]:
+    """(the draft, how it was written) in the lead's language with the English underneath, where they read it."""
+    if language == "en" or channel not in TRANSLATED:
+        return body, ""
+    local = await world.translate(settings, body, language)
+    if local:
+        return f"{local}\n\n----------\nEnglish version:\n\n{body}", f" in {world.LANGUAGES[language]} with the English underneath"
+    return body, f" in English only, as I couldn't translate it into {world.LANGUAGES[language]} just now"
 
 
 async def outreach(settings: Settings, args: dict) -> screen.Shown | str:
+    if not (args.get("client") or args.get("business")):  # no lead named: the best one of the trade of the week
+        pick = await asyncio.to_thread(next_weekly_lead, settings)
+        if pick:
+            args = {**args, "client": pick}
     warning = await asyncio.to_thread(tracker.before_draft, settings, *client_and_prospect(settings, args))
     if warning:  # already messaged or already talking: no second first message
         return warning
-    attach = await asyncio.to_thread(outreach_mockup, settings, args) if args.get("mockup", True) else ""
-    d = outreach_draft(settings, args)
-    name, channel, body, language = d["name"], d["channel"], d["body"], d["language"]
-    said = ""
-    if language != "en" and channel in TRANSLATED:
-        local = await world.translate(settings, body, language)
-        if local:
-            body = f"{local}\n\n----------\nEnglish version:\n\n{body}"
-            said = f" in {world.LANGUAGES[language]} with the English underneath"
-        else:
-            said = f" in English only, as I couldn't translate it into {world.LANGUAGES[language]} just now"
-    path = await asyncio.to_thread(st.write, settings, ("Clients", name),
-                                   f"Outreach {channel} {st.today().isoformat()}.md", body + "\n")
+    gift = args.get("mockup", True)
+    attach = await asyncio.to_thread(outreach_mockup, settings, args) if gift else ""
+    first = outreach_draft(settings, args)
+    name = first["name"]
+    video, video_note = None, ""
+    if gift and settings.kinetic_video and args.get("video", True) is not False:
+        import kinetic_video
+        video, video_note = await kinetic_video.make(settings, name, first["hook"],
+                                                     st.folder(settings, "Mockups", name) / "index.html")
+    film = video.name if video else ""
+    drafts = [outreach_draft(settings, args, c, film) for c in first["channels"]]
+    paths, bodies, said = [], [], ""
+    for i, d in enumerate(drafts):
+        body, how = await translated(settings, d["body"], d["language"], d["channel"])
+        if i == 0:
+            said = how
+        bodies.append(body)
+        paths.append(await asyncio.to_thread(st.write, settings, ("Clients", name),
+                                             f"Outreach {d['channel']} {st.today().isoformat()}.md", body + "\n"))
+    d, channel = drafts[0], drafts[0]["channel"]
     await asyncio.to_thread(tracker.drafted, settings, name, client_and_prospect(settings, args)[1], channel,
-                            d["country"], st.clean(args.get("contact_name"), 40))
+                            d["country"], st.clean(args.get("contact_name"), 40), bool(attach))
     where_ = f" ({world.country_name(d['country'])})" if d["country"] not in ("", world.HOME) else ""
+    kind = {"phone": "phone script", "visit": "walk-in script", "whatsapp": "WhatsApp message"}.get(channel, channel)
     article = "an" if channel == "email" else "a"
-    how = {"email": "Attach it to the email", "dm": "Attach it to the message", "letter": "Print it and enclose it",
-           "phone": "Have it ready to email them", "visit": "Open it on your phone to show them"}[channel]
-    gift = (f" I also made their free home page mock-up: {attach}. {how}; drafts can't carry attachments."
-            if attach else "")
-    return st.text_card(f"I drafted {article} {channel} for {name}{where_}{said} and saved it in {st.where(settings, path)}."
-                        f"{gift} {st.NOT_SENT} Once you've sent it, tell me and I'll mark them as contacted. {d['note']}",
-                        f"Outreach: {name}", body, [
-                            {"label": "Mark contacted", "say": f"I sent the outreach {channel} to {name}."},
-                            {"label": "Redo the mock-up", "say": f"Mock up a home page for {name}."}])
+    how = {"email": "Attach it to the email", "dm": "Attach it to the message", "whatsapp": "Attach it to the message",
+           "letter": "Print it and enclose it", "phone": "Have it ready to send them",
+           "visit": "Open it on your phone to show them"}[channel]
+    gift_text = (f" I also made their free home page mock-up: {attach}. {how}; drafts can't carry attachments."
+                 if attach else "")
+    if video:
+        gift_text += f" Attach this video too: {st.where(settings, video)} (30 seconds, made for phones)."
+    elif video_note:
+        gift_text += f" {video_note}"
+    also = ""
+    if len(drafts) > 1:
+        names = " and ".join(("an " if LABELS[x["channel"]][0] in "AEIOU" else "a ") + LABELS[x["channel"]]
+                             for x in drafts[1:])
+        why = ("They have no website, so they live on their phone" if no_site(client_and_prospect(settings, args)[1] or {})
+               else "A cold email isn't the safe choice for them here" if channel != "email"
+               else "They have a website, so email suits them")
+        also = f" {why}: there's also {names.lower().replace('instagram dm', 'Instagram DM').replace('whatsapp', 'WhatsApp')} saved next to it."
+    text = (f"I drafted {article} {kind} for {name}{where_}{said} and saved it in {st.where(settings, paths[0])}."
+            f"{also}{gift_text} {st.NOT_SENT} Once you've sent it, tell me and I'll mark them as contacted. {d['note']}")
+    card = bodies[0] + "".join(f"\n\n----------\n{LABELS[x['channel']]}:\n\n{b}" for x, b in zip(drafts[1:], bodies[1:]))
+    return st.text_card(text, f"Outreach: {name}", card, [
+        {"label": "Mark contacted", "say": f"I sent the outreach {channel} to {name}."},
+        {"label": "Redo the mock-up", "say": f"Mock up a home page for {name}."}])
 
 
 def tool_definitions() -> list[dict]:
@@ -842,9 +975,16 @@ def tool_definitions() -> list[dict]:
                        "confirmation and next-steps emails for a quote (contact_name, to puts them in drafts; the "
                        "user sends them). mockup: a free concept home page for a business, optionally "
                        "in a design system saved by extract_design_system (style_from); for a creative one, read the "
-                       "client-websites design guide first and add 21st.dev sections (sections, section_css). outreach: a first message "
-                       "draft (email, letter, phone script, walk-in script, dm) from the audit that opens with a free "
-                       "home page mock-up Alfred makes for them (\"I made this for you\"; the user attaches it), for "
+                       "client-websites design guide first and add 21st.dev sections (sections, section_css); "
+                       "a trade with a base design (web_design_reach trade_of_week) reuses it with the lead's details "
+                       "swapped in. outreach: a first message "
+                       "draft (email, letter, phone script, walk-in script, dm, whatsapp) that opens with the lead's "
+                       "biggest audited problem, then \"so I made you this\" and a free home page mock-up Alfred makes "
+                       "for them (the user attaches it) and \"see your design before you pay anything\"; leave channel "
+                       "out to let the lead type pick (no website or social only: Instagram DM + WhatsApp; weak "
+                       "website: email + phone script; phone + DM where cold email isn't allowed); with no client it "
+                       "takes the best new lead of the trade of the week; a 30-second mock-up video is made to attach "
+                       "when the PC can (video false skips it), for "
                        "prospects anywhere "
                        "in the world: the price in their currency, written in their language (from their country, or "
                        "language) with English underneath, and a note on that country's email rules. Payment terms "
@@ -904,6 +1044,8 @@ def tool_definitions() -> list[dict]:
                 "mockup": {"type": "boolean", "description": "outreach: make the free home page mock-up and open the "
                                                             "message with it (default true; only false if the user "
                                                             "says so)."},
+                "video": {"type": "boolean", "description": "outreach: also make the 30-second mock-up video to "
+                                                           "attach (default true when Playwright and ffmpeg are there)."},
                 "founding": {"type": "boolean", "description": "quote: the founding client offer, £100 off for the "
                                                               "first 3 clients in return for an honest Google review "
                                                               "and permission to show their site. Doesn't stack with "
