@@ -133,7 +133,7 @@ def test_check_deliveries_tool_only_with_email():
     names = lambda s: [t["name"] for t in tools.client_tool_definitions(s)]
     assert "check_deliveries" in names(SETTINGS)
     assert "check_deliveries" not in names(Settings(email_address="", email_app_password=""))
-    assert "check_deliveries" in request_options(SETTINGS)["system"]
+    assert "check_deliveries" in request_options(SETTINGS)["system"][0]["text"]
 
 
 async def test_announcements_reach_the_next_turn():

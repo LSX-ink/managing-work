@@ -7,6 +7,9 @@ Two ways round, picked by JARVIS_OMNIROUTE_FIRST:
   any reason, Claude answers directly.
 After the first route fails, Alfred skips it for a few minutes rather than waiting on it each time.
 
+When Claude's credit has run out and OmniRoute fails too, the error says so (NoThinkingCredit), so Alfred can tell
+the user the fix (connect the free AI) instead of a vague error each turn.
+
 OmniRoute's AIs don't share Claude's built-in extras (its own web search, tool search, extended thinking), so
 the request is trimmed to plain text, pictures and Alfred's own loaded tools before it goes there.
 """
@@ -33,6 +36,19 @@ def make_client(settings: Settings, **kwargs):
     gateway = anthropic.AsyncAnthropic(base_url=settings.omniroute_url.rstrip("/").removesuffix("/v1"),
                                        api_key=settings.omniroute_key or "omniroute", max_retries=1)
     return BackupClient(direct, gateway, settings.omniroute_model or "auto", settings.omniroute_first)
+
+
+class NoThinkingCredit(Exception):
+    """Claude's credit has run out and OmniRoute (the free route) failed as well."""
+
+
+def out_of_credit(exc: BaseException | None) -> bool:
+    """True when Claude turned the request down because the account has no credit left."""
+    if exc is None:
+        return False
+    if isinstance(exc, anthropic.APIStatusError) and exc.status_code == 402:
+        return True
+    return "credit balance" in str(exc).lower()
 
 
 def should_switch(exc: BaseException) -> bool:
@@ -118,19 +134,38 @@ class _Messages:
         self._owner.rest(name, exc)
         return True
 
+    def _gave_up(self, exc: Exception) -> Exception:
+        """The last route failed too. When an empty Claude account is part of why, say so plainly."""
+        earlier = self._owner.rest_error if self._owner.resting() else None
+        if out_of_credit(exc) or out_of_credit(earlier):
+            if earlier is not None and earlier is not exc:
+                self._owner.last_route = ""
+                return NoThinkingCredit("Claude's credit has run out and OmniRoute failed too "
+                                        f"({type(earlier).__name__}, {type(exc).__name__}).")
+        return exc
+
     async def create(self, **opts):
-        *first, (_, api, request) = self._routes(opts)
+        *first, (last, api, request) = self._routes(opts)
         for name, first_api, first_request in first:
             try:
-                return await first_api.create(**first_request)
+                answer = await first_api.create(**first_request)
+                self._owner.last_route = name
+                return answer
             except Exception as exc:
                 if not self._move_on(exc, name):
                     raise
-        return await api.create(**request)
+        try:
+            answer = await api.create(**request)
+        except Exception as exc:
+            if (gave_up := self._gave_up(exc)) is not exc:
+                raise gave_up from exc
+            raise
+        self._owner.last_route = last
+        return answer
 
     @contextlib.asynccontextmanager
     async def stream(self, **opts):
-        *first, (_, api, request) = self._routes(opts)
+        *first, (last, api, request) = self._routes(opts)
         for name, first_api, first_request in first:
             manager = first_api.stream(**first_request)
             try:
@@ -139,6 +174,7 @@ class _Messages:
                 if not self._move_on(exc, name):
                     raise
                 continue
+            self._owner.last_route = name
             try:
                 yield stream
             except BaseException as exc:
@@ -147,8 +183,21 @@ class _Messages:
             else:
                 await manager.__aexit__(None, None, None)
             return
-        async with api.stream(**request) as stream:
+        manager = api.stream(**request)
+        try:
+            stream = await manager.__aenter__()
+        except Exception as exc:
+            if (gave_up := self._gave_up(exc)) is not exc:
+                raise gave_up from exc
+            raise
+        self._owner.last_route = last
+        try:
             yield stream
+        except BaseException as exc:
+            if not await manager.__aexit__(type(exc), exc, exc.__traceback__):
+                raise
+        else:
+            await manager.__aexit__(None, None, None)
 
 
 class _Beta:
@@ -162,6 +211,8 @@ class BackupClient:
     def __init__(self, direct, gateway, model: str, free_first: bool = False):
         self.direct, self.gateway, self.model, self.free_first = direct, gateway, model, free_first
         self.rest_until = 0.0
+        self.rest_error: BaseException | None = None  # why the first route is being skipped
+        self.last_route = ""  # "Claude" or "OmniRoute": which one answered last, for the HUD
         self.messages = _Messages(self, direct.messages, gateway.messages)
         self.beta = _Beta(self)
 
@@ -173,6 +224,7 @@ class BackupClient:
         print(f"[jarvis] {name} failed ({type(exc).__name__}); answering through {other} for "
               f"{COOLDOWN // 60} minutes.", flush=True)
         self.rest_until = time.monotonic() + COOLDOWN
+        self.rest_error = exc
 
     async def close(self) -> None:
         await self.direct.close()

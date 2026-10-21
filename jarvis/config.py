@@ -30,6 +30,11 @@ IMAP_HOSTS = {
 @dataclass(frozen=True)
 class Settings:
     model: str = os.getenv("JARVIS_MODEL", "claude-opus-5")
+    # Cost saver: simple turns (chit-chat, quick facts, timers, music) go to the cheap model, and only hard jobs
+    # (long writing, code, planning, design, scripts, outreach) or "think hard" use the smart one.
+    cost_saver: bool = _bool("JARVIS_COST_SAVER", True)
+    cheap_model: str = os.getenv("JARVIS_CHEAP_MODEL", "claude-haiku-5-5").strip()
+    smart_model: str = os.getenv("JARVIS_SMART_MODEL", "").strip()  # empty: JARVIS_MODEL
     # Second route through OmniRoute: its address, its API key, and the model or combo it should use. Empty
     # address: Claude only. Normally the backup when Claude fails (limits, credit, outages).
     omniroute_url: str = os.getenv("JARVIS_OMNIROUTE_URL", "").strip()
@@ -109,6 +114,11 @@ class Settings:
             domain = self.email_address.rpartition("@")[2].lower()
             host = IMAP_HOSTS.get(domain, "imap.gmail.com")
         object.__setattr__(self, "email_imap_host", host)
+
+    @property
+    def big_model(self) -> str:
+        """The model for hard jobs: JARVIS_SMART_MODEL, or JARVIS_MODEL when that's empty."""
+        return self.smart_model or self.model
 
     @property
     def email_enabled(self) -> bool:

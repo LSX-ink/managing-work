@@ -284,7 +284,8 @@ async def client_config():
         "serverVoice": bool(settings.elevenlabs_api_key),
         "computer": computer_enabled(settings),
         "theme": settings.theme,
-        "model": settings.model,
+        # until the first answer names the model that gave it (cost saver: the cheap one for simple turns)
+        "model": f"{settings.cheap_model} / {settings.big_model}" if settings.cost_saver else settings.big_model,
         "city": settings.city,
         "wakeWord": settings.wake_word,
     }
@@ -651,7 +652,7 @@ async def websocket(ws: WebSocket):
 if __name__ == "__main__":
     import uvicorn
 
-    print(f"J.A.R.V.I.S. on http://{settings.host}:{settings.port}  (model: {settings.model})", flush=True)
+    print(f"J.A.R.V.I.S. on http://{settings.host}:{settings.port}  (model: {settings.big_model}{f', simple turns: {settings.cheap_model}' if settings.cost_saver else ''})", flush=True)
     # Browsers only allow the microphone on https or localhost, so point at the address that works.
     print(f"  Open  http://localhost:{settings.port}  on this PC (the microphone only works on localhost or https)", flush=True)
     uvicorn.run(app, host=settings.host, port=settings.port)

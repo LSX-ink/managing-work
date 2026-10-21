@@ -351,6 +351,9 @@ function connect(onOpen) {
             showNowPlaying(msg);
         } else if (msg.type === 'status') {
             if (busy && !speaking && !queue.length) setState('thinking', msg.text);   // what he's doing right now
+        } else if (msg.type === 'model') {
+            const shown = document.getElementById('hud-model');   // HUD SYSTEM panel: which model answered last
+            if (shown && msg.model) shown.textContent = String(msg.model).toUpperCase();
         } else if (msg.type === 'note') {
             addLine('jarvis', msg.text);  // shown, not spoken
         } else if (msg.type === 'chime') {
