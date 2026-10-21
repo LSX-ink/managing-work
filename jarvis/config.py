@@ -87,6 +87,11 @@ class Settings:
     # Google Places API (New) for the client finder; empty: OpenStreetMap. The cap stops a run running up a bill.
     google_places_key: str = os.getenv("JARVIS_GOOGLE_PLACES_KEY", "").strip()
     places_max_calls: int = int(os.getenv("JARVIS_PLACES_MAX_CALLS", "100") or 100)
+    # Instagram DMs (instagram_dms.py): a long-lived Instagram user access token for the business account. Alfred only
+    # replies to people who message first. The token is only sent in requests, never shown or logged.
+    instagram_token: str = os.getenv("JARVIS_INSTAGRAM_TOKEN", "").strip()
+    instagram_autoreply: bool = _bool("JARVIS_INSTAGRAM_AUTOREPLY", True)  # off: tell you about new DMs, don't answer
+    instagram_poll_seconds: int = int(os.getenv("JARVIS_INSTAGRAM_POLL_SECONDS", "60") or 60)
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
     # Calls over the internet: your phone posts to a private ntfy topic that Jarvis makes up himself
     now_playing: bool = _bool("JARVIS_NOW_PLAYING", True)  # pop-up card when a new song starts (Windows)

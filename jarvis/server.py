@@ -24,6 +24,7 @@ from starlette.requests import ClientDisconnect
 import alerts
 import alfredmem
 import helpers
+import instagram_dms
 import kinetic_briefing
 import kinetic_calendar
 import kinetic_outreach
@@ -86,6 +87,8 @@ async def lifespan(app: FastAPI):
         settings, lambda text, kind, shown=None: announce(app, text, kind, shown), lambda: bool(app.state.pages))))
     watchers.append(asyncio.create_task(kinetic_calendar.watch(settings, lambda text, kind: announce(app, text, kind),
                                                                lambda: bool(app.state.pages))))  # post-day reminders
+    watchers.append(asyncio.create_task(instagram_dms.watch(settings, app.state.http,  # replies to Instagram DMs
+                                                            lambda text, kind: announce(app, text, kind))))
     watchers.append(tiktokstudio.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))

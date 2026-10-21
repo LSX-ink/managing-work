@@ -111,6 +111,7 @@ import design_social
 import design_layout
 import design_audit
 import design_components
+import instagram_dms
 import kinetic_briefing
 import kinetic_calendar
 import kinetic_find
@@ -374,6 +375,7 @@ ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email seri
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, track outreach, invoice
 ABILITIES += [kinetic_briefing, kinetic_calendar]  # Kinetic: morning money briefing, content calendar
 ABILITIES += [kinetic_reach]  # Kinetic: trade of the week and its base mock-up, walk-in routes, mock-up videos
+ABILITIES += [instagram_dms]  # Kinetic: replies to Instagram DMs from people who message first
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
