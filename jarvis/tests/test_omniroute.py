@@ -191,3 +191,33 @@ async def test_close_closes_both():
     client, direct, gateway = backup()
     await client.close()
     assert direct.closed and gateway.closed
+
+
+NO_CREDIT = status(anthropic.BadRequestError, 400, "Your credit balance is too low to access the Anthropic API.")
+
+
+@pytest.mark.parametrize("free_first", [True, False])
+async def test_no_credit_and_no_free_ai_is_named_plainly(free_first):
+    client, _, _ = backup(direct_error=NO_CREDIT, gateway_error=anthropic.APIConnectionError(request=REQUEST),
+                          free_first=free_first)
+    with pytest.raises(omniroute.NoThinkingCredit):
+        await client.beta.messages.create(**OPTS)
+    with pytest.raises(omniroute.NoThinkingCredit):  # the next turn too, while the first route rests
+        async with client.beta.messages.stream(**OPTS):
+            pass
+
+
+def test_out_of_credit_spots_an_empty_account():
+    assert omniroute.out_of_credit(NO_CREDIT) and omniroute.out_of_credit(status(anthropic.APIStatusError, 402))
+    assert not omniroute.out_of_credit(status(anthropic.RateLimitError, 429)) and not omniroute.out_of_credit(None)
+
+
+async def test_the_route_that_answered_is_remembered():
+    client, _, _ = backup(direct_error=NO_CREDIT)
+    async with client.beta.messages.stream(**OPTS) as stream:
+        assert stream == "backup"
+    assert client.last_route == "OmniRoute"
+    client.rest_until = 0
+    client.direct.beta.messages.error = None
+    await client.beta.messages.create(**OPTS)
+    assert client.last_route == "Claude"

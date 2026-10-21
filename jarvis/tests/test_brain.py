@@ -250,8 +250,9 @@ def test_failed_calls_name_what_the_user_can_fix():
 def test_alfred_is_told_the_name_of_every_ability_he_can_load():
     options = brain.request_options(replace(SETTINGS, model="claude-opus-5"))
     deferred = [t["name"] for t in options["tools"] if t.get("defer_loading")]
-    assert deferred and all(name in options["system"] for name in deferred)
-    assert "Never tell the user you can't" in options["system"]
+    system = options["system"][0]["text"]
+    assert deferred and all(name in system for name in deferred)
+    assert "Never tell the user you can't" in system
 
 
 def test_alfred_is_taught_to_solve_problems_on_his_own():

@@ -22,6 +22,7 @@ import alerts
 import computer
 import dates
 import fun
+import omniroute
 import reminders
 import shopping
 import timers
@@ -38,6 +39,7 @@ STUCK_EFFORT = {"low": "medium", "medium": "high"}  # think harder for the rest 
 MAX_IMAGES_KEPT = 12
 MAX_DOCUMENTS_KEPT = 6
 MAX_TURNS_KEPT = 20
+TRIMMED_TO = 12  # history is cut back to this many exchanges at once, so the cached prefix lasts several turns
 CARRY_OVER_TURNS = 10  # exchanges remembered across restarts and page reloads
 
 # Fixed lines Jarvis says without asking Claude, by language code.
@@ -56,6 +58,9 @@ LINES = {
         "busy": "Claude is busy or rate-limiting me just now. Give it a minute and try again.",
         "bad_model": "Claude doesn't recognise the model in my settings, or this account can't use it. Check "
                      "JARVIS_MODEL in the dot env file.",
+        "no_credit_free": "My thinking credit has run out and the free AI isn't connected — add the free Gemini key "
+                          "in OmniRoute.",
+        "still_no_credit": "Still no thinking credit, I'm afraid.",
         "loop": "I seem to be going round in circles. Let's try that another way.",
         "declined": "The user declined these actions. Do not retry them; ask what they would like instead.",
     },
@@ -71,6 +76,9 @@ LINES = {
                          "werknetwerk kan 'n firewall api dot anthropic dot com blokkeer.",
         "busy": "Claude is nou besig. Wag 'n minuut en probeer weer.",
         "bad_model": "Claude ken nie die model in my instellings nie. Kyk na JARVIS_MODEL in die dot env-lêer.",
+        "no_credit_free": "My dinkkrediet is op en die gratis KI is nie gekoppel nie — voeg die gratis Gemini-sleutel "
+                          "in OmniRoute by.",
+        "still_no_credit": "Steeds geen dinkkrediet nie, ongelukkig.",
         "loop": "Dit lyk of ek in sirkels draai. Kom ons probeer dit anders.",
         "declined": "The user declined these actions. Do not retry them; ask what they would like instead.",
     },
@@ -83,6 +91,8 @@ def line(settings: Settings, key: str) -> str:
 
 def error_key(exc: Exception) -> str:
     """Which fixed line names a failed Claude call, so the user hears what to fix instead of a vague error."""
+    if isinstance(exc, omniroute.NoThinkingCredit):  # Claude's credit is out and OmniRoute failed too
+        return "no_credit_free"
     if "credit balance is too low" in str(exc):
         return "no_credit"
     if isinstance(exc, TypeError) and "authentication" in str(exc):  # the SDK's error for a missing key
@@ -104,14 +114,14 @@ _NEW_WEB_TOOLS = ("claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude
 _NO_EFFORT = ("claude-haiku-4-5", "claude-sonnet-4-5")
 # Models that take adaptive thinking (they decide how much to think; effort sets the depth). Older ones would
 # need a fixed thinking budget, so they go without.
-_ADAPTIVE_THINKING = _NEW_WEB_TOOLS + ("claude-fable-5",)
-_NO_TOOL_SEARCH = ("claude-haiku", "claude-3")
+_ADAPTIVE_THINKING = _NEW_WEB_TOOLS + ("claude-fable-5", "claude-haiku-5")
+_NO_TOOL_SEARCH = ("claude-haiku-4", "claude-haiku-3", "claude-3")  # Haiku 5 and later search tools too
 _SERVER_FALLBACK = ("claude-opus-5", "claude-fable-5")
-_COMPUTER_TOOLSET = ("claude-opus-5", "claude-fable-5")
+_COMPUTER_TOOLSET = ("claude-opus-5", "claude-fable-5", "claude-haiku-5")
 
 
-def computer_enabled(settings: Settings) -> bool:
-    return settings.enable_computer and settings.model.startswith(_COMPUTER_TOOLSET)
+def computer_enabled(settings: Settings, model: str | None = None) -> bool:
+    return settings.enable_computer and (model or settings.big_model).startswith(_COMPUTER_TOOLSET)
 
 
 PERSONAS = {
@@ -231,9 +241,9 @@ def pc_section(settings: Settings) -> str:
     return "Computer: " + " ".join(parts) + "\n\n"
 
 
-def tool_search_enabled(settings: Settings) -> bool:
+def tool_search_enabled(settings: Settings, model: str | None = None) -> bool:
     """Tool search lets Alfred keep hundreds of abilities without reading them all every turn."""
-    return settings.tool_search and not settings.model.startswith(_NO_TOOL_SEARCH)
+    return settings.tool_search and not (model or settings.big_model).startswith(_NO_TOOL_SEARCH)
 
 
 EFFORTS = ("low", "medium", "high")
@@ -268,14 +278,54 @@ def turn_effort(settings: Settings, text: str) -> str:
     return max(settings.effort, question_effort(text), key=EFFORTS.index)
 
 
-def request_options(settings: Settings, effort: str | None = None) -> dict:
-    """Model-dependent request parameters. `effort` overrides JARVIS_EFFORT for this turn."""
-    model = settings.model
+# Cost saver: which turns earn the smart (expensive) model. Everything else goes to the cheap one.
+_BEST_BRAIN = re.compile(r"\b(?:think (?:really )?(?:hard|harder|carefully|deeply)|(?:use )?your (?:best|biggest|smartest|"
+                         r"big) brain|best brain|use (?:opus|the smart model|the big model)|full power)\b", re.I)
+_SMART_JOB = re.compile(
+    r"\b(?:essay|report|proposal|cover letter|blog(?: post)?|article|newsletter|chapter|story|speech|"
+    r"business plan|(?:write|draft|compose)\b.{0,40}\b(?:letter|email|post|page|copy|bio|caption|pitch|script|"
+    r"description|review|plan)|"
+    r"code|coding|script|program(?:me|ming)?|python|javascript|typescript|html|css|sql|regex|function|debug|"
+    r"bug|refactor|api|excel formula|spreadsheet formula|"
+    r"plan (?:out|my|the|a|for)|planning|strategy|roadmap|step by step|itinerary|schedule (?:out|my week)|"
+    r"design|redesign|logo|branding|wireframe|layout|mock-?up|landing page|"
+    r"video script|tiktok script|youtube script|storyboard|hooks? for|"
+    r"outreach|cold (?:email|message|call)|sales (?:email|pitch)|pitch deck|follow-?up email|prospects?|"
+    r"compare|comparison|pros and cons|analy[sz]e|analysis|research|in detail|detailed)\b", re.I)
+_SCREEN_JOB = re.compile(r"\b(?:click|mouse|on (?:the|my) screen|type (?:in|into)|scroll)\b", re.I)
+_FOLLOW_ON = re.compile(r"^(?:\W*(?:yes|yeah|yep|ok(?:ay)?|sure|please|go (?:on|ahead)|do (?:it|that)|carry on|continue|"
+                        r"keep going|more|again|another|redo|change|make it|shorter|longer|fix|tweak|add|instead|"
+                        r"and|now|also|but)\b)", re.I)
+SMART_WORDS = 60  # a request this long is a job, not chit-chat
+
+
+def turn_model(settings: Settings, text: str, last: str | None = None) -> str:
+    """The Claude model for one turn. With JARVIS_COST_SAVER on, simple turns (chit-chat, quick facts, time,
+    weather, music, timers, reminders) go to the cheap model; clearly hard jobs, "think hard" and follow-ups to a
+    hard job ("yes, make it shorter") go to the smart one. `last` is the model the previous turn used."""
+    smart = settings.big_model
+    if not settings.cost_saver or not settings.cheap_model:
+        return smart
+    if text.startswith("[activate]"):
+        return settings.cheap_model  # the greeting: weather, tasks and a light remark
+    said = text.strip()
+    if _BEST_BRAIN.search(said) or _SMART_JOB.search(said) or len(said.split()) > SMART_WORDS:
+        return smart
+    if computer_enabled(settings) and _SCREEN_JOB.search(said):
+        return smart
+    if last == smart and _FOLLOW_ON.match(said) and len(said.split()) <= 15:
+        return smart  # "yes, do it" after a hard job carries on with the same brain
+    return settings.cheap_model
+
+
+def request_options(settings: Settings, effort: str | None = None, model: str | None = None) -> dict:
+    """Model-dependent request parameters. `effort` overrides JARVIS_EFFORT for this turn, `model` JARVIS_MODEL."""
+    model = model or settings.big_model
     new_web = model.startswith(_NEW_WEB_TOOLS)
     every = list(tools.client_tool_definitions(settings))
     loaded = [t for t in every if not t.get("defer_loading")]
     deferred = [t for t in every if t.get("defer_loading")]
-    if not tool_search_enabled(settings):
+    if not tool_search_enabled(settings, model):
         loaded, deferred = every, []
         loaded = [{k: v for k, v in t.items() if k != "defer_loading"} for t in loaded]
     # The loaded tools are the same every turn, so cache them: faster and cheaper replies.
@@ -288,7 +338,7 @@ def request_options(settings: Settings, effort: str | None = None) -> dict:
             {"type": "web_search_20260209" if new_web else "web_search_20250305", "name": "web_search", "max_uses": 3},
             {"type": "web_fetch_20260209" if new_web else "web_fetch_20250910", "name": "web_fetch", "max_uses": 2},
         ]
-    if computer_enabled(settings):
+    if computer_enabled(settings) and computer_enabled(settings, model):
         tool_list.append({"type": "computer_toolset_20260801"})
     system = system_prompt(settings)
     if deferred:  # name every ability, so Alfred knows all he can do and never says he can't without looking
@@ -296,7 +346,11 @@ def request_options(settings: Settings, effort: str | None = None) -> dict:
                    "name or plain key words, then use it): " + ", ".join(t["name"] for t in deferred) + ". "
                    "Never tell the user you can't do something, or that you lack a tool, until you've checked this "
                    "list and searched. When a request needs several abilities, combine them to deliver the result.")
-    opts: dict = {"model": model, "max_tokens": 16000, "system": system, "tools": tool_list}
+    # Caching: tools and this system prompt are the same every turn (cached up to here), and the top-level marker
+    # caches the conversation so far, so each tool round and each new turn re-reads it at a tenth of the price.
+    opts: dict = {"model": model, "max_tokens": 16000, "tools": tool_list,
+                  "system": [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+                  "cache_control": {"type": "ephemeral"}}
     if not model.startswith(_NO_EFFORT):
         opts["output_config"] = {"effort": effort or settings.effort}
     if model.startswith(_ADAPTIVE_THINKING):
@@ -308,8 +362,10 @@ def request_options(settings: Settings, effort: str | None = None) -> dict:
     return opts
 
 
-def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT) -> list[dict]:
-    """Keep the last `max_turns` exchanges, cutting only where a user utterance begins.
+def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT, keep: int | None = None) -> list[dict]:
+    """Once there are more than `max_turns` exchanges, keep only the last `keep` (default `max_turns`), cutting
+    only where a user utterance begins. Cutting back further than the limit in one go means the start of the
+    conversation stays the same for several turns, so it keeps being read from the cache.
 
     A turn begins at a user message with plain string content; tool results are lists,
     so tool_use / tool_result pairs are never split.
@@ -317,7 +373,7 @@ def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT) -> list[
     starts = [i for i, m in enumerate(messages) if m["role"] == "user" and isinstance(m["content"], str)]
     if len(starts) <= max_turns:
         return messages
-    return messages[starts[-max_turns]:]
+    return messages[starts[-min(keep or max_turns, max_turns)]:]
 
 
 _NAME = r"(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )?"
@@ -1467,6 +1523,8 @@ class Brain:
         self.messages: list[dict] = load_carry_over(settings)  # picks up where the last session left off
         self._notes: list[str] = []  # announcements made since the user last spoke
         self._heard = ""  # the last thing the user said, for "what did you hear?"
+        self.last_model = ""  # the model that answered last, for the HUD and for follow-ups to a hard job
+        self._told_no_credit = False  # the out-of-credit line is said in full once, then kept short
 
     @property
     def computer(self):
@@ -1513,7 +1571,9 @@ class Brain:
         self._notes.clear()
         self.messages.append({"role": "user", "content": f"(Local time: {stamp})\n{notes}{user_text}"})
         try:
-            await self._run(speak, turn_effort(self.settings, user_text))
+            await self._run(speak, turn_effort(self.settings, user_text),
+                            turn_model(self.settings, user_text, self.last_model))
+            self._told_no_credit = False
             reply = " ".join(filter(None, (spoken_text(m["content"]) for m in self.messages[start + 1:]
                                            if m["role"] == "assistant" and not isinstance(m["content"], str))))
             if reply and not user_text.startswith("[activate]"):
@@ -1527,15 +1587,19 @@ class Brain:
             print(f"[jarvis] Error: {exc!r}", flush=True)
             del self.messages[start:]
             # say what's wrong when it's something the user can fix (key, credit, network)
-            await speak(line(self.settings, error_key(exc)))
-        self.messages = trim_history(self.messages)
+            key = error_key(exc)
+            if key in ("no_credit", "no_credit_free"):
+                key, self._told_no_credit = ("still_no_credit" if self._told_no_credit else key), True
+            await speak(line(self.settings, key))
+        self.messages = trim_history(self.messages, keep=TRIMMED_TO)
 
-    async def _run(self, speak: Speak, effort: str | None = None) -> None:
-        opts = request_options(self.settings, effort)
+    async def _run(self, speak: Speak, effort: str | None = None, model: str | None = None) -> None:
+        opts = request_options(self.settings, effort, model)
         start = len(self.messages) - 1
         for _ in range(MAX_TOOL_ROUNDS):
             prune_images(self.messages)
             response, spoken = await self._respond(opts, speak)
+            await self._show_model(opts["model"], response)
 
             if response.stop_reason == "refusal":
                 del self.messages[start:]  # drop the whole declined turn so history stays valid
@@ -1564,6 +1628,20 @@ class Brain:
                 opts = {**opts, "output_config": {**opts["output_config"], "effort": STUCK_EFFORT[effort]}}
 
         await self._wrap_up(opts, speak)
+
+    async def _show_model(self, asked: str, response) -> None:
+        """Remember which model answered and show it on the HUD's MODEL line (OmniRoute's own model when it
+        answered instead of Claude)."""
+        self.last_model = asked
+        answered = getattr(response, "model", None) or asked
+        if getattr(self.client, "last_route", "") == "OmniRoute":
+            answered = f"OmniRoute · {answered}"
+        if not self.page:
+            return
+        try:
+            await self.page({"type": "model", "model": answered})
+        except Exception:  # noqa: BLE001 - a HUD line is never worth failing a turn over
+            pass
 
     async def _show_doing(self, calls) -> None:
         if not self.page or not calls:
