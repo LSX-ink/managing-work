@@ -3,6 +3,16 @@
 Hidden and handy things on the Alfred screen itself. Some you do with the keyboard or mouse, and most you can
 also ask Alfred for. Letter shortcuts only work when you are not typing in a box. Press **?** to see them all.
 
+## Head only
+
+The screen starts with nothing on it but Alfred's floating head (the dotted wolf; the orb on the classic look) on a
+plain dark background. Everything still works underneath: he listens, answers out loud, reads out notifications, and
+any pop-up you ask for (a folder, now playing, a password check, an approval tick or cross) still appears.
+
+- **H** brings back every panel (the top bar, system, clock, weather, notifications, chat); **H** again, or **Esc**, hides them. The choice is remembered in this browser.
+- While only the head shows, just start typing (or press **/**) and a typing box opens at the bottom; it hides again once your message is sent. **Esc** closes it.
+- Click the head to start or pause listening, as before.
+
 ## Things to say
 
 - **Tidy the windows**: "Tidy my windows." All the pop-up windows line up in a neat grid.
@@ -12,7 +22,7 @@ also ask Alfred for. Letter shortcuts only work when you are not typing in a box
 - **Screensaver**: "Start the screensaver." A big clock and a slowly drifting wolf fill the screen; press any key or move the mouse to come back. "Turn the screensaver off" stops it coming on by itself, and "Start the screensaver after 5 minutes" sets how long the screen must be idle (it's 10 minutes to begin with). Key: **S**.
 - **Change the colours**: "Switch to the gold theme." / "Swap the theme." / "Go back to the stars theme." The HUD changes colour straight away and remembers it. Choices: stars (black and white), gold, blue, purple, red, green.
 - **Bigger or smaller**: "Make the HUD bigger." / "Make the HUD smaller." / "Reset the HUD size." The side panels and chat grow or shrink. Keys: **Ctrl + =**, **Ctrl + -**, **Ctrl + 0**.
-- **Clean screen**: "Hide the side panels." / "Show the side panels." Key: **H**.
+- **Clean screen**: "Hide the side panels." / "Show the side panels." (Key **H** now shows or hides everything but the head; see above.)
 - **Keyboard shortcuts**: "Show the HUD keyboard shortcuts." A list of every shortcut pops up. Key: **?**.
 - **Command palette**: "Open the command palette." A search box with about 40 example requests. Key: **Ctrl + K**, or double-click the wolf.
 - **What can you do?**: "Show me what you can do." A pop-up list of 20 things to try; click one to ask it.

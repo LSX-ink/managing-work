@@ -128,7 +128,8 @@
         ['Alt + W', 'Jump into the top pop-up window'],
         ['Alt + A', 'Accessibility settings'],
         ['F', 'Focus mode on or off'],
-        ['H', 'Hide or show the side panels'],
+        ['H', 'Show or hide everything but the head (Esc hides again)'],
+        ['/  or any letter', 'While only the head shows: type to Alfred'],
         ['N', 'New sticky note'],
         ['T', 'Tidy the pop-up windows'],
         ['S', 'Screensaver now'],
@@ -639,7 +640,6 @@
         if (e.ctrlKey || e.metaKey || e.altKey || overlay) return;
         if (e.key === '?') { e.preventDefault(); openShortcuts(); }
         else if (key === 'f') setFocus(null);
-        else if (key === 'h') setClean(null);
         else if (key === 'n') { e.preventDefault(); addNote({}, true); }
         else if (key === 't') tidy();
         else if (key === 's') startSaver();

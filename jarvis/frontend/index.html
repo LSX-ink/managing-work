@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="/static/popup-files-and-media.css">
     <link rel="stylesheet" href="/static/popup-web-in-alfred.css">
     <link rel="stylesheet" href="/static/hudplus.css">
+    <link rel="stylesheet" href="/static/headonly.css">   <!-- only the floating head on screen until you press H -->
     <link rel="stylesheet" href="/static/popup-widgets.css">
     <link rel="stylesheet" href="/static/popup-health-plus.css">
     <link rel="stylesheet" href="/static/popup-money-plus.css">
@@ -72,6 +73,7 @@
     <link rel="stylesheet" href="/static/mic-help.css">
     <link rel="stylesheet" href="/static/access.css">   <!-- accessibility settings: keep last so they win -->
     <script src="/static/access.js"></script>   <!-- in the head so saved settings apply before the first paint -->
+    <script src="/static/headonly.js"></script>   <!-- before the first paint too, and before hudplus.js sees any key -->
     <style>
         /* Approval panel for mouse/keyboard actions (kept here so style.css stays yours to customise). */
         #confirm { width: 100%; padding: 14px 16px; border: 1px solid var(--think-a); border-radius: 12px; background: #121016; }
