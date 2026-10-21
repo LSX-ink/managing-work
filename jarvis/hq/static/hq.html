@@ -3,198 +3,320 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kinetic HQ</title>
+<title>LSX HQ</title>
 <style>
-:root { --bg: #05070d; --panel: rgba(16,22,38,.78); --line: rgba(120,160,255,.16); --text: #e7ecf6; --muted: #8a96b2; --gold: #f5c84c; }
+:root { --bg: #070a12; --panel: #0e1424; --panel2: #121a2e; --line: #26324f; --text: #e8edf7; --muted: #8b97b5; --gold: #ffcf4a; }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; overflow: hidden; }
-body::before { content: ""; position: fixed; inset: 0; background:
-  radial-gradient(900px 600px at 50% 45%, rgba(76,201,240,.10), transparent 60%),
-  radial-gradient(700px 500px at 85% 10%, rgba(247,37,133,.08), transparent 60%),
-  linear-gradient(rgba(120,160,255,.05) 1px, transparent 1px) 0 0/40px 40px,
-  linear-gradient(90deg, rgba(120,160,255,.05) 1px, transparent 1px) 0 0/40px 40px; pointer-events: none; }
-.app { position: relative; display: grid; grid-template-columns: 300px 1fr 360px; grid-template-rows: 64px 1fr; height: 100vh; gap: 14px; padding: 14px; }
-header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); backdrop-filter: blur(10px); }
-.logo { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: .32em; font-size: 15px; }
-.logo b { color: var(--gold); }
-.logo small { letter-spacing: .12em; font-weight: 600; color: var(--muted); font-size: 11px; }
-.health { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
-.health span { display: inline-flex; align-items: center; gap: 6px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #475569; box-shadow: 0 0 0 0 transparent; }
-.dot.ok { background: #4ade80; box-shadow: 0 0 10px #4ade80; } .dot.bad { background: #f43f5e; box-shadow: 0 0 10px #f43f5e; animation: blink 1s infinite; }
-@keyframes blink { 50% { opacity: .3; } }
-.clock { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 18px; letter-spacing: .08em; }
-.panel { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); backdrop-filter: blur(10px); overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
-.panel h2 { margin: 0; padding: 12px 16px; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
-.scroll { overflow: auto; padding: 12px 16px; min-height: 0; }
-.left { display: grid; grid-template-rows: auto auto 1fr; gap: 14px; min-height: 0; }
-.prio { white-space: pre-wrap; font-size: 13.5px; }
-.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; font-size: 13px; }
-.kv b { font-variant-numeric: tabular-nums; }
-.needs div { padding: 8px 10px; margin-bottom: 8px; border-radius: 10px; background: rgba(244,63,94,.08); border: 1px solid rgba(244,63,94,.25); font-size: 12.5px; }
-label.set { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 0; font-size: 12.5px; color: var(--muted); }
-label.set input, label.set select { background: #0b1222; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 120px; font: inherit; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.45 "Cascadia Mono", Consolas, "Courier New", monospace; overflow: hidden; }
+.app { display: grid; grid-template-columns: 290px 1fr 340px; grid-template-rows: 56px 1fr; gap: 10px; padding: 10px; height: 100vh; }
+header { grid-column: 1 / -1; display: flex; align-items: center; gap: 18px; padding: 0 16px; background: var(--panel); border: 2px solid var(--line); box-shadow: 0 4px 0 #000; }
+.brand { font-weight: 900; font-size: 18px; letter-spacing: .3em; color: var(--gold); text-shadow: 2px 2px 0 #7a4a00; }
+.div-chip { border: 2px solid var(--line); padding: 4px 10px; font-size: 11px; letter-spacing: .14em; color: #9fe3ff; background: #0a1a2a; }
+.div-chip.add { color: var(--muted); border-style: dashed; }
+.health { display: flex; gap: 12px; margin-left: auto; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+.health span { display: inline-flex; gap: 5px; align-items: center; }
+.led { width: 9px; height: 9px; background: #475569; box-shadow: 0 0 0 2px #000; }
+.led.ok { background: #4ade80; } .led.bad { background: #f43f5e; animation: blink .8s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+.clock { font-size: 20px; font-weight: 900; color: #fff; text-shadow: 2px 2px 0 #1e3a8a; }
+.panel { background: var(--panel); border: 2px solid var(--line); box-shadow: 0 4px 0 #000; display: flex; flex-direction: column; min-height: 0; }
+.panel h2 { margin: 0; padding: 9px 12px; font-size: 11px; letter-spacing: .2em; color: var(--gold); background: var(--panel2); border-bottom: 2px solid var(--line); display: flex; justify-content: space-between; }
+.body { padding: 10px 12px; overflow: auto; min-height: 0; }
+.left { display: grid; grid-template-rows: auto auto 1fr; gap: 10px; min-height: 0; }
+.orders { white-space: pre-wrap; font-size: 12.5px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: #0a1020; border: 2px solid var(--line); padding: 8px; }
+.stat b { display: block; font-size: 20px; color: #fff; } .stat span { font-size: 10px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.need { border: 2px solid #7f1d3a; background: #1c0a12; padding: 7px 9px; margin-bottom: 7px; font-size: 12px; }
+.set { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 7px 0; font-size: 11.5px; color: var(--muted); }
+.set input, .set select { width: 110px; background: #070b16; color: var(--text); border: 2px solid var(--line); padding: 5px 7px; font: inherit; }
+button { font: inherit; font-weight: 800; letter-spacing: .08em; cursor: pointer; border: 2px solid #000; padding: 8px 12px; background: var(--gold); color: #1a1200; box-shadow: 0 3px 0 #7a4a00; }
+button:active { transform: translateY(2px); box-shadow: 0 1px 0 #7a4a00; }
+button.ghost { background: #1b2540; color: var(--text); box-shadow: 0 3px 0 #000; }
 /* the office */
-.floor { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: radial-gradient(circle at 50% 50%, rgba(245,200,76,.06), transparent 55%); }
-.floor svg.beams { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.beam { stroke-width: 2; fill: none; stroke-dasharray: 6 10; opacity: .18; }
-.beam.on { opacity: .9; animation: flow .6s linear infinite; filter: drop-shadow(0 0 6px currentColor); }
-@keyframes flow { to { stroke-dashoffset: -32; } }
-.core { position: absolute; left: 50%; top: 50%; width: 190px; height: 190px; transform: translate(-50%, -50%); display: grid; place-items: center; }
-.core .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(245,200,76,.45); animation: spin 14s linear infinite; }
-.core .ring:nth-child(2) { inset: 18px; border-style: dashed; border-color: rgba(76,201,240,.5); animation-duration: 9s; animation-direction: reverse; }
-.core .ring:nth-child(3) { inset: 38px; border-color: rgba(247,37,133,.45); animation-duration: 6s; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.core .orb { width: 84px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff6d6, #f5c84c 40%, #b45309 75%); box-shadow: 0 0 40px #f5c84c, 0 0 120px rgba(245,200,76,.45); animation: pulse 2.6s ease-in-out infinite; display: grid; place-items: center; color: #3b2300; font-weight: 900; letter-spacing: .14em; font-size: 12px; text-align: center; }
-.core.busy .orb { animation-duration: .9s; }
-@keyframes pulse { 50% { transform: scale(1.08); box-shadow: 0 0 60px #f5c84c, 0 0 160px rgba(245,200,76,.6); } }
-.core .mem { position: absolute; bottom: -34px; font-size: 11px; color: var(--muted); letter-spacing: .14em; white-space: nowrap; }
-.room { position: absolute; width: 196px; transform: translate(-50%, -50%); border-radius: 16px; padding: 12px 14px; background: linear-gradient(160deg, rgba(20,28,48,.95), rgba(10,14,26,.95)); border: 1px solid var(--line); cursor: pointer; transition: transform .25s, box-shadow .3s, border-color .3s; }
-.room:hover { transform: translate(-50%, -52%) scale(1.03); }
-.room.working { border-color: var(--c); box-shadow: 0 0 0 1px var(--c), 0 0 34px -6px var(--c); }
-.room.working::after { content: ""; position: absolute; inset: -6px; border-radius: 20px; border: 1px solid var(--c); opacity: .5; animation: halo 1.4s ease-out infinite; }
-@keyframes halo { from { transform: scale(.96); opacity: .7; } to { transform: scale(1.08); opacity: 0; } }
-.room.error { border-color: #f43f5e; }
-.room.paused { opacity: .5; filter: grayscale(.6); }
-.room .top { display: flex; align-items: center; gap: 10px; }
-.avatar { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: color-mix(in srgb, var(--c) 18%, transparent); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); }
-.working .avatar { animation: bob 1s ease-in-out infinite; }
-@keyframes bob { 50% { transform: translateY(-3px); } }
-.room h3 { margin: 0; font-size: 14px; } .room h3 small { display: block; color: var(--c); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; }
-.room .st { margin-top: 8px; font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; }
-.room .say { margin-top: 6px; font-size: 12px; min-height: 34px; color: #cbd5e1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.typing { display: none; gap: 3px; } .working .typing { display: inline-flex; }
-.typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--c); animation: ty 1s infinite; } .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
-@keyframes ty { 50% { transform: translateY(-4px); opacity: .4; } }
-.badge { font-size: 11px; font-weight: 700; color: var(--c); }
+.office { position: relative; background: #000; border: 2px solid var(--line); box-shadow: 0 4px 0 #000; overflow: hidden; display: grid; place-items: center; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+.overlay { position: absolute; pointer-events: none; }
+.tag { position: absolute; transform: translate(-50%, -100%); font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 1px 5px; background: rgba(0,0,0,.75); border: 1px solid var(--c); color: var(--c); white-space: nowrap; pointer-events: auto; cursor: pointer; }
+.bubble { position: absolute; transform: translate(-50%, -100%); max-width: 230px; background: #fff; color: #111; border: 2px solid #000; padding: 5px 8px; font-size: 12px; line-height: 1.3; box-shadow: 3px 3px 0 rgba(0,0,0,.6); animation: pop .25s steps(3); }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -6px; border: 6px solid transparent; border-top-color: #000; border-bottom: 0; }
+@keyframes pop { from { transform: translate(-50%, -80%) scale(.6); } }
+.sign { position: absolute; transform: translate(-50%, -50%); font-weight: 900; letter-spacing: .3em; color: #ff4fd8; text-shadow: 0 0 6px #ff4fd8, 0 0 18px #ff4fd8; font-size: 15px; animation: neon 4s infinite; white-space: nowrap; }
+@keyframes neon { 0%, 92%, 100% { opacity: 1; } 94% { opacity: .3; } 96% { opacity: 1; } 97% { opacity: .5; } }
+.memories { position: absolute; transform: translate(-50%, 0); font-size: 10px; letter-spacing: .14em; color: var(--gold); background: rgba(0,0,0,.7); padding: 2px 6px; white-space: nowrap; }
 /* feed */
-.feed .ev { padding: 8px 0 8px 12px; border-left: 2px solid var(--c, #334155); margin-bottom: 6px; animation: in .4s ease; font-size: 12.5px; white-space: pre-wrap; }
-.feed .ev .who { font-weight: 700; color: var(--c); } .feed .ev time { color: var(--muted); font-size: 11px; margin-left: 6px; }
-.feed .ev.win { background: linear-gradient(90deg, rgba(74,222,128,.08), transparent); } .feed .ev.error { background: linear-gradient(90deg, rgba(244,63,94,.1), transparent); } .feed .ev.warn { background: linear-gradient(90deg, rgba(251,146,60,.08), transparent); }
-@keyframes in { from { opacity: 0; transform: translateX(10px); } }
-/* agent sheet */
-.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; place-items: center; z-index: 9; }
+.feed .ev { border-left: 4px solid var(--c, #475569); background: #0a1020; padding: 6px 8px; margin-bottom: 6px; font-size: 12px; white-space: pre-wrap; animation: slide .3s steps(3); }
+.feed .ev.win { background: #0b1d14; } .feed .ev.error { background: #220c14; } .feed .ev.warn { background: #22170a; }
+.feed .who { color: var(--c); font-weight: 900; } .feed time { color: var(--muted); font-size: 10.5px; margin-left: 6px; }
+@keyframes slide { from { transform: translateX(14px); opacity: 0; } }
+.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; place-items: center; z-index: 9; }
 .sheet.open { display: grid; }
-.card { width: min(560px, 92vw); max-height: 86vh; overflow: auto; border-radius: 18px; border: 1px solid var(--c); background: #0b1020; padding: 22px; box-shadow: 0 0 60px -10px var(--c); }
-.card h3 { margin: 0 0 4px; font-size: 20px; } .card p { color: var(--muted); }
-.btns { display: flex; gap: 10px; margin: 14px 0; }
-button { font: inherit; font-weight: 700; border-radius: 10px; padding: 9px 16px; border: 1px solid var(--line); background: #111a2e; color: var(--text); cursor: pointer; }
-button.go { background: var(--c, var(--gold)); color: #050505; border-color: transparent; }
-@media (max-width: 1200px) { .app { grid-template-columns: 1fr; grid-template-rows: auto; overflow: auto; height: auto; } html, body { overflow: auto; } .floor { height: 760px; } }
+.card { width: min(560px, 92vw); max-height: 86vh; overflow: auto; background: var(--panel); border: 3px solid var(--c); box-shadow: 6px 6px 0 #000; padding: 18px; }
+.card h3 { margin: 0 0 4px; color: var(--c); font-size: 18px; } .card p { color: var(--muted); margin: 6px 0; }
+.row { display: flex; gap: 10px; margin: 12px 0; }
+@media (max-width: 1250px) { .app { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; } html, body { overflow: auto; } .office { min-height: 520px; } }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="logo">⚡ <span>KINETIC <b>HQ</b></span><small>THE AGENCY · HUNGRY · RELENTLESS</small></div>
+    <div class="brand">LSX HQ</div>
+    <div id="divisions" style="display:flex;gap:8px"></div>
     <div class="health" id="health"></div>
     <div class="clock" id="clock">--:--</div>
   </header>
 
   <div class="left">
-    <section class="panel"><h2>Today's orders <span>👑 Atlas</span></h2><div class="scroll prio" id="prio">Atlas sets the day's priorities at 07:55.</div></section>
-    <section class="panel"><h2>The numbers</h2><div class="scroll">
-      <div class="kv" id="kv"></div>
-      <div class="scroll prio" id="numbers" style="padding:10px 0 0;color:var(--muted);font-size:12.5px"></div>
-    </div></section>
-    <section class="panel"><h2>Needs you <span id="needcount"></span></h2><div class="scroll">
-      <div class="needs" id="needs"></div>
-      <h2 style="padding:12px 0 6px;border:0">Orders to the team</h2>
-      <label class="set">Trade of the week <input id="trade" placeholder="barbers"></label>
-      <label class="set">Drafts per day <input id="perday" type="number" min="0" max="40"></label>
-      <label class="set">Mock-up videos (uses voice credits) <select id="videos"><option value="false">Off</option><option value="true">On</option></select></label>
-      <button class="go" id="save" style="width:100%">Send orders</button>
+    <section class="panel"><h2>TODAY'S ORDERS <span>👑 ATLAS</span></h2><div class="body orders" id="orders">Atlas sets the orders at 07:55.</div></section>
+    <section class="panel"><h2>SCOREBOARD</h2><div class="body"><div class="stats" id="stats"></div><div id="numbers" style="margin-top:10px;color:var(--muted);font-size:11.5px;white-space:pre-wrap"></div></div></section>
+    <section class="panel"><h2>NEEDS YOU <span id="needn"></span></h2><div class="body">
+      <div id="needs"></div>
+      <h2 style="margin:12px -12px 8px;border-top:2px solid var(--line)">ORDERS TO THE TEAM</h2>
+      <div class="set">Trade of the week <input id="trade"></div>
+      <div class="set">Drafts per day <input id="perday" type="number" min="0" max="40"></div>
+      <div class="set">Mock-up videos <select id="videos"><option value="false">Off (free)</option><option value="true">On (voice credits)</option></select></div>
+      <button id="save" style="width:100%">SEND ORDERS</button>
     </div></section>
   </div>
 
-  <section class="floor" id="floor">
-    <svg class="beams" id="beams"></svg>
-    <div class="core" id="core"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="orb">THE<br>BRAIN</div><div class="mem" id="mem"></div></div>
+  <section class="office" id="office">
+    <canvas id="cv"></canvas>
+    <div class="overlay" id="ov"></div>
   </section>
 
-  <section class="panel feed"><h2>Live feed <span id="feedcount"></span></h2><div class="scroll" id="feed"></div></section>
+  <section class="panel feed"><h2>LIVE FEED <span id="feedn"></span></h2><div class="body" id="feed"></div></section>
 </div>
-
 <div class="sheet" id="sheet"><div class="card" id="card"></div></div>
 
 <script>
+/* ---------------------------------------------------------------- LSX HQ: a pixel-art office.
+   The scene is drawn at 480x300 and scaled up with crisp pixels. Agents are little people: when the server
+   says they're working they sit at their desk and type (their monitor lights up in their colour); when they
+   finish, a data packet flies to the brain room. Idle agents wander: coffee, the window, a colleague's desk. */
+const W = 480, H = 300;
+const cv = document.getElementById("cv"), g = cv.getContext("2d"), ov = document.getElementById("ov");
+cv.width = W; cv.height = H;
 const $ = s => document.querySelector(s);
-let agents = [], lastId = 0, colours = { hq: "#f5c84c" }, names = { hq: "HQ" };
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-function layout() {
-  const f = $("#floor"), W = f.clientWidth, H = f.clientHeight, cx = W / 2, cy = H / 2;
-  const rx = Math.min(W * .37, 420), ry = Math.min(H * .36, 300);
-  agents.forEach((a, i) => {
-    const ang = -Math.PI / 2 + i * 2 * Math.PI / agents.length, x = cx + Math.cos(ang) * rx, y = cy + Math.sin(ang) * ry;
-    a._x = x; a._y = y;
-    const el = document.getElementById("room-" + a.key); if (el) { el.style.left = x + "px"; el.style.top = y + "px"; }
-  });
-  $("#beams").innerHTML = agents.map(a => `<path class="beam ${a.status === "working" ? "on" : ""}" style="color:${a.colour}" stroke="${a.colour}" d="M${a._x},${a._y} Q${(a._x + cx) / 2 + 30},${(a._y + cy) / 2 - 30} ${cx},${cy}"/>`).join("");
+// desks: where each agent works (desk top-left corner; the chair is below it)
+const DESKS = { ceo: [222, 92], scout: [70, 120], closer: [370, 120], concierge: [70, 205], analyst: [222, 175],
+                studio: [370, 205], guardian: [222, 245] };
+const LOOKS = { ceo: ["#f1c27d", "#2b1b10", "bun"], scout: ["#8d5524", "#111", "short"], closer: ["#c68642", "#4a2a12", "fade"],
+                concierge: ["#ffdbac", "#7a3b12", "long"], analyst: ["#e0ac69", "#1b1b1b", "curly"],
+                studio: ["#a1665e", "#d4a017", "long"], guardian: ["#5c3a21", "#000", "bald"] };
+const SPOTS = { coffee: [26, 268], cooler: [48, 268], window1: [120, 64], window2: [360, 64], brain: [240, 70], plant: [452, 270] };
+let agents = [], people = {}, packets = [], bubbles = {}, lastId = 0, names = { hq: "HQ" }, colours = { hq: "#ffcf4a" };
+let anyWorking = false, hour = new Date().getHours(), memories = 0, t0 = performance.now();
+
+// ---- tiny pixel helpers
+const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x | 0, y | 0, w | 0, h | 0); };
+const shade = (hex, f) => { const n = parseInt(hex.slice(1), 16); let r = n >> 16, gg = n >> 8 & 255, b = n & 255;
+  r = Math.min(255, r * f) | 0; gg = Math.min(255, gg * f) | 0; b = Math.min(255, b * f) | 0; return `rgb(${r},${gg},${b})`; };
+// a fixed random sky so the skyline doesn't jump
+const rng = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(42);
+const STARS = Array.from({ length: 40 }, () => [rng() * 480 | 0, rng() * 34 | 0]);
+const TOWERS = Array.from({ length: 26 }, (_, i) => ({ x: i * 19 + (rng() * 6 | 0), w: 12 + (rng() * 8 | 0), h: 10 + (rng() * 26 | 0), lit: Array.from({ length: 30 }, () => rng() < .45) }));
+
+function drawRoom(t) {
+  const night = hour >= 19 || hour < 7;
+  // back wall with big windows
+  R(0, 0, W, 60, "#141a2c");
+  for (const [wx, ww] of [[8, 160], [312, 160]]) {
+    R(wx, 6, ww, 44, night ? "#0b1430" : "#5fa8e8");
+    if (night) STARS.forEach(([sx, sy]) => { if (sx > wx && sx < wx + ww && (Math.sin(t / 700 + sx) > -.6)) R(sx, sy + 7, 1, 1, "#cfe3ff"); });
+    else R(wx + ww - 30, 12, 10, 10, "#fff3b0");
+    TOWERS.forEach(b => { if (b.x + b.w < wx || b.x > wx + ww) return;
+      const x0 = Math.max(b.x, wx), x1 = Math.min(b.x + b.w, wx + ww);
+      R(x0, 50 - b.h, x1 - x0, b.h, night ? "#121a33" : "#3b5f8a");
+      if (night) b.lit.forEach((on, k) => { const lx = b.x + 2 + (k % 3) * 4, ly = 50 - b.h + 2 + (k / 3 | 0) * 4;
+        if (on && lx >= x0 && lx < x1 - 1 && ly < 48) R(lx, ly, 2, 2, (Math.sin(t / 2000 + k * 3 + b.x) > .9) ? "#ffd27a" : "#e9b94a"); }); });
+    R(wx - 2, 4, ww + 4, 2, "#2b3550"); R(wx - 2, 50, ww + 4, 3, "#2b3550"); R(wx + ww / 2 - 1, 6, 2, 44, "#2b3550");
+  }
+  // brain room (glass box with servers and the core)
+  R(186, 4, 108, 74, "#0a0f1e"); R(186, 4, 108, 2, "#3b4a75"); R(186, 76, 108, 2, "#3b4a75"); R(186, 4, 2, 74, "#3b4a75"); R(292, 4, 2, 74, "#3b4a75");
+  for (let i = 0; i < 4; i++) { const sx = i < 2 ? 192 + i * 16 : 258 + (i - 2) * 16; R(sx, 14, 12, 58, "#1a2238"); R(sx, 14, 12, 2, "#2c3858");
+    for (let j = 0; j < 9; j++) R(sx + 3, 19 + j * 6, 2, 2, (Math.sin(t / 120 + i * 7 + j * 3) > (anyWorking ? -.2 : .6)) ? ["#4ade80", "#22d3ee", "#f472b6"][j % 3] : "#0b3d2a"); }
+  const pulse = 1 + Math.sin(t / (anyWorking ? 140 : 420)) * .18, r = 12 * pulse;
+  g.fillStyle = "rgba(255,207,74,.12)"; g.beginPath(); g.arc(240, 42, r + 10, 0, 7); g.fill();
+  g.fillStyle = "rgba(255,207,74,.28)"; g.beginPath(); g.arc(240, 42, r + 4, 0, 7); g.fill();
+  g.fillStyle = "#ffcf4a"; g.beginPath(); g.arc(240, 42, r, 0, 7); g.fill();
+  g.fillStyle = "#fff6c9"; g.beginPath(); g.arc(237, 39, r / 2.6, 0, 7); g.fill();
+  for (let k = 0; k < 3; k++) { const a = t / (300 + k * 150) + k * 2; R(240 + Math.cos(a) * (20 + k * 4) - 1, 42 + Math.sin(a) * (10 + k * 3) - 1, 2, 2, ["#22d3ee", "#f472b6", "#4ade80"][k]); }
+  // floor: dark wood planks
+  for (let y = 78; y < H; y += 6) { R(0, y, W, 6, (y / 6 % 2) ? "#2a2018" : "#2f2419"); for (let x = ((y / 6) % 3) * 23; x < W; x += 70) R(x, y, 1, 6, "#1d160f"); }
+  // zone rugs under the desks
+  agents.forEach(a => { const d = DESKS[a.key]; if (!d) return; R(d[0] - 10, d[1] - 4, 56, 40, shade(a.colour, .22)); R(d[0] - 10, d[1] - 4, 56, 1, shade(a.colour, .45)); });
+  // kitchen corner
+  R(14, 246, 50, 30, "#3b3f4e"); R(14, 246, 50, 3, "#5a6074"); R(20, 252, 12, 14, "#1f2937"); R(22, 255, 8, 4, "#ef4444"); R(36, 250, 10, 18, "#93c5fd"); R(37, 251, 8, 7, "#dbeafe");
+  if (Math.sin(t / 900) > 0) { R(25, 247 - (t / 90 % 6), 1, 2, "#cbd5e1"); }
+  // plants
+  for (const [px, py] of [[452, 252], [170, 84], [300, 84], [8, 84]]) { R(px, py + 10, 12, 10, "#7c4a24"); R(px + 1, py + 10, 10, 2, "#9a5d2e");
+    R(px + 2, py, 8, 10, "#2f7a3a"); R(px - 1, py + 3, 5, 5, "#3a9a48"); R(px + 8, py + 2, 5, 6, "#3a9a48"); R(px + 4, py - 3, 4, 5, "#4cb35a"); }
 }
 
-function render(s) {
-  $("#clock").textContent = s.time;
-  const fresh = !agents.length;
-  agents = s.agents; agents.forEach(a => { colours[a.key] = a.colour; names[a.key] = a.name; });
-  if (fresh) $("#floor").insertAdjacentHTML("beforeend", agents.map(a => `<div class="room" id="room-${a.key}" style="--c:${a.colour}"></div>`).join(""));
-  agents.forEach(a => {
-    const el = document.getElementById("room-" + a.key);
-    el.className = "room " + a.status;
-    el.innerHTML = `<div class="top"><div class="avatar">${a.emoji}</div><h3>${esc(a.name)}<small>${esc(a.title)}</small></h3></div>
-      <div class="say">${a.status === "working" ? "On it…" : esc(a.last ? a.last.result : a.job)}</div>
-      <div class="st"><span>${a.status === "working" ? '<span class="typing"><i></i><i></i><i></i></span>' : a.status}</span><span class="badge">${a.wins_today ? "🏆 " + a.wins_today : "next " + esc(a.next)}</span></div>`;
-    el.onclick = () => open(a.key);
+function drawDesk(a, t) {
+  const [x, y] = DESKS[a.key], on = a.status === "working", err = a.status === "error";
+  R(x, y, 36, 3, "#8b5e34"); R(x, y + 3, 36, 9, "#6b4423"); R(x + 2, y + 12, 2, 8, "#4a2e17"); R(x + 32, y + 12, 2, 8, "#4a2e17");
+  // monitor
+  R(x + 9, y - 14, 18, 13, "#1f2433"); R(x + 10, y - 13, 16, 10, on ? shade(a.colour, .35) : err ? "#3b0a14" : "#0b1020");
+  if (on) for (let i = 0; i < 4; i++) { const w = 4 + ((Math.sin(t / 160 + i * 1.7) + 1) * 5 | 0); R(x + 11, y - 12 + i * 2.4, w, 1, a.colour); }
+  else if (err) R(x + 16, y - 10, 4, 4, "#f43f5e");
+  else R(x + 17, y - 9, 2, 1, "#334155");
+  R(x + 16, y - 1, 4, 2, "#1f2433");
+  // keyboard, mug, papers
+  R(x + 11, y + 1, 12, 2, "#cbd5e1"); R(x + 28, y - 3, 4, 4, "#e5e7eb"); R(x + 2, y - 2, 6, 3, "#f8fafc");
+  // chair
+  R(x + 13, y + 20, 10, 3, "#111827"); R(x + 13, y + 23, 10, 6, "#1f2937"); R(x + 17, y + 29, 2, 4, "#111827");
+}
+
+function drawPerson(p, t) {
+  const [skin, hair, style] = LOOKS[p.key] || ["#e0ac69", "#222", "short"], c = p.colour, x = p.x | 0, y = p.y | 0;
+  const walk = p.moving ? Math.sin(t / 90 + p.seed) : 0, sit = p.sitting;
+  // shadow
+  g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(x - 4, y + 1, 9, 2);
+  if (!sit) { R(x - 3, y - 6, 3, 6 + (walk > 0 ? -1 : 0), "#1e293b"); R(x + 1, y - 6, 3, 6 + (walk < 0 ? -1 : 0), "#1e293b"); }
+  else { R(x - 3, y - 5, 7, 3, "#1e293b"); }
+  // body
+  R(x - 4, y - 14, 9, 9, c); R(x - 4, y - 14, 9, 2, shade(c, 1.25));
+  // arms (typing when working)
+  const typing = sit && p.working, arm = typing ? (Math.sin(t / 70 + p.seed) > 0 ? 1 : 0) : 0;
+  R(x - 6, y - 13 + (typing ? -arm : 0), 2, 6, shade(c, .8)); R(x + 5, y - 13 + (typing ? arm - 1 : 0), 2, 6, shade(c, .8));
+  // head
+  const bob = p.moving ? (Math.abs(walk) > .7 ? -1 : 0) : (typing ? 0 : Math.sin(t / 900 + p.seed) > .95 ? -1 : 0);
+  R(x - 3, y - 21 + bob, 7, 7, skin);
+  // hair styles
+  const hy = y - 22 + bob;
+  if (style === "short" || style === "fade") { R(x - 3, hy, 7, 3, hair); if (style === "fade") R(x - 3, hy + 3, 1, 2, hair); }
+  else if (style === "long") { R(x - 4, hy, 9, 3, hair); R(x - 4, hy + 3, 2, 7, hair); R(x + 3, hy + 3, 2, 7, hair); }
+  else if (style === "curly") { R(x - 4, hy - 1, 9, 4, hair); R(x - 4, hy + 3, 1, 2, hair); R(x + 4, hy + 3, 1, 2, hair); }
+  else if (style === "bun") { R(x - 3, hy, 7, 3, hair); R(x - 1, hy - 3, 3, 3, hair); }
+  else { R(x - 3, hy + 1, 7, 1, shade(skin, .85)); }
+  // eyes (face away when sitting at the desk: we see the back of the head)
+  if (!sit) { const ex = p.dir < 0 ? -1 : 0; R(x - 1 + ex, y - 18 + bob, 1, 1, "#111"); R(x + 2 + ex, y - 18 + bob, 1, 1, "#111"); }
+  // the CEO wears a crown
+  if (p.key === "ceo") { R(x - 3, hy - 4, 7, 2, "#ffcf4a"); R(x - 3, hy - 6, 1, 2, "#ffcf4a"); R(x, hy - 6, 1, 2, "#ffcf4a"); R(x + 3, hy - 6, 1, 2, "#ffcf4a"); }
+  if (p.key === "guardian") R(x - 4, y - 15, 9, 1, "#94a3b8");
+}
+
+// ---- behaviour
+function seat(key) { const d = DESKS[key]; return [d[0] + 18, d[1] + 27]; }
+function ensurePeople() {
+  agents.forEach((a, i) => {
+    if (!people[a.key]) { const [sx, sy] = seat(a.key); people[a.key] = { key: a.key, x: sx, y: sy, tx: sx, ty: sy, seed: i * 7, dir: 1, wait: 60 + i * 40, sitting: true }; }
+    Object.assign(people[a.key], { colour: a.colour, working: a.status === "working", status: a.status });
   });
-  layout();
-  $("#core").classList.toggle("busy", agents.some(a => a.status === "working"));
-  const b = s.brain;
-  $("#mem").textContent = `${b.memories || 0} MEMORIES STORED`;
-  $("#prio").textContent = b.priorities || "Atlas sets the day's priorities at 07:55.";
-  const ig = b.instagram || {};
-  $("#kv").innerHTML = [["Leads found", b.leads_total ?? "–"], ["Instagram answered", ig.replied ?? 0], ["Passed to you", ig.handed_off ?? 0],
-    ["Drafts today", (agents.find(a => a.key === "closer") || {}).wins_today || 0], ["Trade of the week", b.settings.trade]].map(([k, v]) => `<span>${k}</span><b>${esc(v)}</b>`).join("");
+}
+function wander(p) {
+  const opts = Object.values(SPOTS).concat(Object.keys(DESKS).filter(k => k !== p.key).map(k => { const d = DESKS[k]; return [d[0] + 40, d[1] + 24]; }));
+  const [tx, ty] = Math.random() < .45 ? seat(p.key) : opts[Math.random() * opts.length | 0];
+  p.tx = tx + (Math.random() * 8 - 4); p.ty = ty + (Math.random() * 4 - 2);
+}
+function step(p, dt) {
+  if (p.working || p.status === "paused") { const [sx, sy] = seat(p.key); p.tx = sx; p.ty = sy; }
+  const dx = p.tx - p.x, dy = p.ty - p.y, dist = Math.hypot(dx, dy), speed = p.working ? .06 : .03;
+  if (dist > 1) { p.x += dx / dist * Math.min(dist, speed * dt); p.y += dy / dist * Math.min(dist, speed * dt); p.moving = true; p.sitting = false; p.dir = dx < 0 ? -1 : 1; }
+  else { p.moving = false; const [sx, sy] = seat(p.key); p.sitting = Math.hypot(p.x - sx, p.y - sy) < 2;
+    if (!p.working && p.status !== "paused" && (p.wait -= dt / 16) < 0) { wander(p); p.wait = 180 + Math.random() * 420; } }
+}
+
+function packet(from) { const d = DESKS[from]; if (d) packets.push({ x: d[0] + 18, y: d[1] - 8, c: colours[from] || "#ffcf4a", t: 0 }); }
+function drawPackets(dt) {
+  packets = packets.filter(k => k.t < 1);
+  packets.forEach(k => { k.t += dt / 1400; const e = k.t, x = k.x + (240 - k.x) * e, y = k.y + (42 - k.y) * e - Math.sin(e * Math.PI) * 30;
+    R(x - 2, y - 2, 4, 4, k.c); R(x - 1, y - 1, 2, 2, "#fff"); for (let i = 1; i < 4; i++) { const f = Math.max(0, e - i * .03);
+      R(k.x + (240 - k.x) * f - 1, k.y + (42 - k.y) * f - Math.sin(f * Math.PI) * 30 - 1, 2, 2, shade(k.c, .7)); } });
+}
+
+// ---- overlay (crisp text over the pixels)
+let scale = 1, offX = 0, offY = 0;
+function fit() {
+  const box = $("#office").getBoundingClientRect(), s = Math.max(1, Math.min(box.width / W, box.height / H));
+  scale = s >= 2 ? Math.floor(s * 2) / 2 : s; cv.style.width = W * scale + "px"; cv.style.height = H * scale + "px";
+  offX = (box.width - W * scale) / 2; offY = (box.height - H * scale) / 2;
+  ov.style.left = offX + "px"; ov.style.top = offY + "px"; ov.style.width = W * scale + "px"; ov.style.height = H * scale + "px";
+}
+function overlay() {
+  const now = Date.now();
+  let html = `<div class="memories" style="left:${240 * scale}px;top:${62 * scale}px">${memories} MEMORIES</div>`;
+  agents.forEach(a => { const p = people[a.key]; if (!p) return;
+    html += `<div class="tag" data-k="${a.key}" style="--c:${a.colour};left:${p.x * scale}px;top:${(p.y - 24) * scale}px">${esc(a.name)}${a.status === "working" ? " ⚙" : a.status === "error" ? " !" : ""}</div>`;
+    const b = bubbles[a.key];
+    const text = a.status === "working" ? `${a.emoji} on it: ${a.job.split(".")[0].toLowerCase()}…` : (b && b.until > now ? b.text : "");
+    if (text) html += `<div class="bubble" style="left:${p.x * scale}px;top:${(p.y - 30) * scale - 6}px">${esc(text)}</div>`;
+  });
+  ov.innerHTML = html;
+  ov.querySelectorAll(".tag").forEach(el => el.onclick = () => openAgent(el.dataset.k));
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(60, now - last); last = now; const t = now - t0;
+  drawRoom(t);
+  const order = agents.slice().sort((a, b) => (people[a.key]?.y || 0) - (people[b.key]?.y || 0));
+  agents.forEach(a => DESKS[a.key] && drawDesk(a, t));
+  order.forEach(a => { const p = people[a.key]; if (p) { step(p, dt); drawPerson(p, t); } });
+  drawPackets(dt);
+  if ((now | 0) % 3 === 0 || !frame.o || now - frame.o > 90) { overlay(); frame.o = now; }
+  requestAnimationFrame(frame);
+}
+
+// ---- data from the server
+function render(s) {
+  $("#clock").textContent = s.time; hour = s.hour ?? hour;
+  agents = s.agents; agents.forEach(a => { colours[a.key] = a.colour; names[a.key] = a.name; });
+  anyWorking = agents.some(a => a.status === "working"); ensurePeople();
+  const b = s.brain; memories = b.memories || 0;
+  $("#divisions").innerHTML = (s.divisions || []).map(d => `<span class="div-chip">${esc(d.toUpperCase())}</span>`).join("") + `<span class="div-chip add">+ NEXT VENTURE</span>`;
+  $("#orders").textContent = b.priorities || "Atlas sets the orders at 07:55.";
+  const ig = b.instagram || {}, closer = agents.find(a => a.key === "closer") || {};
+  $("#stats").innerHTML = [["Leads", b.leads_total ?? 0], ["Drafts today", closer.wins_today || 0], ["IG answered", ig.replied ?? 0], ["Passed to you", ig.handed_off ?? 0]]
+    .map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${k}</span></div>`).join("");
   $("#numbers").textContent = (b.numbers || "") + (b.studio ? "\n\n🎬 " + b.studio : "");
   const needs = b.needs_you || [];
-  $("#needcount").textContent = needs.length ? needs.length : "";
-  $("#needs").innerHTML = needs.length ? needs.map(n => `<div><b>@${esc(n.who)}</b>: ${esc(n.text)}</div>`).join("") : `<p style="color:var(--muted);margin:0">Nothing waiting. The team has it covered.</p>`;
-  $("#health").innerHTML = Object.entries(b.health || {}).map(([k, v]) => `<span><i class="dot ${v ? "ok" : "bad"}"></i>${k.replace(/_/g, " ")}</span>`).join("");
-  if (fresh) { $("#trade").value = b.settings.trade; $("#perday").value = b.settings.drafts_per_day; $("#videos").value = String(b.settings.videos); }
+  $("#needn").textContent = needs.length || "";
+  $("#needs").innerHTML = needs.length ? needs.map(n => `<div class="need"><b>@${esc(n.who)}</b> ${esc(n.text)}</div>`).join("") : `<div style="color:var(--muted)">Nothing waiting. The team has it covered.</div>`;
+  $("#health").innerHTML = Object.entries(b.health || {}).map(([k, v]) => `<span><i class="led ${v ? "ok" : "bad"}"></i>${k.replace(/_/g, " ")}</span>`).join("");
+  if (!render.done) { $("#trade").value = b.settings.trade; $("#perday").value = b.settings.drafts_per_day; $("#videos").value = String(b.settings.videos); render.done = true; }
 }
-
 function addEvents(list) {
   const feed = $("#feed");
-  list.filter(e => e.kind !== "start").forEach(e => {
-    const t = new Date(e.ts * 1000).toTimeString().slice(0, 5);
-    feed.insertAdjacentHTML("afterbegin", `<div class="ev ${e.kind}" style="--c:${colours[e.agent] || "#64748b"}"><span class="who">${esc(names[e.agent] || e.agent)}</span><time>${t}</time><br>${esc(e.text)}</div>`);
+  list.forEach(e => {
+    if (e.kind === "start") return;
+    if (render.ready && (e.kind === "done" || e.kind === "win") && DESKS[e.agent]) packet(e.agent);
+    if (render.ready && e.kind !== "done") bubbles[e.agent] = { text: e.text.length > 110 ? e.text.slice(0, 108) + "…" : e.text, until: Date.now() + 8000 };
+    const tm = new Date(e.ts * 1000).toTimeString().slice(0, 5);
+    feed.insertAdjacentHTML("afterbegin", `<div class="ev ${e.kind}" style="--c:${colours[e.agent] || "#64748b"}"><span class="who">${esc((names[e.agent] || e.agent).toUpperCase())}</span><time>${tm}</time>\n${esc(e.text)}</div>`);
   });
   while (feed.children.length > 200) feed.lastChild.remove();
   if (list.length) lastId = list[list.length - 1].id;
+  render.ready = true;
 }
-
-async function open(key) {
+async function openAgent(key) {
   const a = agents.find(x => x.key === key), evs = await (await fetch(`/api/events?agent=${key}&limit=25`)).json();
-  $("#card").style.setProperty("--c", a.colour);
-  $("#card").innerHTML = `<h3>${a.emoji} ${esc(a.name)} · ${esc(a.title)}</h3><p>${esc(a.job)}</p>
-    <div class="btns"><button class="go" id="runnow">Run now</button><button id="pause">${a.status === "paused" ? "Resume" : "Pause"}</button><button id="close">Close</button></div>
-    <p style="margin:0 0 8px">Last: ${a.last ? esc(a.last.when + " · " + a.last.result) : "not yet"} · Next: ${esc(a.next)}</p>
-    <div class="feed">${evs.reverse().filter(e => e.kind !== "start").map(e => `<div class="ev ${e.kind}" style="--c:${a.colour}"><time>${new Date(e.ts * 1000).toLocaleString("en-GB").slice(0, 17)}</time><br>${esc(e.text)}</div>`).join("") || "<p>No work logged yet.</p>"}</div>`;
+  const card = $("#card"); card.style.setProperty("--c", a.colour);
+  card.innerHTML = `<h3>${a.emoji} ${esc(a.name)} · ${esc(a.title)}</h3><p>${esc(a.division)} division</p><p>${esc(a.job)}</p>
+    <div class="row"><button id="runnow">RUN NOW</button><button class="ghost" id="pause">${a.status === "paused" ? "RESUME" : "PAUSE"}</button><button class="ghost" id="close">CLOSE</button></div>
+    <p>Last: ${a.last ? esc(a.last.when + " · " + a.last.result) : "not yet"} · Next: ${esc(a.next)}</p>
+    <div class="feed">${evs.reverse().filter(e => e.kind !== "start").map(e => `<div class="ev ${e.kind}" style="--c:${a.colour}"><time>${new Date(e.ts * 1000).toLocaleString("en-GB").slice(0, 17)}</time>\n${esc(e.text)}</div>`).join("") || "<p>No work logged yet.</p>"}</div>`;
   $("#sheet").classList.add("open");
   $("#runnow").onclick = async () => { await fetch(`/api/run/${key}`, { method: "POST" }); $("#sheet").classList.remove("open"); tick(); };
   $("#pause").onclick = async () => { await fetch(`/api/pause/${key}`, { method: "POST" }); $("#sheet").classList.remove("open"); tick(); };
   $("#close").onclick = () => $("#sheet").classList.remove("open");
 }
 $("#sheet").onclick = e => { if (e.target.id === "sheet") $("#sheet").classList.remove("open"); };
+cv.onclick = e => { const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / scale, y = (e.clientY - r.top) / scale;
+  const hit = Object.entries(DESKS).find(([k, [dx, dy]]) => x > dx - 8 && x < dx + 44 && y > dy - 16 && y < dy + 36); if (hit) openAgent(hit[0]); };
 $("#save").onclick = async () => {
   await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ trade: $("#trade").value || "barbers", drafts_per_day: +$("#perday").value || 20, videos: $("#videos").value === "true" }) });
-  $("#save").textContent = "Orders sent ✓"; setTimeout(() => $("#save").textContent = "Send orders", 1600);
+  $("#save").textContent = "ORDERS SENT ✓"; setTimeout(() => $("#save").textContent = "SEND ORDERS", 1600);
 };
-
 async function tick() { try { render(await (await fetch("/api/state")).json()); } catch (e) {} }
 async function feedTick() { try { addEvents(await (await fetch(`/api/events?after=${lastId}`)).json()); } catch (e) {} }
-addEventListener("resize", layout);
-tick().then(feedTick); setInterval(tick, 3000); setInterval(feedTick, 2000);
+addEventListener("resize", fit);
+fit(); tick().then(feedTick).then(() => requestAnimationFrame(frame));
+setInterval(tick, 3000); setInterval(feedTick, 2000);
 </script>
 </body>
 </html>

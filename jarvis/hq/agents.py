@@ -1,4 +1,4 @@
-"""The HQ agents. Each has one job, a schedule, and writes what it did to the shared brain.
+"""The LSX HQ agents (Kinetic Web Designs division). Each has one job, a schedule, and writes what it did to the shared brain.
 
 They reuse Alfred's own Kinetic tools (lead finder, outreach drafts, follow-ups, briefing, content calendar,
 Instagram replies), so nothing new talks to the outside world. Hard rules, same as Alfred's:
@@ -36,6 +36,7 @@ class Agent:
     every: int = 0                      # minutes between runs (0: use times)
     times: tuple = ()                   # ("09:05", "13:05"): once after each of these each day
     hours: tuple = (0, 24)              # only between these hours
+    division: str = "Kinetic Web Designs"  # which LSX business this agent works for
     running: bool = field(default=False, compare=False)
     run: object = None                  # async fn(ctx) -> str
 

@@ -1,4 +1,4 @@
-"""Kinetic HQ server: the agents' scheduler plus the office screen on http://127.0.0.1:8341.
+"""LSX HQ server: the agents' scheduler plus the office screen on http://127.0.0.1:8341.
 
 Run from the jarvis folder:  python -m hq.app
 Only listens on this PC. Nothing here sends messages to anyone.
@@ -30,7 +30,7 @@ from hq.brain import Brain  # noqa: E402
 
 PORT = int(os.getenv("KINETIC_HQ_PORT", "8341"))
 SETTINGS = Settings()
-HQ_DIR = memory.root(SETTINGS) / "Kinetic Web Designs" / "HQ"
+HQ_DIR = memory.root(SETTINGS) / "LSX HQ"
 BRAIN = Brain(HQ_DIR / "brain.db", journal_dir=HQ_DIR / "Journal")
 AGENTS = {a.key: a for a in roster()}
 TICK = 20  # seconds between schedule checks
@@ -56,7 +56,7 @@ async def run_agent(ctx: Ctx, key: str, reason: str = "schedule") -> None:
 
 
 async def scheduler(ctx: Ctx) -> None:
-    BRAIN.log("hq", "Kinetic HQ is open. Agents reporting for duty.", "win")
+    BRAIN.log("hq", "LSX HQ is open. Agents reporting for duty.", "win")
     while True:
         now = datetime.now()
         for key, agent in AGENTS.items():
@@ -90,7 +90,7 @@ async def state():
     for a in AGENTS.values():
         last = BRAIN.last_run(a.key)
         agents.append({
-            "key": a.key, "name": a.name, "title": a.title, "emoji": a.emoji, "colour": a.colour, "job": a.job,
+            "key": a.key, "division": a.division, "name": a.name, "title": a.title, "emoji": a.emoji, "colour": a.colour, "job": a.job,
             "status": "working" if a.running else ("paused" if BRAIN.get(f"paused.{a.key}", False) else
                                                     ("error" if last and last.get("ok") == 0 else "idle")),
             "last": last and {"when": datetime.fromtimestamp(last["started"]).strftime("%H:%M"),
@@ -101,7 +101,8 @@ async def state():
         })
     facts = BRAIN.facts()
     return JSONResponse({
-        "time": now.strftime("%H:%M"), "agents": agents,
+        "time": now.strftime("%H:%M"), "hour": now.hour, "agents": agents,
+        "divisions": sorted({a.division for a in AGENTS.values()}),
         "brain": {
             "priorities": facts.get("ceo.priorities"), "numbers": facts.get("numbers.briefing"),
             "leads_total": facts.get("leads.total"), "instagram": facts.get("ig.counts"),
