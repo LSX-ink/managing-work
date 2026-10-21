@@ -24,6 +24,8 @@ from starlette.requests import ClientDisconnect
 import alerts
 import alfredmem
 import helpers
+import kinetic_briefing
+import kinetic_calendar
 import kinetic_outreach
 import tiktokstudio
 import tiktokstudio_store
@@ -80,6 +82,10 @@ async def lifespan(app: FastAPI):
                                                         lambda: bool(app.state.pages))))
     watchers.append(asyncio.create_task(kinetic_outreach.watch(settings, lambda text, kind: announce(app, text, kind),
                                                                lambda: bool(app.state.pages))))  # daily follow-ups
+    watchers.append(asyncio.create_task(kinetic_briefing.watch(
+        settings, lambda text, kind, shown=None: announce(app, text, kind, shown), lambda: bool(app.state.pages))))
+    watchers.append(asyncio.create_task(kinetic_calendar.watch(settings, lambda text, kind: announce(app, text, kind),
+                                                               lambda: bool(app.state.pages))))  # post-day reminders
     watchers.append(tiktokstudio.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
@@ -134,14 +140,16 @@ async def always_fresh(request: Request, call_next):
     return response
 
 
-async def announce(app: FastAPI, text: str, kind: str = "phone") -> None:
-    """Add a heads-up (a delivery, a call) to the notifications and say it on every open page."""
-    item = {"id": next(app.state.alert_ids), "kind": kind, "text": text, "at": time.strftime("%H:%M")}
+async def announce(app: FastAPI, text: str, kind: str = "phone", shown: str | None = None) -> None:
+    """Add a heads-up (a delivery, a call) to the notifications and say it on every open page.
+
+    shown, when given, is what the notification says instead (e.g. a longer briefing); text is still what's spoken."""
+    item = {"id": next(app.state.alert_ids), "kind": kind, "text": shown or text, "at": time.strftime("%H:%M")}
     app.state.alerts = [*app.state.alerts, item][-MAX_ALERTS:]
     if not app.state.pages:
         print(f"  Jarvis (no page open): {text}", flush=True)
     for ws, speak, brain in list(app.state.pages.values()):
-        brain.note(text)
+        brain.note(shown or text)
         try:
             await ws.send_json({"type": "alert", **item})
             if kind == "timer":

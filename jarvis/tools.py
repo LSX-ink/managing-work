@@ -20,6 +20,7 @@ import active_workout
 import agenda
 import alerts
 import alfred_mail
+import alfred_replies
 import assistant_day
 import assistant_inbox
 import assistant_life
@@ -110,6 +111,8 @@ import design_social
 import design_layout
 import design_audit
 import design_components
+import kinetic_briefing
+import kinetic_calendar
 import kinetic_find
 import kinetic_invoices
 import kinetic_outreach
@@ -365,9 +368,10 @@ ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [design, design_extract, design_contrast, design_palette, design_type, design_motion, design_kit, design_logo, design_social,
               design_layout, design_audit, design_components,
               skillscan]  # design tools
-ABILITIES += [alfred_mail]  # Alfred's own email account
+ABILITIES += [alfred_mail, alfred_replies]  # Alfred's own email account and reply drafts for new mail
 ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, track outreach, invoice
+ABILITIES += [kinetic_briefing, kinetic_calendar]  # Kinetic: morning money briefing, content calendar
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
