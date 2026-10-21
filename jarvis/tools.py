@@ -113,6 +113,7 @@ import design_components
 import kinetic_find
 import kinetic_invoices
 import kinetic_sales
+import kinetic_site
 import skillscan
 import docs_tools
 import docs_tools_forms
@@ -364,6 +365,7 @@ ABILITIES += [design, design_extract, design_contrast, design_palette, design_ty
               design_layout, design_audit, design_components,
               skillscan]  # design tools
 ABILITIES += [alfred_mail]  # Alfred's own email account
+ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, invoice
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
