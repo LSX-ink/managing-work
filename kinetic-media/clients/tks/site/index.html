@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en-GB" data-theme="evergreen">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TKS Consulting Limited | Accounting, Finance, Internal Audit & Risk Management</title>
+<meta name="description" content="Senior-level finance leadership, accounting, internal audit and risk management, with Big 4 experience across Europe, Africa, Asia-Pacific and the United States.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* TKS Consulting preview by Kinetic Web Designs.
+   Palette taken from the chosen logo (top left, dark green): deep evergreen, champagne gold, ivory.
+   Three design directions share the same content: evergreen (dark), ivory (light), heritage (light page, dark bands). */
+:root {
+  --green-950: #111714; --green-900: #161d19; --green-800: #1e2622; --green-700: #2a3530; --green-600: #3b4a43;
+  --gold-300: #ead7b6; --gold-400: #dcc199; --gold-500: #c9a77a; --gold-600: #a8865a;
+  --ivory: #f5f0e6; --ivory-2: #ece5d6; --ink: #1a201c;
+  --gold-grad: linear-gradient(115deg, #f1e2c6 0%, #d6b98c 35%, #b8955f 60%, #ecd9b5 85%, #c9a77a 100%);
+  --radius: 14px;
+  --serif: "Cormorant Garamond", "Times New Roman", serif;
+  --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-theme="evergreen"] { --bg: var(--green-900); --bg-2: var(--green-800); --band: var(--green-950); --text: #ece6da; --muted: #a9b1aa;
+  --line: rgba(220, 193, 153, .22); --card: rgba(255,255,255,.035); --accent: var(--gold-400); --accent-ink: var(--green-950); --head: #f5efe3; --band-text: #ece6da; }
+[data-theme="ivory"] { --bg: var(--ivory); --bg-2: #fbf8f1; --band: var(--ivory-2); --text: #2b332e; --muted: #5f6a63;
+  --line: rgba(30, 38, 34, .14); --card: #fffdf8; --accent: var(--gold-600); --accent-ink: #fff; --head: var(--green-900); --band-text: #2b332e; }
+[data-theme="heritage"] { --bg: var(--ivory); --bg-2: #fbf8f1; --band: var(--green-900); --text: #2b332e; --muted: #5f6a63;
+  --line: rgba(30, 38, 34, .14); --card: #fffdf8; --accent: var(--gold-600); --accent-ink: #fff; --head: var(--green-900); --band-text: #ece6da; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; overflow-x: clip; background: var(--bg); color: var(--text); font: 400 16.5px/1.65 var(--sans); -webkit-font-smoothing: antialiased; transition: background .6s, color .6s; }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+.wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 500; color: var(--head); letter-spacing: -.01em; margin: 0; line-height: 1.08; }
+h2 { font-size: clamp(34px, 4.6vw, 58px); }
+.eyebrow { font: 600 12px/1 var(--sans); letter-spacing: .28em; text-transform: uppercase; color: var(--accent); display: inline-flex; align-items: center; gap: 12px; }
+.eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+.lede { font-size: clamp(17px, 1.6vw, 19.5px); color: var(--muted); max-width: 62ch; }
+.gold-text { background: var(--gold-grad); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 9s ease-in-out infinite; }
+@keyframes sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 26px; border-radius: 999px; font: 600 15px/1 var(--sans); text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .25s, box-shadow .25s, background .25s, color .25s; }
+.btn-gold { background: var(--gold-grad); background-size: 200% 100%; color: var(--green-950); box-shadow: 0 10px 30px -12px rgba(201,167,122,.65); }
+.btn-gold:hover { transform: translateY(-2px); background-position: 100% 0; box-shadow: 0 16px 36px -14px rgba(201,167,122,.8); }
+.btn-ghost { border-color: var(--line); color: var(--head); background: transparent; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn svg { width: 16px; height: 16px; transition: transform .25s; }
+.btn:hover svg { transform: translateX(3px); }
+
+/* header */
+header.site { position: fixed; inset: 0 0 auto; z-index: 50; transition: background .35s, backdrop-filter .35s, border-color .35s; border-bottom: 1px solid transparent; }
+/* over the dark hero the header always uses light text; once scrolled it follows the design */
+[data-theme="heritage"] header.site:not(.scrolled), [data-theme="heritage"] .links.open { --head: #f5efe3; --text: #ece6da; --line: rgba(220,193,153,.3); --bg: var(--green-900); }
+header.site.scrolled { background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(14px); border-color: var(--line); }
+.nav { display: flex; align-items: center; justify-content: space-between; height: 84px; }
+.brand { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+.brand img { width: 46px; height: auto; }
+.brand span { font: 500 15px/1.15 var(--sans); letter-spacing: .32em; color: var(--head); text-transform: uppercase; }
+.brand small { display: block; font-size: 10px; letter-spacing: .3em; color: var(--muted); margin-top: 3px; }
+.links { display: flex; gap: 34px; align-items: center; }
+.links a { text-decoration: none; font-size: 14.5px; color: var(--text); opacity: .85; position: relative; }
+.links a:not(.btn)::after { content: ""; position: absolute; left: 0; right: 100%; bottom: -6px; height: 1px; background: var(--accent); transition: right .3s; }
+.links a:not(.btn):hover::after { right: 0; }
+.links .btn { padding: 11px 20px; font-size: 14px; }
+.burger { display: none; background: none; border: 1px solid var(--line); border-radius: 10px; width: 44px; height: 44px; color: var(--head); }
+
+/* hero: always dark evergreen, whichever direction */
+.hero { position: relative; min-height: 100svh; display: grid; align-items: center; overflow: hidden; background:
+  radial-gradient(1100px 600px at 78% 30%, rgba(201,167,122,.12), transparent 60%), radial-gradient(800px 500px at 10% 90%, rgba(59,74,67,.55), transparent 65%), var(--green-900); color: #ece6da; }
+[data-theme="ivory"] .hero { background: radial-gradient(1000px 600px at 78% 30%, rgba(201,167,122,.18), transparent 60%), var(--ivory); color: var(--text); }
+.hero h1 { font-size: clamp(46px, 7.2vw, 96px); color: #f5efe3; max-width: 13ch; }
+[data-theme="ivory"] .hero h1 { color: var(--green-900); }
+.hero h1 em { font-style: italic; }
+.hero .lede { color: #b9c0b9; margin: 26px 0 38px; }
+[data-theme="ivory"] .hero .lede { color: var(--muted); }
+.hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; padding-top: 110px; padding-bottom: 80px; }
+.hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+.hero .btn-ghost { color: #f5efe3; border-color: rgba(236,215,182,.3); }
+[data-theme="ivory"] .hero .btn-ghost { color: var(--green-900); border-color: var(--line); }
+.mono-stage { position: relative; aspect-ratio: 1; display: grid; place-items: center; }
+.mono-stage img { width: 62%; filter: drop-shadow(0 30px 60px rgba(0,0,0,.45)); animation: float 9s ease-in-out infinite; }
+[data-theme="ivory"] .mono-stage img { filter: drop-shadow(0 24px 40px rgba(120,90,50,.25)) saturate(1.35) brightness(.66) contrast(1.1); }
+[data-theme="ivory"] .brand img, [data-theme="heritage"] header.site.scrolled .brand img, [data-theme="heritage"] footer .brand img { filter: saturate(1.35) brightness(.66) contrast(1.1); }
+@keyframes float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-14px) rotate(-.6deg); } }
+.ring { position: absolute; inset: 6%; border-radius: 50%; border: 1px solid rgba(220,193,153,.22); }
+.ring.r2 { inset: 16%; border-style: dashed; border-color: rgba(220,193,153,.16); animation: spin 80s linear infinite; }
+.ring.r3 { inset: -2%; border-color: rgba(220,193,153,.08); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.orbit-dot { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--gold-400); box-shadow: 0 0 18px var(--gold-400); top: 6%; left: 50%; transform-origin: 0 calc(44% * 1); }
+#chart { position: absolute; inset: auto 0 0 0; width: 100%; height: 46%; pointer-events: none; opacity: .55; }
+.trust { display: flex; flex-wrap: wrap; gap: 12px 34px; margin-top: 54px; padding-top: 26px; border-top: 1px solid rgba(220,193,153,.18); font-size: 13.5px; color: #aeb6af; max-width: 640px; }
+[data-theme="ivory"] .trust { color: var(--muted); border-color: var(--line); }
+.trust b { color: var(--gold-300); font-weight: 600; }
+[data-theme="ivory"] .trust b { color: var(--gold-600); }
+.scroll-cue { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); width: 24px; height: 40px; border: 1px solid rgba(220,193,153,.4); border-radius: 14px; }
+.scroll-cue::after { content: ""; position: absolute; left: 50%; top: 8px; width: 3px; height: 8px; margin-left: -1.5px; border-radius: 2px; background: var(--gold-400); animation: cue 2s ease-in-out infinite; }
+@keyframes cue { 0% { opacity: 0; transform: translateY(0); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(14px); } }
+
+/* ticker */
+.ticker { border-block: 1px solid var(--line); background: var(--bg-2); overflow: hidden; padding: 18px 0; }
+.ticker-track { display: flex; gap: 46px; width: max-content; animation: tick 48s linear infinite; }
+.ticker span { font: 500 italic 22px/1 var(--serif); color: var(--head); white-space: nowrap; display: inline-flex; align-items: center; gap: 46px; }
+.ticker span::after { content: "\2726"; font-style: normal; font-size: 12px; color: var(--accent); }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes tick { to { transform: translateX(-50%); } }
+
+section { padding: clamp(80px, 11vw, 140px) 0; }
+.sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 56px; }
+.sec-head h2 { margin-top: 18px; }
+
+/* services */
+.services { display: grid; grid-template-columns: 340px 1fr; gap: 44px; }
+.svc-tabs { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 110px; align-self: start; }
+.svc-tab { text-align: left; background: none; border: 1px solid transparent; border-radius: var(--radius); padding: 18px 20px; cursor: pointer; color: var(--text); font: 500 16.5px/1.35 var(--sans); display: grid; grid-template-columns: 44px 1fr; gap: 6px; transition: background .3s, border-color .3s; }
+.svc-tab .n { font: 500 italic 26px/1 var(--serif); color: var(--muted); transition: color .3s; }
+.svc-tab:hover { background: var(--card); }
+.svc-tab[aria-selected="true"] { background: var(--card); border-color: var(--line); }
+.svc-tab[aria-selected="true"] .n { color: var(--accent); }
+.svc-tab .bar { grid-column: 2; height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.svc-tab .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+.svc-tab[aria-selected="true"] .bar i { animation: fill 9s linear forwards; }
+@keyframes fill { to { width: 100%; } }
+.svc-panel { background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) + 6px); padding: clamp(28px, 4vw, 52px); position: relative; overflow: hidden; }
+.svc-panel::before { content: attr(data-n); position: absolute; right: -10px; top: -40px; font: 500 italic 220px/1 var(--serif); color: var(--accent); opacity: .07; pointer-events: none; }
+.svc-panel h3 { font-size: clamp(30px, 3.4vw, 44px); margin-bottom: 18px; }
+.svc-panel .intro { color: var(--muted); max-width: 68ch; }
+.svc-panel ul { list-style: none; padding: 0; margin: 30px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px; }
+.svc-panel li { display: grid; grid-template-columns: 18px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15.5px; opacity: 0; transform: translateY(10px); }
+.svc-panel.show li { animation: rise .55s cubic-bezier(.2,.7,.2,1) forwards; }
+.svc-panel li::before { content: ""; width: 7px; height: 7px; margin-top: 9px; border: 1px solid var(--accent); transform: rotate(45deg); }
+.svc-panel .close { font-family: var(--serif); font-size: 21px; font-style: italic; color: var(--head); border-left: 2px solid var(--accent); padding-left: 18px; margin: 0; max-width: 64ch; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+.svc-panel.swap { animation: swap .5s ease; }
+@keyframes swap { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* approach */
+.band { background: var(--band); color: var(--band-text); }
+.band h2, .band h3 { color: var(--band-text); }
+[data-theme="evergreen"] .band h2, [data-theme="heritage"] .band h2 { color: #f5efe3; }
+.band .lede { color: color-mix(in srgb, var(--band-text) 70%, transparent); }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; counter-reset: s; position: relative; }
+.steps::before { content: ""; position: absolute; top: 31px; left: 0; right: 0; height: 1px; background: rgba(220,193,153,.25); }
+[data-theme="ivory"] .steps::before { background: var(--line); }
+.steps .line { position: absolute; top: 31px; left: 0; height: 1px; width: 0; background: var(--gold-400); transition: width 1.8s cubic-bezier(.3,.7,.2,1); }
+.steps.in .line { width: 100%; }
+.step { padding-right: 28px; position: relative; }
+.step .dot { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(220,193,153,.4); background: var(--band); font: 500 italic 24px/1 var(--serif); color: var(--gold-400); position: relative; z-index: 1; margin-bottom: 26px; }
+[data-theme="ivory"] .step .dot { color: var(--gold-600); border-color: var(--line); }
+.step h3 { font-size: 30px; margin-bottom: 10px; }
+.step p { margin: 0; font-size: 15.5px; color: color-mix(in srgb, var(--band-text) 72%, transparent); }
+
+/* why */
+.why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.why-card { border: 1px solid var(--line); border-radius: calc(var(--radius) + 4px); padding: 32px 28px; background: var(--card); transition: transform .4s cubic-bezier(.2,.7,.2,1), border-color .4s, box-shadow .4s; position: relative; overflow: hidden; }
+.why-card::after { content: ""; position: absolute; inset: 0; background: radial-gradient(400px 160px at var(--mx, 50%) var(--my, 0%), rgba(201,167,122,.14), transparent 70%); opacity: 0; transition: opacity .4s; }
+.why-card:hover { transform: translateY(-6px); border-color: var(--accent); box-shadow: 0 24px 50px -30px rgba(0,0,0,.5); }
+.why-card:hover::after { opacity: 1; }
+.why-card svg { width: 34px; height: 34px; color: var(--accent); margin-bottom: 22px; }
+.why-card h3 { font-size: 27px; margin-bottom: 10px; }
+.why-card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+/* regions */
+.regions { display: grid; grid-template-columns: 1fr 1.1fr; gap: 60px; align-items: center; }
+.region-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.region-list div { background: var(--bg); padding: 30px 26px; transition: background .3s; }
+.region-list div:hover { background: var(--bg-2); }
+.region-list b { display: block; font: 500 30px/1.1 var(--serif); color: var(--head); margin-bottom: 6px; }
+.region-list span { font-size: 14px; color: var(--muted); }
+.who { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.who span { border: 1px solid var(--line); border-radius: 999px; padding: 9px 16px; font-size: 14px; }
+
+/* contact */
+.contact { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+.contact h2 { font-size: clamp(40px, 5.6vw, 72px); }
+form { display: grid; gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) + 6px); padding: 32px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+label { font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--muted); display: grid; gap: 7px; }
+input, select, textarea { font: inherit; color: var(--text); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; transition: border-color .25s, box-shadow .25s; }
+select option { color: #1a201c; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+textarea { min-height: 120px; resize: vertical; }
+.form-note { font-size: 13px; color: var(--muted); margin: 0; }
+.sent { border: 1px solid var(--accent); border-radius: 10px; padding: 14px 16px; font-size: 14.5px; }
+
+footer { border-top: 1px solid var(--line); padding: 46px 0 120px; font-size: 14px; color: var(--muted); }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px; align-items: center; }
+.foot .brand img { width: 38px; }
+
+/* design switcher (preview only) */
+.switcher { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 999px; background: rgba(17,23,20,.88); backdrop-filter: blur(12px); border: 1px solid rgba(220,193,153,.3); box-shadow: 0 18px 40px -18px rgba(0,0,0,.6); }
+.switcher small { color: #c9cfc9; font-size: 12px; padding: 0 10px 0 12px; letter-spacing: .04em; white-space: nowrap; }
+.switcher button { white-space: nowrap; border: 0; border-radius: 999px; padding: 9px 14px; font: 600 13px/1 var(--sans); background: transparent; color: #e6e1d6; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.switcher button i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); }
+.switcher button[aria-pressed="true"] { background: var(--gold-grad); color: var(--green-950); }
+
+/* reveal on scroll */
+.rv { opacity: 0; transform: translateY(26px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+.rv.in { opacity: 1; transform: none; }
+.rv.d1 { transition-delay: .1s; } .rv.d2 { transition-delay: .2s; } .rv.d3 { transition-delay: .3s; }
+.hero .rv { transition-duration: 1.2s; }
+
+@media (max-width: 960px) {
+  .links { display: none; }
+  .burger { display: grid; place-items: center; }
+  .links.open { display: flex; position: absolute; top: 84px; left: 0; right: 0; flex-direction: column; gap: 20px; padding: 26px 20px 30px; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .hero-grid { grid-template-columns: 1fr; padding-top: 120px; }
+  .mono-stage { width: min(320px, 70vw); margin: 0 auto; order: -1; }
+  .sec-head, .services, .regions, .contact { grid-template-columns: 1fr; }
+  .svc-tabs { position: static; flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .svc-tab { min-width: 250px; scroll-snap-align: start; }
+  .svc-panel ul { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr 1fr; gap: 40px 0; }
+  .steps::before, .steps .line { display: none; }
+  .why { grid-template-columns: 1fr; }
+  .two { grid-template-columns: 1fr; }
+  .switcher small { display: none; }
+}
+@media (max-width: 520px) {
+  .steps { grid-template-columns: 1fr; } .region-list { grid-template-columns: 1fr; } .brand small { display: none; }
+  .brand span { letter-spacing: .2em; font-size: 13px; } .brand img { width: 38px; }
+  .mono-stage { width: 210px; }
+  .hero-grid { padding-top: 104px; gap: 18px; }
+  .eyebrow { letter-spacing: .18em; font-size: 11px; }
+  .trust { margin-top: 36px; }
+  .switcher { max-width: calc(100vw - 16px); gap: 2px; }
+  .switcher button { padding: 9px 10px; font-size: 12px; gap: 6px; }
+}
+html { overflow-x: clip; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .rv { opacity: 1; transform: none; } .svc-panel li { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="site" id="top">
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="TKS Consulting Limited, home"><img src="assets/tks-monogram.png" alt=""><span>TKS Consulting<small>Limited</small></span></a>
+    <nav class="links" id="links" aria-label="Main">
+      <a href="#services">Services</a><a href="#approach">Our approach</a><a href="#why">Why TKS</a><a href="#experience">Experience</a>
+      <a class="btn btn-gold" href="#contact">Book a consultation</a>
+    </nav>
+    <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="links"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<main>
+<section class="hero" aria-labelledby="hero-title">
+  <canvas id="chart" aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow rv">Accounting · Finance · Internal Audit · Risk</p>
+      <h1 id="hero-title" class="rv d1" style="margin-top:22px">Clarity, control and <em class="gold-text">confidence</em> in every number.</h1>
+      <p class="lede rv d2">Senior-level finance leadership and assurance for business owners, boards and executive teams, with Big 4 experience across Europe, Africa, Asia-Pacific and the United States.</p>
+      <div class="hero-ctas rv d3">
+        <a class="btn btn-gold" href="#contact">Book a consultation <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        <a class="btn btn-ghost" href="#services">Explore our services</a>
+      </div>
+      <div class="trust rv d3"><span><b>Big 4</b> experience</span><span><b>4</b> regions worked across</span><span><b>Board-level</b> advisory</span><span><b>Fractional CFO</b> to full finance function</span></div>
+    </div>
+    <div class="mono-stage" aria-hidden="true">
+      <div class="ring r3"></div><div class="ring"></div><div class="ring r2"></div>
+      <span class="orbit-dot" id="orbit"></span>
+      <img src="assets/tks-monogram.png" alt="">
+    </div>
+  </div>
+  <a class="scroll-cue" href="#services" aria-label="Scroll to services"></a>
+</section>
+
+<div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker"></div></div>
+
+<section id="services" aria-labelledby="services-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">What we do</p><h2 id="services-title" class="rv d1">Four ways we help your organisation move forward.</h2></div>
+      <p class="lede rv d2">From fractional CFO support to internal audit transformation, every engagement is led by senior expertise and focused on practical, prioritised action.</p>
+    </div>
+    <div class="services">
+      <div class="svc-tabs" role="tablist" aria-label="Services" id="tabs"></div>
+      <article class="svc-panel" id="panel" role="tabpanel" aria-live="polite"></article>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="approach" aria-labelledby="approach-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">Our approach</p><h2 id="approach-title" class="rv d1">Independent challenge, with real commercial understanding.</h2></div>
+      <p class="lede rv d2">We work closely with boards, committees, executives and finance teams to find what matters most, then turn it into action that lasts.</p>
+    </div>
+    <div class="steps" id="steps">
+      <span class="line"></span>
+      <div class="step rv"><div class="dot">i</div><h3>Understand</h3><p>We learn your priorities, how finance runs today and the risks that matter most.</p></div>
+      <div class="step rv d1"><div class="dot">ii</div><h3>Challenge</h3><p>Independent, senior-level challenge on performance, controls and decisions.</p></div>
+      <div class="step rv d2"><div class="dot">iii</div><h3>Act</h3><p>Complex findings turned into clear, prioritised and practical plans.</p></div>
+      <div class="step rv d3"><div class="dot">iv</div><h3>Sustain</h3><p>Capability built into your team, so the improvement keeps paying back.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="why" aria-labelledby="why-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">Why TKS</p><h2 id="why-title" class="rv d1">Insight that goes beyond compliance.</h2></div>
+      <p class="lede rv d2">Clients get the expertise of senior finance and assurance leadership, without the cost of a full-time hire.</p>
+    </div>
+    <div class="why">
+      <div class="why-card rv"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 27h24M7 23V13M13 23V8M19 23v-7M25 23V5"/></svg><h3>Senior-level expertise</h3><p>Finance leadership and assurance experience gained in complex, multi-country organisations.</p></div>
+      <div class="why-card rv d1"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="16" cy="16" r="11"/><path d="M16 9v7l5 3"/></svg><h3>Practical, not theoretical</h3><p>Clear, prioritised actions your team can deliver, not reports that sit on a shelf.</p></div>
+      <div class="why-card rv d2"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M16 4l10 4v7c0 7-4.5 11-10 13C10.5 26 6 22 6 15V8l10-4z"/><path d="M11.5 16l3 3 6-6"/></svg><h3>Confident decisions</h3><p>Better visibility over performance, risk and cash, so you can plan your next move with confidence.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="experience" aria-labelledby="exp-title">
+  <div class="wrap regions">
+    <div>
+      <p class="eyebrow rv">Experience</p>
+      <h2 id="exp-title" class="rv d1" style="margin-top:18px">Global experience. Focused, personal support.</h2>
+      <p class="lede rv d2" style="margin-top:22px">Our assurance and finance expertise was built across complex, multi-country organisations, including Big 4 experience. We bring that standard to every client, whatever their size.</p>
+      <div class="who rv d3"><span>Business owners</span><span>Boards</span><span>Audit &amp; risk committees</span><span>Executive teams</span><span>Finance teams</span></div>
+    </div>
+    <div class="region-list rv d2">
+      <div><b>Europe</b><span>Assurance and finance leadership</span></div>
+      <div><b>Africa</b><span>Multi-country organisations</span></div>
+      <div><b>Asia-Pacific</b><span>Complex, cross-border operations</span></div>
+      <div><b>United States</b><span>Big 4 standards and methodology</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" aria-labelledby="contact-title">
+  <div class="wrap contact">
+    <div>
+      <p class="eyebrow rv">Let's talk</p>
+      <h2 id="contact-title" class="rv d1" style="margin-top:18px">Move forward with <em class="gold-text">confidence.</em></h2>
+      <p class="lede rv d2" style="margin-top:22px">Tell us where you are and where you want to be. Whether it's experienced finance leadership, stronger controls or a critical project, we'll come back to you with a clear next step.</p>
+    </div>
+    <form class="rv d2" id="form" novalidate>
+      <div class="two"><label>Your name<input name="name" autocomplete="name" required></label><label>Organisation<input name="org" autocomplete="organization"></label></div>
+      <div class="two"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Phone (optional)<input name="phone" type="tel" autocomplete="tel"></label></div>
+      <label>How can we help?<select name="service" id="svc-select"></select></label>
+      <label>Tell us a little more<textarea name="msg" placeholder="Your goals, timescales or the challenge you're facing"></textarea></label>
+      <button class="btn btn-gold" type="submit" style="justify-self:start">Request a consultation <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+      <p class="form-note">We reply within one working day. Your details are only used to answer your enquiry.</p>
+      <div id="sent" hidden></div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a class="brand" href="#top"><img src="assets/tks-monogram.png" alt=""><span>TKS Consulting<small>Accounting, Finance, Internal Audit &amp; Risk Management</small></span></a>
+    <span>&copy; <span id="yr"></span> TKS Consulting Limited. All rights reserved.</span>
+  </div>
+</footer>
+
+<div class="switcher" role="group" aria-label="Choose a design (preview only)">
+  <small>Preview: choose a design</small>
+  <button type="button" data-t="evergreen" aria-pressed="true"><i style="background:#161d19"></i>1 Evergreen</button>
+  <button type="button" data-t="ivory" aria-pressed="false"><i style="background:#f5f0e6"></i>2 Ivory</button>
+  <button type="button" data-t="heritage" aria-pressed="false"><i style="background:linear-gradient(90deg,#f5f0e6 50%,#161d19 50%)"></i>3 Heritage</button>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Services, in the order TKS asked for. Wording from their services one-pager.
+  const SERVICES = [
+    { t: "Strategic Finance and Business Advisory",
+      i: "We help organisations turn financial information into clear, commercially focused decisions that improve performance, strengthen profitability and support sustainable growth. We bring senior-level finance leadership and strategic insight, combining technical accounting expertise with extensive experience in financial planning and analysis, business partnering and executive decision-making.",
+      l: ["Fractional CFO and outsourced Finance Director services", "Financial planning, budgeting and forecasting", "Cash flow, working capital and liquidity management",
+          "Financial modelling, scenario planning and business case development", "Profitability analysis and margin improvement", "KPI development, performance dashboards and management reporting",
+          "Board reporting and strategic business partnering", "Funding, investment and business growth support", "Financial performance reviews and strategic decision support"],
+      c: "Experienced finance leadership, greater visibility over performance and practical guidance for your next stage of growth." },
+    { t: "Accounting, Finance and Compliance",
+      i: "We help organisations establish strong financial foundations through reliable reporting, effective financial controls and practical accounting support, improving financial accuracy, strengthening accountability and giving leadership teams greater confidence in their financial position.",
+      l: ["Bookkeeping oversight and financial record management", "Monthly management accounts and financial reporting", "Preparation of financial statements",
+          "Budget monitoring and cash flow reporting", "VAT and tax compliance support", "Payroll coordination and related financial administration",
+          "Financial controls and reporting process improvement", "Board packs and management information", "Virtual finance department and ongoing finance support",
+          "Accounting advisory and support for business owners"],
+      c: "Dependable reporting, stronger controls and a finance function that frees you to focus on running and growing your business." },
+    { t: "Internal Audit, Governance and Risk Management",
+      i: "We help organisations turn risk, control and governance challenges into clear, practical solutions. We bring senior-level assurance expertise gained across complex, multi-country organisations, including Big 4 experience in Europe, Africa, Asia-Pacific and the United States.",
+      l: ["Internal audit function and capability set-up and transformation", "Risk and control assessments", "Risk-based audit planning and execution: commercial, financial, operational and compliance",
+          "Third-party and supplier assurance", "Governance: policies, procedures and control frameworks", "Data analytics-enabled auditing and continuous assurance",
+          "Audit committee and board advisory and reporting", "Internal audit quality and methodology assessments", "Co-sourced and outsourced internal audit and leadership"],
+      c: "Build or transform an internal audit function, deliver a demanding audit plan or strengthen board assurance, with focused support." },
+    { t: "Finance Transformation and Special Projects",
+      i: "We help organisations transform their finance functions to improve efficiency, strengthen controls and deliver better business insight, combining financial expertise with process improvement and technology-enabled solutions to create finance functions that are fit for the future.",
+      l: ["Finance function reviews, redesign and transformation", "Month-end close optimisation and reporting acceleration", "Finance process improvement and automation",
+          "Finance systems implementation and optimisation", "Power BI dashboards and management reporting solutions", "KPI frameworks, data analytics and performance insight",
+          "Financial controls and process enhancement", "Finance operating models, team structures and capability development",
+          "Financial modelling and scenario analysis for special projects", "Business performance improvement and profitability initiatives"],
+      c: "Modernise your finance function, report faster and deliver critical improvement projects with lasting results." }
+  ];
+
+  // tabs + panel, rotating every 9 seconds until the visitor picks one
+  const tabs = $("#tabs"), panel = $("#panel");
+  let cur = 0, auto = !reduce, timer;
+  tabs.innerHTML = SERVICES.map((s, k) => `<button class="svc-tab" role="tab" id="tab${k}" aria-controls="panel" aria-selected="${k === 0}"><span class="n">0${k + 1}</span><span>${s.t}</span><span class="bar"><i></i></span></button>`).join("");
+  function show(k) {
+    cur = k; const s = SERVICES[k];
+    $$(".svc-tab").forEach((b, j) => b.setAttribute("aria-selected", j === k));
+    panel.dataset.n = "0" + (k + 1);
+    panel.innerHTML = `<p class="eyebrow">Service 0${k + 1}</p><h3 style="margin-top:16px">${s.t}</h3><p class="intro">${s.i}</p>
+      <ul>${s.l.map((x, j) => `<li style="animation-delay:${.05 * j}s">${x}</li>`).join("")}</ul><p class="close">${s.c}</p>`;
+    panel.classList.remove("swap", "show"); void panel.offsetWidth; panel.classList.add("swap", "show");
+    clearTimeout(timer); if (auto) timer = setTimeout(() => show((cur + 1) % SERVICES.length), 9000);
+  }
+  tabs.addEventListener("click", e => { const b = e.target.closest(".svc-tab"); if (!b) return; auto = false; $$(".svc-tab .bar i").forEach(i => i.style.animation = "none"); show(+b.id.slice(3)); });
+  show(0);
+  $("#svc-select").innerHTML = SERVICES.map(s => `<option>${s.t}</option>`).join("") + "<option>Something else</option>";
+
+  // ticker of capabilities
+  const caps = ["Fractional CFO", "Management accounts", "Internal audit", "Risk and control", "Board reporting", "Cash flow forecasting", "Power BI dashboards", "Governance frameworks", "Month-end close", "Finance transformation", "Scenario planning", "Third-party assurance"];
+  $("#ticker").innerHTML = [...caps, ...caps].map(c => `<span>${c}</span>`).join("");
+
+  // reveal on scroll
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .18 });
+  $$(".rv, #steps").forEach(el => io.observe(el));
+
+  // header, menu
+  addEventListener("scroll", () => $("header.site").classList.toggle("scrolled", scrollY > 30), { passive: true });
+  $("#burger").addEventListener("click", e => { const o = $("#links").classList.toggle("open"); e.currentTarget.setAttribute("aria-expanded", o); });
+  $$("#links a").forEach(a => a.addEventListener("click", () => $("#links").classList.remove("open")));
+
+  // card glow follows the pointer
+  $$(".why-card").forEach(c => c.addEventListener("pointermove", e => { const r = c.getBoundingClientRect(); c.style.setProperty("--mx", (e.clientX - r.left) + "px"); c.style.setProperty("--my", (e.clientY - r.top) + "px"); }));
+
+  // orbiting dot around the monogram
+  const dot = $("#orbit"), stage = $(".mono-stage");
+  if (!reduce) (function orbit(t) { const R = stage.clientWidth * .44, a = t / 4200;
+    dot.style.transform = `translate(${Math.sin(a) * R - 4}px, ${R - Math.cos(a) * R}px)`; requestAnimationFrame(orbit); })(0);
+
+  // hero: gold lines that draw themselves like a rising chart
+  const cv = $("#chart"), cx = cv.getContext("2d");
+  let W, H, lines = [];
+  function size() { const d = devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    lines = [0, 1, 2].map(k => { const pts = [], n = 14; let y = H * (.75 - k * .08);
+      for (let i = 0; i <= n; i++) { y += (Math.random() - .62) * H * .09; y = Math.max(H * .12, Math.min(H * .95, y)); pts.push([i / n * W, y]); } return { pts, a: .55 - k * .15 }; }); }
+  size(); addEventListener("resize", size);
+  let start = performance.now();
+  function draw(now) {
+    const p = reduce ? 1 : Math.min(1, ((now - start) % 14000) / 6000);
+    cx.clearRect(0, 0, W, H);
+    lines.forEach(({ pts, a }) => {
+      const g = cx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, `rgba(201,167,122,0)`); g.addColorStop(.4, `rgba(220,193,153,${a})`); g.addColorStop(1, `rgba(236,215,182,${a})`);
+      cx.strokeStyle = g; cx.lineWidth = 1.4; cx.beginPath();
+      const upto = p * (pts.length - 1);
+      pts.forEach(([x, y], i) => { if (i > upto + 1) return; if (i === 0) return cx.moveTo(x, y);
+        const [px, py] = pts[i - 1], f = Math.min(1, upto - (i - 1)); const mx = (px + x) / 2;
+        cx.bezierCurveTo(mx, py, mx, y, px + (x - px) * f, py + (y - py) * f); });
+      cx.stroke();
+    });
+    if (!reduce) requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  // design switcher (preview only)
+  $$(".switcher button").forEach(b => b.addEventListener("click", () => {
+    document.documentElement.dataset.theme = b.dataset.t;
+    $$(".switcher button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  }));
+
+  // preview form: nothing is sent
+  $("#form").addEventListener("submit", e => { e.preventDefault(); const s = $("#sent"); s.hidden = false; s.className = "sent";
+    s.textContent = "Thank you. This is a preview, so nothing was sent. The form will be connected when the website goes live."; });
+  $("#yr").textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
