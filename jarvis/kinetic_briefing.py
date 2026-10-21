@@ -226,7 +226,8 @@ def contact_today(settings: Settings, limit: int = CONTACT_TODAY) -> list[dict]:
 
     def key(r):
         p = prospects.get(r.get("prospect"))
-        return kinetic_find.rank_key(p) if p else (3, 0, r["name"])  # not in the finder: like an unchecked site
+        # not in the finder: ranked like an unchecked site
+        return kinetic_find.rank_key(p) if p else (kinetic_find.UNCHECKED, 0, 0, r["name"])
     out = []
     for r in sorted(fresh, key=key)[:limit]:
         p = prospects.get(r.get("prospect")) or {}

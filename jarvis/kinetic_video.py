@@ -52,10 +52,11 @@ def missing() -> str:
     return ""
 
 
-def voice_script(name: str, line: str, me: str) -> str:
-    """What the voice-over says: their name, the hook, the mock-up, the promise. About 15 to 20 seconds."""
+def voice_script(name: str, line: str, me: str, made: str = "") -> str:
+    """What the voice-over says: their name, the hook, the mock-up, the promise. About 15 to 20 seconds.
+    made names the mock-up (default "a new home page"; a store makeover for a Shopify store)."""
     hook = re.sub(r"\s*\([^)]*\)", "", line or "").strip()  # "(joes.co.uk)" reads badly aloud
-    return " ".join(x for x in (f"Hi, {name}.", hook, "So we made you this: a new home page, made for phones.",
+    return " ".join(x for x in (f"Hi, {name}.", hook, f"So we made you this: {made or 'a new home page'}, made for phones.",
                                 st.PREVIEW, f"From {me}.") if x)
 
 
@@ -132,7 +133,7 @@ def build(settings: Settings, name: str, html: Path, audio: bytes | None) -> Pat
     return out
 
 
-async def make(settings: Settings, name: str, line: str, html: Path) -> tuple[Path | None, str]:
+async def make(settings: Settings, name: str, line: str, html: Path, made: str = "") -> tuple[Path | None, str]:
     """(the video, "") or (None, one line saying why there's no video). Never raises: the draft still comes."""
     why = missing()
     if why:
@@ -140,7 +141,7 @@ async def make(settings: Settings, name: str, line: str, html: Path) -> tuple[Pa
     if not html.is_file():
         return None, "No video this time: make the mock-up first."
     try:
-        audio = await voice_over(settings, voice_script(name, line, st.business(settings)["name"]))
+        audio = await voice_over(settings, voice_script(name, line, st.business(settings)["name"], made))
         path = await asyncio.to_thread(build, settings, name, html, audio)
     except Exception as exc:  # no browser, ffmpeg trouble...: the message still goes without it
         return None, f"No video this time: {str(exc).splitlines()[0][:160] if str(exc) else type(exc).__name__}."

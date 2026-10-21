@@ -87,6 +87,8 @@ class Settings:
     # Google Places API (New) for the client finder; empty: OpenStreetMap. The cap stops a run running up a bill.
     google_places_key: str = os.getenv("JARVIS_GOOGLE_PLACES_KEY", "").strip()
     places_max_calls: int = int(os.getenv("JARVIS_PLACES_MAX_CALLS", "100") or 100)
+    # Google PageSpeed Insights (free key) for a Shopify store's mobile speed score; empty: skipped. Never logged.
+    pagespeed_key: str = os.getenv("JARVIS_PAGESPEED_KEY", "").strip()
     # Instagram DMs (instagram_dms.py): a long-lived Instagram user access token for the business account. Alfred only
     # replies to people who message first. The token is only sent in requests, never shown or logged.
     instagram_token: str = os.getenv("JARVIS_INSTAGRAM_TOKEN", "").strip()

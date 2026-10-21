@@ -39,7 +39,9 @@ CLEAR_WORDS = ("none", "off", "clear", "nothing", "no trade", "stop", "any", "mi
 KIND_TRADES = {"cafes": "cafe", "restaurants": "restaurant", "takeaways": "restaurant", "pubs": "restaurant",
                "hairdressers": "hairdresser", "beauty": "beauty", "trades": "trade", "garages": "garage",
                "shops": "shop", "fitness": "fitness", "health": "health", "cleaners": "business",
-               "hotels": "business"}
+               "hotels": "business", "stores": "shop", "fashion": "shop", "beauty shops": "beauty", "wigs": "shop",
+               "jewellery": "shop", "home and gifts": "shop", "food and drink": "shop", "sports shops": "fitness",
+               "pet shops": "shop", "kids shops": "shop", "art shops": "shop"}
 ROUTE_STOPS = 10
 # Placeholders in a base design, swapped for each lead's details
 NAME, TOWN, PHONE, ADDRESS = "KWDNAME", "KWDTOWN", "+99999999999", "KWDADDRESS"
@@ -137,15 +139,19 @@ def trade_of_week(settings: Settings, args: dict) -> str | screen.Shown:
         return "Done: no trade of the week. Lead searches go back to all kinds of business."
     kind = kinetic_find.kind_key(word)
     if kind == "mixed":
-        raise ValueError("Pick one trade for the week, e.g. barbers, cafes, plumbers or salons.")
+        raise ValueError("Pick one trade for the week, e.g. barbers, cafes, plumbers, salons or shopify stores.")
     trade = ks.trade_of(word)
-    trade = trade if trade != "business" else KIND_TRADES.get(kind, "business")
+    if trade == "business" or kind in kinetic_find.STORE_KINDS or kind == "stores":
+        trade = KIND_TRADES.get(kind, trade)
     st.save(settings, st.TRADE_WEEK, {"label": word, "kind": kind, "trade": trade, "set": st.today().isoformat()})
     path = base_path(settings, trade)
     fresh = args.get("rebuild") is True or bool(args.get("style_from")) or not path.is_file()
     if fresh:
         build_base(settings, trade, str(args.get("style_from") or "").strip())
     done = "I made its base mock-up design" if fresh else "Its base mock-up design is already made"
+    if kind in kinetic_find.STORE_KINDS or kind == "stores":
+        done += (". Leads that run on Shopify get a store makeover mock-up instead, with movement and personality, "
+                 "and are ranked free theme with no movement first")
     return st.file_shown(settings, st.folder(settings, "Trade bases") / f"{trade} base preview.html",
                          f"This week is {word}. {done} ({st.where(settings, path)}): every {word.rstrip('s')} lead "
                          "gets their mock-up from it in seconds, with their name, colours, phone, address and "
@@ -260,7 +266,8 @@ async def video(settings: Settings, args: dict) -> str | screen.Shown:
     if not html.is_file():
         ks.outreach_mockup(settings, {k: v for k, v in args.items() if k in ("client", "business")})
     hook = kinetic_find.biggest_problem({**(prospect or {}), "name": name}).get("line", "")
-    path, why = await kinetic_video.make(settings, name, hook, html)
+    made = "a store makeover, full of movement" if kinetic_find.is_store(prospect or {}) else ""
+    path, why = await kinetic_video.make(settings, name, hook, html, made)
     if not path:
         return why
     return st.file_shown(settings, path, f"I made {name}'s 30-second mock-up video (1080 by 1920, for phones): "
@@ -284,7 +291,8 @@ def tool_definitions() -> list[dict]:
             "properties": {
                 "action": {"type": "string", "enum": ACTIONS},
                 "trade": {"type": "string", "description": "trade_of_week: the trade, e.g. barbers, cafes, plumbers, "
-                                                           "salons, or 'none'. walk_in_route: a trade other than the "
+                                                           "salons, 'shopify stores' or a kind of store such as "
+                                                           "'beauty shops', or 'none'. walk_in_route: a trade other than the "
                                                            "week's."},
                 "rebuild": {"type": "boolean", "description": "trade_of_week: make the trade's base design again."},
                 "style_from": {"type": "string", "description": "trade_of_week: base the design on a design system "

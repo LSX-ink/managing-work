@@ -380,16 +380,21 @@ def follow_up_draft(settings: Settings, args: dict) -> dict:
     first = {"email": "email", "letter": "letter", "dm": "message", "whatsapp": "WhatsApp message", "phone": "call",
              "visit": "visit"}.get(
         row.get("channel") or "", "message")
-    offer = ("The free example home page I made for you is still yours to see, with no obligation."
+    store = kinetic_sales.store_lead(p)  # a Shopify store: the store makeover and the redesign price
+    gift = "store makeover" if store else "example home page"
+    offer = (f"The free {gift} I made for you is still yours to see, with no obligation."
              if args.get("mockup", True) else "I'd still be happy to share a few free ideas, with no obligation.")
     pr = kinetic_sales.prices(settings)
-    start = world.local_price(pr["packages"]["starter"]["price"], world.currency_of(country))
-    price = f"Websites start from {start}, and you pay {world.payment_terms(pr['deposit_percent'])}." \
-        if args.get("price", True) else ""
+    start = world.local_price(pr["packages"]["shopify_redesign" if store else "starter"]["price"],
+                              world.currency_of(country))
+    terms = world.payment_terms(pr["deposit_percent"])
+    price = ((f"A Shopify store redesign is {start}, and you pay {terms}. You keep paying Shopify directly for your "
+              "plan." if store else f"Websites start from {start}, and you pay {terms}.")
+             if args.get("price", True) else "")
     if last:  # the second and last follow-up: a short last-chance note, no price
         nudge = f"One last note from me about {name}'s website, and then I'll leave you in peace."
-        offer = ("The free home page mock-up I made for you is still yours if you'd like it: just reply \"yes\" and "
-                 "I'll send it again." if args.get("mockup", True) else
+        offer = (f"The free {'store makeover' if store else 'home page mock-up'} I made for you is still yours if "
+                 "you'd like it: just reply \"yes\" and I'll send it again." if args.get("mockup", True) else
                  "If you'd ever like a few free ideas for it, just reply \"yes\".")
         price = ""
         bow_out = "If I don't hear back, I'll take it that now isn't the right time, and I won't message again."

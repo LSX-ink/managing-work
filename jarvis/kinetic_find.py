@@ -19,11 +19,23 @@ businesses closed for good. JARVIS_PLACES_MAX_CALLS (default 100) caps the calls
 up a bill. The key only travels in the request header; it is never shown or logged. Without a key, or if Google turns
 the search down, it uses OpenStreetMap.
 
+Shopify stores: every audited site is also checked for Shopify (cdn.shopify.com and the Shopify.theme object, with
+/products.json only as a backup). A Shopify store is a "Shopify store" lead with store checks of its own, because
+Shopify's fast CDN makes the plain audit score them well: the theme (and whether it's one of Shopify's free ones,
+like Dawn), a reviews app, the home page's weight, scripts from other sites, images with no set size, a Google
+description and whether the store has any movement or personality (video, animation, scroll effects, a static banner,
+default fonts). Among stores, a free theme with no movement ranks first, then no reviews, then a heavy page. Store
+kinds (fashion, beauty shops, wigs, jewellery, home and gifts, food and drink, sports shops, pet shops, kids shops,
+art shops) are searched as shop categories; "online shop", "shopify" or "boutique" searches all of them. With
+JARVIS_PAGESPEED_KEY set, a store also gets Google PageSpeed Insights' mobile score (skipped silently without it;
+the key only travels in a request header and is never shown or logged).
+
 Every link is checked with memory.check_public (through design_extract.fetch), so a page can't steer Alfred into this
 PC or the home network. OpenStreetMap is volunteer-made, so some businesses are missing or out of date.
 """
 
 import asyncio
+import json
 import re
 import time
 from html.parser import HTMLParser
@@ -48,10 +60,17 @@ PLACES_FIELDS = ",".join(f"places.{f}" for f in (  # the fewest fields: the fiel
     "id", "displayName", "formattedAddress", "websiteUri", "nationalPhoneNumber", "internationalPhoneNumber",
     "googleMapsUri", "businessStatus", "types", "rating", "userRatingCount")) + ",nextPageToken"
 PLACES_PAGES = 3  # 20 a page: 60 businesses at most
+PAGESPEED = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 PLACES_WORDS = {"cafes": "cafes", "restaurants": "restaurants", "takeaways": "takeaways", "pubs": "pubs and bars",
                 "hairdressers": "hairdressers and barbers", "beauty": "beauty salons", "trades": "tradesmen",
                 "garages": "car garages", "shops": "independent shops", "fitness": "gyms", "health": "clinics",
-                "cleaners": "dry cleaners", "hotels": "guest houses", "mixed": "independent local businesses"}
+                "cleaners": "dry cleaners", "hotels": "guest houses", "mixed": "independent local businesses",
+                "stores": "independent shops and boutiques", "fashion": "independent clothing boutiques",
+                "beauty shops": "beauty and skincare shops", "wigs": "wig and hair shops",
+                "jewellery": "independent jewellers", "home and gifts": "gift and homeware shops",
+                "food and drink": "independent food and drink shops", "sports shops": "sportswear and fitness shops",
+                "pet shops": "independent pet shops", "kids shops": "independent toy and children's shops",
+                "art shops": "art and craft shops"}
 CHAINS = {"costa", "starbucks", "caffe nero", "caffè nero", "greggs", "pret a manger", "mcdonald's", "burger king",
           "kfc", "subway", "domino's", "pizza hut", "papa john's", "nando's", "wetherspoon", "toni & guy", "toni&guy",
           "rush hair", "supercuts", "great clips", "kwik fit", "halfords", "specsavers", "boots", "superdrug",
@@ -82,6 +101,37 @@ KINDS = {
     "cleaners": [("shop", "dry_cleaning"), ("shop", "laundry")],
     "hotels": [("tourism", "guest_house"), ("tourism", "hotel"), ("tourism", "bed_and_breakfast")],
 }
+STORE_KINDS = {  # shop categories for store (Shopify) leads, any kind of store
+    "fashion": [("shop", v) for v in ("clothes", "boutique", "shoes", "bag", "fashion_accessories")],
+    "beauty shops": [("shop", v) for v in ("cosmetics", "perfumery", "hairdresser_supply")],
+    "wigs": [("shop", "wigs"), ("shop", "hairdresser_supply")],
+    "jewellery": [("shop", "jewelry"), ("shop", "watches")],
+    "home and gifts": [("shop", v) for v in ("gift", "houseware", "interior_decoration", "furniture", "candles",
+                                              "florist")],
+    "food and drink": [("shop", v) for v in ("deli", "confectionery", "chocolate", "wine", "alcohol", "tea", "coffee",
+                                              "cheese", "pastry")],
+    "sports shops": [("shop", v) for v in ("sports", "outdoor", "nutrition_supplements")],
+    "pet shops": [("shop", "pet")],
+    "kids shops": [("shop", v) for v in ("toys", "baby_goods", "games")],
+    "art shops": [("shop", v) for v in ("art", "craft", "frame", "stationery")],
+}
+KINDS.update(STORE_KINDS)
+KINDS["stores"] = list(dict.fromkeys(p for pairs in STORE_KINDS.values() for p in pairs))  # every kind of store
+STORE_WORDS = [  # (pattern, store kind), checked before KIND_WORDS so "beauty shops" isn't a salon search
+    (r"\bwigs?\b|hair (?:shop|store|extension)|hair and beauty suppl", "wigs"),
+    (r"beauty (?:shop|store|product|brand|suppl)|skin ?care|cosmetic|make-?up|perfume|fragrance", "beauty shops"),
+    (r"jewel|watch(?:es)? (?:shop|store)", "jewellery"),
+    (r"fashion|cloth|apparel|shoe|footwear|trainers|streetwear|lingerie|menswear|womenswear|accessor", "fashion"),
+    (r"\bgifts?\b|homeware|home ?decor|interior|candle|furniture|lifestyle (?:shop|store)", "home and gifts"),
+    (r"food (?:and|&) drink|food (?:shop|store)|\bdeli|wine|chocolat|sweet shop|confection|tea (?:shop|store)|cheese|"
+     r"hamper|coffee (?:roaster|beans)|bottle shop", "food and drink"),
+    (r"sports? (?:shop|store)|sportswear|activewear|gym ?wear|athleisure|supplement|fitness (?:shop|store|brand|cloth)",
+     "sports shops"),
+    (r"\bpets?\b", "pet shops"),
+    (r"\btoys?\b|\bkids\b|children|\bbaby\b", "kids shops"),
+    (r"\bart (?:shop|store|suppl)|galler(?:y|ies)|craft (?:shop|store|suppl)|stationer", "art shops"),
+    (r"shopify|online (?:shop|store)|e-?commerce|\bstores?\b|boutique|retail", "stores"),
+]
 MIXED = ["cafes", "restaurants", "hairdressers", "beauty", "trades", "garages", "shops"]
 KIND_WORDS = {"barber": "hairdressers", "hair": "hairdressers", "cafe": "cafes", "coffee": "cafes", "restaurant": "restaurants", "takeaway": "takeaways", "pub": "pubs",
               "salon": "hairdressers",
@@ -179,6 +229,211 @@ def builder(markup: str, generator: str) -> str:
     return ""
 
 
+# ---- Shopify stores ----------------------------------------------------------------
+
+STORE_LEAD = "Shopify store"
+FREE_THEMES = ("Dawn", "Refresh", "Sense", "Craft", "Crave", "Studio", "Taste", "Origin", "Ride", "Colorblock",
+               "Spotlight", "Publisher", "Trade", "Horizon", "Atelier", "Dwell", "Fabric", "Heritage", "Pitch",
+               "Ritual", "Savor", "Tinker", "Vessel", "Debut", "Brooklyn", "Simple", "Narrative", "Venture",
+               "Boundless", "Supply", "Minimal", "Express")  # Shopify's own free themes, old and new
+FREE_THEME = re.compile(r"\b(" + "|".join(FREE_THEMES) + r")\b", re.I)
+REVIEW_APPS = [("Judge.me", ("judge.me", "jdgm")), ("Yotpo", ("yotpo",)), ("Loox", ("loox.io", "loox-")),
+               ("Okendo", ("okendo",)), ("Stamped", ("stamped.io", "stamped-")),
+               ("Shopify Product Reviews", ("spr-badge", "productreviews.shopifycdn.com", "shopify-product-reviews")),
+               ("Reviews.io", ("reviews.io", "reviewsio")), ("Trustpilot", ("widget.trustpilot.com", "trustpilot-widget")),
+               ("Junip", ("junip",)), ("Fera", ("fera.ai",)), ("Ali Reviews", ("alireviews",)), ("Rivyo", ("rivyo",)),
+               ("Feefo", ("feefo",))]
+SHOPIFY_HOSTS = ("shopify.com", "shopifycdn.com", "shopifysvc.com", "myshopify.com", "shopifycloud.com", "shop.app")
+VIDEO = re.compile(r"<video\b|youtube(?:-nocookie)?\.com/embed|player\.vimeo\.com|\.mp4\b|\.webm\b", re.I)
+ANIMATION = re.compile(r"@keyframes|animation(?:-name)?\s*:\s*(?!none)[\w-]|\blottie|\bgsap\b|greensock|animate__|"
+                       r"animate\.css|<marquee|\bmarquee\b|splitting\.js|\.gif\b", re.I)
+SCROLL_FX = re.compile(r"scroll-trigger|animations\.js|data-aos|\baos\.(?:js|css)|data-scroll|locomotive|scrollreveal|"
+                       r"parallax|animate--|reveal-on-scroll", re.I)
+AUTOPLAY = re.compile(r"slideshow[^>]{0,300}(?:data-)?autoplay(?:=\"?true)?|autoplay[^>]{0,80}slideshow", re.I)
+BANNER = re.compile(r"image-banner|image_banner|class=\"[^\"]*\bbanner\b|hero__image|slideshow", re.I)
+FONTS = re.compile(r"font-family\s*:\s*([^;}\"<]+)", re.I)
+DEFAULT_FONTS = {"assistant", "helvetica", "helvetica neue", "arial", "sans-serif", "serif", "system-ui",
+                 "-apple-system", "blinkmacsystemfont", "segoe ui", "roboto", "times new roman", "times", "monospace",
+                 "inherit", "initial", "ui-sans-serif", "apple color emoji", "segoe ui emoji", "noto sans"}
+STORE_HEAVY_BYTES = 500_000  # the home page's own code; Shopify's CDN hides it in the speed check
+MANY_SCRIPTS = 8
+UNSIZED_IMAGES = 3
+
+
+class StoreParser(HTMLParser):
+    """Script hosts, images without a set size and the Google description of a store's home page."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.hosts, self.unsized, self.description = set(), 0, ""
+
+    def handle_starttag(self, tag, attrs):
+        a = {k.lower(): (v or "") for k, v in attrs}
+        if tag == "script" and a.get("src"):
+            host = st.domain(a["src"] if not a["src"].startswith("//") else "https:" + a["src"])
+            if host and "." in host:
+                self.hosts.add(host)
+        elif tag == "img" and not (a.get("width") and a.get("height")):
+            self.unsized += 1
+        elif tag == "meta" and (a.get("name") or "").lower() == "description":
+            self.description = a.get("content", "").strip()
+
+
+def theme_of(markup: str) -> tuple[str, str]:
+    """(theme name, schema name) from the page's Shopify.theme object, or ("", "")."""
+    m = re.search(r"Shopify\.theme\s*=\s*(\{.*?\})\s*;", markup, re.S)
+    if not m:
+        return "", ""
+    try:
+        data = json.loads(m.group(1))
+    except ValueError:
+        data = {k: v for k, v in re.findall(r'"(name|schema_name)"\s*:\s*"((?:[^"\\]|\\.)*)"', m.group(1))}
+    if not isinstance(data, dict):
+        return "", ""
+    return st.clean(data.get("name"), 80), st.clean(data.get("schema_name"), 80)
+
+
+def own_host(host: str, site: str) -> bool:
+    return bool(site) and (host == site or host.endswith("." + site) or site.endswith("." + host))
+
+
+def shopify_check(html: str, headers: dict | None = None, url: str = "") -> dict:
+    """Whether a page is a Shopify store, and the store checks that matter for a makeover pitch.
+    Detection: cdn.shopify.com or the Shopify.theme object (or Shopify's own response headers). maybe is True when
+    the page only mentions Shopify, so /products.json can be tried as a backup."""
+    markup = str(html or "")
+    low = markup.lower()
+    head = {str(k).lower(): str(v).lower() for k, v in (headers or {}).items()}
+    by_header = any(k in head for k in ("x-shopid", "x-shopify-stage", "x-shardid")) or \
+        "shopify" in head.get("powered-by", "") or "shopify" in head.get("server", "")
+    found = "cdn.shopify.com" in low or bool(re.search(r"shopify\.theme\s*=", low)) or by_header
+    name, schema = theme_of(markup)
+    base = next((m.group(1) for m in (FREE_THEME.search(x) for x in (schema, name) if x) if m), "")
+    base = next((t for t in FREE_THEMES if t.lower() == base.lower()), base)
+    p = StoreParser()
+    try:
+        p.feed(markup)
+    except Exception:  # broken markup: whatever was read so far
+        pass
+    site = st.domain(url)
+    third = sorted(h for h in p.hosts if not own_host(h, site) and not any(h == s or h.endswith("." + s)
+                                                                            for s in SHOPIFY_HOSTS))
+    reviews = next((app for app, marks in REVIEW_APPS if any(m in low for m in marks)), "")
+    video = bool(VIDEO.search(markup))
+    animation = bool(ANIMATION.search(markup))
+    scroll = bool(SCROLL_FX.search(markup))
+    autoplay = bool(AUTOPLAY.search(markup))
+    fonts = {f.strip().strip("'\"").lower() for x in FONTS.findall(markup) for f in x.split(",")
+             if f.strip() and "var(" not in f}
+    size = len(markup.encode("utf-8", "ignore"))
+    no_motion = not (video or animation or scroll or autoplay)
+    return {"is_shopify": found, "maybe": not found and ("shopify" in low or "myshopify.com" in str(url).lower()),
+            "via": "page" if found and not by_header else "headers" if found else "",
+            "theme": name or schema, "schema": schema, "base_theme": base or schema or name,
+            "free_theme": bool(base), "reviews": reviews, "page_kb": round(size / 1024),
+            "heavy": size > STORE_HEAVY_BYTES, "third_party": len(third), "third_party_hosts": third[:20],
+            "images_no_size": p.unsized, "meta_description": bool(p.description), "video": video,
+            "animation": animation, "scroll_effects": scroll, "autoplay": autoplay,
+            "static_banner": bool(BANNER.search(markup)) and not (video or autoplay),
+            "default_fonts": not any(f not in DEFAULT_FONTS for f in fonts), "no_motion": no_motion,
+            "pagespeed": None}
+
+
+def store_problems(s: dict) -> list[dict]:
+    """The store checks as audit problems, biggest first, with plain-words reasons."""
+    out = []
+
+    def hit(points, short, why):
+        out.append({"points": points, "problem": short, "why": why, "store": True})
+
+    if s.get("free_theme"):
+        hit(12, f"Shopify's free {s['base_theme']} theme", "It looks like thousands of other Shopify stores, so "
+                                                              "nothing says this is your brand.")
+    if s.get("no_motion"):
+        bits = ["no video, animation or scroll effects"] + (["a static banner"] if s.get("static_banner") else []) + \
+            (["default fonts"] if s.get("default_fonts") else [])
+        hit(10, "No movement or personality", "The home page has " + ", ".join(bits[:-1]) + (" and " if len(bits) > 1
+            else "") + bits[-1] + ", so it feels flat next to the brands shoppers follow on Instagram and TikTok.")
+    if not s.get("reviews"):
+        hit(8, "No customer reviews on the store", "First-time shoppers have nothing to reassure them before they "
+                                                   "buy, and reviews lift sales.")
+    if isinstance(s.get("pagespeed"), int) and s["pagespeed"] < 50:
+        hit(8, f"Slow on phones (Google PageSpeed {s['pagespeed']}/100)", "Google's own test says the store is slow "
+                                                                          "on a phone, where most shoppers buy.")
+    if s.get("heavy"):
+        hit(6, f"Heavy home page ({s['page_kb']} KB of code)", "A big page is slow on phones, where most shoppers buy.")
+    if s.get("third_party", 0) >= MANY_SCRIPTS:
+        hit(4, f"{s['third_party']} add-on scripts from other sites", "Every extra app script slows the store down "
+                                                                      "and can get in the way at checkout.")
+    if s.get("images_no_size", 0) >= UNSIZED_IMAGES:
+        hit(3, "Images jump as the page loads", "Pictures without a set size make the page shift while it loads, "
+                                               "which annoys shoppers and Google counts against it.")
+    return out
+
+
+def apply_store(result: dict, store: dict) -> dict:
+    """Mark an audit as a Shopify store lead: its store checks join the problems and the score."""
+    result["problems"] = [x for x in result.get("problems", []) if not x.get("store")] + store_problems(store)
+    result["problems"].sort(key=lambda x: -x["points"])
+    result["score"] = max(0, 100 - sum(x["points"] for x in result["problems"]))
+    result["grade"] = grade(result["score"])
+    result.update({"shopify": store, "builder": "Shopify", "lead_type": STORE_LEAD})
+    return result
+
+
+async def products_json(http: httpx.AsyncClient, url: str) -> bool:
+    """The backup signal: a Shopify store answers /products.json with its product list."""
+    parts = urlparse(url)
+    try:
+        _, kind, text = await design_extract.fetch(http, f"{parts.scheme}://{parts.netloc}/products.json?limit=1",
+                                                   512 * 1024)
+        data = json.loads(text)
+    except (ValueError, design_extract.TooBig):
+        return False
+    return isinstance(data, dict) and isinstance(data.get("products"), list)
+
+
+async def pagespeed(settings: Settings, http: httpx.AsyncClient, url: str) -> int | None:
+    """Google PageSpeed Insights' mobile performance score (0 to 100), or None without a key or on any trouble.
+    The key goes only in the X-Goog-Api-Key header, never in the address, and is never shown or logged."""
+    key = getattr(settings, "pagespeed_key", "")
+    if not key:
+        return None
+    try:
+        r = await http.get(PAGESPEED, params={"url": url, "strategy": "mobile", "category": "performance"},
+                           headers={"X-Goog-Api-Key": key}, timeout=90)
+        if r.status_code != 200:
+            return None
+        score = r.json()["lighthouseResult"]["categories"]["performance"]["score"]
+        return int(round(float(score) * 100))
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        return None
+
+
+async def with_pagespeed(settings: Settings, http: httpx.AsyncClient, result: dict) -> dict:
+    """Add the PageSpeed mobile score to a Shopify store's audit when JARVIS_PAGESPEED_KEY is set."""
+    store = result.get("shopify")
+    if store and store.get("is_shopify"):
+        score = await pagespeed(settings, http, result["url"])
+        if score is not None:
+            store["pagespeed"] = score
+            apply_store(result, store)
+    return result
+
+
+def is_store(p: dict) -> bool:
+    """A Shopify store lead: its website's audit found Shopify."""
+    return bool(((p.get("audit") or {}).get("shopify") or {}).get("is_shopify"))
+
+
+def store_tier(s: dict) -> int:
+    """Among stores, best bet first: a free theme with no movement, then no reviews, then a heavy (or slow) page,
+    then a free theme or no movement on its own."""
+    slow = s.get("heavy") or (isinstance(s.get("pagespeed"), int) and s["pagespeed"] < 50)
+    return (0 if s.get("free_theme") and s.get("no_motion") else 8) + (0 if not s.get("reviews") else 4) + \
+        (0 if slow else 2) + (0 if s.get("free_theme") or s.get("no_motion") else 1)
+
+
 def score_page(url: str, markup: str, seconds: float, size: int, https_ok: bool, this_year: int) -> dict:
     """Score a fetched page out of 100, with each problem in plain words."""
     p = AuditParser()
@@ -251,8 +506,9 @@ async def audit_url(http: httpx.AsyncClient, url: str) -> dict:
     last = "It didn't answer."
     for attempt in tries:
         start = time.monotonic()
+        headers = {}
         try:
-            final, kind, markup = await design_extract.fetch(http, attempt, MAX_HTML)
+            final, kind, markup = await design_extract.fetch(http, attempt, MAX_HTML, headers)
         except design_extract.TooBig:
             last = "The home page is too big to load sensibly."
             continue
@@ -264,8 +520,12 @@ async def audit_url(http: httpx.AsyncClient, url: str) -> dict:
         if kind and "html" not in kind:
             return down(final, "The address doesn't open a web page.")
         seconds = time.monotonic() - start
-        return score_page(final, markup, seconds, len(markup.encode("utf-8", "ignore")),
-                          urlparse(final).scheme == "https", st.today().year)
+        result = score_page(final, markup, seconds, len(markup.encode("utf-8", "ignore")),
+                            urlparse(final).scheme == "https", st.today().year)
+        store = shopify_check(markup, headers, final)
+        if store["maybe"] and await products_json(http, final):  # only a backup signal
+            store.update({"is_shopify": True, "via": "products.json"})
+        return apply_store(result, store) if store["is_shopify"] else result
     return down(https_url, last)
 
 
@@ -274,6 +534,19 @@ def audit_md(name: str, a: dict) -> str:
              f"**Score: {a['score']}/100 ({a['grade']})**", ""]
     if a.get("builder"):
         lines += [f"Built with: {a['builder']}", ""]
+    s = a.get("shopify")
+    if s:
+        lines += ["## Shopify store checks", "",
+                  f"- Theme: {s['theme'] or 'not named'}" + (" (one of Shopify's free themes)" if s["free_theme"] else ""),
+                  f"- Reviews app: {s['reviews'] or 'none found'}",
+                  f"- Movement: {'none found (no video, animation or scroll effects)' if s['no_motion'] else 'some'}"
+                  + ("; static banner" if s["static_banner"] else "") + ("; default fonts" if s["default_fonts"] else ""),
+                  f"- Home page code: {s['page_kb']} KB; scripts from {s['third_party']} other sites; "
+                  f"{s['images_no_size']} images with no set size; Google description: "
+                  f"{'yes' if s['meta_description'] else 'no'}"]
+        if s.get("pagespeed") is not None:
+            lines.append(f"- Google PageSpeed on phones: {s['pagespeed']}/100")
+        lines.append("")
     lines += ["## What to fix, biggest first", ""]
     lines += [f"- **{x['problem']}** (-{x['points']}). {x['why']}" for x in a["problems"]] or ["- Nothing big. A strong site."]
     lines += ["", "## How to use this", "",
@@ -290,6 +563,9 @@ def kind_key(kind) -> str:
         return "mixed"
     if k in KINDS:
         return k
+    for pattern, key in STORE_WORDS:
+        if re.search(pattern, k):
+            return key
     for word, key in KIND_WORDS.items():
         if word in k:
             return key
@@ -460,17 +736,30 @@ async def places_search(settings: Settings, http: httpx.AsyncClient, kind: str, 
     return out
 
 
+UNCHECKED = 5  # rank group of a website not checked yet: last
+
+
 def rank_key(p: dict):
     """Best bets first: no website or only a Facebook/Instagram page (ones you can reach first), then a broken site,
-    then the weakest audit score; websites not checked yet go last."""
+    then a weak site (under 50), then Shopify stores (a free theme with no movement first, then no reviews, then a
+    heavy page), then the rest by audit score; websites not checked yet go last."""
     a = p.get("audit")
     if not p.get("website") or social_only(p):
         return (0, 0 if p.get("phone") or p.get("email") else 1, 0, p["name"])
     if not a:
-        return (3, 0, 0, p["name"])
+        return (UNCHECKED, 0, 0, p["name"])
     if a["grade"] == "down":
         return (1, 0, 0, p["name"])
-    return (2, 0, a["score"], p["name"])
+    if a.get("score", 0) < 50:
+        return (2, 0, a["score"], p["name"])
+    if is_store(p):
+        return (3, store_tier(a["shopify"]), a["score"], p["name"])
+    return (4, 0, a["score"], p["name"])
+
+
+def kind_text(p: dict) -> str:
+    """The prospect's kind, with "Shopify store" when it is one."""
+    return f"{p.get('kind') or 'business'}, {STORE_LEAD}" if is_store(p) else p.get("kind") or "business"
 
 
 def headline(p: dict) -> tuple[str, str]:
@@ -515,6 +804,36 @@ def bookable(p: dict) -> bool:
     return any(word in text for word in BOOKABLE)
 
 
+def store_problem(p: dict, name: str, site: str) -> dict:
+    """A Shopify store's biggest problem in plain words: a free theme or no movement first, then no reviews, then
+    speed. Empty when none of them stands out."""
+    s = (p.get("audit") or {}).get("shopify") or {}
+    if s.get("free_theme"):
+        base = s.get("base_theme") or "default"
+        which = "Shopify's free default theme" if base.lower() == "dawn" else f"Shopify's free {base} theme"
+        tail = f"no movement, nothing that feels like {name}" if s.get("no_motion") else f"nothing that feels like {name}"
+        line = f"Your store uses {which}, so it looks like thousands of others: {tail}."
+        return {"key": "shopify_theme", "label": f"free {base} theme" + (", no movement" if s.get("no_motion") else ""),
+                "line": line, "short": line}
+    if s.get("no_motion"):
+        line = (f"Your store ({site}) has no movement and no personality: no video, no animation, nothing that feels "
+                f"like {name}.")
+        return {"key": "shopify_motion", "label": "no movement or personality", "line": line, "short": line}
+    if not s.get("reviews"):
+        return {"key": "shopify_reviews", "label": "no reviews on the store",
+                "line": f"Your store ({site}) shows no customer reviews, so first-time shoppers have nothing to "
+                        "reassure them before they buy.",
+                "short": f"Your store ({site}) shows no customer reviews, so new shoppers have nothing to go on."}
+    if isinstance(s.get("pagespeed"), int) and s["pagespeed"] < 50:
+        line = (f"Your store ({site}) is slow on phones: Google gives it {s['pagespeed']} out of 100, and most "
+                "shoppers buy on their phone.")
+        return {"key": "shopify_speed", "label": "slow on phones", "line": line, "short": line}
+    if s.get("heavy"):
+        line = f"Your store ({site}) has a heavy home page that's slow on phones, where most shoppers buy."
+        return {"key": "shopify_heavy", "label": "heavy home page", "line": line, "short": line}
+    return {}
+
+
 def biggest_problem(p: dict) -> dict:
     """The lead's single biggest problem in plain words, for the first line of a first message:
     {"key", "label" (a few words), "line" (a sentence to them), "short" (the same for a DM)}. Empty when nothing
@@ -540,6 +859,8 @@ def biggest_problem(p: dict) -> dict:
                 "line": f"I tried your website ({site}) and it won't load, so customers may be giving up and going "
                         "elsewhere.",
                 "short": f"Your website ({site}) won't load, so customers may be giving up."}
+    if is_store(p) and (found := store_problem(p, name, site)):
+        return found
     names = [x.get("problem", "") for x in a.get("problems") or []]
     if a and bookable(p) and not a.get("booking"):
         names.append("No online booking")
@@ -590,7 +911,7 @@ def report_md(town: str, kind: str, rows: list[dict], country: str = "", source:
              "|---|---|---|---|---|---|---|---|"]
     for p in rows:
         score, problem = headline(p)
-        cells = [str(p["id"]), p["name"], p["kind"], p.get("website") or "none", score, problem, p.get("phone") or "-",
+        cells = [str(p["id"]), p["name"], kind_text(p), p.get("website") or "none", score, problem, p.get("phone") or "-",
                  p.get("address") or "-"]
         lines.append("| " + " | ".join(c.replace("|", "/") for c in cells) + " |")
     lines += ["", "Say \"audit <business>\" for the full report, \"write outreach for <business>\" for a first "
@@ -602,7 +923,7 @@ def prospect_rows(rows: list[dict]) -> list[list[str]]:
     out = []
     for p in rows:
         score, problem = headline(p)
-        out.append([str(p["id"]), p["name"], p["kind"], st.domain(p.get("website")) or "none", score, problem,
+        out.append([str(p["id"]), p["name"], kind_text(p), st.domain(p.get("website")) or "none", score, problem,
                     p.get("status", "new")])
     return out
 
@@ -643,9 +964,11 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
     async def check(b):
         async with gate:
             try:
-                b["audit"] = await audit_url(http, b["website"])
+                b["audit"] = await with_pagespeed(settings, http, await audit_url(http, b["website"]))
             except ValueError as e:
                 b["audit"] = down(b["website"], str(e))
+            if is_store(b):
+                b["lead_type"] = STORE_LEAD
 
     await asyncio.gather(*(check(b) for b in to_check))
     rows = sorted(merge(settings, found), key=rank_key)
@@ -658,6 +981,10 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
     best = [f"{p['name']} ({headline(p)[1].lower()})" for p in rows[:3]]
     text = (f"I found {len(rows)} independent {label}{weekly} near {town}: {none} with no website and {weak} with a weak or "
             f"broken one. Best bets: {', '.join(best)}.")
+    stores = sum(1 for p in rows if is_store(p))
+    if stores:
+        text += (f" {stores} run on Shopify: store makeover leads, ranked by a free theme with no movement, then no "
+                 "reviews, then a heavy page.")
     if unchecked:
         text += f" I didn't check {unchecked} other website{'s' if unchecked != 1 else ''}; ask me to audit any of them."
     text += f" The list is saved in {st.where(settings, path)}." + (" Found on Google Maps." if source != "OpenStreetMap" else "") + fell_back
@@ -680,15 +1007,17 @@ async def audit(settings: Settings, args: dict, http: httpx.AsyncClient) -> scre
         if p:
             raise ValueError(f"{p['name']} has no website on record, which is the pitch: offer them their first one.")
         raise ValueError("Which website should I audit? Give its address, e.g. joesbarbers.co.uk.")
-    result = await audit_url(http, url)
+    result = await with_pagespeed(settings, http, await audit_url(http, url))
     name = (p or {}).get("name") or args.get("business") or result["title"] or st.domain(result["url"])
     if p:
         p["audit"] = result
+        if is_store(p):
+            p["lead_type"] = STORE_LEAD
         st.save(settings, st.PROSPECTS, rows)
     else:
         p = merge(settings, [{"name": st.clean(name, 80), "kind": "business", "town": "", "website": result["url"],
                               "phone": "", "email": (result["emails"] or [""])[0], "address": "", "osm": "",
-                              "audit": result}])[0]
+                              "audit": result, **({"lead_type": STORE_LEAD} if result.get("shopify") else {})}])[0]
     path = st.write(settings, ("Audits",), f"{st.domain(result['url']) or st.slug(name)}.md", audit_md(name, result),
                     replace=True)
     if result["grade"] == "down":
@@ -696,11 +1025,19 @@ async def audit(settings: Settings, args: dict, http: httpx.AsyncClient) -> scre
     else:
         top = "; ".join(x["problem"].lower() for x in result["problems"][:3]) or "nothing big"
         text = f"{name} scores {result['score']} out of 100 ({result['grade']}). Biggest problems: {top}."
+        store = result.get("shopify")
+        if store:
+            text += (f" It's a Shopify store ({store['theme'] or 'theme not named'}"
+                     + (", one of Shopify's free themes" if store["free_theme"] else "")
+                     + (f", reviews by {store['reviews']}" if store["reviews"] else ", no reviews app")
+                     + (f", PageSpeed {store['pagespeed']}/100 on phones" if store.get("pagespeed") is not None else "")
+                     + "), so pitch a store makeover.")
     text += f" The full audit is in {st.where(settings, path)}."
     rows_ = [[x["problem"], f"-{x['points']}", x["why"]] for x in result["problems"]] or [["Nothing big", "0", "A strong site"]]
+    redo = "a Shopify store redesign" if result.get("shopify") else "a new website"
     return st.table(text, f"Audit: {name} ({result['score']}/100)", ["Problem", "Points", "Why it matters"], rows_, [
         {"label": "Write outreach", "say": f"Write an outreach message for prospect {p['id']}."},
-        {"label": "Quote a redesign", "say": f"Quote prospect {p['id']} for a new website."}])
+        {"label": "Quote a redesign", "say": f"Quote prospect {p['id']} for {redo}."}])
 
 
 def prospects(settings: Settings, args: dict) -> screen.Shown:
@@ -728,6 +1065,7 @@ def prospect(settings: Settings, args: dict) -> screen.Shown:
         f"{p['name']} ({p['kind']}){', ' + p['town'] if p.get('town') else ''}"
         f"{', ' + world.country_name(p['country']) if p.get('country') else ''}",
         f"Website: {p.get('website') or 'none'}  |  Score: {score}  |  Status: {p.get('status', 'new')}",
+        f"Lead type: {STORE_LEAD} (theme: {p['audit']['shopify'].get('theme') or 'not named'})" if is_store(p) else "",
         f"Phone: {p['phone']}" if p.get("phone") else "", f"Email: {p['email']}" if p.get("email") else "",
         f"Address: {p['address']}" if p.get("address") else "", f"Facebook: {p['facebook']}" if p.get("facebook") else "",
         f"Instagram: {p['instagram']}" if p.get("instagram") else "", f"Google Maps: {p['maps']}" if p.get("maps") else "",
@@ -744,10 +1082,10 @@ def add_lead(settings: Settings, args: dict) -> screen.Shown:
     p = st.find_prospect(rows, args.get("business"))
     if not p:
         raise ValueError("I can't find that prospect. Say its number or name.")
-    package = "business" if p.get("website") else "starter"
+    package = "shopify_redesign" if is_store(p) else "business" if p.get("website") else "starter"
     value = kinetic_sales.prices(settings)["packages"][package]["price"]
     shown = freelance_clients.lead_add(settings, {"client": p["name"], "title": "New website" if not p.get("website")
-                                                  else "Website redesign", "value": value, "source": "Kinetic finder"})
+                                                  else "Shopify store redesign" if is_store(p) else "Website redesign", "value": value, "source": "Kinetic finder"})
     p["status"] = "lead"
     st.save(settings, st.PROSPECTS, rows)
     return screen.Shown(f"{p['name']} is now a lead in your freelance pipeline, worth about {st.gbp(value)}. "
@@ -790,7 +1128,12 @@ def tool_definitions() -> list[dict]:
                        "city in any country from Google Maps (when a Places key is set) or OpenStreetMap (e.g. salons "
                        "in Lagos, barbers in Seoul), "
                        "with their websites audited and ranked best bet first (no website or only a Facebook/Instagram "
-                       "page, then a broken site, then the lowest score). "
+                       "page, then a broken site, then the lowest score). Shops of any kind (fashion, beauty shops, "
+                       "wigs, jewellery, home and gifts, food and drink, sports shops, pet shops, kids shops, art "
+                       "shops; 'online shop', 'shopify' or 'boutique' searches them all): sites on Shopify become "
+                       "\"Shopify store\" leads with store checks (theme and whether it's a free one like Dawn, "
+                       "reviews app, page weight, add-on scripts, movement and personality, optional PageSpeed), "
+                       "ranked free theme with no movement first, then no reviews, then a heavy page. "
                        "audit: score any public website out of 100 with plain-words problems to pitch (padlock, "
                        "phones, speed, Google, tap-to-call, old footer). prospects / prospect: the saved list or one "
                        "business. mark: set a prospect's status (e.g. contacted once the user has sent their "

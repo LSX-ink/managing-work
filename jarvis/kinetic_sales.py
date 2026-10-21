@@ -7,6 +7,13 @@ audited, the quote lists what the new site fixes. Saved as a printable HTML page
 Prices stay in pounds; for a client abroad the quote also shows a rough local-currency total (kinetic_world). Payment is
 always half when we start building, half once everything's complete: no instalments or buy-now-pay-later.
 
+Shopify stores: "Shopify store redesign" (£595) and "Shopify store setup" (£995) are packages like the others (set_price
+changes them, the care plan and founding offer apply). The client keeps paying Shopify directly for their Shopify plan.
+A Shopify store lead (kinetic_find) gets a store makeover instead of a plain mock-up: a home page in their brand with an
+animated hero, scroll reveals, a product grid with motion, a reviews strip and copy with personality, and its outreach
+opens with the store's top problem ("Your store uses Shopify's free default theme, so it looks like thousands of
+others: no movement, nothing that feels like <brand>.").
+
 mockup: a one-page, phone-friendly concept home page for the business, in colours that suit its trade or in a design
 system saved by extract_design_system (style_from). Saved in Kinetic Web Designs/Mockups/<business>/index.html. It uses
 no photos or logos from the business, so it is safe to show them as a concept.
@@ -64,6 +71,17 @@ DEFAULT_PRICES = {
         "shop": {"name": "Online shop", "price": 1595,
                  "includes": "Everything in the business website plus a shop with up to 20 products, card payments "
                              "set up with your own provider, delivery options and order emails."},
+        "shopify_redesign": {"name": "Shopify store redesign", "price": 595,
+                             "includes": "A new look for your existing Shopify store: a home page in your brand with "
+                                         "movement and personality (animated hero, scroll reveals, product grid, "
+                                         "reviews strip), product and collection pages styled to match, a speed "
+                                         "clean-up and 2 rounds of changes. Your products, orders and customers stay "
+                                         "where they are."},
+        "shopify_setup": {"name": "Shopify store setup", "price": 995,
+                          "includes": "A new Shopify store set up and designed for you: a theme made to feel like "
+                                      "your brand, up to 25 products added, collections, payments, delivery and tax "
+                                      "settings, a reviews app, Google and social sales channels and 3 rounds of "
+                                      "changes."},
     },
     "addons": {
         "logo": {"name": "Logo design", "price": 150},
@@ -74,13 +92,33 @@ DEFAULT_PRICES = {
         "photos": {"name": "Photo editing and stock images", "price": 100},
     },
     "care_plan": {"name": "Monthly hosting and care", "price": 20,
-                  "by_package": {"starter": 20, "business": 25, "shop": 30},
+                  "by_package": {"starter": 20, "business": 25, "shop": 30, "shopify_redesign": 25,
+                                 "shopify_setup": 30},
                   "includes": "Your domain name, hosting, security updates, backups and small text changes each "
                               "month."},
     "deposit_percent": 50,
     "valid_days": 30,
 }
-WEEKS = {"starter": "1 to 2 weeks", "business": "2 to 4 weeks", "shop": "4 to 6 weeks"}
+WEEKS = {"starter": "1 to 2 weeks", "business": "2 to 4 weeks", "shop": "4 to 6 weeks",
+         "shopify_redesign": "1 to 2 weeks", "shopify_setup": "3 to 4 weeks"}
+SHOPIFY_PACKAGES = ("shopify_redesign", "shopify_setup")
+SHOPIFY_PLAN = ("You keep paying Shopify directly for your Shopify plan (and any paid apps), as you do now; it stays in "
+                "your name and isn't part of this price.")
+SHOPIFY_CARE = ("For a Shopify store, hosting is part of your Shopify plan, so care covers theme and app updates, "
+                "monthly checks, theme backups and small text and image changes.")
+PACKAGE_WORDS = {"one page": "starter", "one-page": "starter", "basic": "starter", "website": "business",
+                 "standard": "business", "ecommerce": "shop", "e-commerce": "shop", "store": "shop",
+                 "online_shop": "shop", "shopify": "shopify_redesign", "shopify_store_redesign": "shopify_redesign",
+                 "store_redesign": "shopify_redesign", "store_makeover": "shopify_redesign",
+                 "makeover": "shopify_redesign", "shopify_makeover": "shopify_redesign",
+                 "shopify_store_setup": "shopify_setup", "new_shopify_store": "shopify_setup",
+                 "shopify_store": "shopify_setup", "store_setup": "shopify_setup"}
+
+
+def package_key(value, default: str = "business") -> str:
+    """A package key from a name like "Shopify store redesign", "store makeover" or "business website"."""
+    key = re.sub(r"[\s-]+", "_", str(value or default).strip().lower()).replace("_website", "")
+    return PACKAGE_WORDS.get(key, PACKAGE_WORDS.get(key.replace("_", " "), key))
 TRADE_LOOKS = {  # (background, ink, brand, accent, heading font, body font, tagline)
     "cafe": ("#fbf6ef", "#2b211a", "#7a4a2a", "#d99a4e", "Georgia, serif", "'Segoe UI', Arial, sans-serif",
              "Fresh coffee, homemade food and a warm welcome."),
@@ -111,7 +149,10 @@ TRADE_WORDS = {"barber": "hairdresser", "cafe": "cafe", "coffee": "cafe", "baker
                "glaz": "trade", "car": "garage", "tyre": "garage", "garage": "garage", "fitness": "fitness",
                "gym": "fitness", "sport": "fitness", "dent": "health", "physio": "health", "chiro": "health",
                "vet": "health", "florist": "shop", "butcher": "shop", "gift": "shop", "cloth": "shop",
-               "boutique": "shop", "jewel": "shop", "shop": "shop", "pet": "shop", "bicycle": "shop"}
+               "boutique": "shop", "jewel": "shop", "shop": "shop", "pet": "shop", "bicycle": "shop",
+               "perfum": "beauty", "wig": "shop", "shoe": "shop", "toy": "shop", "baby": "shop", "deli": "shop",
+               "wine": "shop", "chocolat": "shop", "confection": "shop", "houseware": "shop", "interior": "shop",
+               "furniture": "shop", "candle": "shop", "galler": "shop", "stationer": "shop", "store": "shop"}
 SERVICES = {
     "cafe": ["Breakfast & brunch", "Speciality coffee", "Homemade cakes", "Takeaway & catering"],
     "restaurant": ["Lunch & dinner", "Private dining", "Takeaway", "Gift vouchers"],
@@ -153,7 +194,8 @@ def care_price(p: dict, package: str) -> float:
 
 def care_text(p: dict) -> str:
     c = p["care_plan"]["by_package"]
-    return f"{st.gbp(c['starter'])} starter, {st.gbp(c['business'])} business, {st.gbp(c['shop'])} shop"
+    return (f"{st.gbp(c['starter'])} starter, {st.gbp(c['business'])} business, {st.gbp(c['shop'])} shop, "
+            f"{st.gbp(c['shopify_redesign'])} Shopify redesign, {st.gbp(c['shopify_setup'])} Shopify setup")
 
 
 def show_prices(settings: Settings, args: dict, prefix: str = "") -> screen.Shown:
@@ -165,8 +207,11 @@ def show_prices(settings: Settings, args: dict, prefix: str = "") -> screen.Show
     custom = " These are starting prices; say \"set my business website price to 950\" to use your own." \
         if not st.load(settings, st.PRICES, {}) else ""
     text = (f"{prefix} Your website prices: starter {st.gbp(p['packages']['starter']['price'])}, business "
-            f"{st.gbp(p['packages']['business']['price'])}, shop {st.gbp(p['packages']['shop']['price'])}, care plan "
-            f"a month {care_text(p)}, {st.num(p['deposit_percent'])}% deposit.{custom}").strip()
+            f"{st.gbp(p['packages']['business']['price'])}, shop {st.gbp(p['packages']['shop']['price'])}, Shopify "
+            f"store redesign {st.gbp(p['packages']['shopify_redesign']['price'])}, Shopify store setup "
+            f"{st.gbp(p['packages']['shopify_setup']['price'])}, care plan a month {care_text(p)}, "
+            f"{st.num(p['deposit_percent'])}% deposit. Shopify clients keep paying Shopify directly for their "
+            f"plan.{custom}").strip()
     cur = world.currency_of(world.country_code(args.get("country")))
     if cur != "GBP":
         text += (f" In {world.CURRENCIES[cur][1]} that's roughly: " + ", ".join(
@@ -184,9 +229,9 @@ def set_price(settings: Settings, args: dict) -> screen.Shown:
     elif item in ("valid_days", "valid"):
         saved["valid_days"] = int(st.number(args.get("price"), "number of days", False, 365))
     elif item in ("care", "care_plan", "monthly"):
-        pk = str(args.get("package") or "").lower().replace("online_shop", "shop").replace(" website", "")
+        pk = package_key(args.get("package")) if args.get("package") else ""
         if pk and pk not in p["care_plan"]["by_package"]:
-            raise ValueError("Care plan prices are for starter, business or shop.")
+            raise ValueError("Care plan prices are for starter, business, shop, shopify_redesign or shopify_setup.")
         tiers = dict(p["care_plan"]["by_package"])
         for key in ([pk] if pk else tiers):
             tiers[key] = st.number(args.get("price"), "price")
@@ -194,6 +239,8 @@ def set_price(settings: Settings, args: dict) -> screen.Shown:
     else:
         item = {"business_website": "business", "starter_website": "starter", "online_shop": "shop",
                 "logo_design": "logo", "page": "extra_page"}.get(item, item)
+        if item not in p["addons"]:
+            item = package_key(item)
         group = "packages" if item in p["packages"] else "addons" if item in p["addons"] else ""
         if not group:
             raise ValueError("Which price? " + ", ".join(list(p["packages"]) + list(p["addons"])) +
@@ -276,11 +323,9 @@ def best_discount(settings: Settings, args: dict, name: str, package: str, first
 def quote_lines(settings: Settings, args: dict) -> tuple[list[tuple[str, int, float]], float, str]:
     """[(description, qty, unit price)], monthly care price (0 if none) and the package key."""
     p = prices(settings)
-    package = str(args.get("package") or "business").lower()
-    package = {"one page": "starter", "one-page": "starter", "basic": "starter", "website": "business",
-               "standard": "business", "ecommerce": "shop", "e-commerce": "shop", "store": "shop"}.get(package, package)
+    package = package_key(args.get("package"))
     if package not in p["packages"]:
-        raise ValueError("Which package? starter, business or shop.")
+        raise ValueError("Which package? starter, business, shop, shopify_redesign or shopify_setup.")
     pk = p["packages"][package]
     lines = [(f"{pk['name']}: {pk['includes']}", 1, float(pk["price"]))]
     for raw in args.get("addons") or []:
@@ -293,7 +338,7 @@ def quote_lines(settings: Settings, args: dict) -> tuple[list[tuple[str, int, fl
         if key == "extra_page":
             qty = max(1, int(args.get("extra_pages") or 1))
         elif key == "copywriting":
-            qty = max(1, int(args.get("pages") or {"starter": 1, "business": 5, "shop": 5}[package]))
+            qty = max(1, int(args.get("pages") or {"starter": 1}.get(package, 5)))
         lines.append((p["addons"][key]["name"], qty, float(p["addons"][key]["price"])))
     for extra in args.get("custom_items") or []:
         if isinstance(extra, dict) and extra.get("description"):
@@ -324,6 +369,7 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     fixes = [x["problem"] for x in ((prospect or {}).get("audit") or {}).get("problems", [])][:6]
     if prospect and not prospect.get("website"):
         fixes = ["You don't have a website yet, so customers who search for you find competitors instead."]
+    fixes_title = "What your store makeover fixes" if package in SHOPIFY_PACKAGES else "What your new website fixes"
     body = [f"<h2>Quote {number} for {escape(name)}</h2>",
             '<div class="meta">' + "".join(f"<div><b>{k}</b>{escape(v)}</div>" for k, v in (
                 ("Quote number", number), ("Date", st.short(st.today())), ("Valid until", st.short(valid)),
@@ -333,7 +379,7 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     if args.get("notes"):
         body.append(f"<p>{escape(st.clean(args['notes'], 600))}</p>")
     if fixes:
-        body += ["<h2>What your new website fixes</h2>", "<ul>" + "".join(f"<li>{escape(x)}</li>" for x in fixes) + "</ul>"]
+        body += [f"<h2>{fixes_title}</h2>", "<ul>" + "".join(f"<li>{escape(x)}</li>" for x in fixes) + "</ul>"]
     table = ["<table><tr><th>Item</th><th class=n>Qty</th><th class=n>Price</th><th class=n>Total</th></tr>"]
     table += [f"<tr><td>{escape(d)}</td><td class=n>{q}</td><td class=n>{st.gbp(u)}</td><td class=n>{st.gbp(q * u)}</td></tr>"
               for d, q, u in lines]
@@ -357,9 +403,12 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
                 + (f"; {st.gbp(total)} is about {world.money(world.convert(total, cur), cur)} in "
                    f"{world.CURRENCIES[cur][1]} at a rough exchange rate, and your bank converts it when you pay"
                    if about else "") + ".</p>")
+    if package in SHOPIFY_PACKAGES:
+        body.append(f"<p class=note><b>Your Shopify plan.</b> {escape(SHOPIFY_PLAN)}</p>")
     if care:
         body.append(f"<p>Optional {escape(p['care_plan']['name'].lower())}: {st.gbp(care)} a month. "
-                    f"{escape(p['care_plan']['includes'])} Cancel any time with a month's notice. Set it up at "
+                    f"{escape(SHOPIFY_CARE if package in SHOPIFY_PACKAGES else p['care_plan']['includes'])} "
+                    "Cancel any time with a month's notice. Set it up at "
                     f"<a href=\"{escape(st.business(settings)['plan_link'])}\">{escape(st.business(settings)['plan_link'])}</a>.</p>")
     vat = st.business(settings)["vat_number"]
     body += ["<h2>How it works</h2>", "<ol>",
@@ -391,7 +440,9 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
             + (f" and an optional {st.gbp(care)} a month care plan" if care else "") +
             (f", with the {st.gbp(FOUNDING_OFF)} founding client offer" if founding else
              f", with {REBUILD_OFF}% off for their existing website" if rebuild else "") +
-            f". They pay {terms}. Saved in {st.where(settings, path)}; open it and print to PDF to send it. {st.NOT_SENT}")
+            f". They pay {terms}." + (" They keep paying Shopify directly for their Shopify plan."
+                                      if package in SHOPIFY_PACKAGES else "") +
+            f" Saved in {st.where(settings, path)}; open it and print to PDF to send it. {st.NOT_SENT}")
     return st.file_shown(settings, path, text, [
         {"label": "Mark as sent", "say": f"Mark quote {number} as sent."},
         {"label": "Deposit invoice", "say": f"Make the deposit invoice for quote {number}."}])
@@ -525,7 +576,8 @@ def welcome_emails(settings: Settings, args: dict) -> screen.Shown:
         f"What you'll receive\n- A website designed for phones, tablets and computers\n"
         f"- {rounds} rounds of changes so it's exactly how you want it\n"
         f"- Your domain name registered in your name, so it always belongs to you\n"
-        f"- Full ownership of the finished website once the final invoice is paid\n\n"
+        f"- Full ownership of the finished website once the final invoice is paid\n"
+        + (f"- {SHOPIFY_PLAN}\n" if q["package"] in SHOPIFY_PACKAGES else "") + "\n"
         f"I'll send a short follow-up email with a few next steps. If you have any questions in the meantime, just "
         f"reply to this email.\n\n{sign}")
     join = (f"To join, set up your plan here: {me['plan_link']}\nOr just reply \"Yes to hosting and care\" "
@@ -693,9 +745,22 @@ Swap this line for what you do best and who you do it for.</p><div>{call}<a clas
 """
 
 
+def store_lead(p: dict | None) -> bool:
+    import kinetic_find  # here, not at the top: kinetic_find reaches this module through the tracker
+    return kinetic_find.is_store(p or {})
+
+
 def mockup(settings: Settings, args: dict) -> screen.Shown:
     name, prospect = client_and_prospect(settings, args)
     p = prospect or {}
+    if (store_lead(p) or args.get("store") is True) and not (args.get("sections") or args.get("section_css")):
+        path = store_mockup(settings, name, p, args)
+        return st.file_shown(settings, path, f"I made a store makeover mock-up for {name}: a home page in their brand "
+                             "with an animated hero, scroll reveals, a moving product grid, a reviews strip and copy "
+                             f"with personality. It's in {st.where(settings, path)}; open it on your phone and PC to "
+                             "check it, then show it to them as a free sample.", [
+                                 {"label": "Write outreach", "say": f"Write an outreach message for {name}."},
+                                 {"label": "Quote them", "say": f"Quote {name} for a Shopify store redesign."}])
     trade = trade_of(args.get("kind") or p.get("kind") or name)
     if not any(args.get(k) for k in ("style_from", "sections", "section_css", "tagline")):
         import kinetic_reach  # here, not at the top: it imports this module
@@ -722,6 +787,205 @@ def mockup(settings: Settings, args: dict) -> screen.Shown:
                              {"label": "Quote them", "say": f"Quote {name} for a new website."}])
 
 
+# ---- store makeover mock-ups (Shopify store leads) ------------------------------------
+
+STORE_LOOKS = {  # (background, ink, brand, accent, heading font, body font, tagline, products, story)
+    "fashion": ("#f7f3ee", "#151311", "#151311", "#e4572e", "'Didot', 'Bodoni MT', Georgia, serif",
+                "'Helvetica Neue', Arial, sans-serif", "Wear the mood.",
+                ["The everyday tee", "Oversized blazer", "Wide-leg trousers", "Weekend knit"],
+                "Pieces picked by people who actually wear them, not an algorithm."),
+    "beauty": ("#fff6f3", "#2b1d22", "#b5476b", "#f2b8a2", "Georgia, serif", "'Segoe UI', Arial, sans-serif",
+               "Skin first. Glow always.", ["Daily glow serum", "Barrier cream", "Lip oil", "Overnight mask"],
+               "Small-batch formulas we test on ourselves before they ever reach your shelf."),
+    "wigs": ("#120f14", "#f6eef2", "#d9a5c4", "#f4c95d", "'Didot', Georgia, serif", "'Segoe UI', Arial, sans-serif",
+             "Hair that turns heads.", ["Body wave unit", "Bob lace front", "Kinky straight bundle", "Edge care kit"],
+             "Every unit is checked by hand, and we'll help you find the one that feels like you."),
+    "jewellery": ("#0f1a1c", "#f3efe6", "#d4af6a", "#8fb9a8", "'Didot', 'Bodoni MT', Georgia, serif",
+                  "'Helvetica Neue', Arial, sans-serif", "Small things. Big feelings.",
+                  ["Signet ring", "Pearl drop earrings", "Chain necklace", "Stacking set"],
+                  "Made to be worn every day and passed on one day."),
+    "home": ("#f4efe6", "#23201b", "#6b7f5a", "#d98c5f", "Georgia, serif", "'Segoe UI', Arial, sans-serif",
+             "Make home feel like you.", ["Hand-poured candle", "Linen throw", "Stoneware mug", "Gift box"],
+             "Things we'd give to our best friends, wrapped like we mean it."),
+    "food": ("#fff8ec", "#2a1b10", "#b5361f", "#f0b429", "Georgia, serif", "'Segoe UI', Arial, sans-serif",
+             "Taste the good stuff.", ["Tasting box", "House blend", "Small-batch jam", "Gift hamper"],
+             "Made in small batches by people who care far too much about flavour."),
+    "fitness": ("#0d0f12", "#f2f4f5", "#c8ff2e", "#3dd6d0", "'Segoe UI', Arial, sans-serif",
+                "'Segoe UI', Arial, sans-serif", "Built to move.",
+                ["Seamless leggings", "Training tee", "Oversized hoodie", "Shaker bottle"],
+                "Kit designed in the gym, tested in the gym, made for the way you train."),
+    "pets": ("#f3f7f2", "#1d2a22", "#2f7a5b", "#f4a259", "Georgia, serif", "'Segoe UI', Arial, sans-serif",
+             "Happy pets live here.", ["Comfy bed", "Natural treats", "Rope toy", "Walk set"],
+             "Every product is tried and tested by our own very fussy dogs and cats."),
+    "kids": ("#fffaf0", "#22223b", "#4361ee", "#ff6b6b", "'Trebuchet MS', 'Segoe UI', sans-serif",
+             "'Segoe UI', Arial, sans-serif", "Little things, big smiles.",
+             ["Wooden stacker", "Soft bunny", "Play mat", "Story book set"],
+             "Toys and clothes chosen by parents, loved by kids, built to last."),
+    "art": ("#faf7f2", "#1b1b1f", "#3a5a98", "#f25f5c", "Georgia, serif", "'Segoe UI', Arial, sans-serif",
+            "Make something today.", ["Limited print", "Sketchbook", "Paint set", "Framed original"],
+            "Original work and the tools to make your own, from artists who love what they do."),
+    "store": ("#fbf8f3", "#18181b", "#2f4858", "#f6ae2d", "Georgia, serif", "'Segoe UI', Arial, sans-serif",
+              "Independent. Made with personality.", ["Best seller", "New in", "Gift idea", "Staff pick"],
+              "An independent shop with real people behind it, and it shows."),
+}
+STORE_WORDS = [("wig", "wigs"), ("hair", "wigs"), ("beauty", "beauty"), ("cosmetic", "beauty"), ("skin", "beauty"),
+               ("perfum", "beauty"), ("jewel", "jewellery"), ("watch", "jewellery"), ("cloth", "fashion"),
+               ("fashion", "fashion"), ("boutique", "fashion"), ("shoe", "fashion"), ("bag", "fashion"),
+               ("gift", "home"), ("home", "home"), ("house", "home"), ("interior", "home"), ("candle", "home"),
+               ("furniture", "home"), ("florist", "home"), ("deli", "food"), ("food", "food"), ("wine", "food"),
+               ("chocolat", "food"), ("confection", "food"), ("tea", "food"), ("coffee", "food"), ("bak", "food"),
+               ("sport", "fitness"), ("fitness", "fitness"), ("gym", "fitness"), ("supplement", "fitness"),
+               ("outdoor", "fitness"), ("pet", "pets"), ("toy", "kids"), ("baby", "kids"), ("kid", "kids"),
+               ("game", "kids"), ("art", "art"), ("craft", "art"), ("frame", "art"), ("stationer", "art")]
+REVIEW_SLOTS = ["Space for a real 5-star review from one of your customers.",
+                "Another happy customer, in their own words.",
+                "Your best review, pulled in from your reviews app.",
+                "A line about fast delivery and lovely packaging."]
+
+
+def store_category(text: str) -> str:
+    """The store makeover look for a kind of store: fashion, beauty, wigs, jewellery, home, food, fitness, pets,
+    kids, art, or store."""
+    t = str(text or "").lower()
+    return next((v for k, v in STORE_WORDS if k in t), "store")
+
+
+def store_mockup_file(name: str) -> str:
+    """"<business> store makeover mock-up.html" (kept short enough to attach)."""
+    short_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", name).strip()[:36].strip(" .") or "Your"
+    return f"{short_name} store makeover mock-up.html"
+
+
+def store_mockup_html(name: str, category: str, tagline: str, phone: str, town: str, look: dict | None, maker: str,
+                      address: str = "", theme: str = "") -> str:
+    """A store makeover home page in their brand: an announcement bar that moves, an animated hero, scroll reveals,
+    a product grid with motion, a reviews strip and copy with personality. CSS only (no scripts), and it keeps still
+    for anyone who has reduced motion turned on."""
+    bg, ink, brand, accent, head, body, default_tag, products, story = STORE_LOOKS.get(category, STORE_LOOKS["store"])
+    if look:
+        bg, ink, brand, accent = (safe_css(look.get(k), d) for k, d in
+                                  (("bg", bg), ("ink", ink), ("brand", brand), ("accent", accent)))
+        head, body = safe_css(look.get("head"), head), safe_css(look.get("body"), body)
+    e = escape
+    tagline = tagline or default_tag
+    words = "".join(f'<span style="animation-delay:{0.15 + i * 0.12:.2f}s">{e(w)}</span> '
+                    for i, w in enumerate(tagline.split()))
+    where_ = f" in {e(town)}" if town else ""
+    news = [f"New drop at {e(name)}", "Free delivery over £50", "Gift wrapping on every order", "Easy 30-day returns",
+            f"Made with love{where_}"]
+    bar = "".join(f"<span>{x}</span><span>✦</span>" for x in news * 2)
+    cards = "".join(f'<a class="product reveal" href="#shop" style="--d:{i * 0.08:.2f}s"><div class="pic p{i % 4}">'
+                    f'<span class="tag">{"New" if i == 0 else "Best seller" if i == 1 else "Just in"}</span></div>'
+                    f'<h3>{e(x)}</h3><p>£— <small>your price</small></p></a>' for i, x in enumerate(products[:6]))
+    reviews = "".join(f'<figure><div class="stars">★★★★★</div><blockquote>"{e(x)}"</blockquote>'
+                      f'<figcaption>Verified buyer</figcaption></figure>' for x in REVIEW_SLOTS * 2)
+    tel = re.sub(r"[^\d+]", "", phone)
+    contact = (f'<a class="btn ghost" href="tel:{e(tel)}">Call {e(phone)}</a>' if tel else
+               '<a class="btn ghost" href="#story">Our story</a>')
+    visit = f"<p>Visit us at {e(address)}, or shop online any time.</p>" if address else ""
+    was = f" It replaces the {e(theme)} theme's standard home page." if theme else ""
+    css = f""":root{{--bg:{bg};--ink:{ink};--brand:{brand};--accent:{accent};--head:{head};--body:{body}}}
+*{{box-sizing:border-box;margin:0}}html{{scroll-behavior:smooth}}
+body{{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.6;overflow-x:hidden}}
+a{{color:inherit;text-decoration:none}}.wrap{{max-width:1120px;margin:0 auto;padding:0 20px}}
+.bar{{background:var(--ink);color:var(--bg);overflow:hidden;white-space:nowrap;font-size:.85rem;letter-spacing:.06em;
+text-transform:uppercase}}.bar div{{display:inline-flex;gap:28px;padding:9px 0;animation:slide 26s linear infinite}}
+nav{{display:flex;justify-content:space-between;align-items:center;padding:18px 0}}
+.logo{{font-family:var(--head);font-size:1.5rem;font-weight:700;letter-spacing:.02em}}
+nav .links{{display:flex;gap:18px;font-weight:600}}nav .links a{{background:linear-gradient(var(--accent),var(--accent))
+0 100%/0 2px no-repeat;transition:background-size .35s}}nav .links a:hover{{background-size:100% 2px}}
+.hero{{position:relative;min-height:78vh;display:grid;align-items:center;overflow:hidden;border-radius:0 0 40px 40px;
+background:linear-gradient(120deg,var(--brand),color-mix(in srgb,var(--brand) 55%,var(--accent)),var(--accent));
+background-size:220% 220%;animation:shift 14s ease-in-out infinite;color:var(--bg)}}
+.blob{{position:absolute;border-radius:50%;filter:blur(40px);opacity:.55;animation:float 12s ease-in-out infinite}}
+.b1{{width:340px;height:340px;background:var(--accent);top:-80px;right:-60px}}
+.b2{{width:260px;height:260px;background:var(--bg);bottom:-90px;left:8%;animation-delay:-5s;opacity:.25}}
+.hero .wrap{{position:relative;padding-top:64px;padding-bottom:72px}}
+.hero h1{{font-family:var(--head);font-size:clamp(2.6rem,8vw,5.6rem);line-height:1;max-width:12ch}}
+.hero h1 span{{display:inline-block;opacity:0;transform:translateY(40px);animation:rise .8s cubic-bezier(.2,.8,.2,1) forwards}}
+.hero p{{font-size:1.2rem;max-width:42ch;margin:22px 0 30px;opacity:0;animation:rise .8s .7s forwards}}
+.cta{{opacity:0;animation:rise .8s .9s forwards}}
+.btn{{display:inline-block;background:var(--bg);color:var(--ink);padding:15px 28px;border-radius:999px;font-weight:700;
+transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s}}.btn:hover{{transform:translateY(-3px);
+box-shadow:0 12px 30px rgba(0,0,0,.25)}}.btn.ghost{{background:transparent;color:inherit;border:2px solid currentColor;
+margin-left:10px}}
+section{{padding:84px 0}}h2{{font-family:var(--head);font-size:clamp(1.8rem,4.5vw,3rem);line-height:1.1;margin-bottom:30px}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px}}
+.product{{display:block;transition:transform .35s cubic-bezier(.2,.8,.2,1)}}.product:hover{{transform:translateY(-6px)}}
+.pic{{position:relative;aspect-ratio:4/5;border-radius:22px;overflow:hidden;margin-bottom:12px;
+background:color-mix(in srgb,var(--bg) 70%,var(--brand))}}
+.pic::after{{content:"";position:absolute;inset:18%;border-radius:40% 60% 55% 45%;background:var(--accent);opacity:.8;
+transition:transform .6s cubic-bezier(.2,.8,.2,1);animation:morph 9s ease-in-out infinite}}.product:hover .pic::after{{transform:scale(1.12) rotate(8deg)}}
+.p1::after{{background:var(--brand)}}.p2::after{{border-radius:50%}}.p3::after{{background:var(--ink);opacity:.6}}
+.tag{{position:absolute;top:12px;left:12px;z-index:1;background:var(--ink);color:var(--bg);font-size:.75rem;
+padding:4px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}}
+.product h3{{font-family:var(--head);font-size:1.15rem}}.product p{{opacity:.8}}
+.reviews{{background:var(--ink);color:var(--bg);overflow:hidden;padding:56px 0}}
+.reviews h2{{text-align:center}}.track{{display:flex;gap:18px;width:max-content;animation:slide 40s linear infinite}}
+.reviews:hover .track{{animation-play-state:paused}}
+figure{{width:300px;background:color-mix(in srgb,var(--ink) 80%,var(--bg));border-radius:20px;padding:22px}}
+.stars{{color:var(--accent);letter-spacing:.15em}}blockquote{{margin:10px 0;font-family:var(--head);font-size:1.05rem}}
+figcaption{{font-size:.85rem;opacity:.7}}
+.story{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:36px;align-items:center}}
+.story .big{{font-family:var(--head);font-size:clamp(1.6rem,4vw,2.6rem);line-height:1.15}}
+.badge{{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;text-align:center;font-weight:700;
+background:var(--accent);color:var(--ink);animation:spin 18s linear infinite;font-size:.9rem;padding:16px}}
+footer{{padding:36px 0;font-size:.85rem;opacity:.7}}
+@keyframes slide{{to{{transform:translateX(-50%)}}}}@keyframes shift{{50%{{background-position:100% 50%}}}}
+@keyframes float{{50%{{transform:translate(30px,40px) scale(1.1)}}}}@keyframes rise{{to{{opacity:1;transform:none}}}}
+@keyframes morph{{50%{{border-radius:60% 40% 45% 55%}}}}@keyframes spin{{to{{transform:rotate(360deg)}}}}
+@keyframes reveal{{from{{opacity:0;transform:translateY(48px) scale(.97)}}to{{opacity:1;transform:none}}}}
+@supports (animation-timeline: view()){{.reveal{{animation:reveal linear both;animation-timeline:view();
+animation-range:entry 0% cover 28%}}}}
+@media (prefers-reduced-motion:reduce){{*,*::before,*::after{{animation:none!important;transition:none!important}}
+.hero h1 span,.hero p,.cta{{opacity:1;transform:none}}}}
+@media (max-width:640px){{nav .links{{display:none}}.btn.ghost{{margin:12px 0 0}}.hero{{min-height:70vh}}}}"""
+    return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{e(name)} | Store makeover concept</title>
+<meta name="description" content="{e(tagline)}">
+<style>{css}</style></head><body>
+<div class="bar"><div>{bar}</div></div>
+<div class="wrap"><nav><span class="logo">{e(name)}</span><span class="links"><a href="#shop">Shop</a>
+<a href="#story">Our story</a><a href="#reviews">Reviews</a></span></nav></div>
+<header class="hero"><span class="blob b1"></span><span class="blob b2"></span><div class="wrap">
+<h1>{words}</h1><p>{e(name)}{where_}: a store with movement and personality, made to feel like you, not like a
+template.</p><div class="cta"><a class="btn" href="#shop">Shop the new drop</a>{contact}</div></div></header>
+<div class="wrap"><section id="shop"><h2 class="reveal">Fresh in this week</h2><div class="grid">{cards}</div></section>
+<section id="story" class="story"><div class="reveal"><p class="big">{e(story)}</p>
+<p style="margin-top:16px">Swap this for your story in your own words: who you are, why you started and what makes
+{e(name)} different.</p>{visit}</div><div class="badge reveal">Independent · Since day one · {e(name)}</div></section></div>
+<section id="reviews" class="reviews"><h2 class="reveal">Loved by our customers</h2><div class="track">{reviews}</div></section>
+<div class="wrap"><footer>Store makeover concept for {e(name)} by {e(maker)}.{was} Placeholder words, products and
+reviews only; not the live store. Built to drop into your Shopify theme, so your products, orders and customers stay
+where they are.</footer></div>
+</body></html>
+"""
+
+
+def store_look(settings: Settings, p: dict) -> dict | None:
+    """Their own colours when known (saved on the prospect, or a design system saved for their website)."""
+    own = p.get("colours") if isinstance(p.get("colours"), dict) else {}
+    site = st.domain(p.get("website", ""))
+    if not own and site:
+        try:
+            own = look_from(settings, site) or {}
+        except ValueError:  # no design system saved for their site
+            own = {}
+    return {k: v for k, v in own.items() if v} or None
+
+
+def store_mockup(settings: Settings, name: str, p: dict, args: dict) -> object:
+    """Write a Shopify store lead's makeover mock-up to Mockups/<business>/index.html."""
+    look = look_from(settings, str(args.get("style_from") or "").strip()) or store_look(settings, p)
+    shop = (p.get("audit") or {}).get("shopify") or {}
+    html = store_mockup_html(name, store_category(args.get("kind") or f"{p.get('kind', '')} {name}"),
+                             st.clean(args.get("tagline"), 90), st.clean(args.get("phone") or p.get("phone"), 30),
+                             st.clean(args.get("town") or p.get("town"), 40), look, st.business(settings)["name"],
+                             st.clean(p.get("address"), 160), st.clean(shop.get("theme"), 60))
+    return st.write(settings, ("Mockups", name), "index.html", html, replace=True)
+
+
 # ---- outreach ----------------------------------------------------------------------
 
 TRANSLATED = ("email", "letter", "dm", "whatsapp")  # what the prospect reads; phone and walk-in scripts are for the user
@@ -739,11 +1003,12 @@ def mockup_file(name: str) -> str:
 def outreach_mockup(settings: Settings, args: dict) -> str:
     """Make the free home page mock-up that goes with a first message, plus a copy with a name fit to attach.
     Returns the copy's place in the memory folder."""
-    name = client_and_prospect(settings, args)[0]
+    name, prospect = client_and_prospect(settings, args)
     mockup(settings, {k: v for k, v in args.items() if k in ("client", "business", "kind", "tagline", "services",
                                                                 "phone", "town", "style_from", "sections", "section_css")})
     html = (st.folder(settings, "Mockups", name) / "index.html").read_text(encoding="utf-8")
-    return st.where(settings, st.write(settings, ("Mockups", name), mockup_file(name), html, replace=True))
+    file = store_mockup_file(name) if store_lead(prospect) else mockup_file(name)
+    return st.where(settings, st.write(settings, ("Mockups", name), file, html, replace=True))
 
 
 def no_site(p: dict) -> bool:
@@ -815,8 +1080,10 @@ def outreach_draft(settings: Settings, args: dict, channel: str = "", video: str
         points = ["a modern, phone-friendly site", "getting found on Google"]
     hook = hook_of(name, p, designer)
     gift = args.get("mockup", True)
-    file = mockup_file(name)
-    made = f"So I made you this: a free example of a new home page for {name}."
+    store = store_lead(p)
+    file = store_mockup_file(name) if store else mockup_file(name)
+    made = (f"So I made you this: a free store makeover for {name}, a new home page in your brand with movement and "
+            "personality." if store else f"So I made you this: a free example of a new home page for {name}.")
     film = f" There's a 30-second video of it on a phone too ({video})." if video and gift else ""
     opener = {"email": f"{made} It's attached ({file}), so you can open it on your phone. No obligation at all.{film}",
               "letter": f"{made} It's printed and enclosed with this letter ({file}), and I'm happy to email you the "
@@ -824,9 +1091,11 @@ def outreach_draft(settings: Settings, args: dict, channel: str = "", video: str
               }.get(channel, made) if gift else ""
     offer = "" if gift else "I'd be happy to show you some ideas, free and with no obligation."
     pr = prices(settings)
-    start = world.local_price(pr["packages"]["starter"]["price"], world.currency_of(country))
+    start = world.local_price(pr["packages"]["shopify_redesign" if store else "starter"]["price"],
+                              world.currency_of(country))
     terms = world.payment_terms(pr["deposit_percent"])
-    price = f"Websites start from {start}, and you pay {terms}."
+    price = (f"A Shopify store redesign is {start}, and you pay {terms}. You keep your Shopify plan and pay Shopify "
+             "directly for it, as you do now." if store else f"Websites start from {start}, and you pay {terms}.")
     bullets = "\n".join(f"- {x[0].upper() + x[1:]}" for x in points)
     opt_out = world.OPT_OUT
     first = f"{hook} {opener}" if opener else f"{hook}\n\n{offer}"
@@ -869,15 +1138,15 @@ def outreach_draft(settings: Settings, args: dict, channel: str = "", video: str
         brief = hook_of(name, p, designer, short=True)
         clip = " and a 30-second video of it" if video and gift else ""
         if gift:
-            text = short_message(hi, intro, brief, "So I made you this: a free home page mock-up", f" ({file})", clip,
-                                 start, terms, sign)
+            text = short_message(hi, intro, brief, "So I made you this: a free store makeover mock-up" if store else
+                                 "So I made you this: a free home page mock-up", f" ({file})", clip, start, terms, sign)
         else:
             text = short_message(hi, intro, f"{brief} {offer}", "", "", "", start, terms, sign)
         body = f"{text}\n\n{opt_out}"
     written = channel in ("email", "dm", "whatsapp", "letter") or any(c in ("dm", "whatsapp") for c in plan)
     note = world.compliance_note(country) if written else "Be friendly and brief, and take no for an answer."
     return {"name": name, "channel": channel, "channels": plan, "country": country, "language": language,
-            "body": body, "note": note, "hook": hook}
+            "body": body, "note": note, "hook": hook, "store": store}
 
 
 def next_weekly_lead(settings: Settings) -> str:
@@ -887,8 +1156,11 @@ def next_weekly_lead(settings: Settings) -> str:
     if not week:
         return ""
     fresh = {r.get("prospect") for r in tracker.all_leads(settings) if r.get("status") == "new" and r.get("prospect")}
+    stores = week.get("kind") == "stores" or week.get("kind") in kinetic_find.STORE_KINDS
     rows = [p for p in st.rows_of(settings, st.PROSPECTS) if p.get("id") in fresh and
-            trade_of(f"{p.get('kind', '')} {p['name']}") == week["trade"]]
+            (trade_of(f"{p.get('kind', '')} {p['name']}") == week["trade"] or (stores and kinetic_find.is_store(p)))]
+    if "shopify" in str(week.get("label", "")).lower():  # "shopify stores": only leads that run on Shopify
+        rows = [p for p in rows if kinetic_find.is_store(p)]
     return str(sorted(rows, key=kinetic_find.rank_key)[0]["id"]) if rows else ""
 
 
@@ -918,7 +1190,8 @@ async def outreach(settings: Settings, args: dict) -> screen.Shown | str:
     if gift and settings.kinetic_video and args.get("video", True) is not False:
         import kinetic_video
         video, video_note = await kinetic_video.make(settings, name, first["hook"],
-                                                     st.folder(settings, "Mockups", name) / "index.html")
+                                                     st.folder(settings, "Mockups", name) / "index.html",
+                                                     "a store makeover, full of movement" if first["store"] else "")
     film = video.name if video else ""
     drafts = [outreach_draft(settings, args, c, film) for c in first["channels"]]
     paths, bodies, said = [], [], ""
@@ -938,7 +1211,8 @@ async def outreach(settings: Settings, args: dict) -> screen.Shown | str:
     how = {"email": "Attach it to the email", "dm": "Attach it to the message", "whatsapp": "Attach it to the message",
            "letter": "Print it and enclose it", "phone": "Have it ready to send them",
            "visit": "Open it on your phone to show them"}[channel]
-    gift_text = (f" I also made their free home page mock-up: {attach}. {how}; drafts can't carry attachments."
+    what = "store makeover mock-up" if d["store"] else "home page mock-up"
+    gift_text = (f" I also made their free {what}: {attach}. {how}; drafts can't carry attachments."
                  if attach else "")
     if video:
         gift_text += f" Attach this video too: {st.where(settings, video)} (30 seconds, made for phones)."
@@ -964,7 +1238,9 @@ def tool_definitions() -> list[dict]:
     return [{
         "name": "web_design_sales",
         "description": "Kinetic Web Designs sales tools for paid website work. prices / set_price: the user's "
-                       "package prices (starter, business, shop), add-ons (logo, copywriting, extra_page, booking, "
+                       "package prices (starter, business, shop, shopify_redesign £595, shopify_setup £995; Shopify "
+                       "clients keep paying Shopify directly for their plan), add-ons (logo, copywriting, extra_page, "
+                       "booking, "
                        "seo, photos), care_plan per month and deposit percent. my_details: business name, owner, "
                        "contact and bank details used on quotes and invoices. quote: a printable website quote for a "
                        "client or saved prospect (lists what their audit found). quotes / quote_status: track quotes "
@@ -980,6 +1256,8 @@ def tool_definitions() -> list[dict]:
                        "swapped in. outreach: a first message "
                        "draft (email, letter, phone script, walk-in script, dm, whatsapp) that opens with the lead's "
                        "biggest audited problem, then \"so I made you this\" and a free home page mock-up Alfred makes "
+                       "(for a Shopify store lead: a store makeover mock-up with movement and personality, opening "
+                       "with the store's top problem such as Shopify's free default theme) "
                        "for them (the user attaches it) and \"see your design before you pay anything\"; leave channel "
                        "out to let the lead type pick (no website or social only: Instagram DM + WhatsApp; weak "
                        "website: email + phone script; phone + DM where cold email isn't allowed); with no client it "
@@ -999,7 +1277,10 @@ def tool_definitions() -> list[dict]:
             "properties": {
                 "action": {"type": "string", "enum": ACTIONS},
                 "client": {"type": "string", "description": "Client name, or a saved prospect's number or name."},
-                "package": {"type": "string", "enum": ["starter", "business", "shop"]},
+                "package": {"type": "string", "enum": ["starter", "business", "shop", "shopify_redesign",
+                                                       "shopify_setup"]},
+                "store": {"type": "boolean", "description": "mockup: make a store makeover (a Shopify store's home "
+                                                           "page with movement) even for a business not in the finder."},
                 "addons": {"type": "array", "items": {"type": "string"},
                            "description": "logo, copywriting, extra_page, booking, seo, photos."},
                 "extra_pages": {"type": "integer"}, "pages": {"type": "integer", "description": "Pages of copywriting."},
