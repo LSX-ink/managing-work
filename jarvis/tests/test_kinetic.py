@@ -586,7 +586,7 @@ def test_summary_counts_per_status_and_country(s):
         track(s, action="leads", status="opted out")
 
 
-def test_daily_follow_up_reminder_is_said_once_a_day(s):
+def test_daily_follow_up_reminder_is_said_once_a_day(s, monkeypatch):
     from datetime import datetime
     today = st.today()
     early, later = datetime(today.year, today.month, today.day, 8), datetime(today.year, today.month, today.day, 10)
@@ -609,6 +609,7 @@ def test_daily_follow_up_reminder_is_said_once_a_day(s):
         raise asyncio.CancelledError  # stop the watcher after its first heads-up
 
     st.save(s, ko.REMINDED, {})
+    monkeypatch.setattr(ko, "REMIND_HOUR", 0)  # the watcher reads the real clock: don't wait for nine o'clock
     with pytest.raises(asyncio.CancelledError):
-        asyncio.run(ko.watch(s, announce, lambda: True))
+        asyncio.run(asyncio.wait_for(ko.watch(s, announce, lambda: True), 10))  # fail, never hang
     assert heard and heard[0][1] == "sales" and "due a follow-up" in heard[0][0]
