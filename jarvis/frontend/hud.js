@@ -250,7 +250,7 @@
         if (t - lastFrame < 26) return;
         lastFrame = t;
         drawSphere(t);
-        drawRadar(t);
+        if (!document.documentElement.classList.contains('head-only')) drawRadar(t);   // headonly.js hides the radar
         drawWave(t);
     }
 
