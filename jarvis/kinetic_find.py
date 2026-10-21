@@ -547,6 +547,8 @@ def mark(settings: Settings, args: dict) -> str:
     if args["status"] == "contacted":
         p["contacted"] = st.today().isoformat()
     st.save(settings, st.PROSPECTS, rows)
+    import kinetic_outreach  # here, not at the top: it reaches kinetic_sales, which imports this module
+    kinetic_outreach.from_finder(settings, p, args["status"])  # keep the outreach tracker in step
     return f"{p['name']} is now marked {args['status']}."
 
 
@@ -572,7 +574,7 @@ def tool_definitions() -> list[dict]:
                        "audit: score any public website out of 100 with plain-words problems to pitch (padlock, "
                        "phones, speed, Google, tap-to-call, old footer). prospects / prospect: the saved list or one "
                        "business. mark: set a prospect's status (e.g. contacted once the user has sent their "
-                       "message). add_lead: put a prospect in the freelance lead pipeline. forget needs confirmed true "
+                       "message; web_design_outreach keeps the fuller outreach record and follow-ups). add_lead: put a prospect in the freelance lead pipeline. forget needs confirmed true "
                        "after the user says yes. Nothing is ever sent or posted.",
         "input_schema": {
             "type": "object",

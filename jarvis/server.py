@@ -24,6 +24,7 @@ from starlette.requests import ClientDisconnect
 import alerts
 import alfredmem
 import helpers
+import kinetic_outreach
 import tiktokstudio
 import tiktokstudio_store
 import memory
@@ -77,6 +78,8 @@ async def lifespan(app: FastAPI):
     helpers.set_context(app.state.client, lambda text, kind: announce(app, text, kind))
     watchers.append(asyncio.create_task(reminders.watch(settings, lambda text, kind: announce(app, text, kind),
                                                         lambda: bool(app.state.pages))))
+    watchers.append(asyncio.create_task(kinetic_outreach.watch(settings, lambda text, kind: announce(app, text, kind),
+                                                               lambda: bool(app.state.pages))))  # daily follow-ups
     watchers.append(tiktokstudio.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
