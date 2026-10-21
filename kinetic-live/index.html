@@ -6,7 +6,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Kinetic Web Designs">
 <meta property="og:title" content="Kinetic Web Designs: your website, built around your colours">
-<meta property="og:description" content="Pick a style, test your colours on a real page and see your price before you ask. Websites from £395 for independent businesses.">
+<meta property="og:description" content="Pick a style, test your colours on a real page and see your price before you ask. See your designs before you pay anything. Websites from £395 for independent businesses.">
 <meta property="og:url" content="https://kineticwebdesigns.co.uk/">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect width='28' height='28' rx='7' fill='%232a46d1'/%3E%3Cpath d='M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
@@ -1253,6 +1253,11 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   .fp .scene .neon { filter: none; }
 }
 
+/* Currency picker in the quote section */
+.cur-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; }
+.cur-row select { font: inherit; padding: 6px 10px; border-radius: 12px; border: 1px solid currentColor; background: transparent; color: inherit; }
+.cur-row select option { color: #1d1a17; }
+.cur-row small { flex-basis: 100%; opacity: .75; }
 /* Add-on details: three dots under the price open a short description */
 .addon { flex-wrap: wrap; }
 .addons { align-items: start; }
@@ -1314,7 +1319,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   <div class="wrap">
     <div class="copy">
       <h1>Your website, built around <em>your colours.</em></h1>
-      <p class="lede">Pick a style, test three colours on a real page and see your price before you ask.</p>
+      <p class="lede">Pick a style, test three colours on a real page and see your price before you ask. <strong>You see your designs before you pay anything.</strong></p>
       <div class="ctas"><a class="btn" href="#lab">Try the colour lab</a><a class="textlink" href="#quote">Get a price</a></div>
     </div>
     <figure class="showcase" style="margin:0">
@@ -1327,8 +1332,8 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 <section class="promise-band" aria-label="What you can count on">
   <div class="wrap">
     <ul class="promises">
-      <li><strong>Your price, up front</strong><span>Fixed prices for what's listed, from £395.</span></li>
-      <li><strong>3 designs to choose from</strong><span>All in your colours, before anything is built.</span></li>
+      <li><strong>Your price, up front</strong><span class="kx-conv">Fixed prices for what's listed, from £395.</span></li>
+      <li><strong>See it before you pay</strong><span>3 designs in your colours. You pay nothing until you've chosen one.</span></li>
       <li><strong>Made for phones first</strong><span>Fast, easy to read and easy to tap on any screen.</span></li>
       <li><strong>A reply in 2 working days</strong><span>With your designs, a fixed quote and a start date.</span></li>
     </ul>
@@ -1390,12 +1395,14 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 <section id="quote" aria-labelledby="quote-title">
   <div class="wrap">
     <div class="head"><h2 id="quote-title">See your price before you ask</h2>
-      <p class="lede">Prices are fixed for what's listed. Half is paid up front to book your start date and the rest when your site goes live. All prices are the full price: we are not VAT registered, so no VAT is added.</p></div>
+      <p class="lede">You see three designs before you pay anything. Prices are fixed for what's listed. Once you've chosen your design, half is paid up front to book your start date and the rest when your site goes live. All prices are the full price: we are not VAT registered, so no VAT is added.</p>
+      <p class="cur-row"><label for="cur">Show prices in</label> <select id="cur"><option value="GBP">£ Pounds</option><option value="USD">$ US dollars</option><option value="EUR">€ Euros</option></select>
+      <small>Prices are set in pounds. Dollars and euros are approximate; you pay in pounds and your bank converts it.</small></p></div>
     <div class="quote">
       <div>
         <div class="packs" role="radiogroup" aria-label="Website package" id="packs"></div>
         <label class="addon existing"><input type="checkbox" id="existing"><span><b>I already have a website</b><br>Get 20% off a Business website or Online shop when we rebuild your current site.</span><em>20% off</em></label>
-        <label class="addon existing" id="founding-row"><input type="checkbox" id="founding"><span><b>Founding client offer</b><br>£100 off any website for one of our first <span id="founding-left">3</span> clients, in return for an honest Google review and letting us show your site. Not combined with the 20% off; you get whichever saves you more.</span><em>£100 off</em></label>
+        <label class="addon existing kx-conv" id="founding-row"><input type="checkbox" id="founding"><span><b>Founding client offer</b><br>£100 off any website for one of our first <span id="founding-left">3</span> clients, in return for an honest Google review and letting us show your site. Not combined with the 20% off; you get whichever saves you more.</span><em>£100 off</em></label>
         <h3 class="addons-title">Add-ons</h3>
         <div class="addons" id="addons"></div>
       </div>
@@ -1441,7 +1448,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       <li><b>Design that's yours</b><span>Built around your three colours. Never a template you'll spot on the shop next door.</span></li>
       <li><b>Built to work hard</b><span>Quick on phones, with online booking, shops and card payments when you need them.</span></li>
       <li><b>Words and pictures</b><span>Copy that sounds like you on a good day, plus logos, photo edits and fresh images.</span></li>
-      <li><b>Looked after</b><span>Hosting, updates, backups and small changes from £20 a month. We don't build it and vanish.</span></li>
+      <li><b>Looked after</b><span class="kx-conv">Hosting, updates, backups and small changes from £20 a month. We don't build it and vanish.</span></li>
     </ul>
   </div>
 </section>
@@ -1449,9 +1456,9 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 <section id="faq" aria-labelledby="faq-title">
   <div class="wrap">
     <div class="head"><h2 id="faq-title">Good to know before you start</h2></div>
-    <div class="faq">
+    <div class="faq kx-conv">
       <details><summary>How long does it take?</summary><p>A Starter website takes 1 to 2 weeks, a Business website 2 to 4 weeks and an Online shop 4 to 6 weeks, counted from your go-ahead.</p></details>
-      <details><summary>How do I pay?</summary><p>Half is paid up front to book your start date, and the rest when your site goes live. You get a clear invoice for each.</p></details>
+      <details><summary>How do I pay?</summary><p>Nothing until you've seen your three designs and chosen one. Then half is paid up front to book your start date, and the rest when your site goes live. You get a clear invoice for each.</p></details>
       <details><summary>What do I need to give you?</summary><p>Your vision in your own words, your three colours, and your logo and photos if you have them. No logo? Logo design is £150. No photos? Photo editing and stock images are £100.</p></details>
       <details><summary>Can I ask for changes?</summary><p>Yes. Starter websites include 2 rounds of changes and Business websites and shops include 3.</p></details>
       <details><summary>What's in monthly hosting and care?</summary><p>Your domain name, fast and secure hosting, security updates, backups and small text changes, from £20 a month: £20 for a Starter website, £25 for a Business website and £30 for an Online shop. Need lots of big videos or downloads? Extra file storage is £5 a month per 10 GB.</p></details>
@@ -1498,7 +1505,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
         <div class="row"><span>Template</span><strong id="s-tpl">Light & airy</strong></div>
         <div class="row"><span>Package</span><strong id="s-pack">Business website</strong></div>
         <div class="row"><span>Estimate</span><strong id="s-total">£895</strong></div>
-        <p>Within two working days we reply with three designs in your colours, a fixed quote and a start date. Prefer email? Write to <span class="addr">alfredw.lsx@gmail.com</span>.</p>
+        <p>Within two working days we reply with three designs in your colours, a fixed quote and a start date. You pay nothing until you've chosen a design. Prefer email? Write to <span class="addr">alfredw.lsx@gmail.com</span>.</p>
       </aside>
     </div>
   </div>
@@ -1574,7 +1581,42 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     get(k) { try { return JSON.parse(localStorage.getItem("kwd-" + k)); } catch { return null; } },
     set(k, v) { try { localStorage.setItem("kwd-" + k, JSON.stringify(v)); } catch {} }
   };
-  const money = n => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  // Prices are set in pounds. Visitors outside the UK see an approximate price in dollars or euros
+  // (chosen from their time zone, or picked by them); checkout still charges pounds. Update RATE as rates move.
+  const CURRENCIES = { GBP: { sym: "£", rate: 1, loc: "en-GB" }, USD: { sym: "$", rate: 1.30, loc: "en-US" }, EUR: { sym: "€", rate: 1.15, loc: "en-IE" } };
+  const guessCur = () => {
+    const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+    if (/^Europe\//.test(tz)) return /London|Belfast|Guernsey|Jersey|Isle_of_Man|Gibraltar/.test(tz) ? "GBP" : "EUR";
+    return tz && !/^(Etc|UTC)/.test(tz) ? "USD" : "GBP";
+  };
+  const CUR = CURRENCIES[store.get("cur")] ? store.get("cur") : guessCur();
+  const fmtCur = n => { const c = CURRENCIES[CUR];
+    return (CUR === "GBP" ? "" : "\u2248") + c.sym + n.toLocaleString(c.loc, { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
+  const money = n => CUR === "GBP" ? fmtCur(n) : fmtCur(Math.round(n * CURRENCIES[CUR].rate / 5) * 5);
+  window.kxMoney = money; window.kxFmt = fmtCur;
+  // Static prices in the page text (marked kx-conv) follow the chosen currency too.
+  if (CUR !== "GBP") {
+    document.querySelectorAll(".kx-conv").forEach(el => {
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let t; (t = w.nextNode());) t.nodeValue = t.nodeValue.replace(/£([\d,]+)(k?)/g, (m, d, k) => k ? m : money(+d.replace(/,/g, "")));
+    });
+  }
+  // First visit: ask Cloudflare which country the visitor is in. If that points to another currency than the
+  // time-zone guess, remember it and redraw once.
+  if (!CURRENCIES[store.get("cur")]) {
+    fetch("/api/geo").then(r => r.ok ? r.json() : null).then(g => {
+      const c = g && g.country; if (!c) return;
+      const EURO = /^(AT|BE|HR|CY|EE|FI|FR|DE|GR|IE|IT|LV|LT|LU|MT|NL|PT|SK|SI|ES|MC|SM|VA|AD|ME|XK)$/;
+      const want = /^(GB|GG|JE|IM|GI)$/.test(c) ? "GBP" : EURO.test(c) ? "EUR" : "USD";
+      store.set("cur", want);
+      if (want !== CUR) location.reload();
+    }).catch(() => {});
+  }
+  const curSel = document.getElementById("cur");
+  if (curSel) {
+    curSel.value = CUR;
+    curSel.addEventListener("change", () => { store.set("cur", curSel.value); location.reload(); });
+  }
 
   // ---------- colour maths ----------
   const hexOk = h => /^#[0-9a-f]{6}$/i.test(h);
@@ -2925,7 +2967,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     ${a.per ? `<input type="number" min="1" max="20" value="${state.addons[a.id] || 1}" data-q="${a.id}" aria-label="How many">` : ""}<span class="addon-price"><em>${money(a.price)}</em>
     <button class="addon-more" type="button" aria-expanded="false" aria-controls="info-${a.id}" aria-label="What's included in ${a.name}">&bull;&bull;&bull;</button></span>
     <small class="addon-info" id="info-${a.id}" hidden>${a.info}</small></label>`).join("") +
-    `<label class="addon care-addon"><input type="checkbox" id="care" ${state.care ? "checked" : ""}><span><b>Hosting and care, paid monthly</b><br>Your domain, hosting, security checks, updates, backups and small changes</span><em id="care-price">£${carePrice()}/mo</em></label>
+    `<label class="addon care-addon"><input type="checkbox" id="care" ${state.care ? "checked" : ""}><span><b>Hosting and care, paid monthly</b><br>Your domain, hosting, security checks, updates, backups and small changes</span><em id="care-price">${money(carePrice())}/mo</em></label>
     <details class="care-why"><summary aria-label="Why hosting and care matters"><span aria-hidden="true">•••</span> Why it matters</summary><ul>
       <li><b>Your site stays online.</b> We renew your domain and hosting for you, so your website never expires or disappears.</li>
       <li><b>Kept safe.</b> Regular security checks and updates keep hackers and spam out and your padlock (HTTPS) working.</li>
@@ -2983,8 +3025,8 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     showTotal(total);
     $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${v < 0 ? "\u2212" + money(-v) : money(v)}</dd>`).join("") +
       (state.existing && p.id === "starter" && !foundingOff() ? `<dt>Existing website discount</dt><dd>Business or Shop only</dd>` : "") +
-      `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care (monthly, from go-live)</dt><dd>£${carePrice()}/month</dd>` : "");
-    $("#care-price").textContent = `£${carePrice()}/mo`;
+      `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care (monthly, from go-live)</dt><dd>${money(carePrice())}/month</dd>` : "");
+    $("#care-price").textContent = `${money(carePrice())}/mo`;
     $("#q-time").textContent = "Ready in " + p.weeks + " from your go-ahead";
     state.total = total; summary();
   }
@@ -2997,7 +3039,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     $("#s-tpl").textContent = (TEMPLATES.find(t => t.id === state.tpl) || TEMPLATES[0]).name;
     $("#s-pack").textContent = (PACKS.find(p => p.id === state.pack) || PACKS[1]).name;
     const pk = PACKS.find(p => p.id === state.pack) || PACKS[1];
-    $("#s-total").textContent = money(state.total || 895) + (state.care ? ` + £${carePrice()}/month` : "") + (discountFor(pk) ? ` (${discountShort(pk)})` : "");
+    $("#s-total").textContent = money(state.total || 895) + (state.care ? ` + ${money(carePrice())}/month` : "") + (discountFor(pk) ? ` (${discountShort(pk)})` : "");
   }
   const draft = store.get("brief") || {};
   ["name", "biz", "email", "phone", "what", "current", "look", "like", "ref", "when"].forEach(k => {
@@ -3799,7 +3841,8 @@ html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,v
     const p = scrollY / Math.max(1, D.body.scrollHeight - innerHeight); H.style.setProperty("--lx", Math.sin(p * Math.PI * 6).toFixed(3)); H.style.setProperty("--ly", (Math.cos(p * Math.PI * 4) * .6).toFixed(3)); }); }, { passive: true });
 
   /* ======================================================== Part 2 behaviour: pricing extras ======================================================== */
-  const money = n => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  const money = n => window.kxFmt ? window.kxFmt(n) : "£" + n.toLocaleString("en-GB", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  const gbp = n => window.kxMoney ? window.kxMoney(n) : "£" + n;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const careOf = p => ({ starter: 20, business: 25, shop: 30 })[p] || 25;
   const packId = () => { const r = q1('#packs input[name="pack"]:checked'); return r ? r.value : "business"; };
@@ -3863,7 +3906,7 @@ html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,v
     if (ex && p === "starter" && !(q1("#founding") || {}).checked) return "The 20% off for an existing website applies to the Business website or Online shop, not the Starter.";
     if (ticked("extra") && p === "starter") return "The Starter website is one page. The Business website includes up to 5 pages.";
     if (ticked("copy")) return "We write the copy with you anyway. This add-on is for whole pages written for you, at £60 a page.";
-    if (care === false) return `Hosting and care covers your domain, hosting, security updates, backups and small text changes for £${careOf(p)} a month, with no long contract.`;
+    if (care === false) return `Hosting and care covers your domain, hosting, security updates, backups and small text changes for ${gbp(careOf(p))} a month, with no long contract.`;
     if (ex) return "Add your current website's link to your brief so we can see what you like about it.";
     if (p === "shop") return "The Online shop includes up to 20 products, card payments and delivery options.";
     return "Tip: tap ••• on any add-on to see what's included before you tick it.";
@@ -3894,7 +3937,7 @@ html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,v
     pay.innerHTML = `<span class="t">How you pay</span><div class="split" aria-hidden="true"><b></b><b></b></div>
       <div class="lbl"><div><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg><div><strong>${money(half)}</strong><span>to book your start date</span></div></div>
       <div><div><strong>${money(t - half)}</strong><span>when your site goes live</span></div><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5c2.5 1.6 3.6 4.3 3.2 7.6L8 12.5 4.8 9.1C4.4 5.8 5.5 3.1 8 1.5Z"/><circle cx="8" cy="6" r="1.3"/><path d="M5 10.5 3 12.8l2.6-.2M11 10.5l2 2.3-2.6-.2"/></svg></div></div>
-      ${care ? `<span class="care">Then £${careOf(packId())} a month for hosting and care, from go-live.</span>` : ""}`;
+      ${care ? `<span class="care">Then ${gbp(careOf(packId()))} a month for hosting and care, from go-live.</span>` : ""}`;
     if (rm()) pay.classList.add("in"); else { pay.classList.remove("in"); requestAnimationFrame(() => requestAnimationFrame(() => pay.classList.add("in"))); }
   }
   refreshQuote.push(drawPay);
