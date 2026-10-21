@@ -47,8 +47,9 @@ class TooBig(Exception):
 
 # ---- fetching ----------------------------------------------------------------------
 
-async def fetch(http: httpx.AsyncClient, url: str, limit: int) -> tuple[str, str, str]:
-    """(final url, content type, text) of a public link, re-checked after every redirect; TooBig past limit bytes."""
+async def fetch(http: httpx.AsyncClient, url: str, limit: int, headers_out: dict | None = None) -> tuple[str, str, str]:
+    """(final url, content type, text) of a public link, re-checked after every redirect; TooBig past limit bytes.
+    headers_out, when given, is filled with the final response's headers (lower-case names)."""
     for _ in range(6):
         await memory.check_public(url)
         try:
@@ -58,6 +59,8 @@ async def fetch(http: httpx.AsyncClient, url: str, limit: int) -> tuple[str, str
                     continue
                 if r.status_code != 200:
                     raise ValueError(f"The site answered {r.status_code}, so I couldn't read it.")
+                if headers_out is not None:
+                    headers_out.update({k.lower(): v for k, v in r.headers.items()})
                 length = r.headers.get("content-length", "")
                 if length.isdigit() and int(length) > limit:
                     raise TooBig
