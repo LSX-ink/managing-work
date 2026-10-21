@@ -16,6 +16,8 @@ EVENTS = "signup:Sign-ups,quote:Quote requests"
 # Emails (sent only once RESEND_API_KEY is set; the MAIL_FROM domain must be verified in Resend)
 MAIL_FROM = "Kinetic Web Designs <hello@kineticwebdesigns.co.uk>"
 NOTIFY_TO = "alfredw.lsx@gmail.com"   # new briefs go here, and replies to welcome emails
+# Follow-up email series for people who ticked marketing consent ("1" = on). Needs the DRIP_TOKEN secret.
+DRIP_ENABLED = "1"
 
 [[d1_databases]]
 binding = "DB"
