@@ -64,7 +64,7 @@ Explore the designs: ${base}/#styles
 
 We hope you'll stay with us. If you have any questions, just reply to this email.
 
-The ${site.siteName} team
+Alfred, ${site.siteName}
 
 ${signatureText()}
 
@@ -90,7 +90,7 @@ function welcomeHtml(site, base, unsub) {
 </ul>
 <p style="margin:0 0 18px"><a href="${b}/#styles" style="display:inline-block;background:#2a47d2;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:9px;font-weight:700">Explore the designs</a></p>
 <p style="margin:0 0 14px">We hope you'll stay with us. If you have any questions, just reply to this email.</p>
-<p style="margin:0 0 18px">The ${n} team</p>
+<p style="margin:0 0 18px">Alfred, ${n}</p>
 ${signatureHtml(b)}
 </div>
 <p style="font-size:12.5px;color:#7a7068;margin:16px 4px 0">You're receiving this because you signed up at ${escHtml(host(base))}.

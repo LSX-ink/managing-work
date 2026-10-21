@@ -59,7 +59,7 @@ export function renderStep(step, site, unsub) {
     "Hi there,", "",
     ...paras.flatMap(p => [p, ""]),
     s.button ? `${s.button[0]}: ${btnUrl}` : "", "",
-    `The ${site.siteName} team`, "",
+    `Alfred, ${site.siteName}`, "",
     signatureText(), "",
     "--",
     `You're receiving this because you signed up at ${host} and asked for tips, offers and news.`,
@@ -72,7 +72,7 @@ export function renderStep(step, site, unsub) {
 <p style="margin:0 0 14px">Hi there,</p>
 ${paras.map(p => `<p style="margin:0 0 14px">${escHtml(p)}</p>`).join("\n")}
 ${s.button ? `<p style="margin:4px 0 18px"><a href="${escHtml(btnUrl)}" style="display:inline-block;background:#2a47d2;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:9px;font-weight:700">${escHtml(s.button[0])}</a></p>` : ""}
-<p style="margin:0 0 18px">The ${n} team</p>
+<p style="margin:0 0 18px">Alfred, ${n}</p>
 ${signatureHtml(escHtml(site.base))}
 </div>
 <p style="font-size:12.5px;color:#7a7068;margin:16px 4px 0">You're receiving this because you signed up at ${escHtml(host)} and asked for tips, offers and news.
