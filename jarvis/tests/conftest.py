@@ -7,6 +7,8 @@ os.environ["JARVIS_CALL_ALERTS"] = "false"
 os.environ["JARVIS_CREATOR_DAILY"] = "false"
 # Nor start Alfred's Claude Mem worker.
 os.environ["JARVIS_ALFRED_MEM"] = "false"
+# Nor record Kinetic mock-up videos with a real browser (the video tests switch it on with fakes).
+os.environ["JARVIS_KINETIC_VIDEO"] = "false"
 # Nor touch the real memory folder (saved conversation, facts, reminders).
 os.environ["JARVIS_MEMORY_DIR"] = tempfile.mkdtemp(prefix="jarvis-test-memory-")
 

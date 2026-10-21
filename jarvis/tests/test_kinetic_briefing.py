@@ -74,7 +74,8 @@ def test_full_briefing(s):
     assert f"created >= {since}" in calls[2]
     text = kb.short_text(s, b)
     assert text == ("Since yesterday: 4 new sign-ups, 1 new brief (Ada's Salon), £447.50 paid by card. Today: 1 "
-                    "follow-up due, 1 invoice overdue (£300). Contact today: Sam's Café, Broken Bakery, Good Site Ltd.")
+                    "follow-up due, 1 invoice overdue (£300). Contact today: Sam's Café, Broken Bakery, Good Site Ltd. "
+                    "This week so far: 0 messages sent, 0 replies, 0 briefs, 0 payments. The step to fix is messages.")
     full = kb.full_text(s, b)
     for bit in ("# Morning briefing: 21 October 2026", "Sign-ups: 4 new, 2 ticked", "Ada Lovelace at Ada's Salon",
                 "Paid: £447.50 from Ada Lovelace (Deposit)", "Failed: £10.00 from Bob", "Joe's Barbers: messaged 15 Oct",

@@ -6,13 +6,19 @@ webhook saved in the D1 payments table, where the follow-up email series is at (
 safe wrangler runner), leads due a follow-up (kinetic_outreach), unpaid and overdue invoices (kinetic_invoices) and the
 best leads nobody has contacted yet (ranked the way the client finder ranks them).
 
+It also gives the five numbers that run the business, for this week (from Monday) and last week: messages sent
+(outreach the user marked sent), replies, mock-ups sent (first messages that carried one), briefs (the site's D1
+briefs table) and deposits and payments (invoices marked paid, or the Stripe card payments in D1 if those count
+more), with the conversion at each step against the target funnel (100 messages, 10 replies, 3 briefs, 1 client)
+and a one-line "fix this step" hint for the weakest one. Only data Alfred already keeps or already reads is used.
+
 Alfred speaks a short version; the full briefing is saved as Kinetic Web Designs/Briefings/Morning briefing <date>.md,
 shown on the screen, and listed in the HUD notifications when it comes by itself. When wrangler, Node or the internet
 isn't there, the website parts say so in a line and the rest of the briefing still comes. Nothing is sent or changed.
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 import kinetic_find
 import kinetic_invoices
@@ -30,6 +36,22 @@ FIRST_LOOK = 60  # seconds after start before the first check, so a quick restar
 MAX_LIST = 10
 CONTACT_TODAY = 3
 SKIP_REST = ("logged in", "Node.js", "too long", "internet", "couldn't find")  # wrangler can't work at all just now
+TARGET = {"messages": 100, "replies": 10, "briefs": 3, "payments": 1}  # a week's funnel: 100 -> 10 -> 3 -> 1
+MIN_BASE = {("replies", "messages"): 20, ("briefs", "replies"): 3, ("deposits", "briefs"): 2}  # before judging a rate
+STEPS = [  # (step, count, out of, target rate, what to do when it's the weakest)
+    ("messages", "messages", "", TARGET["messages"],
+     "send more first messages: about 20 each weekday, batched with the trade of the week and a walk-in route."),
+    ("mock-ups", "mockups", "messages", 1.0,
+     "send the free mock-up (and its 30-second video) with every first message; it's the hook."),
+    ("replies", "replies", "messages", TARGET["replies"] / TARGET["messages"],
+     "open with their single biggest problem, keep it short, and DM or WhatsApp the no-website leads instead of "
+     "emailing them."),
+    ("briefs", "briefs", "replies", TARGET["briefs"] / TARGET["replies"],
+     "answer replies within the hour and send them to the brief form: \"see your design before you pay anything\"."),
+    ("deposits", "payments", "briefs", TARGET["payments"] / TARGET["briefs"],
+     "send the quote and mock-up within a day of each brief, then follow up: half when we start building, half "
+     "once everything's complete."),
+]
 
 
 def start_of_yesterday(now: datetime) -> int:
@@ -46,8 +68,9 @@ def money(pence, currency: str) -> str:
 
 # ---- gathering ---------------------------------------------------------------------
 
-def site_part(settings: Settings, since: int) -> dict:
-    """Sign-ups, briefs, payments and the email series from D1. Each part is {"error": reason} when it can't be read."""
+def site_part(settings: Settings, since: int, weeks: tuple[int, int] | None = None) -> dict:
+    """Sign-ups, briefs, payments and the email series from D1, plus this week's and last week's brief and payment
+    counts when weeks (the two Mondays, in ms) is given. Each part is {"error": reason} when it can't be read."""
     out: dict = {}
     offline = ""
 
@@ -71,7 +94,110 @@ def site_part(settings: Settings, since: int) -> dict:
         f"WHERE created_at >= {int(since)} ORDER BY created_at DESC LIMIT {MAX_LIST}")]})
     ask("payments", lambda: payments(since))
     ask("series", lambda: {"text": str(kinetic_site.series(settings, {}))})
+    if weeks:
+        this, last = (int(x) for x in weeks)
+        ask("week_briefs", lambda: week_counts(kinetic_site.wrangler(
+            "SELECT COUNT(*) AS n, SUM(CASE WHEN created_at >= " f"{this} THEN 1 ELSE 0 END) AS this_week "
+            f"FROM briefs WHERE created_at >= {last}")))
+        ask("week_payments", lambda: week_counts([r for r in kinetic_site.wrangler(
+            f"SELECT kind, status, COUNT(*) AS n, SUM(CASE WHEN created >= {this} THEN 1 ELSE 0 END) AS this_week "
+            f"FROM payments WHERE created >= {last} GROUP BY kind, status")
+            if r.get("kind") == "payment" and r.get("status") == "succeeded"]))
     return out
+
+
+def week_counts(rows: list[dict]) -> dict:
+    """{"this": n, "last": n} from rows of COUNT(*) AS n (since last Monday) and this_week (since this Monday)."""
+    total = sum(int(r.get("n") or 0) for r in rows)
+    this = sum(int(r.get("this_week") or 0) for r in rows)
+    return {"this": this, "last": max(0, total - this)}
+
+
+def mondays(day: date) -> tuple[date, date]:
+    """(this Monday, last Monday)."""
+    this = day - timedelta(days=day.weekday())
+    return this, this - timedelta(days=7)
+
+
+def ms(day: date) -> int:
+    return int(datetime.combine(day, time()).astimezone().timestamp() * 1000)
+
+
+def tracker_week(settings: Settings, start: date, end: date) -> dict:
+    """Messages sent, replies and mock-ups sent between start and end (inclusive), from the outreach tracker."""
+    def within(value) -> bool:
+        d = kinetic_outreach.day(value) if value else None
+        return bool(d and start <= d <= end)
+    messages = replies = mockups = 0
+    for r in st.rows_of(settings, st.OUTREACH):
+        history = r.get("history") or []
+        sent = {(h.get("date"), h.get("channel", "")) for h in history if h.get("status") == "contacted"}
+        if not sent:  # an older row with only its dates
+            sent = {(d, "") for d in {r.get("contacted"), r.get("last_contacted")} if d}
+        messages += sum(1 for d, _ in sent if within(d))
+        answered = sorted([h.get("date") for h in history if h.get("status") in ("replied", "interested")] +
+                          [r.get(k) for k in ("replied", "interested") if r.get(k)])
+        replies += bool(answered) and within(answered[0])
+        first = kinetic_outreach.first_sent(r)
+        mockups += bool(first and start <= first <= end) and r.get("mockup") is not False
+    return {"messages": messages, "replies": int(replies), "mockups": int(mockups)}
+
+
+def numbers(settings: Settings, site: dict, today: date) -> dict:
+    """This week's and last week's five numbers ({"this": {...}, "last": {...}}); briefs is None if unknown."""
+    this_monday, last_monday = mondays(today)
+    spans = {"this": (this_monday, today), "last": (last_monday, this_monday - timedelta(days=1))}
+    paid = [r for r in st.rows_of(settings, st.INVOICES) if r.get("status") == "paid" and r.get("paid_on")]
+    briefs, cards = site.get("week_briefs") or {}, site.get("week_payments") or {}
+    out = {}
+    for key, (start, end) in spans.items():
+        row = tracker_week(settings, start, end)
+        local = sum(1 for r in paid if start.isoformat() <= r["paid_on"] <= end.isoformat())
+        row["briefs"] = None if "error" in briefs or key not in briefs else briefs[key]
+        row["payments"] = max(local, 0 if "error" in cards else int(cards.get(key) or 0))
+        out[key] = row
+    return out
+
+
+def pct(part, whole) -> str:
+    return f"{round(100 * part / whole)}%" if part is not None and whole else "-"
+
+
+def weakest(nums: dict) -> tuple[str, str]:
+    """(step, hint) for the step furthest below the target funnel, over both weeks."""
+    both = {k: (None if nums["this"][k] is None or nums["last"][k] is None else nums["this"][k] + nums["last"][k])
+            for k in nums["this"]}
+    best = None
+    for step, count, of, rate, hint in STEPS:
+        have, base = both[count], (2 if not of else both[of])
+        if have is None or base is None or base < MIN_BASE.get((step, of), 1):
+            continue  # too few to judge a rate yet
+        score = (have / base) / rate
+        if best is None or score < best[0]:
+            best = (score, step, hint)
+    if best is None or best[0] >= 1:
+        return ("", "every step is on target; keep the messages going.") if best else \
+            ("messages", STEPS[0][4])
+    return best[1], best[2]
+
+
+def numbers_lines(nums: dict) -> list[str]:
+    """The five numbers as a Markdown table, with conversions and the fix-this-step line."""
+    def cell(key, count, of=""):
+        n = nums[key][count]
+        if n is None:
+            return "couldn't check"
+        return f"{n} ({pct(n, nums[key][of])})" if of else str(n)
+    rows = [("Messages sent", "messages", ""), ("Mock-ups sent", "mockups", "messages"),
+            ("Replies", "replies", "messages"), ("Briefs", "briefs", "replies"),
+            ("Deposits and payments", "payments", "briefs")]
+    step, hint = weakest(nums)
+    lines = ["| | This week | Last week |", "|---|---|---|"]
+    lines += [f"| {label} | {cell('this', c, o)} | {cell('last', c, o)} |" for label, c, o in rows]
+    lines += ["", f"Target each week: {TARGET['messages']} messages, {TARGET['replies']} replies, {TARGET['briefs']} "
+              f"briefs, {TARGET['payments']} client. Percentages are of the step before.",
+              f"Fix this step{f' ({step})' if step else ''}: {hint}"]
+    return lines
 
 
 def payments(since: int) -> dict:
@@ -114,9 +240,11 @@ def gather(settings: Settings, now: datetime | None = None) -> dict:
     today = now.date()
     invoices = [r for r in st.rows_of(settings, st.INVOICES) if r.get("status") == "unpaid"]
     late = [r for r in invoices if kinetic_invoices.state(r, today).startswith("overdue")]
-    return {"date": today, "site": site_part(settings, start_of_yesterday(now)),
-            "follow_ups": kinetic_outreach.due_rows(settings, today),
-            "unpaid": invoices, "overdue": late, "contact": contact_today(settings)}
+    this_monday, last_monday = mondays(today)
+    site = site_part(settings, start_of_yesterday(now), (ms(this_monday), ms(last_monday)))
+    return {"date": today, "site": site, "follow_ups": kinetic_outreach.due_rows(settings, today),
+            "unpaid": invoices, "overdue": late, "contact": contact_today(settings),
+            "numbers": numbers(settings, site, today)}
 
 
 # ---- writing it up -----------------------------------------------------------------
@@ -129,6 +257,8 @@ def full_text(settings: Settings, b: dict) -> str:
     """The whole briefing as Markdown."""
     s, day = b["site"], b["date"]
     lines = [f"# Morning briefing: {st.long_date(day)}", "", "Kinetic Web Designs, since the start of yesterday.", ""]
+    if b.get("numbers"):
+        lines += ["## Your five numbers", ""] + numbers_lines(b["numbers"]) + [""]
     lines += ["## Website", ""]
     su = s.get("signups", {})
     lines.append(f"- Sign-ups: couldn't check ({su['error']})" if "error" in su else
@@ -197,7 +327,15 @@ def short_text(settings: Settings, b: dict) -> str:
         text += f" Today: {', '.join(todo)}."
     if b["contact"]:
         text += f" Contact today: {', '.join(c['name'] for c in b['contact'])}."
-    return text.strip() or "A quiet morning: nothing new and nothing due."
+    text = text.strip() or "A quiet morning: nothing new and nothing due."
+    if b.get("numbers"):
+        w = b["numbers"]["this"]
+        step = weakest(b["numbers"])[0]
+        replies = f"{w['replies']} repl{'y' if w['replies'] == 1 else 'ies'}"
+        text += (f" This week so far: {_n(w['messages'], 'message')} sent, {replies}"
+                 + (f", {_n(w['briefs'], 'brief')}" if w["briefs"] is not None else "")
+                 + f", {_n(w['payments'], 'payment')}." + (f" The step to fix is {step}." if step else ""))
+    return text
 
 
 def notification_text(settings: Settings, b: dict, where: str) -> str:

@@ -284,10 +284,13 @@ def test_mockup_adds_cleaned_extra_sections(s):
 def test_outreach_drafts_are_never_sent(s):
     finder(s, action="find", town="Stockport")
     sales(s, action="my_details", owner="Lee", phone="07000 000000")
-    email = sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe")
+    email = sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe", channel="email")
     body = email.card["text"]
-    assert body.startswith("Subject: I made this for Joe's Barbers\n\nHi Joe,\n\nI made this for you: a free example of a "
-                           "new home page for Joe's Barbers. It's attached (Joe's Barbers home page mock-up.html)")
+    # problem first, then "so I made you this" and the mock-up, then "see your design before you pay anything"
+    assert body.startswith("Subject: I made this for Joe's Barbers\n\nHi Joe,\n\nYour website (joes.test) is hard to "
+                           "use on a phone: it shows as a tiny desktop page")
+    assert ("So I made you this: a free example of a new home page for Joe's Barbers. It's attached (Joe's Barbers "
+            "home page mock-up.html)") in body and "\n\nSee your design before you pay anything.\n\n" in body
     assert "No padlock" in body and "no thanks" in body and "Thanks,\nAlfred, Kinetic Web Designs\n07000" in body
     assert "Lee" not in body  # signed by Alfred for the business, never the user's own name
     assert "Nothing has been sent" in email and "sole traders" in email
@@ -298,14 +301,16 @@ def test_outreach_drafts_are_never_sent(s):
         folder / "Joe's Barbers home page mock-up.html").read_text(encoding="utf-8")
     none = sales(s, action="outreach", client="Sal's Cafe", channel="phone").card["text"]
     assert "couldn't find a website" in none and "0161 000 0000" in none and "Lee" not in none
-    assert '2. If yes: "I made this for you: a free example of a new home page for Sal\'s Cafe.' in none
+    assert '2. If yes: "I searched for Sal\'s Cafe online and couldn\'t find a website' in none
+    assert "So I made you this: a free example of a new home page for Sal's Cafe." in none and st.PREVIEW in none
     visit = sales(s, action="outreach", client="Bloom", channel="visit").card["text"]
-    assert visit.startswith("Walk-in script") and "I made this for you" in visit
-    for channel in ("dm", "letter"):
+    assert visit.startswith("Walk-in script") and "So I made you this" in visit and st.PREVIEW in visit
+    for channel in ("dm", "letter", "whatsapp"):
         text = sales(s, action="outreach", client="Gone Garage", channel=channel).card["text"]
-        assert "I made this for you" in text and "Gone Garage home page mock-up.html" in text
+        assert "So I made you this" in text and "Gone Garage home page mock-up.html" in text and st.PREVIEW in text
+        assert "(gone.test)" in text.split("So I made you this")[0] and "won't load" in text.split("So I made you this")[0]
     plain = sales(s, action="outreach", client="Ada", mockup=False)
-    assert "I made this for you" not in plain.card["text"] and "free and with no obligation" in plain.card["text"]
+    assert "So I made you this" not in plain.card["text"] and "free and with no obligation" in plain.card["text"]
     assert not (memory.root(s) / "Kinetic Web Designs" / "Mockups" / "Ada").exists()
     with pytest.raises(ValueError, match="Which kind of message"):
         sales(s, action="outreach", client="Bloom", channel="fax")
@@ -496,7 +501,7 @@ def outreach_files(s, name):
 
 def test_drafts_are_recorded_and_nobody_is_messaged_twice(s):
     finder(s, action="find", town="Stockport")
-    sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe")
+    sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe", channel="email")
     row = lead(s, "Joe's Barbers")
     assert row["status"] == "drafted" and row["draft_channel"] == "email" and row["contact_name"] == "Joe"
     assert row["prospect"] == st.find_prospect(st.rows_of(s, st.PROSPECTS), "Joe's Barbers")["id"]

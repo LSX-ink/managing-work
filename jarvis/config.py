@@ -82,6 +82,8 @@ class Settings:
     alfred_email_app_password: str = "".join(os.getenv("JARVIS_ALFRED_EMAIL_APP_PASSWORD", "").split())
     # Kinetic Web Designs: your Google review link for review-request drafts (kinetic_outreach)
     kinetic_review_link: str = os.getenv("JARVIS_KINETIC_REVIEW_LINK", "").strip()
+    # Kinetic outreach: a 30-second mock-up video with each first message (needs Playwright and ffmpeg)
+    kinetic_video: bool = _bool("JARVIS_KINETIC_VIDEO", True)
     # Google Places API (New) for the client finder; empty: OpenStreetMap. The cap stops a run running up a bill.
     google_places_key: str = os.getenv("JARVIS_GOOGLE_PLACES_KEY", "").strip()
     places_max_calls: int = int(os.getenv("JARVIS_PLACES_MAX_CALLS", "100") or 100)
