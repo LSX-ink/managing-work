@@ -422,3 +422,17 @@ The tests stand in a fake Claude client, so they need no API key or network.
 | `config.py` | Settings from the environment |
 | `frontend/` | Orb UI, speech in and out |
 | `scripts/clap_trigger.py` | Double-clap launcher |
+
+## Kinetic HQ: the agents' office
+
+Run `python -m hq.app` from the jarvis folder (it starts hidden at login on the owner's PC) and open http://127.0.0.1:8341. Seven agents, each with one job, share one brain (`memory/Kinetic Web Designs/HQ/brain.db`, plus a daily markdown journal in `HQ/Journal` that opens in Obsidian):
+
+- **Atlas (CEO)**, 07:55: reads the brain and sets the day's 3 priorities, written by the free AI route.
+- **Hawk (Lead Hunter)**, 08:30, 11:30, 14:30 and 17:30: finds the trade of the week in a rotating UK city (every third run, a city abroad) with Alfred's lead finder.
+- **Blade (Closer)**, 09:05 and 13:05: drafts the follow-ups that are due and up to 10 first messages a run (20 a day) with mock-ups. Drafts only; the owner sends.
+- **Echo (Concierge)**, every 2 minutes: watches the Instagram DMs and comments Alfred answers, and lists what needs the owner.
+- **Ledger (Analyst)**, hourly: sign-ups, briefs, payments and the five weekly numbers.
+- **Reel (Studio)**, 08:40 and 17:40: today's posts and captions.
+- **Sentinel (Guardian)**, every 5 minutes: Alfred, OmniRoute, the free AI, the website, Google Places, Instagram and the email login.
+
+Each room lights up while its agent works; click one to run it now or pause it. The left panel sets the trade of the week, drafts per day and whether mock-up videos are made (they use voice credits). Nothing in HQ sends messages to anyone, and keys are never logged.

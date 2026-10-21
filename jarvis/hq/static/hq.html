@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinetic HQ</title>
+<style>
+:root { --bg: #05070d; --panel: rgba(16,22,38,.78); --line: rgba(120,160,255,.16); --text: #e7ecf6; --muted: #8a96b2; --gold: #f5c84c; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; overflow: hidden; }
+body::before { content: ""; position: fixed; inset: 0; background:
+  radial-gradient(900px 600px at 50% 45%, rgba(76,201,240,.10), transparent 60%),
+  radial-gradient(700px 500px at 85% 10%, rgba(247,37,133,.08), transparent 60%),
+  linear-gradient(rgba(120,160,255,.05) 1px, transparent 1px) 0 0/40px 40px,
+  linear-gradient(90deg, rgba(120,160,255,.05) 1px, transparent 1px) 0 0/40px 40px; pointer-events: none; }
+.app { position: relative; display: grid; grid-template-columns: 300px 1fr 360px; grid-template-rows: 64px 1fr; height: 100vh; gap: 14px; padding: 14px; }
+header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); backdrop-filter: blur(10px); }
+.logo { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: .32em; font-size: 15px; }
+.logo b { color: var(--gold); }
+.logo small { letter-spacing: .12em; font-weight: 600; color: var(--muted); font-size: 11px; }
+.health { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.health span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #475569; box-shadow: 0 0 0 0 transparent; }
+.dot.ok { background: #4ade80; box-shadow: 0 0 10px #4ade80; } .dot.bad { background: #f43f5e; box-shadow: 0 0 10px #f43f5e; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: .3; } }
+.clock { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 18px; letter-spacing: .08em; }
+.panel { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); backdrop-filter: blur(10px); overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.panel h2 { margin: 0; padding: 12px 16px; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+.scroll { overflow: auto; padding: 12px 16px; min-height: 0; }
+.left { display: grid; grid-template-rows: auto auto 1fr; gap: 14px; min-height: 0; }
+.prio { white-space: pre-wrap; font-size: 13.5px; }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; font-size: 13px; }
+.kv b { font-variant-numeric: tabular-nums; }
+.needs div { padding: 8px 10px; margin-bottom: 8px; border-radius: 10px; background: rgba(244,63,94,.08); border: 1px solid rgba(244,63,94,.25); font-size: 12.5px; }
+label.set { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 0; font-size: 12.5px; color: var(--muted); }
+label.set input, label.set select { background: #0b1222; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 120px; font: inherit; }
+/* the office */
+.floor { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: radial-gradient(circle at 50% 50%, rgba(245,200,76,.06), transparent 55%); }
+.floor svg.beams { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.beam { stroke-width: 2; fill: none; stroke-dasharray: 6 10; opacity: .18; }
+.beam.on { opacity: .9; animation: flow .6s linear infinite; filter: drop-shadow(0 0 6px currentColor); }
+@keyframes flow { to { stroke-dashoffset: -32; } }
+.core { position: absolute; left: 50%; top: 50%; width: 190px; height: 190px; transform: translate(-50%, -50%); display: grid; place-items: center; }
+.core .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(245,200,76,.45); animation: spin 14s linear infinite; }
+.core .ring:nth-child(2) { inset: 18px; border-style: dashed; border-color: rgba(76,201,240,.5); animation-duration: 9s; animation-direction: reverse; }
+.core .ring:nth-child(3) { inset: 38px; border-color: rgba(247,37,133,.45); animation-duration: 6s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.core .orb { width: 84px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff6d6, #f5c84c 40%, #b45309 75%); box-shadow: 0 0 40px #f5c84c, 0 0 120px rgba(245,200,76,.45); animation: pulse 2.6s ease-in-out infinite; display: grid; place-items: center; color: #3b2300; font-weight: 900; letter-spacing: .14em; font-size: 12px; text-align: center; }
+.core.busy .orb { animation-duration: .9s; }
+@keyframes pulse { 50% { transform: scale(1.08); box-shadow: 0 0 60px #f5c84c, 0 0 160px rgba(245,200,76,.6); } }
+.core .mem { position: absolute; bottom: -34px; font-size: 11px; color: var(--muted); letter-spacing: .14em; white-space: nowrap; }
+.room { position: absolute; width: 196px; transform: translate(-50%, -50%); border-radius: 16px; padding: 12px 14px; background: linear-gradient(160deg, rgba(20,28,48,.95), rgba(10,14,26,.95)); border: 1px solid var(--line); cursor: pointer; transition: transform .25s, box-shadow .3s, border-color .3s; }
+.room:hover { transform: translate(-50%, -52%) scale(1.03); }
+.room.working { border-color: var(--c); box-shadow: 0 0 0 1px var(--c), 0 0 34px -6px var(--c); }
+.room.working::after { content: ""; position: absolute; inset: -6px; border-radius: 20px; border: 1px solid var(--c); opacity: .5; animation: halo 1.4s ease-out infinite; }
+@keyframes halo { from { transform: scale(.96); opacity: .7; } to { transform: scale(1.08); opacity: 0; } }
+.room.error { border-color: #f43f5e; }
+.room.paused { opacity: .5; filter: grayscale(.6); }
+.room .top { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: color-mix(in srgb, var(--c) 18%, transparent); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); }
+.working .avatar { animation: bob 1s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-3px); } }
+.room h3 { margin: 0; font-size: 14px; } .room h3 small { display: block; color: var(--c); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; }
+.room .st { margin-top: 8px; font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; }
+.room .say { margin-top: 6px; font-size: 12px; min-height: 34px; color: #cbd5e1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.typing { display: none; gap: 3px; } .working .typing { display: inline-flex; }
+.typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--c); animation: ty 1s infinite; } .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes ty { 50% { transform: translateY(-4px); opacity: .4; } }
+.badge { font-size: 11px; font-weight: 700; color: var(--c); }
+/* feed */
+.feed .ev { padding: 8px 0 8px 12px; border-left: 2px solid var(--c, #334155); margin-bottom: 6px; animation: in .4s ease; font-size: 12.5px; white-space: pre-wrap; }
+.feed .ev .who { font-weight: 700; color: var(--c); } .feed .ev time { color: var(--muted); font-size: 11px; margin-left: 6px; }
+.feed .ev.win { background: linear-gradient(90deg, rgba(74,222,128,.08), transparent); } .feed .ev.error { background: linear-gradient(90deg, rgba(244,63,94,.1), transparent); } .feed .ev.warn { background: linear-gradient(90deg, rgba(251,146,60,.08), transparent); }
+@keyframes in { from { opacity: 0; transform: translateX(10px); } }
+/* agent sheet */
+.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; place-items: center; z-index: 9; }
+.sheet.open { display: grid; }
+.card { width: min(560px, 92vw); max-height: 86vh; overflow: auto; border-radius: 18px; border: 1px solid var(--c); background: #0b1020; padding: 22px; box-shadow: 0 0 60px -10px var(--c); }
+.card h3 { margin: 0 0 4px; font-size: 20px; } .card p { color: var(--muted); }
+.btns { display: flex; gap: 10px; margin: 14px 0; }
+button { font: inherit; font-weight: 700; border-radius: 10px; padding: 9px 16px; border: 1px solid var(--line); background: #111a2e; color: var(--text); cursor: pointer; }
+button.go { background: var(--c, var(--gold)); color: #050505; border-color: transparent; }
+@media (max-width: 1200px) { .app { grid-template-columns: 1fr; grid-template-rows: auto; overflow: auto; height: auto; } html, body { overflow: auto; } .floor { height: 760px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">⚡ <span>KINETIC <b>HQ</b></span><small>THE AGENCY · HUNGRY · RELENTLESS</small></div>
+    <div class="health" id="health"></div>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <div class="left">
+    <section class="panel"><h2>Today's orders <span>👑 Atlas</span></h2><div class="scroll prio" id="prio">Atlas sets the day's priorities at 07:55.</div></section>
+    <section class="panel"><h2>The numbers</h2><div class="scroll">
+      <div class="kv" id="kv"></div>
+      <div class="scroll prio" id="numbers" style="padding:10px 0 0;color:var(--muted);font-size:12.5px"></div>
+    </div></section>
+    <section class="panel"><h2>Needs you <span id="needcount"></span></h2><div class="scroll">
+      <div class="needs" id="needs"></div>
+      <h2 style="padding:12px 0 6px;border:0">Orders to the team</h2>
+      <label class="set">Trade of the week <input id="trade" placeholder="barbers"></label>
+      <label class="set">Drafts per day <input id="perday" type="number" min="0" max="40"></label>
+      <label class="set">Mock-up videos (uses voice credits) <select id="videos"><option value="false">Off</option><option value="true">On</option></select></label>
+      <button class="go" id="save" style="width:100%">Send orders</button>
+    </div></section>
+  </div>
+
+  <section class="floor" id="floor">
+    <svg class="beams" id="beams"></svg>
+    <div class="core" id="core"><div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="orb">THE<br>BRAIN</div><div class="mem" id="mem"></div></div>
+  </section>
+
+  <section class="panel feed"><h2>Live feed <span id="feedcount"></span></h2><div class="scroll" id="feed"></div></section>
+</div>
+
+<div class="sheet" id="sheet"><div class="card" id="card"></div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let agents = [], lastId = 0, colours = { hq: "#f5c84c" }, names = { hq: "HQ" };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function layout() {
+  const f = $("#floor"), W = f.clientWidth, H = f.clientHeight, cx = W / 2, cy = H / 2;
+  const rx = Math.min(W * .37, 420), ry = Math.min(H * .36, 300);
+  agents.forEach((a, i) => {
+    const ang = -Math.PI / 2 + i * 2 * Math.PI / agents.length, x = cx + Math.cos(ang) * rx, y = cy + Math.sin(ang) * ry;
+    a._x = x; a._y = y;
+    const el = document.getElementById("room-" + a.key); if (el) { el.style.left = x + "px"; el.style.top = y + "px"; }
+  });
+  $("#beams").innerHTML = agents.map(a => `<path class="beam ${a.status === "working" ? "on" : ""}" style="color:${a.colour}" stroke="${a.colour}" d="M${a._x},${a._y} Q${(a._x + cx) / 2 + 30},${(a._y + cy) / 2 - 30} ${cx},${cy}"/>`).join("");
+}
+
+function render(s) {
+  $("#clock").textContent = s.time;
+  const fresh = !agents.length;
+  agents = s.agents; agents.forEach(a => { colours[a.key] = a.colour; names[a.key] = a.name; });
+  if (fresh) $("#floor").insertAdjacentHTML("beforeend", agents.map(a => `<div class="room" id="room-${a.key}" style="--c:${a.colour}"></div>`).join(""));
+  agents.forEach(a => {
+    const el = document.getElementById("room-" + a.key);
+    el.className = "room " + a.status;
+    el.innerHTML = `<div class="top"><div class="avatar">${a.emoji}</div><h3>${esc(a.name)}<small>${esc(a.title)}</small></h3></div>
+      <div class="say">${a.status === "working" ? "On it…" : esc(a.last ? a.last.result : a.job)}</div>
+      <div class="st"><span>${a.status === "working" ? '<span class="typing"><i></i><i></i><i></i></span>' : a.status}</span><span class="badge">${a.wins_today ? "🏆 " + a.wins_today : "next " + esc(a.next)}</span></div>`;
+    el.onclick = () => open(a.key);
+  });
+  layout();
+  $("#core").classList.toggle("busy", agents.some(a => a.status === "working"));
+  const b = s.brain;
+  $("#mem").textContent = `${b.memories || 0} MEMORIES STORED`;
+  $("#prio").textContent = b.priorities || "Atlas sets the day's priorities at 07:55.";
+  const ig = b.instagram || {};
+  $("#kv").innerHTML = [["Leads found", b.leads_total ?? "–"], ["Instagram answered", ig.replied ?? 0], ["Passed to you", ig.handed_off ?? 0],
+    ["Drafts today", (agents.find(a => a.key === "closer") || {}).wins_today || 0], ["Trade of the week", b.settings.trade]].map(([k, v]) => `<span>${k}</span><b>${esc(v)}</b>`).join("");
+  $("#numbers").textContent = (b.numbers || "") + (b.studio ? "\n\n🎬 " + b.studio : "");
+  const needs = b.needs_you || [];
+  $("#needcount").textContent = needs.length ? needs.length : "";
+  $("#needs").innerHTML = needs.length ? needs.map(n => `<div><b>@${esc(n.who)}</b>: ${esc(n.text)}</div>`).join("") : `<p style="color:var(--muted);margin:0">Nothing waiting. The team has it covered.</p>`;
+  $("#health").innerHTML = Object.entries(b.health || {}).map(([k, v]) => `<span><i class="dot ${v ? "ok" : "bad"}"></i>${k.replace(/_/g, " ")}</span>`).join("");
+  if (fresh) { $("#trade").value = b.settings.trade; $("#perday").value = b.settings.drafts_per_day; $("#videos").value = String(b.settings.videos); }
+}
+
+function addEvents(list) {
+  const feed = $("#feed");
+  list.filter(e => e.kind !== "start").forEach(e => {
+    const t = new Date(e.ts * 1000).toTimeString().slice(0, 5);
+    feed.insertAdjacentHTML("afterbegin", `<div class="ev ${e.kind}" style="--c:${colours[e.agent] || "#64748b"}"><span class="who">${esc(names[e.agent] || e.agent)}</span><time>${t}</time><br>${esc(e.text)}</div>`);
+  });
+  while (feed.children.length > 200) feed.lastChild.remove();
+  if (list.length) lastId = list[list.length - 1].id;
+}
+
+async function open(key) {
+  const a = agents.find(x => x.key === key), evs = await (await fetch(`/api/events?agent=${key}&limit=25`)).json();
+  $("#card").style.setProperty("--c", a.colour);
+  $("#card").innerHTML = `<h3>${a.emoji} ${esc(a.name)} · ${esc(a.title)}</h3><p>${esc(a.job)}</p>
+    <div class="btns"><button class="go" id="runnow">Run now</button><button id="pause">${a.status === "paused" ? "Resume" : "Pause"}</button><button id="close">Close</button></div>
+    <p style="margin:0 0 8px">Last: ${a.last ? esc(a.last.when + " · " + a.last.result) : "not yet"} · Next: ${esc(a.next)}</p>
+    <div class="feed">${evs.reverse().filter(e => e.kind !== "start").map(e => `<div class="ev ${e.kind}" style="--c:${a.colour}"><time>${new Date(e.ts * 1000).toLocaleString("en-GB").slice(0, 17)}</time><br>${esc(e.text)}</div>`).join("") || "<p>No work logged yet.</p>"}</div>`;
+  $("#sheet").classList.add("open");
+  $("#runnow").onclick = async () => { await fetch(`/api/run/${key}`, { method: "POST" }); $("#sheet").classList.remove("open"); tick(); };
+  $("#pause").onclick = async () => { await fetch(`/api/pause/${key}`, { method: "POST" }); $("#sheet").classList.remove("open"); tick(); };
+  $("#close").onclick = () => $("#sheet").classList.remove("open");
+}
+$("#sheet").onclick = e => { if (e.target.id === "sheet") $("#sheet").classList.remove("open"); };
+$("#save").onclick = async () => {
+  await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trade: $("#trade").value || "barbers", drafts_per_day: +$("#perday").value || 20, videos: $("#videos").value === "true" }) });
+  $("#save").textContent = "Orders sent ✓"; setTimeout(() => $("#save").textContent = "Send orders", 1600);
+};
+
+async function tick() { try { render(await (await fetch("/api/state")).json()); } catch (e) {} }
+async function feedTick() { try { addEvents(await (await fetch(`/api/events?after=${lastId}`)).json()); } catch (e) {} }
+addEventListener("resize", layout);
+tick().then(feedTick); setInterval(tick, 3000); setInterval(feedTick, 2000);
+</script>
+</body>
+</html>
