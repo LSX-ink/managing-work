@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en-GB" data-theme="evergreen">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TKS Consulting Limited | Accounting, Finance, Internal Audit & Risk Management</title>
+<meta name="description" content="Senior-level finance leadership, accounting, internal audit and risk management, with Big 4 experience across Europe, Africa, Asia-Pacific and the United States.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* TKS Consulting preview by Kinetic Web Designs.
+   Palette taken from the chosen logo (top left, dark green): deep evergreen, champagne gold, ivory.
+   Three design directions share the same content: evergreen (dark), ivory (light), heritage (light page, dark bands). */
+:root {
+  --green-950: #111714; --green-900: #161d19; --green-800: #1e2622; --green-700: #2a3530; --green-600: #3b4a43;
+  --gold-300: #ead7b6; --gold-400: #dcc199; --gold-500: #c9a77a; --gold-600: #a8865a;
+  --ivory: #f5f0e6; --ivory-2: #ece5d6; --ink: #1a201c;
+  --gold-grad: linear-gradient(115deg, #f1e2c6 0%, #d6b98c 35%, #b8955f 60%, #ecd9b5 85%, #c9a77a 100%);
+  --radius: 14px;
+  --serif: "Cormorant Garamond", "Times New Roman", serif;
+  --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[data-theme="evergreen"] { --bg: var(--green-900); --bg-2: var(--green-800); --band: var(--green-950); --text: #ece6da; --muted: #a9b1aa;
+  --line: rgba(220, 193, 153, .22); --card: rgba(255,255,255,.035); --accent: var(--gold-400); --accent-ink: var(--green-950); --head: #f5efe3; --band-text: #ece6da; }
+[data-theme="ivory"] { --bg: var(--ivory); --bg-2: #fbf8f1; --band: var(--ivory-2); --text: #2b332e; --muted: #5f6a63;
+  --line: rgba(30, 38, 34, .14); --card: #fffdf8; --accent: var(--gold-600); --accent-ink: #fff; --head: var(--green-900); --band-text: #2b332e; }
+[data-theme="heritage"] { --bg: var(--ivory); --bg-2: #fbf8f1; --band: var(--green-900); --text: #2b332e; --muted: #5f6a63;
+  --line: rgba(30, 38, 34, .14); --card: #fffdf8; --accent: var(--gold-600); --accent-ink: #fff; --head: var(--green-900); --band-text: #ece6da; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; overflow-x: clip; background: var(--bg); color: var(--text); font: 400 16.5px/1.65 var(--sans); -webkit-font-smoothing: antialiased; transition: background .6s, color .6s; }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+.wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 500; color: var(--head); letter-spacing: -.01em; margin: 0; line-height: 1.08; }
+h2 { font-size: clamp(34px, 4.6vw, 58px); }
+.eyebrow { font: 600 12px/1 var(--sans); letter-spacing: .28em; text-transform: uppercase; color: var(--accent); display: inline-flex; align-items: center; gap: 12px; }
+.eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+.lede { font-size: clamp(17px, 1.6vw, 19.5px); color: var(--muted); max-width: 62ch; }
+.gold-text { background: var(--gold-grad); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 9s ease-in-out infinite; }
+@keyframes sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 26px; border-radius: 999px; font: 600 15px/1 var(--sans); text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .25s, box-shadow .25s, background .25s, color .25s; }
+.btn-gold { background: var(--gold-grad); background-size: 200% 100%; color: var(--green-950); box-shadow: 0 10px 30px -12px rgba(201,167,122,.65); }
+.btn-gold:hover { transform: translateY(-2px); background-position: 100% 0; box-shadow: 0 16px 36px -14px rgba(201,167,122,.8); }
+.btn-ghost { border-color: var(--line); color: var(--head); background: transparent; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn svg { width: 16px; height: 16px; transition: transform .25s; }
+.btn:hover svg { transform: translateX(3px); }
+
+/* header */
+header.site { position: fixed; inset: 0 0 auto; z-index: 50; transition: background .35s, backdrop-filter .35s, border-color .35s; border-bottom: 1px solid transparent; }
+/* over the dark hero the header always uses light text; once scrolled it follows the design */
+[data-theme="heritage"] header.site:not(.scrolled), [data-theme="heritage"] .links.open { --head: #f5efe3; --text: #ece6da; --line: rgba(220,193,153,.3); --bg: var(--green-900); }
+header.site.scrolled { background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(14px); border-color: var(--line); }
+.nav { display: flex; align-items: center; justify-content: space-between; height: 84px; }
+.brand { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+.brand img { width: 46px; height: auto; }
+.brand span { font: 500 15px/1.15 var(--sans); letter-spacing: .32em; color: var(--head); text-transform: uppercase; }
+.brand small { display: block; font-size: 10px; letter-spacing: .3em; color: var(--muted); margin-top: 3px; }
+.links { display: flex; gap: 34px; align-items: center; }
+.links a { text-decoration: none; font-size: 14.5px; color: var(--text); opacity: .85; position: relative; }
+.links a:not(.btn)::after { content: ""; position: absolute; left: 0; right: 100%; bottom: -6px; height: 1px; background: var(--accent); transition: right .3s; }
+.links a:not(.btn):hover::after { right: 0; }
+.links .btn { padding: 11px 20px; font-size: 14px; }
+.burger { display: none; background: none; border: 1px solid var(--line); border-radius: 10px; width: 44px; height: 44px; color: var(--head); }
+
+/* hero: always dark evergreen, whichever direction */
+.hero { position: relative; min-height: 100svh; display: grid; align-items: center; overflow: hidden; background:
+  radial-gradient(1100px 600px at 78% 30%, rgba(201,167,122,.12), transparent 60%), radial-gradient(800px 500px at 10% 90%, rgba(59,74,67,.55), transparent 65%), var(--green-900); color: #ece6da; }
+[data-theme="ivory"] .hero { background: radial-gradient(1000px 600px at 78% 30%, rgba(201,167,122,.18), transparent 60%), var(--ivory); color: var(--text); }
+.hero h1 { font-size: clamp(46px, 7.2vw, 96px); color: #f5efe3; max-width: 13ch; }
+[data-theme="ivory"] .hero h1 { color: var(--green-900); }
+.hero h1 em { font-style: italic; }
+.hero .lede { color: #b9c0b9; margin: 26px 0 38px; }
+[data-theme="ivory"] .hero .lede { color: var(--muted); }
+.hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; padding-top: 110px; padding-bottom: 80px; }
+.hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+.hero .btn-ghost { color: #f5efe3; border-color: rgba(236,215,182,.3); }
+[data-theme="ivory"] .hero .btn-ghost { color: var(--green-900); border-color: var(--line); }
+.mono-stage { position: relative; aspect-ratio: 1; display: grid; place-items: center; }
+.mono-stage img { width: 62%; filter: drop-shadow(0 30px 60px rgba(0,0,0,.45)); animation: float 9s ease-in-out infinite; }
+[data-theme="ivory"] .mono-stage img { filter: drop-shadow(0 24px 40px rgba(120,90,50,.25)) saturate(1.35) brightness(.66) contrast(1.1); }
+[data-theme="ivory"] .brand img, [data-theme="heritage"] header.site.scrolled .brand img, [data-theme="heritage"] footer .brand img { filter: saturate(1.35) brightness(.66) contrast(1.1); }
+@keyframes float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-14px) rotate(-.6deg); } }
+.ring { position: absolute; inset: 6%; border-radius: 50%; border: 1px solid rgba(220,193,153,.22); }
+.ring.r2 { inset: 16%; border-style: dashed; border-color: rgba(220,193,153,.16); animation: spin 80s linear infinite; }
+.ring.r3 { inset: -2%; border-color: rgba(220,193,153,.08); }
+[data-theme="ivory"] .ring { border-color: rgba(168,134,90,.3); } [data-theme="ivory"] .ring.r3 { border-color: rgba(168,134,90,.14); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.orbit-dot { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--gold-400); box-shadow: 0 0 18px var(--gold-400); top: 6%; left: 50%; }
+/* globe: the regions TKS has worked across, as glowing points (no connecting lines) */
+.geo { display: grid; gap: 26px; }
+.globe { position: relative; width: min(100%, 460px); aspect-ratio: 1; margin: 0 auto; }
+.globe canvas { width: 100%; height: 100%; display: block; }
+.globe::before { content: ""; position: absolute; inset: 8%; border-radius: 50%; background: radial-gradient(circle at 38% 32%, rgba(201,167,122,.16), transparent 62%); filter: blur(6px); }
+.globe .glabel { position: absolute; transform: translate(-50%, -150%); font: 600 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--gold-300); white-space: nowrap; pointer-events: none; transition: opacity .4s; text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+[data-theme="ivory"] .globe .glabel { color: var(--gold-600); text-shadow: none; }
+.region-list div { position: relative; transition: background .4s, box-shadow .4s; }
+.region-list div.lit { background: var(--bg-2); box-shadow: inset 3px 0 0 var(--gold-400); }
+.region-list div.lit b { color: var(--accent); }
+#chart { position: absolute; inset: auto 0 0 0; width: 100%; height: 62%; pointer-events: none; opacity: .7; }
+/* slow moving light in the hero background */
+.hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(70px); pointer-events: none; }
+.hero::before { width: 520px; height: 520px; background: rgba(201,167,122,.16); top: 8%; right: 6%; animation: blob1 16s ease-in-out infinite alternate; }
+.hero::after { width: 620px; height: 620px; background: rgba(59,74,67,.55); bottom: -18%; left: -8%; animation: blob2 19s ease-in-out infinite alternate; }
+@keyframes blob1 { to { transform: translate(-160px, 120px) scale(1.2); } }
+@keyframes blob2 { to { transform: translate(180px, -90px) scale(.9); } }
+.hero > * { position: relative; z-index: 1; }
+.hero #chart { position: absolute; z-index: 0; }
+/* light sweeping across the monogram */
+.mono-stage { transition: transform .25s ease-out; transform-style: preserve-3d; }
+.mono-shine { position: absolute; width: 62%; aspect-ratio: 658 / 622; pointer-events: none; animation: float 9s ease-in-out infinite;
+  -webkit-mask: url(assets/tks-monogram.png) center / contain no-repeat; mask: url(assets/tks-monogram.png) center / contain no-repeat;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,250,238,.95) 50%, transparent 62%); background-size: 260% 100%; animation: float 9s ease-in-out infinite, shine 4.5s ease-in-out infinite; mix-blend-mode: screen; }
+@keyframes shine { 0% { background-position: 130% 0; } 55%, 100% { background-position: -30% 0; } }
+/* headline words rise in one by one */
+.w { display: inline-block; opacity: 0; transform: translateY(40%) rotate(2deg); filter: blur(6px); animation: word .9s cubic-bezier(.2,.7,.2,1) forwards; }
+@keyframes word { to { opacity: 1; transform: none; filter: none; } }
+/* gold line draws under each section heading */
+.sec-head h2, .regions h2, .contact h2 { position: relative; padding-bottom: 18px; }
+.sec-head h2::after, .regions h2::after, .contact h2::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--gold-grad); transition: width 1.4s cubic-bezier(.3,.7,.2,1) .3s; }
+.in.sec-head h2::after, h2.in::after { width: 120px; }
+/* shine across the gold buttons */
+.btn-gold { position: relative; overflow: hidden; }
+.btn-gold::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.7) 50%, transparent 70%); mix-blend-mode: soft-light; transform: translateX(-120%); animation: btnshine 3.8s ease-in-out infinite; }
+@keyframes btnshine { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+/* service cards and approach dots pulse gently */
+.step .dot { animation: pulse 3.2s ease-in-out infinite; }
+.step:nth-child(3) .dot { animation-delay: .8s; } .step:nth-child(4) .dot { animation-delay: 1.6s; } .step:nth-child(5) .dot { animation-delay: 2.4s; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,193,153,.0); } 50% { box-shadow: 0 0 0 10px rgba(220,193,153,.12), 0 0 30px rgba(220,193,153,.25); } }
+.why-card svg { animation: bob 4s ease-in-out infinite; } .why-card:nth-child(2) svg { animation-delay: .6s; } .why-card:nth-child(3) svg { animation-delay: 1.2s; }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+.trust { display: flex; flex-wrap: wrap; gap: 12px 34px; margin-top: 54px; padding-top: 26px; border-top: 1px solid rgba(220,193,153,.18); font-size: 13.5px; color: #aeb6af; max-width: 640px; }
+[data-theme="ivory"] .trust { color: var(--muted); border-color: var(--line); }
+.trust b { color: var(--gold-300); font-weight: 600; }
+[data-theme="ivory"] .trust b { color: var(--gold-600); }
+.scroll-cue { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); width: 24px; height: 40px; border: 1px solid rgba(220,193,153,.4); border-radius: 14px; }
+.scroll-cue::after { content: ""; position: absolute; left: 50%; top: 8px; width: 3px; height: 8px; margin-left: -1.5px; border-radius: 2px; background: var(--gold-400); animation: cue 2s ease-in-out infinite; }
+@keyframes cue { 0% { opacity: 0; transform: translateY(0); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(14px); } }
+
+/* ticker */
+.ticker { border-block: 1px solid var(--line); background: var(--bg-2); overflow: hidden; padding: 18px 0; }
+.ticker-track { display: flex; gap: 46px; width: max-content; animation: tick 48s linear infinite; }
+.ticker span { font: 500 italic 22px/1 var(--serif); color: var(--head); white-space: nowrap; display: inline-flex; align-items: center; gap: 46px; }
+.ticker span::after { content: "\2726"; font-style: normal; font-size: 12px; color: var(--accent); }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes tick { to { transform: translateX(-50%); } }
+
+section { padding: clamp(80px, 11vw, 140px) 0; }
+.sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 56px; }
+.sec-head h2 { margin-top: 18px; }
+
+/* services */
+.services { display: grid; grid-template-columns: 340px 1fr; gap: 44px; }
+.svc-tabs { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 110px; align-self: start; }
+.svc-tab { text-align: left; background: none; border: 1px solid transparent; border-radius: var(--radius); padding: 18px 20px; cursor: pointer; color: var(--text); font: 500 16.5px/1.35 var(--sans); display: grid; grid-template-columns: 44px 1fr; gap: 6px; transition: background .3s, border-color .3s; }
+.svc-tab .n { font: 500 italic 26px/1 var(--serif); color: var(--muted); transition: color .3s; }
+.svc-tab:hover { background: var(--card); }
+.svc-tab[aria-selected="true"] { background: var(--card); border-color: var(--line); }
+.svc-tab[aria-selected="true"] .n { color: var(--accent); }
+.svc-tab .bar { grid-column: 2; height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.svc-tab .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+.svc-tab[aria-selected="true"] .bar i { animation: fill 9s linear forwards; }
+@keyframes fill { to { width: 100%; } }
+.svc-panel { background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) + 6px); padding: clamp(28px, 4vw, 52px); position: relative; overflow: hidden; }
+.svc-panel::before { content: attr(data-n); position: absolute; right: -10px; top: -40px; font: 500 italic 220px/1 var(--serif); color: var(--accent); opacity: .07; pointer-events: none; }
+.svc-panel h3 { font-size: clamp(30px, 3.4vw, 44px); margin-bottom: 18px; }
+.svc-panel .intro { color: var(--muted); max-width: 68ch; }
+.svc-panel ul { list-style: none; padding: 0; margin: 30px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px; }
+.svc-panel li { display: grid; grid-template-columns: 18px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15.5px; opacity: 0; transform: translateY(10px); }
+.svc-panel.show li { animation: rise .55s cubic-bezier(.2,.7,.2,1) forwards; }
+.svc-panel li::before { content: ""; width: 7px; height: 7px; margin-top: 9px; border: 1px solid var(--accent); transform: rotate(45deg); }
+.svc-panel .close { font-family: var(--serif); font-size: 21px; font-style: italic; color: var(--head); border-left: 2px solid var(--accent); padding-left: 18px; margin: 0; max-width: 64ch; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+.svc-panel.swap { animation: swap .5s ease; }
+@keyframes swap { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* approach */
+.band { background: var(--band); color: var(--band-text); }
+.band h2, .band h3 { color: var(--band-text); }
+[data-theme="evergreen"] .band h2, [data-theme="heritage"] .band h2 { color: #f5efe3; }
+.band .lede { color: color-mix(in srgb, var(--band-text) 70%, transparent); }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; counter-reset: s; position: relative; }
+.steps::before { content: ""; position: absolute; top: 31px; left: 0; right: 0; height: 1px; background: rgba(220,193,153,.25); }
+[data-theme="ivory"] .steps::before { background: var(--line); }
+.steps .line { position: absolute; top: 31px; left: 0; height: 1px; width: 0; background: var(--gold-400); transition: width 1.8s cubic-bezier(.3,.7,.2,1); }
+.steps.in .line { width: 100%; }
+.step { padding-right: 28px; position: relative; }
+.step .dot { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(220,193,153,.4); background: var(--band); font: 500 italic 24px/1 var(--serif); color: var(--gold-400); position: relative; z-index: 1; margin-bottom: 26px; }
+[data-theme="ivory"] .step .dot { color: var(--gold-600); border-color: var(--line); }
+.step h3 { font-size: 30px; margin-bottom: 10px; }
+.step p { margin: 0; font-size: 15.5px; color: color-mix(in srgb, var(--band-text) 72%, transparent); }
+
+/* why */
+.why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.why-card { border: 1px solid var(--line); border-radius: calc(var(--radius) + 4px); padding: 32px 28px; background: var(--card); transition: transform .4s cubic-bezier(.2,.7,.2,1), border-color .4s, box-shadow .4s; position: relative; overflow: hidden; }
+.why-card::after { content: ""; position: absolute; inset: 0; background: radial-gradient(400px 160px at var(--mx, 50%) var(--my, 0%), rgba(201,167,122,.14), transparent 70%); opacity: 0; transition: opacity .4s; }
+.why-card:hover { transform: translateY(-6px); border-color: var(--accent); box-shadow: 0 24px 50px -30px rgba(0,0,0,.5); }
+.why-card:hover::after { opacity: 1; }
+.why-card svg { width: 34px; height: 34px; color: var(--accent); margin-bottom: 22px; }
+.why-card h3 { font-size: 27px; margin-bottom: 10px; }
+.why-card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+/* regions */
+.regions { display: grid; grid-template-columns: 1fr 1.1fr; gap: 60px; align-items: center; }
+.region-list { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.region-list div { background: var(--bg); padding: 30px 26px; transition: background .3s; }
+.region-list div:hover { background: var(--bg-2); }
+.region-list b { display: block; font: 500 30px/1.1 var(--serif); color: var(--head); margin-bottom: 6px; }
+.region-list span { font-size: 14px; color: var(--muted); }
+.who { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.who span { border: 1px solid var(--line); border-radius: 999px; padding: 9px 16px; font-size: 14px; }
+
+/* contact */
+.contact { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+.contact h2 { font-size: clamp(40px, 5.6vw, 72px); }
+form { display: grid; gap: 14px; background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--radius) + 6px); padding: 32px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+label { font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--muted); display: grid; gap: 7px; }
+input, select, textarea { font: inherit; color: var(--text); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; transition: border-color .25s, box-shadow .25s; }
+select option { color: #1a201c; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+textarea { min-height: 120px; resize: vertical; }
+.form-note { font-size: 13px; color: var(--muted); margin: 0; }
+.sent { border: 1px solid var(--accent); border-radius: 10px; padding: 14px 16px; font-size: 14.5px; }
+
+footer { border-top: 1px solid var(--line); padding: 46px 0 120px; font-size: 14px; color: var(--muted); }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px; align-items: center; }
+.foot .brand img { width: 38px; }
+
+/* design switcher (preview only) */
+.switcher { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 999px; background: rgba(17,23,20,.88); backdrop-filter: blur(12px); border: 1px solid rgba(220,193,153,.3); box-shadow: 0 18px 40px -18px rgba(0,0,0,.6); }
+.switcher small { color: #c9cfc9; font-size: 12px; padding: 0 10px 0 12px; letter-spacing: .04em; white-space: nowrap; }
+.switcher button { white-space: nowrap; border: 0; border-radius: 999px; padding: 9px 14px; font: 600 13px/1 var(--sans); background: transparent; color: #e6e1d6; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.switcher button i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); }
+.switcher button[aria-pressed="true"] { background: var(--gold-grad); color: var(--green-950); }
+
+/* reveal on scroll */
+.rv { opacity: 0; transform: translateY(26px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+.rv.in { opacity: 1; transform: none; }
+.rv.d1 { transition-delay: .1s; } .rv.d2 { transition-delay: .2s; } .rv.d3 { transition-delay: .3s; }
+.hero .rv { transition-duration: 1.2s; }
+
+@media (max-width: 960px) {
+  .links { display: none; }
+  .burger { display: grid; place-items: center; }
+  .links.open { display: flex; position: absolute; top: 84px; left: 0; right: 0; flex-direction: column; gap: 20px; padding: 26px 20px 30px; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .hero-grid { grid-template-columns: 1fr; padding-top: 120px; }
+  .mono-stage { width: min(320px, 70vw); margin: 0 auto; order: -1; }
+  .sec-head, .services, .regions, .contact { grid-template-columns: 1fr; }
+  .svc-tabs { position: static; flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .svc-tab { min-width: 250px; scroll-snap-align: start; }
+  .svc-panel ul { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr 1fr; gap: 40px 0; }
+  .steps::before, .steps .line { display: none; }
+  .why { grid-template-columns: 1fr; }
+  .two { grid-template-columns: 1fr; }
+  .switcher small { display: none; }
+}
+@media (max-width: 520px) {
+  .steps { grid-template-columns: 1fr; } .region-list { grid-template-columns: 1fr; } .brand small { display: none; }
+  .brand span { letter-spacing: .2em; font-size: 13px; } .brand img { width: 38px; }
+  .mono-stage { width: 210px; }
+  .hero-grid { padding-top: 104px; gap: 18px; }
+  .eyebrow { letter-spacing: .18em; font-size: 11px; }
+  .trust { margin-top: 36px; }
+  .switcher { max-width: calc(100vw - 16px); gap: 2px; }
+  .switcher button { padding: 9px 10px; font-size: 12px; gap: 6px; }
+}
+html { overflow-x: clip; }
+
+/* ===== Draft 2 additions ===== */
+[hidden] { display: none !important; }
+.links a.btn-gold { color: var(--green-950); opacity: 1; }
+.toast:not(.show) { opacity: 0; visibility: hidden; }
+section.alt { background: var(--bg-2); }
+.tag-demo { display: inline-flex; align-items: center; gap: 8px; font: 600 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); border: 1px dashed var(--accent); border-radius: 999px; padding: 7px 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.svc-more { display: inline-flex; gap: 8px; align-items: center; margin-top: 22px; color: var(--accent); font-weight: 600; text-decoration: none; }
+.svc-more:hover { gap: 12px; }
+/* quiz */
+.quiz { display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px; align-items: stretch; }
+.quiz .q { padding: 34px; min-height: 380px; display: flex; flex-direction: column; }
+.qbar { height: 3px; background: var(--line); border-radius: 3px; overflow: hidden; margin-bottom: 26px; }
+.qbar i { display: block; height: 100%; width: 0; background: var(--gold-grad); transition: width .5s cubic-bezier(.3,.7,.2,1); }
+.q .qn { font: 600 12px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.q h3 { font-size: clamp(24px, 2.6vw, 32px); margin: 14px 0 26px; }
+.qopts { display: grid; gap: 10px; margin-top: auto; }
+.qopts button { all: unset; cursor: pointer; border: 1px solid var(--line); border-radius: 12px; padding: 15px 18px; display: flex; justify-content: space-between; align-items: center; transition: border-color .25s, background .25s, transform .25s; color: var(--text); }
+.qopts button:hover { border-color: var(--accent); transform: translateX(4px); }
+.qopts button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qopts button::after { content: "\2192"; color: var(--accent); }
+.qswap { animation: qin .45s cubic-bezier(.2,.7,.2,1); }
+@keyframes qin { from { opacity: 0; transform: translateX(24px); } }
+.score { padding: 34px; display: grid; place-items: center; text-align: center; gap: 14px; }
+.ring-svg { width: 190px; height: 190px; }
+.ring-svg circle { fill: none; stroke-width: 10; }
+.ring-svg .bg { stroke: var(--line); }
+.ring-svg .fg { stroke: url(#gg); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 503; stroke-dashoffset: 503; transition: stroke-dashoffset 1.4s cubic-bezier(.3,.7,.2,1); }
+.score b { font: 500 54px/1 var(--serif); color: var(--head); }
+.score .lvl { font-weight: 600; color: var(--accent); }
+.recs { list-style: none; padding: 0; margin: 4px 0 0; display: grid; gap: 10px; text-align: left; }
+.recs li { border-left: 2px solid var(--accent); padding: 4px 0 4px 14px; font-size: 15px; }
+.recs li a { color: var(--accent); }
+/* booking */
+.book { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.cal { padding: 28px; }
+.cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.cal-head b { font: 500 26px/1 var(--serif); color: var(--head); }
+.days { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.days button, .slots button { all: unset; cursor: pointer; text-align: center; border: 1px solid var(--line); border-radius: 12px; padding: 12px 6px; transition: all .25s; color: var(--text); }
+.days button small { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.days button b { font: 500 22px/1.2 var(--serif); }
+.days button:hover, .slots button:hover { border-color: var(--accent); }
+.days button[aria-pressed="true"], .slots button[aria-pressed="true"] { background: var(--gold-grad); color: var(--green-950); border-color: transparent; }
+.days button[aria-pressed="true"] small { color: var(--green-950); }
+.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+.slots button { padding: 11px 6px; font-weight: 600; font-size: 14px; animation: qin .4s both; }
+.bk-form { padding: 28px; display: grid; gap: 14px; align-content: start; }
+.bk-sum { font: 500 24px/1.3 var(--serif); color: var(--head); min-height: 64px; }
+/* dashboard */
+.dash { padding: 26px; display: grid; gap: 18px; }
+.dash-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dash-top b { font: 500 26px/1 var(--serif); color: var(--head); }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi { border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.kpi small { color: var(--muted); font-size: 12.5px; }
+.kpi b { display: block; font: 500 32px/1.15 var(--serif); color: var(--head); margin-top: 4px; }
+.kpi i { font-style: normal; font-size: 12.5px; color: var(--accent); font-weight: 600; }
+.charts { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+.chart-box { border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.chart-box p { margin: 0 0 8px; font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; }
+.chart-box svg { width: 100%; height: auto; display: block; overflow: visible; }
+.ln { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 1200; stroke-dashoffset: 1200; }
+.dash.on .ln { animation: lnd 2.4s cubic-bezier(.3,.7,.2,1) forwards; }
+@keyframes lnd { to { stroke-dashoffset: 0; } }
+.br { transform-origin: bottom; transform-box: fill-box; transform: scaleY(0); }
+.dash.on .br { animation: brg 1.2s cubic-bezier(.3,.7,.2,1) forwards; }
+@keyframes brg { to { transform: scaleY(1); } }
+.rag { display: grid; gap: 8px; }
+.rag div { display: grid; grid-template-columns: 1fr auto; gap: 10px; font-size: 13.5px; align-items: center; }
+.rag span.d { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+/* who we help */
+.helps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.help { padding: 30px; text-decoration: none; display: grid; gap: 12px; transition: transform .35s, border-color .35s; }
+.help:hover { transform: translateY(-6px); border-color: var(--accent); }
+.help h3 { font-size: 30px; }
+.help p { margin: 0; color: var(--muted); }
+.help .go { color: var(--accent); font-weight: 600; }
+/* founder */
+.founder { display: grid; grid-template-columns: 300px 1fr; gap: 44px; align-items: center; }
+.silhouette { aspect-ratio: 4/5; border-radius: var(--radius); border: 1px dashed var(--accent); display: grid; place-items: center; background: radial-gradient(circle at 50% 30%, rgba(201,167,122,.18), transparent 70%); position: relative; overflow: hidden; }
+.silhouette svg { width: 60%; color: var(--accent); opacity: .5; }
+.silhouette small { position: absolute; bottom: 14px; font-size: 12px; color: var(--muted); }
+.creds { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.creds span { border: 1px dashed var(--accent); color: var(--accent); border-radius: 10px; padding: 10px 14px; font-weight: 600; font-size: 13.5px; }
+.ph { color: var(--accent); border-bottom: 1px dashed var(--accent); }
+/* insights */
+.posts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.post { padding: 0; overflow: hidden; text-decoration: none; display: flex; flex-direction: column; transition: transform .35s, border-color .35s; }
+.post:hover { transform: translateY(-6px); border-color: var(--accent); }
+.post .art { height: 150px; position: relative; overflow: hidden; background: var(--band); }
+.post .art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.post .tx { padding: 22px; display: grid; gap: 10px; }
+.post small { color: var(--accent); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; font-size: 11.5px; }
+.post h3 { font-size: 25px; }
+.post p { margin: 0; color: var(--muted); font-size: 14.5px; }
+/* sub-pages */
+.page { position: fixed; inset: 0; z-index: 90; background: var(--bg); overflow-y: auto; transform: translateY(100%); transition: transform .6s cubic-bezier(.3,.7,.2,1); }
+.page.open { transform: none; }
+.page-bar { position: sticky; top: 0; z-index: 2; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.page-bar .wrap { display: flex; justify-content: space-between; align-items: center; height: 70px; }
+.back { all: unset; cursor: pointer; display: inline-flex; gap: 10px; align-items: center; font-weight: 600; color: var(--head); }
+.back:hover { color: var(--accent); }
+.page-hero { padding: 80px 0 50px; position: relative; overflow: hidden; }
+.page-hero h1 { font-size: clamp(40px, 6vw, 76px); margin-top: 18px; max-width: 16ch; }
+.page-body { padding: 10px 0 90px; display: grid; grid-template-columns: 1.3fr .7fr; gap: 50px; }
+.page-body h2 { font-size: clamp(28px, 3vw, 38px); margin: 36px 0 16px; }
+.page-body ul { padding-left: 0; list-style: none; display: grid; gap: 10px; }
+.page-body li { padding-left: 26px; position: relative; }
+.page-body li::before { content: ""; position: absolute; left: 0; top: .7em; width: 14px; height: 1px; background: var(--accent); }
+.aside { padding: 26px; position: sticky; top: 100px; align-self: start; display: grid; gap: 14px; }
+details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+summary { cursor: pointer; font-weight: 600; color: var(--head); list-style: none; display: flex; justify-content: space-between; }
+summary::after { content: "+"; color: var(--accent); font-size: 20px; line-height: 1; transition: transform .3s; }
+details[open] summary::after { transform: rotate(45deg); }
+details p { margin: 10px 0 0; color: var(--muted); }
+.article p { font-size: 18px; line-height: 1.75; max-width: 66ch; }
+/* floating contact + owner */
+.fab { position: fixed; right: 18px; bottom: 18px; z-index: 70; display: grid; gap: 10px; }
+.fab a { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--gold-grad); color: var(--green-950); box-shadow: 0 12px 30px -10px rgba(0,0,0,.5); transition: transform .3s; animation: pop .6s 1.2s both; }
+.fab a:nth-child(2) { animation-delay: 1.35s; }
+.fab a:hover { transform: scale(1.08); }
+.fab svg { width: 22px; height: 22px; }
+@keyframes pop { from { transform: scale(0); } }
+.socials { display: flex; gap: 12px; align-items: center; }
+.socials a { width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; color: var(--head); }
+.socials a:hover { border-color: var(--accent); color: var(--accent); }
+.socials svg { width: 16px; height: 16px; }
+.owner-link { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; opacity: .8; }
+.modal { position: fixed; inset: 0; z-index: 100; background: rgba(8,12,10,.65); display: grid; place-items: center; padding: 20px; }
+.modal > div { max-width: 520px; width: 100%; padding: 32px; background: var(--bg); }
+.modal ul { color: var(--muted); padding-left: 18px; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 140%); z-index: 110; background: var(--head); color: var(--bg); padding: 13px 20px; border-radius: 999px; font-weight: 600; font-size: 14px; transition: transform .4s; max-width: calc(100% - 32px); text-align: center; }
+.toast.show { transform: translate(-50%, 0); }
+@media (max-width: 960px) {
+  .quiz, .book, .charts, .founder, .page-body { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .helps, .posts { grid-template-columns: 1fr; }
+  .founder .silhouette { max-width: 260px; }
+  .aside { position: static; }
+}
+@media (max-width: 520px) {
+  .quiz .q, .score, .cal, .bk-form, .dash { padding: 20px; }
+  .days { grid-template-columns: repeat(5, 1fr); gap: 5px; } .days button { padding: 9px 2px; } .days button b { font-size: 18px; }
+  .kpi b { font-size: 26px; }
+  .page-hero { padding: 50px 0 30px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site" id="top">
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="TKS Consulting Limited, home"><img src="assets/tks-monogram.png" alt=""><span>TKS Consulting<small>Limited</small></span></a>
+    <nav class="links" id="links" aria-label="Main">
+      <a href="#services">Services</a><a href="#check">Health check</a><a href="#who-we-help">Who we help</a><a href="#insights">Insights</a>
+      <a class="btn btn-gold" href="#book">Book a call</a>
+    </nav>
+    <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="links"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<main>
+<section class="hero" aria-labelledby="hero-title">
+  <canvas id="chart" aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow rv">Accounting · Finance · Internal Audit · Risk</p>
+      <h1 id="hero-title" class="rv d1" style="margin-top:22px">Clarity, control and <em class="gold-text">confidence</em> in every number.</h1>
+      <p class="lede rv d2">Senior-level finance leadership and assurance for business owners, boards and executive teams, with Big 4 experience across Europe, Africa, Asia-Pacific and the United States.</p>
+      <div class="hero-ctas rv d3">
+        <a class="btn btn-gold" href="#book">Book a free call <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        <a class="btn btn-ghost" href="#check">Take the 2-minute health check</a>
+      </div>
+      <div class="trust rv d3"><span><b>Big 4</b> experience</span><span><b>4</b> regions worked across</span><span><b>Board-level</b> advisory</span><span><b>Fractional CFO</b> to full finance function</span></div>
+    </div>
+    <div class="mono-stage" aria-hidden="true">
+      <div class="ring r3"></div><div class="ring"></div><div class="ring r2"></div><span class="orbit-dot" id="orbit"></span>
+      <img src="assets/tks-monogram.png" alt="">
+      <span class="mono-shine"></span>
+    </div>
+  </div>
+  <a class="scroll-cue" href="#services" aria-label="Scroll to services"></a>
+</section>
+
+<div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker"></div></div>
+
+<section id="services" aria-labelledby="services-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">What we do</p><h2 id="services-title" class="rv d1">Four ways we help your organisation move forward.</h2></div>
+      <p class="lede rv d2">From fractional CFO support to internal audit transformation, every engagement is led by senior expertise and focused on practical, prioritised action.</p>
+    </div>
+    <div class="services">
+      <div class="svc-tabs" role="tablist" aria-label="Services" id="tabs"></div>
+      <article class="svc-panel" id="panel" role="tabpanel" aria-live="polite"></article>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="check" aria-labelledby="check-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">Finance health check</p><h2 id="check-title" class="rv d1">Is your finance function audit-ready?</h2></div>
+      <p class="lede rv d2">Seven quick questions, under two minutes. You get an instant score and the three things we'd look at first.</p>
+    </div>
+    <div class="quiz rv d2">
+      <div class="card q" id="q"></div>
+      <div class="card score" id="score">
+        <svg class="ring-svg" viewBox="0 0 190 190" aria-hidden="true"><defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#f1e2c6"/><stop offset=".5" stop-color="#c9a77a"/><stop offset="1" stop-color="#ecd9b5"/></linearGradient></defs><circle class="bg" cx="95" cy="95" r="80"/><circle class="fg" id="ringfg" cx="95" cy="95" r="80"/></svg>
+        <b id="pct">0%</b>
+        <span class="lvl" id="lvl">Answer the questions to see your score</span>
+        <ul class="recs" id="recs"></ul>
+        <a class="btn btn-gold" href="#book" id="qbook" hidden>Book a call about your results <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="approach" aria-labelledby="approach-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">Our approach</p><h2 id="approach-title" class="rv d1">Independent challenge, with real commercial understanding.</h2></div>
+      <p class="lede rv d2">We work closely with boards, committees, executives and finance teams to find what matters most, then turn it into action that lasts.</p>
+    </div>
+    <div class="steps" id="steps">
+      <span class="line"></span>
+      <div class="step rv"><div class="dot">i</div><h3>Understand</h3><p>We learn your priorities, how finance runs today and the risks that matter most.</p></div>
+      <div class="step rv d1"><div class="dot">ii</div><h3>Challenge</h3><p>Independent, senior-level challenge on performance, controls and decisions.</p></div>
+      <div class="step rv d2"><div class="dot">iii</div><h3>Act</h3><p>Complex findings turned into clear, prioritised and practical plans.</p></div>
+      <div class="step rv d3"><div class="dot">iv</div><h3>Sustain</h3><p>Capability built into your team, so the improvement keeps paying back.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="dashboard" aria-labelledby="dash-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">What you get</p><h2 id="dash-title" class="rv d1">Board-ready reporting, every month.</h2></div>
+      <p class="lede rv d2">A sample of the management information we build: one page that shows cash, performance and control health at a glance, ready for your board pack or Power BI.</p>
+    </div>
+    <div class="card dash rv d2" id="dash">
+      <div class="dash-top"><b>Monthly board dashboard</b><span class="tag-demo">Illustrative sample, not client data</span></div>
+      <div class="kpis">
+        <div class="kpi"><small>Revenue (month)</small><b data-count="482" data-pre="£" data-suf="k">£0k</b><i>+6.2% vs budget</i></div>
+        <div class="kpi"><small>Gross margin</small><b data-count="41.8" data-suf="%" data-dec="1">0%</b><i>+1.4 pts</i></div>
+        <div class="kpi"><small>Cash runway</small><b data-count="14" data-suf=" months">0</b><i>Healthy</i></div>
+        <div class="kpi"><small>Month-end close</small><b data-count="6" data-suf=" days">0</b><i>Down from 11</i></div>
+      </div>
+      <div class="charts">
+        <div class="chart-box"><p><span>13-week cash flow forecast</span><span>£k</span></p><svg id="cashsvg" viewBox="0 0 520 220"></svg></div>
+        <div class="chart-box"><p><span>Actual vs budget by quarter</span><span>£k</span></p><svg id="barsvg" viewBox="0 0 320 220"></svg></div>
+      </div>
+      <div class="chart-box"><p><span>Control health (internal audit tracker)</span><span>Status</span></p>
+        <div class="rag">
+          <div><span><span class="d" style="background:#6fae7d"></span>Purchase-to-pay controls</span><b>Effective</b></div>
+          <div><span><span class="d" style="background:#d8b25a"></span>Payroll reconciliations</span><b>Improving</b></div>
+          <div><span><span class="d" style="background:#6fae7d"></span>Revenue recognition</span><b>Effective</b></div>
+          <div><span><span class="d" style="background:#c9705a"></span>Third-party supplier assurance</span><b>Action plan agreed</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="why" aria-labelledby="why-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">Why TKS</p><h2 id="why-title" class="rv d1">Insight that goes beyond compliance.</h2></div>
+      <p class="lede rv d2">Clients get the expertise of senior finance and assurance leadership, without the cost of a full-time hire.</p>
+    </div>
+    <div class="why">
+      <div class="why-card rv"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 27h24M7 23V13M13 23V8M19 23v-7M25 23V5"/></svg><h3>Senior-level expertise</h3><p>Finance leadership and assurance experience gained in complex, multi-country organisations.</p></div>
+      <div class="why-card rv d1"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="16" cy="16" r="11"/><path d="M16 9v7l5 3"/></svg><h3>Practical, not theoretical</h3><p>Clear, prioritised actions your team can deliver, not reports that sit on a shelf.</p></div>
+      <div class="why-card rv d2"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M16 4l10 4v7c0 7-4.5 11-10 13C10.5 26 6 22 6 15V8l10-4z"/><path d="M11.5 16l3 3 6-6"/></svg><h3>Confident decisions</h3><p>Better visibility over performance, risk and cash, so you can plan your next move with confidence.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="who-we-help" aria-labelledby="help-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">Who we help</p><h2 id="help-title" class="rv d1">Built around the people who carry the decisions.</h2></div>
+      <p class="lede rv d2">Different roles need different things from finance. Pick yours to see how we help.</p>
+    </div>
+    <div class="helps">
+      <a class="card help rv" href="#who-owners"><p class="eyebrow">For</p><h3>Business owners</h3><p>Clear numbers, reliable accounts and senior finance support, without a full-time hire.</p><span class="go">See how we help &rarr;</span></a>
+      <a class="card help rv d1" href="#who-boards"><p class="eyebrow">For</p><h3>Boards &amp; audit committees</h3><p>Independent assurance on risk, controls and governance, reported in plain language.</p><span class="go">See how we help &rarr;</span></a>
+      <a class="card help rv d2" href="#who-finance"><p class="eyebrow">For</p><h3>Finance teams</h3><p>Faster close, better systems and reporting, and capability that stays in your team.</p><span class="go">See how we help &rarr;</span></a>
+    </div>
+  </div>
+</section>
+
+<section id="team" aria-labelledby="team-title">
+  <div class="wrap founder">
+    <div class="silhouette rv"><svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="34" r="18"/><path d="M14 96c2-22 17-34 36-34s34 12 36 34z"/></svg><small>Founder photo to be added</small></div>
+    <div>
+      <p class="eyebrow rv">Who we are</p>
+      <h2 id="team-title" class="rv d1" style="margin-top:18px">Led by <span class="ph">Founder name</span>.</h2>
+      <p class="lede rv d2" style="margin-top:20px"><span class="ph">Founder bio to be added</span>: a short introduction to the founder's background in finance leadership and internal audit, the organisations and regions they've worked across, and why they started TKS.</p>
+      <div class="creds rv d3"><span>Qualification to be added</span><span>Professional body to be added</span><span>Big 4 experience</span></div>
+      <div class="socials rv d3" style="margin-top:24px"><a href="#" data-soon="LinkedIn profile" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.7 4.8 6.1V21h-4v-5.4c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9V21H9z"/></svg></a><span style="color:var(--muted);font-size:14px">LinkedIn link to be added</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="experience" aria-labelledby="exp-title">
+  <div class="wrap regions">
+    <div>
+      <p class="eyebrow rv">Experience</p>
+      <h2 id="exp-title" class="rv d1" style="margin-top:18px">Global experience. Focused, personal support.</h2>
+      <p class="lede rv d2" style="margin-top:22px">Our assurance and finance expertise was built across complex, multi-country organisations, including Big 4 experience. We bring that standard to every client, whatever their size.</p>
+      <div class="who rv d3"><span>Business owners</span><span>Boards</span><span>Audit &amp; risk committees</span><span>Executive teams</span><span>Finance teams</span></div>
+    </div>
+    <div class="geo">
+    <div class="globe rv d1" aria-hidden="true"><canvas id="globe"></canvas></div>
+    <div class="region-list rv d2">
+      <div><b>Europe</b><span>Assurance and finance leadership</span></div>
+      <div><b>Africa</b><span>Multi-country organisations</span></div>
+      <div><b>Asia-Pacific</b><span>Complex, cross-border operations</span></div>
+      <div><b>United States</b><span>Big 4 standards and methodology</span></div>
+    </div>
+    </div>
+  </div>
+</section>
+
+<section id="insights" aria-labelledby="ins-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">Insights</p><h2 id="ins-title" class="rv d1">Practical thinking for finance leaders.</h2></div>
+      <p class="lede rv d2">Short, useful guides on the questions owners and boards ask us most. <span class="tag-demo" style="margin-left:6px">Sample articles</span></p>
+    </div>
+    <div class="posts" id="posts"></div>
+  </div>
+</section>
+
+<section class="alt" id="book" aria-labelledby="book-title">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><p class="eyebrow rv">Book a call</p><h2 id="book-title" class="rv d1">Pick a time for a free 30-minute call.</h2></div>
+      <p class="lede rv d2">No forms back and forth. Choose a day and time that suits you, and we'll send a calendar invite.</p>
+    </div>
+    <div class="book rv d2">
+      <div class="card cal"><div class="cal-head"><b id="calmonth"></b><span class="tag-demo">Preview calendar</span></div><div class="days" id="days"></div><div class="slots" id="slots"></div></div>
+      <form class="card bk-form" id="bkform" novalidate>
+        <div class="bk-sum" id="bksum">Choose a day and a time.</div>
+        <label>Your name<input name="name" autocomplete="name" required></label>
+        <label>Email<input name="email" type="email" autocomplete="email" required></label>
+        <label>What would you like to discuss?<select id="bk-svc"></select></label>
+        <button class="btn btn-gold" type="submit" style="justify-self:start">Confirm call <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+        <p class="form-note">Preview only: no booking is made. On the live site this connects to TKS's calendar.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section id="contact" aria-labelledby="contact-title">
+  <div class="wrap contact">
+    <div>
+      <p class="eyebrow rv">Let's talk</p>
+      <h2 id="contact-title" class="rv d1" style="margin-top:18px">Move forward with <em class="gold-text">confidence.</em></h2>
+      <p class="lede rv d2" style="margin-top:22px">Tell us where you are and where you want to be. Whether it's experienced finance leadership, stronger controls or a critical project, we'll come back to you with a clear next step.</p>
+    </div>
+    <form class="rv d2" id="form" novalidate>
+      <div class="two"><label>Your name<input name="name" autocomplete="name" required></label><label>Organisation<input name="org" autocomplete="organization"></label></div>
+      <div class="two"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Phone (optional)<input name="phone" type="tel" autocomplete="tel"></label></div>
+      <label>How can we help?<select name="service" id="svc-select"></select></label>
+      <label>Tell us a little more<textarea name="msg" placeholder="Your goals, timescales or the challenge you're facing"></textarea></label>
+      <button class="btn btn-gold" type="submit" style="justify-self:start">Request a consultation <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+      <p class="form-note">We reply within one working day. Your details are only used to answer your enquiry.</p>
+      <div id="sent" hidden></div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a class="brand" href="#top"><img src="assets/tks-monogram.png" alt=""><span>TKS Consulting<small>Accounting, Finance, Internal Audit &amp; Risk Management</small></span></a>
+    <span>&copy; <span id="yr"></span> TKS Consulting Limited. Company no. <span class="ph">to be added</span> · <a href="#" data-soon="Privacy policy">Privacy</a> · <button class="owner-link" id="ownerlink" type="button">Owner log in</button></span>
+  </div>
+</footer>
+
+<div class="switcher" role="group" aria-label="Choose a design (preview only)">
+  <small>Preview: choose a design</small>
+  <button type="button" data-t="evergreen" aria-pressed="true"><i style="background:#161d19"></i>1 Evergreen</button>
+  <button type="button" data-t="ivory" aria-pressed="false"><i style="background:#f5f0e6"></i>2 Ivory</button>
+  <button type="button" data-t="heritage" aria-pressed="false"><i style="background:linear-gradient(90deg,#f5f0e6 50%,#161d19 50%)"></i>3 Heritage</button>
+</div>
+
+
+<div class="page" id="page" role="dialog" aria-modal="true" aria-label="Page" hidden></div>
+<div class="fab">
+  <a href="#" data-soon="WhatsApp number" aria-label="Message on WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.9 11.9 0 0 0 4.6 4c1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2s.2-1.1.1-1.2-.2-.2-.5-.3z"/></svg></a>
+  <a href="#" data-soon="Phone number" aria-label="Call TKS"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></svg></a>
+</div>
+<div class="modal" id="owner" hidden><div class="card">
+  <p class="eyebrow">Owner area · preview</p>
+  <h3 style="font-size:32px;margin:14px 0 8px">Run your website yourself</h3>
+  <p style="color:var(--muted)">On the live site TKS gets a private log-in to:</p>
+  <ul><li>Edit text, services and articles without calling us</li><li>See every enquiry, booking and health-check result</li><li>View visitor analytics</li><li>Manage your account and password</li></ul>
+  <button class="btn btn-gold" id="ownerclose" type="button">Close</button>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  const reduce = false;  // the site always moves
+
+  // Services, in the order TKS asked for. Wording from their services one-pager.
+  const SERVICES = [
+    { t: "Strategic Finance and Business Advisory",
+      i: "We help organisations turn financial information into clear, commercially focused decisions that improve performance, strengthen profitability and support sustainable growth. We bring senior-level finance leadership and strategic insight, combining technical accounting expertise with extensive experience in financial planning and analysis, business partnering and executive decision-making.",
+      l: ["Fractional CFO and outsourced Finance Director services", "Financial planning, budgeting and forecasting", "Cash flow, working capital and liquidity management",
+          "Financial modelling, scenario planning and business case development", "Profitability analysis and margin improvement", "KPI development, performance dashboards and management reporting",
+          "Board reporting and strategic business partnering", "Funding, investment and business growth support", "Financial performance reviews and strategic decision support"],
+      c: "Experienced finance leadership, greater visibility over performance and practical guidance for your next stage of growth." },
+    { t: "Accounting, Finance and Compliance",
+      i: "We help organisations establish strong financial foundations through reliable reporting, effective financial controls and practical accounting support, improving financial accuracy, strengthening accountability and giving leadership teams greater confidence in their financial position.",
+      l: ["Bookkeeping oversight and financial record management", "Monthly management accounts and financial reporting", "Preparation of financial statements",
+          "Budget monitoring and cash flow reporting", "VAT and tax compliance support", "Payroll coordination and related financial administration",
+          "Financial controls and reporting process improvement", "Board packs and management information", "Virtual finance department and ongoing finance support",
+          "Accounting advisory and support for business owners"],
+      c: "Dependable reporting, stronger controls and a finance function that frees you to focus on running and growing your business." },
+    { t: "Internal Audit, Governance and Risk Management",
+      i: "We help organisations turn risk, control and governance challenges into clear, practical solutions. We bring senior-level assurance expertise gained across complex, multi-country organisations, including Big 4 experience in Europe, Africa, Asia-Pacific and the United States.",
+      l: ["Internal audit function and capability set-up and transformation", "Risk and control assessments", "Risk-based audit planning and execution: commercial, financial, operational and compliance",
+          "Third-party and supplier assurance", "Governance: policies, procedures and control frameworks", "Data analytics-enabled auditing and continuous assurance",
+          "Audit committee and board advisory and reporting", "Internal audit quality and methodology assessments", "Co-sourced and outsourced internal audit and leadership"],
+      c: "Build or transform an internal audit function, deliver a demanding audit plan or strengthen board assurance, with focused support." },
+    { t: "Finance Transformation and Special Projects",
+      i: "We help organisations transform their finance functions to improve efficiency, strengthen controls and deliver better business insight, combining financial expertise with process improvement and technology-enabled solutions to create finance functions that are fit for the future.",
+      l: ["Finance function reviews, redesign and transformation", "Month-end close optimisation and reporting acceleration", "Finance process improvement and automation",
+          "Finance systems implementation and optimisation", "Power BI dashboards and management reporting solutions", "KPI frameworks, data analytics and performance insight",
+          "Financial controls and process enhancement", "Finance operating models, team structures and capability development",
+          "Financial modelling and scenario analysis for special projects", "Business performance improvement and profitability initiatives"],
+      c: "Modernise your finance function, report faster and deliver critical improvement projects with lasting results." }
+  ];
+
+  // tabs + panel, rotating every 9 seconds until the visitor picks one
+  const tabs = $("#tabs"), panel = $("#panel");
+  let cur = 0, auto = !reduce, timer;
+  tabs.innerHTML = SERVICES.map((s, k) => `<button class="svc-tab" role="tab" id="tab${k}" aria-controls="panel" aria-selected="${k === 0}"><span class="n">0${k + 1}</span><span>${s.t}</span><span class="bar"><i></i></span></button>`).join("");
+  function show(k) {
+    cur = k; const s = SERVICES[k];
+    $$(".svc-tab").forEach((b, j) => b.setAttribute("aria-selected", j === k));
+    panel.dataset.n = "0" + (k + 1);
+    panel.innerHTML = `<p class="eyebrow">Service 0${k + 1}</p><h3 style="margin-top:16px">${s.t}</h3><p class="intro">${s.i}</p>
+      <ul>${s.l.map((x, j) => `<li style="animation-delay:${.05 * j}s">${x}</li>`).join("")}</ul><p class="close">${s.c}</p><a class="svc-more" href="#svc-${k + 1}">Explore this service &rarr;</a>`;
+    panel.classList.remove("swap", "show"); void panel.offsetWidth; panel.classList.add("swap", "show");
+    clearTimeout(timer); if (auto) timer = setTimeout(() => show((cur + 1) % SERVICES.length), 9000);
+  }
+  tabs.addEventListener("click", e => { const b = e.target.closest(".svc-tab"); if (!b) return; auto = false; $$(".svc-tab .bar i").forEach(i => i.style.animation = "none"); show(+b.id.slice(3)); });
+  show(0);
+  $("#svc-select").innerHTML = SERVICES.map(s => `<option>${s.t}</option>`).join("") + "<option>Something else</option>";
+
+  // ticker of capabilities
+  const caps = ["Fractional CFO", "Management accounts", "Internal audit", "Risk and control", "Board reporting", "Cash flow forecasting", "Power BI dashboards", "Governance frameworks", "Month-end close", "Finance transformation", "Scenario planning", "Third-party assurance"];
+  $("#ticker").innerHTML = [...caps, ...caps].map(c => `<span>${c}</span>`).join("");
+
+  // headline: each word rises in
+  (function words() {
+    const h = $("#hero-title"); let k = 0;
+    const wrap = node => [...node.childNodes].forEach(n => {
+      if (n.nodeType === 3) {
+        const f = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(t => { if (!t) return; if (/^\s+$/.test(t)) return f.append(t);
+          const sp = document.createElement("span"); sp.className = "w"; sp.style.animationDelay = (.25 + k++ * .09) + "s"; sp.textContent = t; f.append(sp); });
+        n.replaceWith(f);
+      } else if (n.nodeType === 1) { n.classList.add("w"); n.style.animationDelay = (.25 + k++ * .09) + "s"; }
+    });
+    wrap(h); h.classList.remove("rv"); h.style.opacity = 1;
+  })();
+
+  // monogram tilts toward the pointer and drifts as you scroll
+  const stage = $(".mono-stage"); let tx = 0, ty = 0;
+  addEventListener("pointermove", e => { tx = (e.clientX / innerWidth - .5) * 14; ty = (e.clientY / innerHeight - .5) * -14; }, { passive: true });
+  (function tilt() { stage.style.transform = `perspective(900px) rotateY(${tx}deg) rotateX(${ty}deg) translateY(${Math.min(scrollY, 800) * .18}px)`; requestAnimationFrame(tilt); })();
+
+  // reveal on scroll
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .18 });
+  $$(".rv, #steps, .sec-head").forEach(el => io.observe(el));
+
+  // header, menu
+  addEventListener("scroll", () => $("header.site").classList.toggle("scrolled", scrollY > 30), { passive: true });
+  $("#burger").addEventListener("click", e => { const o = $("#links").classList.toggle("open"); e.currentTarget.setAttribute("aria-expanded", o); });
+  $$("#links a").forEach(a => a.addEventListener("click", () => $("#links").classList.remove("open")));
+
+  // card glow follows the pointer
+  $$(".why-card").forEach(c => c.addEventListener("pointermove", e => { const r = c.getBoundingClientRect(); c.style.setProperty("--mx", (e.clientX - r.left) + "px"); c.style.setProperty("--my", (e.clientY - r.top) + "px"); }));
+
+
+
+  // orbiting dot around the monogram
+  const dot = $("#orbit"), ostage = $(".mono-stage");
+  (function orbit(t) { const R = ostage.clientWidth * .44, a = t / 4200;
+    dot.style.transform = `translate(${Math.sin(a) * R - 4}px, ${R - Math.cos(a) * R - 4}px)`; requestAnimationFrame(orbit); })(0);
+
+  // globe: slowly turning dotted Earth; the four regions flicker and glow
+  const LAND=[-542,-692,-524,-738,-524,-708,-506,-723,-506,-694,-488,-736,-488,-709,-488,-682,-470,-741,-470,-715,-470,-688,-452,-728,-452,-702,-452,-677,-452,1672,-452,1698,-434,-708,-434,-683,-434,-658,-434,1701,-434,1726,-416,-720,-416,-696,-416,-672,-416,1464,-416,1728,-398,-725,-398,-701,-398,-678,-398,-655,-398,-631,-398,1753,-380,-729,-380,-706,-380,-684,-380,-661,-380,-638,-380,-615,-380,-592,-380,1413,-380,1435,-380,1458,-380,1754,-380,1777,-362,-727,-362,-704,-362,-682,-362,-660,-362,-637,-362,-615,-362,-593,-362,1398,-362,1420,-362,1442,-362,1465,-362,1487,-344,-709,-344,-687,-344,-665,-344,-644,-344,-622,-344,-600,-344,-578,-344,-556,-344,207,-344,1167,-344,1189,-344,1385,-344,1407,-344,1429,-344,1451,-344,1473,-344,1495,-326,-707,-326,-686,-326,-664,-326,-643,-326,-621,-326,-600,-326,-579,-326,-557,-326,-536,-326,193,-326,214,-326,236,-326,257,-326,279,-326,1157,-326,1179,-326,1200,-326,1221,-326,1243,-326,1350,-326,1371,-326,1393,-326,1414,-326,1436,-326,1457,-326,1479,-326,1500,-326,1521,-308,-712,-308,-691,-308,-670,-308,-649,-308,-628,-308,-607,-308,-586,-308,-565,-308,-544,-308,-523,-308,188,-308,209,-308,230,-308,251,-308,272,-308,293,-308,1172,-308,1193,-308,1214,-308,1235,-308,1256,-308,1277,-308,1298,-308,1319,-308,1340,-308,1360,-308,1381,-308,1402,-308,1423,-308,1444,-308,1465,-308,1486,-308,1507,-308,1528,-290,-710,-290,-689,-290,-669,-290,-648,-290,-627,-290,-607,-290,-586,-290,-566,-290,-545,-290,-525,-290,-504,-290,175,-290,195,-290,216,-290,237,-290,257,-290,278,-290,298,-290,1162,-290,1183,-290,1203,-290,1224,-290,1245,-290,1265,-290,1286,-290,1306,-290,1327,-290,1347,-290,1368,-290,1389,-290,1409,-290,1430,-290,1450,-290,1471,-290,1491,-290,1512,-290,1533,-272,-708,-272,-688,-272,-667,-272,-647,-272,-627,-272,-607,-272,-587,-272,-566,-272,-546,-272,-526,-272,-506,-272,162,-272,182,-272,202,-272,222,-272,243,-272,263,-272,283,-272,303,-272,324,-272,1153,-272,1173,-272,1193,-272,1213,-272,1234,-272,1254,-272,1274,-272,1294,-272,1315,-272,1335,-272,1355,-272,1375,-272,1396,-272,1416,-272,1436,-272,1456,-272,1476,-272,1497,-272,1517,-254,-686,-254,-666,-254,-646,-254,-627,-254,-607,-254,-587,-254,-567,-254,-547,-254,-527,-254,-507,-254,-487,-254,149,-254,169,-254,189,-254,209,-254,229,-254,249,-254,269,-254,288,-254,308,-254,328,-254,1144,-254,1164,-254,1183,-254,1203,-254,1223,-254,1243,-254,1263,-254,1283,-254,1303,-254,1323,-254,1343,-254,1362,-254,1382,-254,1402,-254,1422,-254,1442,-254,1462,-254,1482,-254,1502,-254,1522,-236,-698,-236,-679,-236,-659,-236,-639,-236,-620,-236,-600,-236,-580,-236,-561,-236,-541,-236,-521,-236,-502,-236,-482,-236,-462,-236,148,-236,167,-236,187,-236,207,-236,226,-236,246,-236,266,-236,285,-236,305,-236,325,-236,344,-236,443,-236,462,-236,1151,-236,1170,-236,1190,-236,1210,-236,1230,-236,1249,-236,1269,-236,1289,-236,1308,-236,1328,-236,1348,-236,1367,-236,1387,-236,1407,-236,1426,-236,1446,-236,1466,-236,1485,-236,1505,-218,-697,-218,-677,-218,-658,-218,-639,-218,-619,-218,-600,-218,-581,-218,-561,-218,-542,-218,-523,-218,-503,-218,-484,-218,-465,-218,-445,-218,-426,-218,155,-218,174,-218,194,-218,213,-218,232,-218,252,-218,271,-218,290,-218,310,-218,329,-218,348,-218,445,-218,465,-218,1161,-218,1181,-218,1200,-218,1219,-218,1239,-218,1258,-218,1277,-218,1297,-218,1316,-218,1335,-218,1355,-218,1374,-218,1394,-218,1413,-218,1432,-218,1452,-218,1471,-218,1490,-218,1665,-200,-689,-200,-670,-200,-651,-200,-632,-200,-613,-200,-594,-200,-574,-200,-555,-200,-536,-200,-517,-200,-498,-200,-479,-200,-460,-200,-440,-200,-421,-200,-402,-200,134,-200,153,-200,172,-200,191,-200,211,-200,230,-200,249,-200,268,-200,287,-200,306,-200,326,-200,345,-200,460,-200,479,-200,1206,-200,1226,-200,1245,-200,1264,-200,1283,-200,1302,-200,1321,-200,1340,-200,1360,-200,1379,-200,1398,-200,1417,-200,1436,-200,1455,-200,1474,-182,-701,-182,-682,-182,-663,-182,-644,-182,-625,-182,-606,-182,-587,-182,-568,-182,-549,-182,-531,-182,-512,-182,-493,-182,-474,-182,-455,-182,-436,-182,-417,-182,-398,-182,133,-182,152,-182,171,-182,189,-182,208,-182,227,-182,246,-182,265,-182,284,-182,303,-182,322,-182,341,-182,360,-182,455,-182,474,-182,493,-182,1232,-182,1251,-182,1269,-182,1288,-182,1307,-182,1326,-182,1345,-182,1364,-182,1383,-182,1402,-182,1421,-182,1440,-182,1459,-182,1781,-164,-731,-164,-712,-164,-694,-164,-675,-164,-656,-164,-637,-164,-619,-164,-600,-164,-581,-164,-562,-164,-544,-164,-525,-164,-506,-164,-487,-164,-469,-164,-450,-164,-431,-164,-412,-164,-394,-164,131,-164,150,-164,169,-164,188,-164,206,-164,225,-164,244,-164,263,-164,281,-164,300,-164,319,-164,338,-164,356,-164,375,-164,394,-164,450,-164,469,-164,488,-164,1238,-164,1256,-164,1275,-164,1294,-164,1313,-164,1331,-164,1350,-164,1369,-164,1425,-164,1444,-146,-742,-146,-724,-146,-705,-146,-687,-146,-668,-146,-649,-146,-631,-146,-612,-146,-594,-146,-575,-146,-557,-146,-538,-146,-520,-146,-501,-146,-482,-146,-464,-146,-445,-146,-427,-146,-408,-146,130,-146,148,-146,167,-146,186,-146,204,-146,223,-146,241,-146,260,-146,278,-146,297,-146,315,-146,334,-146,353,-146,371,-146,390,-146,482,-146,501,-146,1262,-146,1299,-146,1318,-146,1336,-146,1355,-146,1429,-146,1447,-128,-748,-128,-729,-128,-711,-128,-692,-128,-674,-128,-655,-128,-637,-128,-618,-128,-600,-128,-582,-128,-563,-128,-545,-128,-526,-128,-508,-128,-489,-128,-471,-128,-452,-128,-434,-128,-415,-128,-397,-128,138,-128,157,-128,175,-128,194,-128,212,-128,231,-128,249,-128,268,-128,286,-128,305,-128,323,-128,342,-128,360,-128,378,-128,397,-128,489,-128,1320,-128,1338,-128,1357,-128,1431,-110,-771,-110,-753,-110,-735,-110,-716,-110,-698,-110,-680,-110,-661,-110,-643,-110,-624,-110,-606,-110,-588,-110,-569,-110,-551,-110,-533,-110,-514,-110,-496,-110,-478,-110,-459,-110,-441,-110,-422,-110,-404,-110,-386,-110,147,-110,165,-110,184,-110,202,-110,220,-110,239,-110,257,-110,276,-110,294,-110,312,-110,331,-110,349,-110,367,-110,386,-110,404,-92,-777,-92,-758,-92,-740,-92,-722,-92,-704,-92,-685,-92,-667,-92,-649,-92,-630,-92,-612,-92,-594,-92,-576,-92,-557,-92,-539,-92,-521,-92,-503,-92,-484,-92,-466,-92,-448,-92,-429,-92,-411,-92,-393,-92,-375,-92,-356,-92,137,-92,155,-92,174,-92,192,-92,210,-92,228,-92,247,-92,265,-92,283,-92,302,-92,320,-92,338,-92,356,-92,375,-92,393,-92,1252,-92,1416,-92,1471,-92,1489,-74,-782,-74,-764,-74,-745,-74,-727,-74,-709,-74,-691,-74,-673,-74,-655,-74,-636,-74,-618,-74,-600,-74,-582,-74,-564,-74,-545,-74,-527,-74,-509,-74,-491,-74,-473,-74,-455,-74,-436,-74,-418,-74,-400,-74,-382,-74,-364,-74,145,-74,164,-74,182,-74,200,-74,218,-74,236,-74,255,-74,273,-74,291,-74,309,-74,327,-74,345,-74,364,-74,382,-74,1073,-74,1091,-74,1109,-74,1127,-74,1400,-74,1418,-74,1436,-74,1455,-56,-805,-56,-787,-56,-769,-56,-751,-56,-733,-56,-715,-56,-696,-56,-678,-56,-660,-56,-642,-56,-624,-56,-606,-56,-588,-56,-570,-56,-552,-56,-534,-56,-516,-56,-497,-56,-479,-56,-461,-56,-443,-56,-425,-56,-407,-56,-389,-56,-371,-56,-353,-56,136,-56,154,-56,172,-56,190,-56,208,-56,226,-56,244,-56,262,-56,280,-56,298,-56,317,-56,335,-56,353,-56,371,-56,389,-56,1384,-56,1402,-56,1420,-56,1438,-56,1456,-56,1492,-56,1511,-38,-792,-38,-774,-38,-756,-38,-738,-38,-720,-38,-702,-38,-684,-38,-666,-38,-648,-38,-630,-38,-612,-38,-594,-38,-576,-38,-558,-38,-540,-38,-522,-38,-504,-38,-486,-38,-468,-38,-450,-38,-432,-38,-414,-38,-396,-38,126,-38,144,-38,162,-38,180,-38,198,-38,216,-38,234,-38,252,-38,270,-38,288,-38,306,-38,324,-38,342,-38,360,-38,378,-38,396,-38,1026,-38,1044,-38,1152,-38,1224,-38,1332,-38,1350,-38,1368,-38,1386,-38,1404,-38,1422,-38,1440,-20,-792,-20,-774,-20,-756,-20,-738,-20,-720,-20,-702,-20,-684,-20,-666,-20,-648,-20,-630,-20,-612,-20,-594,-20,-576,-20,-558,-20,-540,-20,-522,-20,-486,-20,-468,-20,-450,-20,108,-20,126,-20,144,-20,162,-20,180,-20,198,-20,216,-20,234,-20,252,-20,270,-20,288,-20,306,-20,324,-20,342,-20,360,-20,378,-20,396,-20,1026,-20,1044,-20,1116,-20,1134,-20,1152,-20,1206,-20,1332,-20,1386,-2,-792,-2,-774,-2,-756,-2,-738,-2,-720,-2,-702,-2,-684,-2,-666,-2,-648,-2,-630,-2,-612,-2,-594,-2,-576,-2,-558,-2,-540,-2,-522,-2,-504,-2,108,-2,126,-2,144,-2,162,-2,180,-2,198,-2,216,-2,234,-2,252,-2,270,-2,288,-2,306,-2,324,-2,342,-2,360,-2,378,-2,396,-2,414,-2,1008,-2,1026,-2,1098,-2,1116,-2,1134,-2,1152,-2,1170,-2,1278,16,-774,16,-756,16,-738,16,-720,16,-702,16,-684,16,-666,16,-648,16,-630,16,-612,16,-594,16,-576,16,-558,16,-540,16,-522,16,-504,16,108,16,126,16,144,16,162,16,180,16,198,16,216,16,234,16,252,16,270,16,288,16,306,16,324,16,342,16,360,16,378,16,396,16,414,16,432,16,990,16,1008,16,1098,16,1116,16,1134,16,1152,16,1170,16,1278,34,-756,34,-738,34,-720,34,-702,34,-684,34,-666,34,-648,34,-630,34,-612,34,-594,34,-576,34,-558,34,-540,34,-522,34,108,34,126,34,144,34,162,34,180,34,198,34,216,34,234,34,252,34,270,34,288,34,306,34,324,34,342,34,360,34,378,34,396,34,414,34,432,34,450,34,468,34,972,34,990,34,1026,34,1134,34,1152,34,1170,52,-769,52,-751,52,-733,52,-715,52,-696,52,-678,52,-660,52,-642,52,-624,52,-606,52,-588,52,-570,52,-552,52,-534,52,-81,52,-63,52,-45,52,-27,52,63,52,81,52,99,52,118,52,136,52,154,52,172,52,190,52,208,52,226,52,244,52,262,52,280,52,298,52,317,52,335,52,353,52,371,52,389,52,407,52,425,52,443,52,461,52,479,52,968,52,1022,52,1167,52,1185,70,-769,70,-751,70,-733,70,-715,70,-696,70,-678,70,-660,70,-642,70,-624,70,-606,70,-588,70,-99,70,-81,70,-63,70,-45,70,-27,70,-9,70,9,70,27,70,45,70,63,70,81,70,99,70,118,70,136,70,154,70,172,70,190,70,208,70,226,70,244,70,262,70,280,70,298,70,317,70,335,70,353,70,371,70,389,70,407,70,425,70,443,70,461,70,479,70,805,70,1004,70,1221,70,1257,88,-818,88,-800,88,-782,88,-764,88,-745,88,-727,88,-709,88,-691,88,-673,88,-655,88,-636,88,-618,88,-127,88,-109,88,-91,88,-73,88,-55,88,-36,88,-18,88,0,88,18,88,36,88,55,88,73,88,91,88,109,88,127,88,145,88,164,88,182,88,200,88,218,88,236,88,255,88,273,88,291,88,309,88,327,88,345,88,364,88,382,88,400,88,418,88,436,88,455,88,473,88,491,88,800,88,1255,106,-850,106,-740,106,-722,106,-704,106,-685,106,-667,106,-630,106,-612,106,-137,106,-119,106,-101,106,-82,106,-64,106,-46,106,-27,106,-9,106,9,106,27,106,46,106,64,106,82,106,101,106,119,106,137,106,155,106,174,106,192,106,210,106,228,106,247,106,265,106,283,106,302,106,320,106,338,106,356,106,375,106,393,106,411,106,429,106,466,106,484,106,503,106,777,106,795,106,1051,106,1069,106,1234,106,1252,124,-858,124,-840,124,-157,124,-138,124,-120,124,-102,124,-83,124,-65,124,-46,124,-28,124,-9,124,9,124,28,124,46,124,65,124,83,124,102,124,120,124,138,124,157,124,175,124,194,124,212,124,231,124,249,124,268,124,286,124,305,124,323,124,342,124,360,124,378,124,397,124,415,124,766,124,785,124,988,124,1025,124,1043,124,1062,124,1080,124,1246,142,-909,142,-891,142,-872,142,-854,142,-835,142,-167,142,-148,142,-130,142,-111,142,-93,142,-74,142,-56,142,-37,142,-19,142,0,142,19,142,37,142,56,142,74,142,93,142,111,142,130,142,148,142,167,142,186,142,204,142,223,142,241,142,260,142,278,142,297,142,315,142,334,142,353,142,371,142,390,142,408,142,445,142,464,142,482,142,761,142,779,142,798,142,984,142,1002,142,1021,142,1039,142,1058,142,1076,142,1225,160,-975,160,-956,160,-937,160,-919,160,-900,160,-150,160,-131,160,-112,160,-94,160,-75,160,-56,160,-37,160,-19,160,0,160,19,160,38,160,56,160,75,160,94,160,113,160,131,160,150,160,169,160,188,160,206,160,225,160,244,160,263,160,281,160,300,160,319,160,338,160,356,160,375,160,431,160,450,160,469,160,488,160,506,160,750,160,769,160,788,160,806,160,956,160,994,160,1013,160,1031,160,1050,160,1069,160,1200,178,-1004,178,-985,178,-966,178,-947,178,-928,178,-909,178,-891,178,-152,178,-133,178,-114,178,-95,178,-76,178,-57,178,-38,178,-19,178,0,178,19,178,38,178,57,178,76,178,95,178,114,178,133,178,152,178,171,178,189,178,208,178,227,178,246,178,265,178,284,178,303,178,322,178,341,178,360,178,379,178,436,178,455,178,474,178,493,178,512,178,531,178,549,178,739,178,758,178,777,178,796,178,815,178,834,178,947,178,966,178,985,178,1004,178,1023,178,1042,178,1061,178,1213,196,-1551,196,-1034,196,-1015,196,-996,196,-977,196,-900,196,-881,196,-728,196,-709,196,-153,196,-134,196,-115,196,-96,196,-77,196,-57,196,-38,196,-19,196,0,196,19,196,38,196,57,196,77,196,96,196,115,196,134,196,153,196,172,196,191,196,211,196,230,196,249,196,268,196,287,196,306,196,326,196,345,196,364,196,421,196,440,196,460,196,479,196,498,196,517,196,536,196,555,196,574,196,728,196,747,196,766,196,785,196,804,196,823,196,843,196,938,196,957,196,977,196,996,196,1015,196,1034,196,1053,196,1091,214,-1045,214,-1026,214,-1006,214,-987,214,-871,214,-774,214,-155,214,-135,214,-116,214,-97,214,-77,214,-58,214,-39,214,-19,214,0,214,19,214,39,214,58,214,77,214,97,214,116,214,135,214,155,214,174,214,194,214,213,214,232,214,252,214,271,214,290,214,310,214,329,214,348,214,368,214,406,214,426,214,445,214,465,214,484,214,503,214,523,214,542,214,561,214,581,214,716,214,735,214,755,214,774,214,794,214,813,214,832,214,852,214,929,214,948,214,968,214,987,214,1006,214,1026,214,1045,214,1065,214,1103,232,-1096,232,-1057,232,-1037,232,-1017,232,-998,232,-978,232,-157,232,-137,232,-117,232,-98,232,-78,232,-59,232,-39,232,-20,232,0,232,20,232,39,232,59,232,78,232,98,232,117,232,137,232,157,232,176,232,196,232,215,232,235,232,254,232,274,232,293,232,313,232,333,232,352,232,391,232,411,232,430,232,450,232,470,232,489,232,509,232,528,232,548,232,567,232,587,232,704,232,724,232,743,232,763,232,783,232,802,232,822,232,841,232,861,232,880,232,900,232,920,232,939,232,959,232,978,232,998,232,1017,232,1037,232,1057,232,1076,232,1096,232,1115,232,1135,232,1154,232,1213,250,-1064,250,-1044,250,-1024,250,-1004,250,-985,250,-806,250,-129,250,-109,250,-90,250,-70,250,-50,250,-30,250,-10,250,10,250,30,250,50,250,70,250,90,250,109,250,129,250,149,250,169,250,189,250,209,250,229,250,249,250,269,250,288,250,308,250,328,250,348,250,388,250,408,250,428,250,448,250,467,250,487,250,686,250,706,250,726,250,746,250,766,250,786,250,806,250,825,250,845,250,865,250,885,250,905,250,925,250,945,250,965,250,985,250,1004,250,1024,250,1044,250,1064,250,1084,250,1104,250,1124,250,1144,250,1164,250,1183,268,-1136,268,-1096,268,-1076,268,-1056,268,-1036,268,-1016,268,-996,268,-975,268,-815,268,-774,268,-131,268,-111,268,-91,268,-70,268,-50,268,-30,268,-10,268,10,268,30,268,50,268,70,268,91,268,111,268,131,268,151,268,171,268,191,268,211,268,231,268,251,268,272,268,292,268,312,268,332,268,372,268,392,268,412,268,432,268,453,268,473,268,493,268,553,268,573,268,593,268,613,268,634,268,654,268,674,268,694,268,714,268,734,268,754,268,774,268,794,268,815,268,835,268,855,268,875,268,895,268,915,268,935,268,955,268,975,268,996,268,1016,268,1036,268,1056,268,1076,268,1096,268,1116,268,1136,268,1156,268,1177,268,1197,286,-1105,286,-1084,286,-1064,286,-1043,286,-1023,286,-1002,286,-982,286,-818,286,-102,286,-82,286,-61,286,-41,286,-20,286,0,286,20,286,41,286,61,286,82,286,102,286,123,286,143,286,164,286,184,286,205,286,225,286,245,286,266,286,286,286,307,286,327,286,368,286,389,286,409,286,430,286,450,286,470,286,511,286,532,286,552,286,573,286,593,286,614,286,634,286,655,286,675,286,695,286,716,286,736,286,757,286,777,286,798,286,818,286,839,286,859,286,880,286,900,286,920,286,941,286,961,286,982,286,1002,286,1023,286,1043,286,1064,286,1084,286,1105,286,1125,286,1145,286,1166,286,1186,286,1207,304,-1155,304,-1113,304,-1092,304,-1072,304,-1051,304,-1030,304,-1009,304,-988,304,-968,304,-947,304,-926,304,-905,304,-884,304,-864,304,-843,304,-822,304,-94,304,-73,304,-52,304,-31,304,-10,304,10,304,31,304,52,304,73,304,94,304,114,304,135,304,156,304,177,304,198,304,218,304,239,304,260,304,281,304,302,304,323,304,343,304,364,304,385,304,406,304,427,304,447,304,468,304,489,304,510,304,531,304,551,304,572,304,593,304,614,304,635,304,655,304,676,304,697,304,718,304,739,304,760,304,780,304,801,304,822,304,843,304,864,304,884,304,905,304,926,304,947,304,968,304,988,304,1009,304,1030,304,1051,304,1072,304,1092,304,1113,304,1134,304,1155,304,1176,304,1197,322,-1161,322,-1140,322,-1118,322,-1097,322,-1076,322,-1054,322,-1033,322,-1012,322,-991,322,-969,322,-948,322,-927,322,-905,322,-884,322,-863,322,-841,322,-820,322,-75,322,-53,322,-32,322,-11,322,11,322,32,322,53,322,75,322,96,322,117,322,138,322,202,322,224,322,351,322,373,322,394,322,415,322,437,322,458,322,479,322,501,322,522,322,543,322,564,322,586,322,607,322,628,322,650,322,671,322,692,322,714,322,735,322,756,322,778,322,799,322,820,322,841,322,863,322,884,322,905,322,927,322,948,322,969,322,991,322,1012,322,1033,322,1054,322,1076,322,1097,322,1118,322,1140,322,1161,322,1182,322,1204,322,1310,340,-1171,340,-1149,340,-1128,340,-1106,340,-1084,340,-1063,340,-1041,340,-1019,340,-998,340,-976,340,-954,340,-933,340,-911,340,-889,340,-867,340,-846,340,-824,340,-802,340,-781,340,-65,340,-43,340,-22,340,0,340,22,340,43,340,65,340,87,340,369,340,390,340,412,340,434,340,455,340,477,340,499,340,520,340,542,340,564,340,586,340,607,340,629,340,651,340,672,340,694,340,716,340,737,340,759,340,781,340,802,340,824,340,846,340,867,340,889,340,911,340,933,340,954,340,976,340,998,340,1019,340,1041,340,1063,340,1084,340,1106,340,1128,340,1149,340,1171,340,1193,340,1345,358,-1200,358,-1178,358,-1156,358,-1133,358,-1111,358,-1089,358,-1067,358,-1044,358,-1022,358,-1000,358,-978,358,-956,358,-933,358,-911,358,-889,358,-867,358,-844,358,-822,358,-800,358,-778,358,0,358,22,358,44,358,67,358,89,358,378,358,400,358,422,358,444,358,467,358,489,358,511,358,533,358,556,358,578,358,600,358,622,358,644,358,667,358,689,358,711,358,733,358,756,358,778,358,800,358,822,358,844,358,867,358,889,358,911,358,933,358,956,358,978,358,1000,358,1022,358,1044,358,1067,358,1089,358,1111,358,1133,358,1156,358,1178,358,1200,358,1289,358,1378,358,1400,376,-1208,376,-1185,376,-1162,376,-1139,376,-1116,376,-1094,376,-1071,376,-1048,376,-1025,376,-1003,376,-980,376,-957,376,-934,376,-911,376,-889,376,-866,376,-843,376,-820,376,-797,376,-775,376,-68,376,-46,376,-23,376,137,376,228,376,273,376,296,376,319,376,342,376,365,376,387,376,410,376,433,376,456,376,478,376,547,376,570,376,592,376,615,376,638,376,661,376,684,376,706,376,729,376,752,376,775,376,797,376,820,376,843,376,866,376,889,376,911,376,934,376,957,376,980,376,1003,376,1025,376,1048,376,1071,376,1094,376,1116,376,1139,376,1162,376,1185,376,1208,376,1276,376,1390,394,-1219,394,-1196,394,-1173,394,-1150,394,-1126,394,-1103,394,-1080,394,-1057,394,-1034,394,-1010,394,-987,394,-964,394,-941,394,-917,394,-894,394,-871,394,-848,394,-825,394,-801,394,-778,394,-81,394,-58,394,-35,394,-12,394,221,394,290,394,314,394,337,394,360,394,383,394,406,394,430,394,453,394,476,394,546,394,569,394,592,394,615,394,639,394,662,394,685,394,708,394,732,394,755,394,778,394,801,394,825,394,848,394,871,394,894,394,917,394,941,394,964,394,987,394,1010,394,1034,394,1057,394,1080,394,1103,394,1126,394,1150,394,1173,394,1219,394,1266,394,1405,412,-1224,412,-1200,412,-1176,412,-1152,412,-1128,412,-1104,412,-1080,412,-1056,412,-1032,412,-1008,412,-984,412,-960,412,-936,412,-912,412,-888,412,-864,412,-840,412,-816,412,-792,412,-768,412,-744,412,-72,412,-48,412,-24,412,0,412,144,412,216,412,240,412,264,412,288,412,336,412,360,412,432,412,456,412,480,412,552,412,576,412,600,412,624,412,648,412,672,412,696,412,720,412,744,412,768,412,792,412,816,412,840,412,864,412,888,412,912,412,936,412,960,412,984,412,1008,412,1032,412,1056,412,1080,412,1104,412,1128,412,1152,412,1176,412,1200,412,1224,412,1248,412,1272,412,1296,430,-1233,430,-1208,430,-1184,430,-1159,430,-1134,430,-1110,430,-1085,430,-1060,430,-1036,430,-1011,430,-986,430,-962,430,-937,430,-912,430,-888,430,-863,430,-838,430,-814,430,-789,430,-764,430,-740,430,-715,430,-74,430,-49,430,-25,430,0,430,25,430,123,430,173,430,197,430,222,430,247,430,271,430,419,430,444,430,468,430,542,430,567,430,592,430,616,430,641,430,666,430,690,430,715,430,740,430,764,430,789,430,814,430,838,430,863,430,888,430,912,430,937,430,962,430,986,430,1011,430,1036,430,1060,430,1085,430,1110,430,1134,430,1159,430,1184,430,1208,430,1233,430,1258,430,1282,430,1307,430,1332,430,1405,430,1430,448,-1217,448,-1192,448,-1166,448,-1141,448,-1115,448,-1090,448,-1065,448,-1039,448,-1014,448,-989,448,-963,448,-938,448,-913,448,-887,448,-862,448,-837,448,-811,448,-786,448,-761,448,-735,448,-710,448,-685,448,-634,448,0,448,25,448,51,448,76,448,101,448,152,448,177,448,203,448,228,448,254,448,279,448,380,448,406,448,431,448,456,448,532,448,558,448,583,448,608,448,634,448,659,448,685,448,710,448,735,448,761,448,786,448,811,448,837,448,862,448,887,448,913,448,938,448,963,448,989,448,1014,448,1039,448,1065,448,1090,448,1115,448,1141,448,1166,448,1192,448,1217,448,1242,448,1268,448,1293,448,1318,448,1344,448,1420,466,-1222,466,-1196,466,-1169,466,-1143,466,-1117,466,-1091,466,-1064,466,-1038,466,-1012,466,-985,466,-959,466,-933,466,-907,466,-880,466,-854,466,-828,466,-801,466,-775,466,-749,466,-723,466,-696,466,-670,466,-13,466,13,466,39,466,66,466,92,466,118,466,145,466,171,466,197,466,223,466,250,466,276,466,302,466,328,466,355,466,381,466,407,466,434,466,460,466,486,466,539,466,565,466,591,466,618,466,644,466,670,466,696,466,723,466,749,466,775,466,801,466,828,466,854,466,880,466,907,466,933,466,959,466,985,466,1012,466,1038,466,1064,466,1091,466,1117,466,1143,466,1169,466,1196,466,1222,466,1248,466,1274,466,1301,466,1327,466,1353,466,1380,466,1432,484,-1205,484,-1177,484,-1150,484,-1123,484,-1096,484,-1069,484,-1042,484,-1015,484,-988,484,-961,484,-934,484,-907,484,-880,484,-853,484,-826,484,-798,484,-771,484,-744,484,-717,484,-663,484,-582,484,-555,484,-41,484,-14,484,14,484,41,484,68,484,95,484,122,484,149,484,176,484,203,484,230,484,257,484,284,484,311,484,338,484,365,484,392,484,420,484,447,484,474,484,501,484,528,484,555,484,582,484,609,484,636,484,663,484,690,484,717,484,744,484,771,484,798,484,826,484,853,484,880,484,907,484,934,484,961,484,988,484,1015,484,1042,484,1069,484,1096,484,1123,484,1150,484,1177,484,1205,484,1232,484,1259,484,1286,484,1313,484,1340,484,1367,484,1394,484,1421,502,-1266,502,-1237,502,-1209,502,-1181,502,-1153,502,-1125,502,-1097,502,-1069,502,-1041,502,-1012,502,-984,502,-956,502,-928,502,-900,502,-872,502,-844,502,-816,502,-787,502,-759,502,-731,502,-703,502,-675,502,28,502,56,502,84,502,113,502,141,502,169,502,197,502,225,502,253,502,281,502,309,502,338,502,366,502,394,502,422,502,450,502,478,502,506,502,534,502,563,502,591,502,619,502,647,502,675,502,703,502,731,502,759,502,788,502,816,502,844,502,872,502,900,502,928,502,956,502,984,502,1013,502,1041,502,1069,502,1097,502,1125,502,1153,502,1181,502,1209,502,1238,502,1266,502,1294,502,1322,502,1350,502,1378,502,1434,520,-1273,520,-1244,520,-1215,520,-1185,520,-1156,520,-1127,520,-1098,520,-1068,520,-1039,520,-1010,520,-980,520,-951,520,-922,520,-893,520,-863,520,-834,520,-776,520,-746,520,-717,520,-688,520,-659,520,-629,520,-600,520,-571,520,-44,520,-15,520,44,520,73,520,102,520,132,520,161,520,190,520,220,520,249,520,278,520,307,520,337,520,366,520,395,520,424,520,454,520,483,520,512,520,541,520,571,520,600,520,629,520,659,520,688,520,717,520,746,520,776,520,805,520,834,520,863,520,893,520,922,520,951,520,980,520,1010,520,1039,520,1068,520,1098,520,1127,520,1156,520,1185,520,1215,520,1244,520,1273,520,1302,520,1332,520,1361,520,1390,520,1420,520,1566,538,-1281,538,-1251,538,-1220,538,-1190,538,-1159,538,-1129,538,-1098,538,-1068,538,-1037,538,-1007,538,-976,538,-946,538,-915,538,-885,538,-854,538,-824,538,-763,538,-732,538,-702,538,-671,538,-641,538,-610,538,-580,538,-92,538,92,538,122,538,153,538,183,538,214,538,244,538,275,538,305,538,336,538,366,538,397,538,427,538,458,538,488,538,519,538,549,538,580,538,610,538,641,538,671,538,702,538,732,538,763,538,793,538,824,538,854,538,885,538,915,538,946,538,976,538,1007,538,1037,538,1068,538,1098,538,1129,538,1159,538,1190,538,1220,538,1251,538,1281,538,1312,538,1342,538,1373,538,1403,538,1586,556,-1609,556,-1290,556,-1258,556,-1227,556,-1195,556,-1163,556,-1131,556,-1099,556,-1067,556,-1035,556,-1004,556,-972,556,-940,556,-908,556,-876,556,-749,556,-717,556,-685,556,-653,556,-621,556,112,556,239,556,271,556,303,556,335,556,366,556,398,556,430,556,462,556,494,556,526,556,558,556,589,556,621,556,653,556,685,556,717,556,749,556,781,556,812,556,844,556,876,556,908,556,940,556,972,556,1004,556,1035,556,1067,556,1099,556,1131,556,1163,556,1195,556,1227,556,1258,556,1290,556,1322,556,1354,556,1577,556,1609,574,-1567,574,-1533,574,-1333,574,-1300,574,-1267,574,-1233,574,-1200,574,-1167,574,-1133,574,-1100,574,-1067,574,-1033,574,-1000,574,-967,574,-933,574,-733,574,-700,574,-667,574,-633,574,-67,574,-33,574,100,574,133,574,267,574,300,574,333,574,367,574,400,574,433,574,467,574,500,574,533,574,567,574,600,574,633,574,667,574,700,574,733,574,767,574,800,574,833,574,867,574,900,574,933,574,967,574,1000,574,1033,574,1067,574,1100,574,1133,574,1167,574,1200,574,1233,574,1267,574,1300,574,1333,574,1367,574,1600,592,-1588,592,-1553,592,-1518,592,-1376,592,-1341,592,-1306,592,-1271,592,-1235,592,-1200,592,-1165,592,-1129,592,-1094,592,-1059,592,-1024,592,-988,592,-953,592,-776,592,-741,592,-706,592,-635,592,71,592,141,592,176,592,247,592,282,592,318,592,353,592,388,592,424,592,459,592,494,592,529,592,565,592,600,592,635,592,671,592,706,592,741,592,776,592,812,592,847,592,882,592,918,592,953,592,988,592,1024,592,1059,592,1094,592,1129,592,1165,592,1200,592,1235,592,1271,592,1306,592,1341,592,1376,592,1412,592,1624,610,-1614,610,-1577,610,-1540,610,-1503,610,-1466,610,-1429,610,-1392,610,-1355,610,-1318,610,-1280,610,-1243,610,-1206,610,-1169,610,-1132,610,-1095,610,-1058,610,-1021,610,-984,610,-946,610,-761,610,-724,610,-427,610,56,610,93,610,130,610,167,610,241,610,278,610,315,610,353,610,390,610,427,610,464,610,501,610,538,610,575,610,612,610,649,610,687,610,724,610,761,610,798,610,835,610,872,610,909,610,946,610,984,610,1021,610,1058,610,1095,610,1132,610,1169,610,1206,610,1243,610,1280,610,1318,610,1355,610,1392,610,1429,610,1466,610,1503,610,1540,610,1652,610,1689,628,-1642,628,-1602,628,-1563,628,-1523,628,-1484,628,-1444,628,-1404,628,-1365,628,-1325,628,-1286,628,-1246,628,-1207,628,-1167,628,-1127,628,-1088,628,-1048,628,-1009,628,-969,628,-930,628,-692,628,-653,628,-495,628,-455,628,99,628,138,628,178,628,218,628,257,628,297,628,336,628,376,628,415,628,455,628,495,628,534,628,574,628,613,628,653,628,692,628,732,628,771,628,811,628,851,628,890,628,930,628,969,628,1009,628,1048,628,1088,628,1127,628,1167,628,1207,628,1246,628,1286,628,1325,628,1365,628,1404,628,1444,628,1484,628,1523,628,1563,628,1602,628,1642,628,1681,628,1721,628,1760,646,-1591,646,-1549,646,-1507,646,-1465,646,-1423,646,-1381,646,-1340,646,-1298,646,-1256,646,-1214,646,-1172,646,-1130,646,-1088,646,-1047,646,-1005,646,-963,646,-921,646,-879,646,-837,646,-753,646,-712,646,-670,646,-460,646,-419,646,-209,646,-167,646,126,646,167,646,209,646,251,646,293,646,335,646,377,646,419,646,460,646,502,646,544,646,586,646,628,646,670,646,712,646,753,646,795,646,837,646,879,646,921,646,963,646,1005,646,1047,646,1088,646,1130,646,1172,646,1214,646,1256,646,1298,646,1340,646,1381,646,1423,646,1465,646,1507,646,1549,646,1591,646,1633,646,1674,646,1716,646,1758,664,-1665,664,-1620,664,-1575,664,-1530,664,-1485,664,-1440,664,-1395,664,-1350,664,-1305,664,-1260,664,-1215,664,-1170,664,-1125,664,-1080,664,-1035,664,-990,664,-945,664,-900,664,-855,664,-810,664,-765,664,-720,664,-675,664,-630,664,-585,664,-540,664,-495,664,-450,664,-405,664,-360,664,-315,664,-270,664,-225,664,-180,664,-135,664,-90,664,-45,664,0,664,45,664,90,664,405,664,720,682,-1751,682,-1703,682,-1654,682,-1605,682,-1557,682,-1508,682,-1459,682,-1411,682,-1362,682,-1314,682,-1265,682,-1216,682,-1168,682,-1119,682,-1070,682,-1022,682,-973,682,-924,682,-876,682,-827,682,-778,682,-730,682,-681,682,-632,682,-584,682,-535,682,-486,682,-438,682,-389,682,-341,682,-292,682,-243,682,-195,682,-146,682,-97,682,-49,682,0,682,49,682,97,682,146,682,438,682,486,700,-1588,700,-1535,700,-1482,700,-1429,700,-1271,700,-1165,700,-1112,700,-1059,700,-953,700,-794,700,-741,700,-529,700,-476,700,-424,700,-371,700,-318,700,-265,700,265,700,688,700,741,700,794,700,847,700,900,700,953,700,1006,700,1059,700,1112,700,1165,700,1218,700,1271,700,1324,700,1376,700,1429,700,1482,700,1535,700,1588,718,-1219,718,-1161,718,-1103,718,-987,718,-871,718,-813,718,-755,718,-523,718,-465,718,-406,718,-348,718,-290,718,-232,718,523,718,697,718,813,718,871,718,929,718,987,718,1045,718,1103,718,1161,718,1219,718,1277,736,-1221,736,-1157,736,-836,736,-514,736,-450,736,-386,736,-321,736,-257,736,836,736,900,736,964,736,1029,736,1157,736,1414,754,-1152,754,-1080,754,-864,754,-576,754,-504,754,-432,754,-360,754,-288,754,-216,754,936,754,1008,754,1080,754,1440,772,-818,772,-655,772,-573,772,-491,772,-409,772,-327,772,-245,772,164];
+  const gc = $("#globe"), gx = gc.getContext("2d"), gwrap = gc.parentElement, items = $$(".region-list > div");
+  const REG = [["Europe", 50, 12], ["Africa", 3, 21], ["Asia-Pacific", 8, 108], ["United States", 39, -97]];
+  const labels = REG.map(r => { const l = document.createElement("span"); l.className = "glabel"; l.textContent = r[0]; gwrap.appendChild(l); return l; });
+  let GW = 0; function gsize() { const d = devicePixelRatio || 1; GW = gc.clientWidth; gc.width = GW * d; gc.height = GW * d; gx.setTransform(d, 0, 0, d, 0, 0); }
+  gsize(); addEventListener("resize", gsize);
+  const rad = Math.PI / 180, tilt = 18 * rad;
+  function proj(lat, lon, rot) { const la = lat * rad, lo = (lon + rot) * rad; let x = Math.cos(la) * Math.sin(lo), y = Math.sin(la), z = Math.cos(la) * Math.cos(lo);
+    const y2 = y * Math.cos(tilt) - z * Math.sin(tilt), z2 = y * Math.sin(tilt) + z * Math.cos(tilt); return [x, y2, z2]; }
+  function globe(t) {
+    const light = document.documentElement.dataset.theme === "ivory" || document.documentElement.dataset.theme === "heritage" && !gc.closest(".band");
+    const R = GW * .44, c = GW / 2, rot = -t / 260 + 20, dotc = light ? "168,134,90" : "220,193,153";
+    gx.clearRect(0, 0, GW, GW);
+    gx.beginPath(); gx.arc(c, c, R, 0, Math.PI * 2); gx.strokeStyle = `rgba(${dotc},.25)`; gx.lineWidth = 1; gx.stroke();
+    for (let i = 0; i < LAND.length; i += 2) { const [x, y, z] = proj(LAND[i] / 10, LAND[i + 1] / 10, rot); if (z < -.05) continue;
+      gx.fillStyle = `rgba(${dotc},${(.18 + .62 * Math.max(0, z)).toFixed(3)})`; gx.fillRect(c + x * R - .9, c - y * R - .9, 1.8, 1.8); }
+    let best = -1, bz = .55;
+    REG.forEach(([n, la, lo], k) => { const [x, y, z] = proj(la, lo, rot), px = c + x * R, py = c - y * R, on = z > 0;
+      labels[k].style.left = px / GW * 100 + "%"; labels[k].style.top = py / GW * 100 + "%"; labels[k].style.opacity = on ? Math.min(1, z * 2.2) : 0;
+      if (!on) return; if (z > bz) { bz = z; best = k; }
+      const f = .55 + .45 * Math.abs(Math.sin(t / 380 + k * 1.7)) * (Math.sin(t / 97 + k * 3) > -.85 ? 1 : .3);
+      const g = gx.createRadialGradient(px, py, 0, px, py, 22); g.addColorStop(0, `rgba(241,226,198,${.85 * f})`); g.addColorStop(.25, `rgba(214,185,140,${.45 * f})`); g.addColorStop(1, "rgba(214,185,140,0)");
+      gx.fillStyle = g; gx.beginPath(); gx.arc(px, py, 22, 0, Math.PI * 2); gx.fill();
+      gx.fillStyle = light ? "#8a6a3e" : "#f6ead2"; gx.beginPath(); gx.arc(px, py, 3.2, 0, Math.PI * 2); gx.fill(); });
+    items.forEach((el, k) => el.classList.toggle("lit", k === best));
+    requestAnimationFrame(globe);
+  }
+  requestAnimationFrame(globe);
+
+  // hero: gold lines that draw themselves like a rising chart
+  const cv = $("#chart"), cx = cv.getContext("2d");
+  let W, H, lines = [];
+  function size() { const d = devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
+    lines = [0, 1, 2, 3].map(k => { const pts = [], n = 14; let y = H * (.75 - k * .08);
+      for (let i = 0; i <= n; i++) { y += (Math.random() - .62) * H * .09; y = Math.max(H * .12, Math.min(H * .95, y)); pts.push([i / n * W, y]); } return { pts, a: .85 - k * .17 }; }); }
+  size(); addEventListener("resize", size);
+  let start = performance.now();
+  function draw(now) {
+    const cyc = (now - start) % 9000, p = Math.min(1, cyc / 4200);
+    if (cyc < 30 && now - start > 9000) size();  // new random lines each cycle
+    cx.clearRect(0, 0, W, H);
+    lines.forEach(({ pts, a }) => {
+      const g = cx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, `rgba(201,167,122,0)`); g.addColorStop(.4, `rgba(220,193,153,${a})`); g.addColorStop(1, `rgba(236,215,182,${a})`);
+      cx.strokeStyle = g; cx.lineWidth = 1.4; cx.beginPath();
+      const upto = p * (pts.length - 1);
+      pts.forEach(([x, y], i) => { if (i > upto + 1) return; if (i === 0) return cx.moveTo(x, y);
+        const [px, py] = pts[i - 1], f = Math.min(1, upto - (i - 1)); const mx = (px + x) / 2;
+        cx.bezierCurveTo(mx, py, mx, y, px + (x - px) * f, py + (y - py) * f); });
+      cx.stroke();
+    });
+    if (!reduce) requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  // design switcher (preview only)
+  $$(".switcher button").forEach(b => b.addEventListener("click", () => {
+    document.documentElement.dataset.theme = b.dataset.t;
+    $$(".switcher button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  }));
+
+  // preview form: nothing is sent
+  $("#form").addEventListener("submit", e => { e.preventDefault(); const s = $("#sent"); s.hidden = false; s.className = "sent";
+    s.textContent = "Thank you. This is a preview, so nothing was sent. The form will be connected when the website goes live."; });
+  $("#yr").textContent = new Date().getFullYear();
+
+  /* ===== Draft 2 additions ===== */
+  const toast = msg => { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 2600); };
+  document.addEventListener("click", e => { const a = e.target.closest("[data-soon]"); if (a) { e.preventDefault(); toast(a.dataset.soon + " to be added by TKS"); } });
+
+  // health check quiz
+  const QS = [
+    ["Do you get monthly management accounts within 10 working days of month-end?", 1],
+    ["Do you have a rolling cash flow forecast you trust?", 0],
+    ["Are your key financial controls documented and tested?", 2],
+    ["Does your board or owner get a clear KPI dashboard every month?", 0],
+    ["Is there an independent review of risk and internal controls at least once a year?", 2],
+    ["Are VAT, payroll and statutory deadlines met without last-minute pressure?", 1],
+    ["Could your finance processes and systems cope if the business doubled?", 3]];
+  const ADV = [
+    ["A rolling cash flow forecast and KPI dashboard, so decisions are based on clear numbers.", 0],
+    ["Reliable monthly management accounts and a calm compliance calendar.", 1],
+    ["A risk and control review, with documented, tested key controls.", 2],
+    ["A finance process and systems review, so the function scales with the business.", 3]];
+  let qi = 0, pts = 0; const weak = [0, 0, 0, 0];
+  function q() {
+    const box = $("#q");
+    if (qi >= QS.length) return result();
+    box.innerHTML = `<div class="qbar"><i style="width:${qi / QS.length * 100}%"></i></div><span class="qn">Question ${qi + 1} of ${QS.length}</span><h3>${QS[qi][0]}</h3>
+      <div class="qopts">${[["Yes", 2], ["Partly", 1], ["No", 0]].map(([l, v]) => `<button type="button" data-v="${v}">${l}</button>`).join("")}</div>`;
+    box.classList.remove("qswap"); void box.offsetWidth; box.classList.add("qswap");
+    requestAnimationFrame(() => box.querySelector(".qbar i").style.width = ((qi + 1) / QS.length * 100) + "%");
+  }
+  $("#q").addEventListener("click", e => { const b = e.target.closest("button[data-v]"); if (!b) return;
+    if (b.dataset.restart != null) { qi = 0; pts = 0; weak.fill(0); $("#qbook").hidden = true; $("#recs").innerHTML = ""; $("#lvl").textContent = "Answer the questions to see your score"; $("#pct").textContent = "0%"; $("#ringfg").style.strokeDashoffset = 503; return q(); }
+    const v = +b.dataset.v; pts += v; weak[QS[qi][1]] += 2 - v; qi++; q(); });
+  function result() {
+    const pct = Math.round(pts / (QS.length * 2) * 100);
+    $("#q").innerHTML = `<div class="qbar"><i style="width:100%"></i></div><span class="qn">All done</span><h3>Thanks. Your score is on the right.</h3><p style="color:var(--muted)">Every answer helps us understand where you are today. On a call we'd go through it with you and agree the first steps.</p><div class="qopts"><button type="button" data-v="0" data-restart>Start again</button></div>`;
+    $("#ringfg").style.strokeDashoffset = 503 - 503 * pct / 100;
+    let n = 0; const t0 = performance.now(); (function c(t) { n = Math.min(pct, Math.round(pct * (t - t0) / 1400)); $("#pct").textContent = n + "%"; if (n < pct) requestAnimationFrame(c); })(t0);
+    $("#lvl").textContent = pct >= 80 ? "Strong foundations, ready to scale" : pct >= 50 ? "Good base, with clear gaps to close" : "Real risk, worth a conversation soon";
+    const order = weak.map((w, k) => [w, k]).sort((a, b) => b[0] - a[0]).slice(0, 3);
+    $("#recs").innerHTML = order.map(([w, k]) => `<li>${ADV.find(a => a[1] === k)[0]} <a href="#svc-${[1, 2, 3, 4][[0, 1, 2, 3].indexOf(k)]}">Related service</a></li>`).join("");
+    $("#qbook").hidden = false;
+  }
+  q();
+
+  // booking calendar (preview)
+  const days = [], d0 = new Date(); d0.setHours(12);
+  for (let d = new Date(d0); days.length < 10; ) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) days.push(new Date(d)); }
+  const fmt = (d, o) => d.toLocaleDateString("en-GB", o);
+  $("#calmonth").textContent = fmt(days[0], { month: "long", year: "numeric" });
+  $("#days").innerHTML = days.map((d, k) => `<button type="button" data-k="${k}" aria-pressed="false"><small>${fmt(d, { weekday: "short" })}</small><b>${d.getDate()}</b></button>`).join("");
+  let bd = null, bt = null;
+  const sum = () => $("#bksum").textContent = bd == null ? "Choose a day and a time." : bt ? `${fmt(days[bd], { weekday: "long", day: "numeric", month: "long" })} at ${bt}` : `${fmt(days[bd], { weekday: "long", day: "numeric", month: "long" })}: now pick a time.`;
+  $("#days").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; bd = +b.dataset.k; bt = null;
+    $$("#days button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    const all = ["09:00", "09:30", "10:30", "11:00", "13:00", "14:00", "14:30", "15:30", "16:00"];
+    const free = all.filter((_, j) => (j * 7 + bd * 3) % 4 !== 0);
+    $("#slots").innerHTML = free.map((t, j) => `<button type="button" aria-pressed="false" style="animation-delay:${j * .04}s">${t}</button>`).join(""); sum(); });
+  $("#slots").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; bt = b.textContent; $$("#slots button").forEach(x => x.setAttribute("aria-pressed", x === b)); sum(); });
+  $("#bk-svc").innerHTML = SERVICES.map(s => `<option>${s.t}</option>`).join("") + "<option>My health check results</option><option>Something else</option>";
+  $("#bkform").addEventListener("submit", e => { e.preventDefault(); if (bd == null || !bt) return toast("Pick a day and a time first"); toast("Preview: no booking made. Live, this sends a calendar invite."); });
+
+  // illustrative dashboard: count-ups and charts when it scrolls into view
+  const cash = [212, 238, 226, 251, 270, 262, 281, 305, 296, 318, 334, 329, 352], CW = 520, CH = 220;
+  const cx2 = i => 20 + i * (CW - 40) / 12, cy2 = v => CH - 24 - (v - 180) / 200 * (CH - 50);
+  const cpath = cash.map((v, i) => `${i ? "L" : "M"}${cx2(i).toFixed(1)} ${cy2(v).toFixed(1)}`).join(" ");
+  $("#cashsvg").innerHTML = `<defs><linearGradient id="cf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9a77a" stop-opacity=".35"/><stop offset="1" stop-color="#c9a77a" stop-opacity="0"/></linearGradient></defs>
+    ${[0, 1, 2, 3].map(k => `<line x1="20" x2="${CW - 20}" y1="${30 + k * 50}" y2="${30 + k * 50}" stroke="currentColor" stroke-opacity=".12"/>`).join("")}
+    <path d="${cpath} L${cx2(12)} ${CH - 24} L20 ${CH - 24}Z" fill="url(#cf)" opacity="0"><animate attributeName="opacity" to="1" dur="1s" begin="indefinite" fill="freeze" id="cfa"/></path>
+    <path class="ln" d="${cpath}" stroke="#c9a77a"/>
+    <circle id="cdot" r="5" fill="#ecd9b5" cx="${cx2(12)}" cy="${cy2(352)}" opacity="0"/>
+    ${cash.map((v, i) => i % 3 ? "" : `<text x="${cx2(i)}" y="${CH - 4}" font-size="11" fill="currentColor" opacity=".55" text-anchor="middle">Wk ${i + 1}</text>`).join("")}`;
+  const bars = [[410, 432], [445, 451], [468, 455], [482, 470]];
+  $("#barsvg").innerHTML = bars.map(([a, b], i) => { const x = 22 + i * 74, h = v => (v - 300) / 220 * 170;
+    return `<rect class="br" x="${x}" y="${196 - h(b)}" width="24" height="${h(b)}" rx="3" fill="currentColor" opacity=".22" style="animation-delay:${i * .12}s"/>
+      <rect class="br" x="${x + 28}" y="${196 - h(a)}" width="24" height="${h(a)}" rx="3" fill="#c9a77a" style="animation-delay:${.06 + i * .12}s"/>
+      <text x="${x + 26}" y="214" font-size="11" fill="currentColor" opacity=".55" text-anchor="middle">Q${i + 1}</text>`; }).join("") +
+    `<text x="22" y="14" font-size="11" fill="currentColor" opacity=".6">&#9632; Budget</text><text x="92" y="14" font-size="11" fill="#c9a77a">&#9632; Actual</text>`;
+  const dio = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; dio.disconnect(); const dash = $("#dash"); dash.classList.add("on");
+    try { $("#cfa").beginElement(); } catch (_) {}
+    setTimeout(() => { const c = $("#cdot"); c.setAttribute("opacity", 1); c.classList.add("pulse-dot"); }, 2300);
+    $$(".kpi b[data-count]").forEach(b => { const to = +b.dataset.count, dec = +(b.dataset.dec || 0), t0 = performance.now();
+      (function f(t) { const p = Math.min(1, (t - t0) / 1600), e2 = 1 - Math.pow(1 - p, 3); b.textContent = (b.dataset.pre || "") + (to * e2).toFixed(dec) + (b.dataset.suf || ""); if (p < 1) requestAnimationFrame(f); })(t0); });
+  }), { threshold: .3 });
+  dio.observe($("#dash"));
+
+  // sub-pages: services, who we help, articles
+  const SVC_EXTRA = [
+    { who: ["Owner-managed and growing businesses", "Organisations without a full-time CFO", "Leadership teams preparing for investment or funding"],
+      get: ["Rolling forecasts and cash flow models", "A monthly KPI dashboard and board pack", "Clear recommendations at board and leadership meetings"] },
+    { who: ["Small and medium-sized businesses", "Owners who want reliable monthly numbers", "Organisations outgrowing their bookkeeping"],
+      get: ["Monthly management accounts on a fixed timetable", "A compliance calendar for VAT, payroll and filings", "Stronger controls over reporting and payments"] },
+    { who: ["Boards and audit and risk committees", "Organisations setting up or refreshing internal audit", "Multi-site and multi-country groups"],
+      get: ["A risk-based internal audit plan", "Clear reports with prioritised, agreed actions", "Tracking of actions through to completion"] },
+    { who: ["Finance teams with a slow month-end", "Organisations changing finance systems", "Leaders who want better data and dashboards"],
+      get: ["A finance function review with a practical roadmap", "Faster close and automated reporting", "Power BI dashboards your team can maintain"] }];
+  const FAQ = [["How does a first conversation work?", "We start with a free 30-minute call to understand where you are and what you need, then follow up with a short proposal and next steps."],
+    ["Can you work alongside our existing team?", "Yes. We can lead, support or coach your team, depending on what you need, and we aim to leave capability behind."],
+    ["Do you work remotely or on site?", "Both. Engagements are shaped around you; details are agreed in the proposal."]];
+  const WHO = {
+    "who-owners": { t: "Business owners", i: "You need numbers you can trust and someone senior to talk decisions through with, without the cost of a full-time finance director.", s: [0, 1], p: ["Not knowing your true cash position week to week", "Accounts that arrive too late to act on", "Big decisions made without a financial model", "Deadlines for VAT, payroll and filings creating stress"] },
+    "who-boards": { t: "Boards & audit committees", i: "You need independent assurance that risks are understood and controls work, reported clearly enough to act on.", s: [2, 0], p: ["Limited visibility of control weaknesses", "Internal audit coverage that doesn't match the real risks", "Long reports with unclear priorities", "Actions that are agreed but never closed"] },
+    "who-finance": { t: "Finance teams", i: "You want a faster close, better systems and reporting the business values, with support that builds your team's skills.", s: [3, 1], p: ["A month-end close that takes too long", "Manual spreadsheets and repeated work", "Systems that don't talk to each other", "Reporting the business doesn't use"] } };
+  const POSTS = [
+    { id: "post-1", c: "Strategic finance", t: "5 signs your business needs a fractional CFO", m: 4, x: "If decisions feel like guesswork, you may have outgrown your current finance support.",
+      b: ["Most growing businesses reach a point where the bookkeeping is done, the accounts are filed, but nobody is looking ahead. That gap is where a fractional CFO adds most value.",
+          "The first sign is cash surprises: a tight month nobody saw coming. The second is a big decision, such as hiring, a new site or an investment, made without a model behind it. The third is a board or lender asking for numbers you can't produce quickly.",
+          "The fourth is month-end that drags on for weeks, so the numbers are history by the time you see them. The fifth is simply that you, the owner, are spending your evenings in spreadsheets instead of running the business.",
+          "A fractional CFO gives you senior finance leadership for a few days a month: forecasting, reporting, funding conversations and a sounding board for decisions, at a fraction of the cost of a full-time hire."] },
+    { id: "post-2", c: "Internal audit", t: "What your audit committee really wants from internal audit", m: 5, x: "Fewer, sharper findings, linked to the risks that matter.",
+      b: ["Audit committees rarely complain about too little paper. What they want is confidence that the biggest risks are covered and that the actions agreed actually happen.",
+          "That starts with a risk-based plan: audits chosen because of what could go wrong, not because they were done last year. It continues with reports that lead with the answer, rank the findings and are honest about root causes.",
+          "Finally, committees value tracking. A simple, regularly updated view of open actions, owners and dates does more for assurance than any long report.",
+          "Done well, internal audit becomes a source of insight for the board, not just a compliance exercise."] },
+    { id: "post-3", c: "Finance transformation", t: "How to cut month-end close from 11 days to 6", m: 6, x: "A practical roadmap for a faster, calmer close.",
+      b: ["A slow close is rarely about people working too slowly. It's usually about the order of work, manual steps and waiting for information.",
+          "Start by mapping the close day by day and finding the critical path. Move reconciliations and accruals earlier, so they happen during the month rather than after it.",
+          "Then remove manual work: standard journals, automated bank feeds and reconciliation tools, and a single source for reporting such as a Power BI model.",
+          "Finally, agree a close calendar with clear owners and review it every month. The figure in the title is an illustrative example, but most teams that follow these steps see a real, lasting improvement."] }];
+  $("#posts").innerHTML = POSTS.map((p, k) => `<a class="card post rv d${k}" href="#${p.id}"><div class="art"><svg viewBox="0 0 300 150" preserveAspectRatio="none">${[0, 1, 2].map(j => `<path d="M0 ${110 - j * 18} C 60 ${80 - j * 20 - k * 10}, 120 ${120 - j * 14}, 180 ${70 - j * 16} S 260 ${40 - j * 8 + k * 6}, 300 ${30 - j * 6}" fill="none" stroke="#c9a77a" stroke-opacity="${.75 - j * .22}" stroke-width="1.5" class="ln" style="animation:lnd 3s ${j * .3 + k * .2}s forwards"/>`).join("")}</svg></div><div class="tx"><small>${p.c} · ${p.m} min read</small><h3>${p.t}</h3><p>${p.x}</p></div></a>`).join("");
+  $$("#posts .rv").forEach(el => io.observe(el));
+
+  const page = $("#page"), cta = `<a class="btn btn-gold" href="#book">Book a free 30-minute call <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>`;
+  const bar = label => `<div class="page-bar"><div class="wrap"><button class="back" type="button" data-back>&larr; Back to home</button><span class="eyebrow">${label}</span></div></div>`;
+  function render(id) {
+    let m;
+    if ((m = id.match(/^svc-(\d)$/))) { const k = +m[1] - 1, s = SERVICES[k], x = SVC_EXTRA[k];
+      return bar("Service 0" + (k + 1)) + `<div class="page-hero"><div class="wrap"><p class="eyebrow">Service 0${k + 1}</p><h1>${s.t}</h1><p class="lede" style="margin-top:22px">${s.i}</p></div></div>
+      <div class="wrap page-body"><div><h2>What's included</h2><ul>${s.l.map(l => `<li>${l}</li>`).join("")}</ul><h2>Who it suits</h2><ul>${x.who.map(l => `<li>${l}</li>`).join("")}</ul><h2>What you get</h2><ul>${x.get.map(l => `<li>${l}</li>`).join("")}</ul>
+      <h2>Questions</h2>${FAQ.map(([q2, a]) => `<details><summary>${q2}</summary><p>${a}</p></details>`).join("")}</div>
+      <aside class="card aside"><p class="eyebrow">Next step</p><h3 style="font-size:28px">${s.c}</h3>${cta}<a class="btn btn-ghost" href="#check">Take the health check</a></aside></div>`; }
+    if (WHO[id]) { const w = WHO[id];
+      return bar("Who we help") + `<div class="page-hero"><div class="wrap"><p class="eyebrow">For ${w.t.toLowerCase()}</p><h1>${w.t}</h1><p class="lede" style="margin-top:22px">${w.i}</p></div></div>
+      <div class="wrap page-body"><div><h2>Sound familiar?</h2><ul>${w.p.map(l => `<li>${l}</li>`).join("")}</ul><h2>How we help</h2>${w.s.map(k => `<div class="card" style="padding:24px;margin-bottom:14px"><p class="eyebrow">Service 0${k + 1}</p><h3 style="font-size:26px;margin:10px 0">${SERVICES[k].t}</h3><p style="color:var(--muted);margin:0 0 12px">${SERVICES[k].c}</p><a class="svc-more" href="#svc-${k + 1}">Explore this service &rarr;</a></div>`).join("")}</div>
+      <aside class="card aside"><p class="eyebrow">Next step</p><h3 style="font-size:28px">Talk it through with us.</h3>${cta}<a class="btn btn-ghost" href="#check">Take the health check</a></aside></div>`; }
+    const p = POSTS.find(p2 => p2.id === id);
+    if (p) return bar("Insights") + `<div class="page-hero"><div class="wrap"><p class="eyebrow">${p.c} · ${p.m} min read</p><h1>${p.t}</h1><p style="margin-top:16px"><span class="tag-demo">Sample article for TKS to review</span></p></div></div>
+      <div class="wrap page-body article"><div>${p.b.map(t => `<p>${t}</p>`).join("")}</div><aside class="card aside"><p class="eyebrow">Want to talk this through?</p>${cta}</aside></div>`;
+    return null;
+  }
+  let lastY = 0;
+  function route() {
+    const id = location.hash.slice(1), html = render(id);
+    if (html) { if (page.hidden) lastY = scrollY; page.innerHTML = html; page.hidden = false; page.scrollTop = 0; requestAnimationFrame(() => page.classList.add("open")); document.body.style.overflow = "hidden"; }
+    else if (!page.hidden) { page.classList.remove("open"); document.body.style.overflow = ""; setTimeout(() => { if (!page.classList.contains("open")) page.hidden = true; }, 600);
+      if (["book", "check", "contact"].includes(id)) setTimeout(() => document.getElementById(id).scrollIntoView({ behavior: "smooth" }), 450); }
+  }
+  page.addEventListener("click", e => { if (e.target.closest("[data-back]")) { history.pushState(null, "", " "); route(); scrollTo(0, lastY); } });
+  addEventListener("hashchange", route); route();
+
+  // owner area (preview)
+  $("#ownerlink").addEventListener("click", () => $("#owner").hidden = false);
+  $("#ownerclose").addEventListener("click", () => $("#owner").hidden = true);
+
+})();
+</script>
+</body>
+</html>
