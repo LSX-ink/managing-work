@@ -94,7 +94,38 @@ header.site.scrolled { background: color-mix(in srgb, var(--bg) 86%, transparent
 [data-theme="ivory"] .spark { background: var(--gold-500); box-shadow: 0 0 10px 2px rgba(168,134,90,.45), 0 0 24px 6px rgba(168,134,90,.2); }
 @keyframes flicker { 0%, 100% { opacity: .12; transform: scale(.7); } 18% { opacity: .9; } 22% { opacity: .45; } 30% { opacity: 1; transform: scale(1.15); } 55% { opacity: .35; } 70% { opacity: .85; } }
 @keyframes drift { to { translate: var(--dx, 6px) var(--dy, -8px); } }
-#chart { position: absolute; inset: auto 0 0 0; width: 100%; height: 46%; pointer-events: none; opacity: .55; }
+#chart { position: absolute; inset: auto 0 0 0; width: 100%; height: 62%; pointer-events: none; opacity: .7; }
+/* slow moving light in the hero background */
+.hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(70px); pointer-events: none; }
+.hero::before { width: 520px; height: 520px; background: rgba(201,167,122,.16); top: 8%; right: 6%; animation: blob1 16s ease-in-out infinite alternate; }
+.hero::after { width: 620px; height: 620px; background: rgba(59,74,67,.55); bottom: -18%; left: -8%; animation: blob2 19s ease-in-out infinite alternate; }
+@keyframes blob1 { to { transform: translate(-160px, 120px) scale(1.2); } }
+@keyframes blob2 { to { transform: translate(180px, -90px) scale(.9); } }
+.hero > * { position: relative; z-index: 1; }
+.hero #chart { position: absolute; z-index: 0; }
+/* light sweeping across the monogram */
+.mono-stage { transition: transform .25s ease-out; transform-style: preserve-3d; }
+.mono-shine { position: absolute; width: 62%; aspect-ratio: 658 / 622; pointer-events: none; animation: float 9s ease-in-out infinite;
+  -webkit-mask: url(/assets/tks-monogram.png) center / contain no-repeat; mask: url(/assets/tks-monogram.png) center / contain no-repeat;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,250,238,.95) 50%, transparent 62%); background-size: 260% 100%; animation: float 9s ease-in-out infinite, shine 4.5s ease-in-out infinite; mix-blend-mode: screen; }
+@keyframes shine { 0% { background-position: 130% 0; } 55%, 100% { background-position: -30% 0; } }
+/* headline words rise in one by one */
+.w { display: inline-block; opacity: 0; transform: translateY(40%) rotate(2deg); filter: blur(6px); animation: word .9s cubic-bezier(.2,.7,.2,1) forwards; }
+@keyframes word { to { opacity: 1; transform: none; filter: none; } }
+/* gold line draws under each section heading */
+.sec-head h2, .regions h2, .contact h2 { position: relative; padding-bottom: 18px; }
+.sec-head h2::after, .regions h2::after, .contact h2::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--gold-grad); transition: width 1.4s cubic-bezier(.3,.7,.2,1) .3s; }
+.in.sec-head h2::after, h2.in::after { width: 120px; }
+/* shine across the gold buttons */
+.btn-gold { position: relative; overflow: hidden; }
+.btn-gold::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.7) 50%, transparent 70%); mix-blend-mode: soft-light; transform: translateX(-120%); animation: btnshine 3.8s ease-in-out infinite; }
+@keyframes btnshine { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+/* service cards and approach dots pulse gently */
+.step .dot { animation: pulse 3.2s ease-in-out infinite; }
+.step:nth-child(3) .dot { animation-delay: .8s; } .step:nth-child(4) .dot { animation-delay: 1.6s; } .step:nth-child(5) .dot { animation-delay: 2.4s; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,193,153,.0); } 50% { box-shadow: 0 0 0 10px rgba(220,193,153,.12), 0 0 30px rgba(220,193,153,.25); } }
+.why-card svg { animation: bob 4s ease-in-out infinite; } .why-card:nth-child(2) svg { animation-delay: .6s; } .why-card:nth-child(3) svg { animation-delay: 1.2s; }
+@keyframes bob { 50% { transform: translateY(-6px); } }
 .trust { display: flex; flex-wrap: wrap; gap: 12px 34px; margin-top: 54px; padding-top: 26px; border-top: 1px solid rgba(220,193,153,.18); font-size: 13.5px; color: #aeb6af; max-width: 640px; }
 [data-theme="ivory"] .trust { color: var(--muted); border-color: var(--line); }
 .trust b { color: var(--gold-300); font-weight: 600; }
@@ -233,10 +264,7 @@ footer { border-top: 1px solid var(--line); padding: 46px 0 120px; font-size: 14
   .switcher button { padding: 9px 10px; font-size: 12px; gap: 6px; }
 }
 html { overflow-x: clip; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-  .rv { opacity: 1; transform: none; } .svc-panel li { opacity: 1; transform: none; }
-}
+
 </style>
 </head>
 <body>
@@ -276,6 +304,7 @@ html { overflow-x: clip; }
       <span class="spark" style="top:30%;left:6%;--s:5px;--t:4.4s;--d:2.8s"></span>
       <span class="spark" style="top:4%;left:18%;--s:4px;--t:3.4s;--d:3.3s;--dy:6px"></span>
       <img src="/assets/tks-monogram.png" alt="">
+      <span class="mono-shine"></span>
     </div>
   </div>
   <a class="scroll-cue" href="#services" aria-label="Scroll to services"></a>
@@ -374,7 +403,7 @@ html { overflow-x: clip; }
 <script>
 (() => {
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduce = false;  // the site always moves
 
   // Services, in the order TKS asked for. Wording from their services one-pager.
   const SERVICES = [
@@ -427,9 +456,28 @@ html { overflow-x: clip; }
   const caps = ["Fractional CFO", "Management accounts", "Internal audit", "Risk and control", "Board reporting", "Cash flow forecasting", "Power BI dashboards", "Governance frameworks", "Month-end close", "Finance transformation", "Scenario planning", "Third-party assurance"];
   $("#ticker").innerHTML = [...caps, ...caps].map(c => `<span>${c}</span>`).join("");
 
+  // headline: each word rises in
+  (function words() {
+    const h = $("#hero-title"); let k = 0;
+    const wrap = node => [...node.childNodes].forEach(n => {
+      if (n.nodeType === 3) {
+        const f = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(t => { if (!t) return; if (/^\s+$/.test(t)) return f.append(t);
+          const sp = document.createElement("span"); sp.className = "w"; sp.style.animationDelay = (.25 + k++ * .09) + "s"; sp.textContent = t; f.append(sp); });
+        n.replaceWith(f);
+      } else if (n.nodeType === 1) { n.classList.add("w"); n.style.animationDelay = (.25 + k++ * .09) + "s"; }
+    });
+    wrap(h); h.classList.remove("rv"); h.style.opacity = 1;
+  })();
+
+  // monogram tilts toward the pointer and drifts as you scroll
+  const stage = $(".mono-stage"); let tx = 0, ty = 0;
+  addEventListener("pointermove", e => { tx = (e.clientX / innerWidth - .5) * 14; ty = (e.clientY / innerHeight - .5) * -14; }, { passive: true });
+  (function tilt() { stage.style.transform = `perspective(900px) rotateY(${tx}deg) rotateX(${ty}deg) translateY(${Math.min(scrollY, 800) * .18}px)`; requestAnimationFrame(tilt); })();
+
   // reveal on scroll
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: .18 });
-  $$(".rv, #steps").forEach(el => io.observe(el));
+  $$(".rv, #steps, .sec-head").forEach(el => io.observe(el));
 
   // header, menu
   addEventListener("scroll", () => $("header.site").classList.toggle("scrolled", scrollY > 30), { passive: true });
@@ -444,12 +492,13 @@ html { overflow-x: clip; }
   const cv = $("#chart"), cx = cv.getContext("2d");
   let W, H, lines = [];
   function size() { const d = devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = W * d; cv.height = H * d; cx.setTransform(d, 0, 0, d, 0, 0);
-    lines = [0, 1, 2].map(k => { const pts = [], n = 14; let y = H * (.75 - k * .08);
-      for (let i = 0; i <= n; i++) { y += (Math.random() - .62) * H * .09; y = Math.max(H * .12, Math.min(H * .95, y)); pts.push([i / n * W, y]); } return { pts, a: .55 - k * .15 }; }); }
+    lines = [0, 1, 2, 3].map(k => { const pts = [], n = 14; let y = H * (.75 - k * .08);
+      for (let i = 0; i <= n; i++) { y += (Math.random() - .62) * H * .09; y = Math.max(H * .12, Math.min(H * .95, y)); pts.push([i / n * W, y]); } return { pts, a: .85 - k * .17 }; }); }
   size(); addEventListener("resize", size);
   let start = performance.now();
   function draw(now) {
-    const p = reduce ? 1 : Math.min(1, ((now - start) % 14000) / 6000);
+    const cyc = (now - start) % 9000, p = Math.min(1, cyc / 4200);
+    if (cyc < 30 && now - start > 9000) size();  // new random lines each cycle
     cx.clearRect(0, 0, W, H);
     lines.forEach(({ pts, a }) => {
       const g = cx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, `rgba(201,167,122,0)`); g.addColorStop(.4, `rgba(220,193,153,${a})`); g.addColorStop(1, `rgba(236,215,182,${a})`);
