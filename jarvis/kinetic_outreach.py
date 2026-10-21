@@ -1,16 +1,24 @@
-"""Kinetic Web Designs outreach tracker: who has been contacted, who replied, and who is due one follow-up.
+"""Kinetic Web Designs outreach tracker: who has been contacted, who replied, who is due a follow-up, and which
+clients to ask for a Google review and a referral.
 
 Each lead's outreach is kept in kinetic-outreach.json: its status (new, drafted, contacted, replied, interested, won,
-not interested, opted out), the channel and date of each message the user says they sent, and a short history.
+live, not interested, opted out), the channel and date of each message the user says they sent, and a short history.
 kinetic_sales records "drafted" by itself when it writes a first message, refuses to draft for anyone who opted out or
 said no, and warns instead of drafting when a lead has already been messaged, so nobody gets the same pitch twice.
 
-follow_ups lists leads first messaged FOLLOW_UP_DAYS or more days ago who haven't replied. A lead gets at most one
-follow-up (two messages in all); after that Alfred leaves them be. follow_up drafts that one polite message in the
-lead's language with the English underneath, the same opt-out line as the first message and the same payment terms.
+follow_ups lists leads who haven't replied and are due a follow-up: the first FOLLOW_UP_DAYS (3) days after the first
+message, the second and last LAST_FOLLOW_UP_DAYS (7) days after the first message. That's three messages at most, then
+Alfred leaves them be. follow_up drafts the next one in the lead's language with the English underneath and the same
+opt-out line as the first message: a polite nudge with the payment terms first, then a short last-chance note.
+
+review_request: for a client marked won or live, a Google review request (with the user's review link from
+JARVIS_KINETIC_REVIEW_LINK) and a referral note (recommend a business: when they go live you get a free month of
+hosting and care). Founding clients, who had £100 off in return for an honest review and permission to show their
+site, get a review reminder phrased around that agreement. ask_reviews lists won clients not asked yet (5 by default).
 
 Once a day (after REMIND_HOUR, while a page is open) Alfred says how many leads are due a follow-up. He never sends
-anything: every message is a draft the user sends themselves, and a status only changes when the user says so.
+anything: every message is a draft signed "Alfred, Kinetic Web Designs" that the user sends themselves, and a status
+only changes when the user says so.
 """
 
 import asyncio
@@ -22,16 +30,19 @@ import screen
 from config import Settings
 
 NAMES = {"web_design_outreach"}
-ACTIONS = ["mark", "leads", "follow_ups", "follow_up", "summary"]
-STATUSES = ["new", "drafted", "contacted", "replied", "interested", "won", "not interested", "opted out"]
+ACTIONS = ["mark", "leads", "follow_ups", "follow_up", "summary", "review_request", "ask_reviews"]
+STATUSES = ["new", "drafted", "contacted", "replied", "interested", "won", "live", "not interested", "opted out"]
 CLOSED = ("not interested", "opted out")  # never message them again
-TALKING = ("replied", "interested", "won")  # they answered: reply to them, don't pitch or chase
-FINDER_STATUS = {"contacted": "contacted", "won": "client", "not interested": "not interested",
+CLIENTS = ("won", "live")  # paying clients: their site is being built, or is live
+TALKING = ("replied", "interested", *CLIENTS)  # they answered: reply to them, don't pitch or chase
+FINDER_STATUS = {"contacted": "contacted", "won": "client", "live": "client", "not interested": "not interested",
                  "opted out": "not interested"}  # what the client finder's own status becomes
 SUMMARY_GROUPS = {"New": ("new",), "Drafted": ("drafted",), "Contacted": ("contacted",),
-                  "Replied": ("replied", "interested"), "Won": ("won",), "No": CLOSED}  # cards show 8 columns at most
-FOLLOW_UP_DAYS = 5
-MAX_MESSAGES = 2  # the first message and one follow-up, then stop
+                  "Replied": ("replied", "interested"), "Won": CLIENTS, "No": CLOSED}  # cards show 8 columns at most
+FOLLOW_UP_DAYS = 3  # the first follow-up: 3 days after the first message
+LAST_FOLLOW_UP_DAYS = 7  # the second and last: 7 days after the first message
+MAX_MESSAGES = 3  # the first message and two follow-ups, then stop
+REVIEW_BATCH = 5
 REMINDED = "kinetic-outreach-reminded.json"
 REMIND_HOUR = 9
 CHECK_SECONDS = 600
@@ -84,6 +95,23 @@ def where_(row: dict) -> str:
     return world.country_name(row.get("country") or world.HOME)
 
 
+def first_sent(row: dict) -> date | None:
+    return day(row.get("contacted")) or day(row.get("last_contacted"))
+
+
+def next_due(row: dict) -> date | None:
+    """When the next follow-up is due (3 days after the first message, then 7), or None when there isn't one."""
+    first, n = first_sent(row), row.get("messages", 0)
+    if not first or not 1 <= n < MAX_MESSAGES:
+        return None
+    return first + timedelta(days=FOLLOW_UP_DAYS if n == 1 else LAST_FOLLOW_UP_DAYS)
+
+
+def is_last(row: dict) -> bool:
+    """The next follow-up is the last one."""
+    return row.get("messages", 0) == MAX_MESSAGES - 1
+
+
 def sent_on(row: dict) -> str:
     last = day(row.get("last_contacted"))
     how = f" by {row['channel']}" if row.get("channel") else ""
@@ -100,10 +128,10 @@ def before_draft(settings: Settings, name: str, prospect: dict | None) -> str:
         raise ValueError(f"{row['name']} is marked {status}, so I won't draft anything for them. "
                          "They've asked not to hear from you, and that's final.")
     if status == "contacted":
-        due = day(row.get("last_contacted"))
-        when = f" If they haven't replied by {st.short(due + timedelta(days=FOLLOW_UP_DAYS))}, I can draft one " \
-               "polite follow-up." if due and row.get("messages", 0) < MAX_MESSAGES else \
-            " They've had two messages already, so it's best to leave them be."
+        due = next_due(row)
+        when = (f" If they haven't replied by {st.short(due)}, I can draft "
+                f"{'their last, short follow-up' if is_last(row) else 'a polite follow-up'}.") if due else \
+            f" They've had {row.get('messages', 0)} messages already, so it's best to leave them be."
         return (f"Heads up: you already messaged {row['name']}{sent_on(row)}, so I haven't drafted another first "
                 f"message. No double messaging.{when}")
     if status in TALKING:
@@ -129,7 +157,7 @@ def drafted(settings: Settings, name: str, prospect: dict | None, channel: str, 
 
 
 def track(settings: Settings, name: str, prospect: dict | None, status: str, channel: str = "",
-          on: date | None = None) -> tuple[dict, str]:
+          on: date | None = None, founding: bool | None = None) -> tuple[dict, str]:
     """Record a status the user told Alfred about. Returns the row and anything worth adding to the reply."""
     if status not in STATUSES:
         raise ValueError("Mark it as one of " + ", ".join(STATUSES) + ".")
@@ -148,7 +176,7 @@ def track(settings: Settings, name: str, prospect: dict | None, status: str, cha
         same = row.get("last_contacted") == on.isoformat() and (row.get("channel") or "") == channel
         if not same:  # telling Alfred twice about the same message doesn't count it twice
             row["messages"] = row.get("messages", 0) + 1
-        row["contacted"] = row.get("contacted") or on.isoformat()
+        row["contacted"] = min(row.get("contacted") or on.isoformat(), on.isoformat())  # the first message
         row["last_contacted"] = max(on.isoformat(), row.get("last_contacted") or "")
         row["channel"] = channel
         if row["status"] in TALKING:  # still talking: keep where they are, just note the message
@@ -156,11 +184,18 @@ def track(settings: Settings, name: str, prospect: dict | None, status: str, cha
                 {"date": on.isoformat(), "status": "contacted", **({"channel": channel} if channel else {})}]
         else:
             log(row, "contacted", on, channel)
+            first = first_sent(row)
             if row["messages"] == 1:
-                note = f" If they haven't replied by {st.short(on + timedelta(days=FOLLOW_UP_DAYS))}, I'll remind you " \
-                       "about one polite follow-up."
+                note = (f" If they haven't replied by {st.short(first + timedelta(days=FOLLOW_UP_DAYS))}, I'll remind "
+                        "you about a polite follow-up, and about a last short one on "
+                        f"{st.short(first + timedelta(days=LAST_FOLLOW_UP_DAYS))}.")
+            elif row["messages"] == MAX_MESSAGES - 1:
+                note = (" That's their first follow-up. If they still haven't replied by "
+                        f"{st.short(first + timedelta(days=LAST_FOLLOW_UP_DAYS))}, I'll remind you about one last "
+                        "short note.")
             elif row["messages"] == MAX_MESSAGES:
-                note = " That's their follow-up done: two messages in all. If they don't reply, I'll leave them be."
+                note = (" That's their last follow-up: three messages in all. If they don't reply, I'll leave them "
+                        "be.")
             elif not same:
                 note = f" That's {row['messages']} messages now; best to leave them be unless they reply."
     else:
@@ -169,6 +204,12 @@ def track(settings: Settings, name: str, prospect: dict | None, status: str, cha
             row[status.replace(" ", "_")] = on.isoformat()
         if status in CLOSED:
             note = " I won't draft anything for them again."
+        elif status in CLIENTS and not row.get("review_asked"):
+            note = (" Their site is live, so it's a good time to ask for a Google review and a referral: say "
+                    f"\"ask {row['name']} for a review\"." if status == "live" else
+                    " Once their site is live, I can draft a Google review request and a referral note for them.")
+    if founding is not None:
+        row["founding"] = bool(founding)
     st.save(settings, st.OUTREACH, rows)
     return row, note
 
@@ -205,7 +246,8 @@ def mark(settings: Settings, args: dict) -> str:
     if channel and channel not in channels():
         raise ValueError("Which kind of message? " + ", ".join(channels()) + ".")
     on = st.parse_date(args.get("date"), "date")
-    row, note = track(settings, args.get("business") or args.get("client"), None, status, channel, on)
+    founding = args.get("founding") if isinstance(args.get("founding"), bool) else None
+    row, note = track(settings, args.get("business") or args.get("client"), None, status, channel, on, founding)
     sync_prospect(settings, row)
     when = "" if (on or st.today()) == st.today() else f" on {st.short(on)}"
     if status == "contacted":
@@ -228,12 +270,11 @@ def all_leads(settings: Settings) -> list[dict]:
 
 
 def due_rows(settings: Settings, on: date | None = None) -> list[dict]:
-    """Leads messaged once, FOLLOW_UP_DAYS or more days ago, with no reply: oldest first."""
+    """Leads with no reply whose next follow-up is due (3 days, then 7, after the first message): oldest first."""
     on = on or st.today()
     out = [r for r in st.rows_of(settings, st.OUTREACH) if r.get("status") == "contacted" and
-           r.get("messages", 0) < MAX_MESSAGES and (d := day(r.get("last_contacted"))) and
-           (on - d).days >= FOLLOW_UP_DAYS]
-    return sorted(out, key=lambda r: r["last_contacted"])
+           (d := next_due(r)) and d <= on]
+    return sorted(out, key=lambda r: (next_due(r), r["name"].lower()))
 
 
 def lead_rows(rows: list[dict]) -> list[list[str]]:
@@ -260,17 +301,22 @@ def leads(settings: Settings, args: dict) -> screen.Shown:
                     lead_rows(rows[:60]))
 
 
+def due_name(r: dict) -> str:
+    return r["name"] + (" (last one)" if is_last(r) else "")
+
+
 def follow_ups(settings: Settings, args: dict) -> screen.Shown | str:
     due = due_rows(settings)
     if not due:
-        return (f"Nobody is due a follow-up. A lead is due {FOLLOW_UP_DAYS} days after your first message if they "
-                "haven't replied, and gets one follow-up at most.")
-    rows = [[r["name"], where_(r), r.get("channel") or "-", st.short(day(r["last_contacted"])),
-             f"{(st.today() - day(r['last_contacted'])).days} days"] for r in due]
+        return (f"Nobody is due a follow-up. A lead who hasn't replied gets a polite follow-up {FOLLOW_UP_DAYS} days "
+                f"after your first message and a last short one at {LAST_FOLLOW_UP_DAYS} days, then I leave them be.")
+    rows = [[r["name"], "Last" if is_last(r) else "First", where_(r), r.get("channel") or "-",
+             st.short(first_sent(r)), f"{(st.today() - first_sent(r)).days} days"] for r in due]
     n = len(due)
-    return st.table(f"{n} lead{'s are' if n != 1 else ' is'} due a follow-up: " + ", ".join(r["name"] for r in due[:5])
-                    + (" and more" if n > 5 else "") + ". Each gets one polite follow-up at most; I'll draft them, "
-                    "you send them.", "Due a follow-up", ["Lead", "Country", "Channel", "Messaged", "Since"], rows,
+    return st.table(f"{n} lead{'s are' if n != 1 else ' is'} due a follow-up: " + ", ".join(due_name(r) for r in due[:5])
+                    + (" and more" if n > 5 else "") + f". Two follow-ups at most: day {FOLLOW_UP_DAYS} and day "
+                    f"{LAST_FOLLOW_UP_DAYS}. I'll draft them, you send them.", "Due a follow-up",
+                    ["Lead", "Follow-up", "Country", "Channel", "First message", "Since"], rows,
                     [{"label": "Draft follow-up", "say": f"Draft a follow-up for {due[0]['name']}."}])
 
 
@@ -311,12 +357,14 @@ def follow_up_draft(settings: Settings, args: dict) -> dict:
                         "the first message."}
     if row.get("messages", 0) >= MAX_MESSAGES:
         return {"stop": f"{name} has had {row['messages']} messages with no reply, so I'll leave them be. "
-                        "One follow-up is the limit."}
-    sent = day(row.get("last_contacted")) or st.today()
-    waited = (st.today() - sent).days
-    if waited < FOLLOW_UP_DAYS:
-        return {"stop": f"You messaged {name} {waited} day{'s' if waited != 1 else ''} ago. Give them until "
-                        f"{st.short(sent + timedelta(days=FOLLOW_UP_DAYS))} before a follow-up."}
+                        "Two follow-ups is the limit."}
+    sent = first_sent(row) or st.today()
+    last = is_last(row)
+    due = next_due(row) or st.today()
+    if st.today() < due:
+        waited = (st.today() - sent).days
+        return {"stop": f"You first messaged {name} {waited} day{'s' if waited != 1 else ''} ago. Give them until "
+                        f"{st.short(due)} before {'their last' if last else 'a'} follow-up."}
     p = prospect or {}
     me = st.business(settings)
     country = world.country_code(args.get("country")) or row.get("country") or p.get("country") or world.HOME
@@ -325,7 +373,7 @@ def follow_up_draft(settings: Settings, args: dict) -> dict:
         raise ValueError("Which kind of message? " + ", ".join(kinetic_sales.CHANNELS) + ".")
     contact = st.clean(args.get("contact_name") or row.get("contact_name"), 40)
     hello = f"Hi {contact}," if contact else "Hi there,"
-    sign = me["owner"] or "[your name]"
+    sign = st.sign_off(me)
     first = {"email": "email", "letter": "letter", "dm": "message", "phone": "call", "visit": "visit"}.get(
         row.get("channel") or "", "message")
     offer = ("The free example home page I made for you is still yours to see, with no obligation."
@@ -334,31 +382,41 @@ def follow_up_draft(settings: Settings, args: dict) -> dict:
     start = world.local_price(pr["packages"]["starter"]["price"], world.currency_of(country))
     price = f"Websites start from {start}, and you pay {world.payment_terms(pr['deposit_percent'])}." \
         if args.get("price", True) else ""
-    nudge = f"I'm just following up on my {first} from {st.short(sent)} about {name}'s website. I know how busy " \
-            "running a business is, so I'll keep this short."
-    bow_out = "If now isn't the right time, that's absolutely fine, and I won't chase you again."
+    if last:  # the second and last follow-up: a short last-chance note, no price
+        nudge = f"One last note from me about {name}'s website, and then I'll leave you in peace."
+        offer = ("The free home page mock-up I made for you is still yours if you'd like it: just reply \"yes\" and "
+                 "I'll send it again." if args.get("mockup", True) else
+                 "If you'd ever like a few free ideas for it, just reply \"yes\".")
+        price = ""
+        bow_out = "If I don't hear back, I'll take it that now isn't the right time, and I won't message again."
+    else:
+        nudge = f"I'm just following up on my {first} from {st.short(sent)} about {name}'s website. I know how busy " \
+                "running a business is, so I'll keep this short."
+        bow_out = "If now isn't the right time, that's absolutely fine."
     opt_out = world.OPT_OUT
+    subject = f"Last note: {name}'s website" if last else f"Following up: {name}'s website"
     if channel == "email":
         address = me["address"] or ("[your postal address]" if world.rules_of(country) in ("us", "ca") else "")
-        body = (f"Subject: Following up: {name}'s website\n\n{hello}\n\n{nudge}\n\n{offer}\n\n"
-                + (f"{price}\n\n" if price else "") + f"{bow_out}\n\nThanks,\n{sign}\n{me['name']}"
+        body = (f"Subject: {subject}\n\n{hello}\n\n{nudge}\n\n{offer}\n\n"
+                + (f"{price}\n\n" if price else "") + f"{bow_out}\n\nThanks,\n{sign}"
                 + "".join(f"\n{x}" for x in (me["phone"], me["website"], address) if x) + f"\n\n{opt_out}")
     elif channel == "letter":
         body = (f"{me['name']}\n{me['address'] or '[your address]'}\n{st.long_date(st.today())}\n\nTo the owner, {name}\n\n"
                 f"{hello.replace('Hi', 'Dear')}\n\n{nudge}\n\n{offer}\n\n" + (f"{price}\n\n" if price else "") +
-                f"{bow_out}\n\nYou can reach me on {me['phone'] or '[your phone]'} or {me['email'] or '[your email]'}.\n\n"
+                f"{bow_out}\n\nYou can reach us on {me['phone'] or '[your phone]'} or {me['email'] or '[your email]'}.\n\n"
                 f"Kind regards,\n{sign}\n\n{opt_out}")
     elif channel in ("phone", "visit"):
-        body = (f"{'Phone' if channel == 'phone' else 'Walk-in'} follow-up script for {name}\n\n"
-                f"1. \"Hi, it's {sign} from {me['name']}. I {'called' if first == 'call' else 'got in touch'} on "
+        body = (f"{'Phone' if channel == 'phone' else 'Walk-in'} {'last ' if last else ''}follow-up script for {name}\n\n"
+                f"1. \"Hi, it's {me['name']}. We {'called' if first == 'call' else 'got in touch'} on "
                 f"{st.short(sent)} about your website. Have you got a minute?\"\n2. \"{offer}\"\n"
                 + (f"3. If they ask about price: \"{price}\"\n" if price else "") +
                 f"{'4' if price else '3'}. \"{bow_out}\"\n"
-                "This is the last time: if they say no or don't answer, thank them and leave it there.")
+                + ("This is the last time: if they say no or don't answer, thank them and leave it there." if last else
+                   "If they say no, thank them and don't get in touch again."))
     else:
-        body = (f"{hello} {nudge} {offer} " + (f"{price} " if price else "") + f"{bow_out} {sign}, {me['name']}"
+        body = (f"{hello} {nudge} {offer} " + (f"{price} " if price else "") + f"{bow_out} {sign}"
                 f"\n\n{opt_out}")
-    return {"name": name, "channel": channel, "country": country,
+    return {"name": name, "channel": channel, "country": country, "last": last,
             "language": world.language_code(args.get("language"), country), "body": body}
 
 
@@ -386,11 +444,121 @@ async def follow_up(settings: Settings, args: dict) -> screen.Shown | str:
             row["follow_up_drafted"] = st.today().isoformat()
             st.save(settings, st.OUTREACH, rows)
     await asyncio.to_thread(keep)
-    return st.text_card(f"I drafted a polite follow-up {channel} for {name}{said} and saved it in "
-                        f"{st.where(settings, path)}. {st.NOT_SENT} It's their one follow-up; once you've sent it, tell "
-                        "me and I'll leave them be unless they reply.", f"Follow-up: {name}", body, [
+    which = ("It's their last follow-up; once you've sent it, tell me and I'll leave them be unless they reply."
+             if d["last"] else f"It's the first of two follow-ups; once you've sent it, tell me, and if they still "
+                               f"don't reply I'll remind you about a last short note on day {LAST_FOLLOW_UP_DAYS}.")
+    kind = "a short last follow-up" if d["last"] else "a polite follow-up"
+    return st.text_card(f"I drafted {kind} {channel} for {name}{said} and saved it in "
+                        f"{st.where(settings, path)}. {st.NOT_SENT} {which}", f"Follow-up: {name}", body, [
                             {"label": "Mark sent", "say": f"I sent the follow-up {channel} to {name}."},
                             {"label": "They replied", "say": f"{name} replied."}])
+
+
+# ---- reviews and referrals ---------------------------------------------------------------
+
+REVIEW_LINK_GAP = "[your Google review link]"
+
+
+def founding_client(settings: Settings, row: dict | None, name: str) -> bool:
+    """Marked as a founding client, or quoted with the founding client offer."""
+    if row and isinstance(row.get("founding"), bool):
+        return row["founding"]
+    return any(q.get("founding_discount") and q["client"].lower() == name.lower()
+               for q in st.rows_of(settings, st.QUOTES))
+
+
+def clients(settings: Settings) -> list[dict]:
+    """Won or live clients: from the tracker, accepted quotes and the client finder ("client")."""
+    rows = [r for r in st.rows_of(settings, st.OUTREACH) if r.get("status") in CLIENTS]
+    names = {r["name"].lower() for r in rows}
+    extra = [q["client"] for q in st.rows_of(settings, st.QUOTES) if q.get("status") == "accepted"]
+    extra += [p["name"] for p in st.rows_of(settings, st.PROSPECTS) if p.get("status") == "client"]
+    for name in extra:
+        tracked = next((r for r in st.rows_of(settings, st.OUTREACH) if r["name"].lower() == name.lower()), None)
+        if name.lower() not in names and not (tracked and tracked.get("status") in CLOSED):
+            names.add(name.lower())
+            rows.append(tracked or {"name": name, "status": "won", "messages": 0})
+    return rows
+
+
+def review_drafts(settings: Settings, name: str, contact: str, founding: bool) -> tuple[str, str]:
+    """(Google review request, referral note), both signed by Alfred for the business."""
+    me = st.business(settings)
+    link = settings.kinetic_review_link or REVIEW_LINK_GAP
+    hello = f"Hi {contact}," if contact else "Hi there,"
+    sign = f"Thanks,\n{st.sign_off(me)}"
+    if founding:
+        review = (f"Subject: Your founding client review for {me['name']}\n\n{hello}\n\n"
+                  f"Thank you again for being one of our founding clients. As part of the founding client offer, "
+                  f"{name} had £100 off its website in return for an honest Google review and permission to show "
+                  f"the site as an example of our work.\n\nNow that your site is ready, would you leave that review? "
+                  f"It only takes a minute:\n\n{link}\n\nAn honest sentence or two about working with us is "
+                  f"perfect, good or bad. Thank you for helping us get started.\n\n{sign}")
+    else:
+        review = (f"Subject: Could you leave {me['name']} a quick Google review?\n\n{hello}\n\n"
+                  f"Thank you again for choosing {me['name']} for {name}'s new website. If you're happy with it, a "
+                  f"quick Google review would mean a lot to a small business like ours. It only takes a minute:\n\n"
+                  f"{link}\n\nA sentence or two about how you found working with us is perfect.\n\n{sign}")
+    contact_us = " or ".join(x for x in (me["website"], me["email"]) if x)
+    referral = (f"Subject: Know a business that needs a website?\n\n{hello}\n\n"
+                f"If you know a business owner who needs a new website, we'd love to help them too. Recommend a "
+                f"business to us, and when their website goes live you get a free month of hosting and care, as a "
+                f"thank-you.\n\nJust reply with their name and the best way to reach them"
+                + (f", or pass on our details: {contact_us}" if contact_us else "") + f".\n\n{sign}")
+    return review, referral
+
+
+def review_request(settings: Settings, args: dict) -> screen.Shown | str:
+    rows = st.rows_of(settings, st.OUTREACH)
+    name, prospect, row = resolve(settings, rows, args.get("business") or args.get("client"))
+    client = next((c for c in clients(settings) if c["name"].lower() == name.lower()), None)
+    if not client:
+        status = (row or {}).get("status", "new")
+        if status in CLOSED:
+            raise ValueError(f"{name} is marked {status}, so I won't draft anything for them.")
+        return (f"{name} isn't a client yet (they're {status}), so it's too early to ask for a review. Mark them won "
+                "or live once they've paid and their site is up.")
+    founding = args["founding"] if isinstance(args.get("founding"), bool) else founding_client(settings, row, name)
+    contact = st.clean(args.get("contact_name") or (row or {}).get("contact_name"), 40)
+    review, referral = review_drafts(settings, name, contact, founding)
+    review_path = st.write(settings, ("Clients", name), f"Review request {st.today().isoformat()}.md", review + "\n")
+    st.write(settings, ("Clients", name), f"Referral note {st.today().isoformat()}.md", referral + "\n")
+    if not row:
+        row = new_row(rows, name, prospect)
+    if row["status"] not in CLIENTS:  # e.g. an accepted quote: they're a client now
+        log(row, "won", st.today())
+    row["review_asked"] = row["referral_asked"] = st.today().isoformat()
+    if founding:
+        row["founding"] = True
+    if contact:
+        row["contact_name"] = contact
+    st.save(settings, st.OUTREACH, rows)
+    gap = "" if settings.kinetic_review_link else (
+        " Your Google review link isn't set yet, so the draft says [your Google review link]: put it in "
+        "JARVIS_KINETIC_REVIEW_LINK in .env, or paste it in before sending.")
+    kind = "a founding client review reminder" if founding else "a Google review request"
+    return st.text_card(f"I drafted {kind} and a referral note for {name} and saved them in "
+                        f"{st.where(settings, review_path.parent)}. {st.NOT_SENT}{gap}", f"Review and referral: {name}",
+                        f"{review}\n\n----------\n\n{referral}", [
+                            {"label": "Next client", "say": "Which clients haven't I asked for a review?"}])
+
+
+def ask_reviews(settings: Settings, args: dict) -> screen.Shown | str:
+    """Won clients not asked for a review yet: founding clients first, then the longest-standing."""
+    count = max(1, min(int(args.get("count") or REVIEW_BATCH), 20))
+    waiting = [c for c in clients(settings) if not c.get("review_asked")]
+    if not waiting:
+        return ("Every won client has been asked for a review. Mark a client won or live when you get a new one."
+                if clients(settings) else "No won clients yet. Mark a lead won or live once they've paid.")
+    waiting.sort(key=lambda c: (not founding_client(settings, c, c["name"]), c.get("updated") or "", c["name"].lower()))
+    pick = waiting[:count]
+    rows = [[c["name"], c.get("status") or "won", "yes" if founding_client(settings, c, c["name"]) else "-",
+             st.short(day(c["updated"])) if day(c.get("updated")) else "-"] for c in pick]
+    text = (f"{len(waiting)} client{'s' if len(waiting) != 1 else ''} not asked for a Google review yet. "
+            f"Here {'are' if len(pick) != 1 else 'is'} {len(pick)}: " + ", ".join(c["name"] for c in pick) +
+            ". Say \"ask <client> for a review\" and I'll draft the review request and a referral note.")
+    return st.table(text, "Ask for reviews", ["Client", "Status", "Founding", "Since"], rows,
+                    [{"label": f"Ask {c['name']}", "say": f"Draft a review request for {c['name']}."} for c in pick[:3]])
 
 
 # ---- the daily reminder -----------------------------------------------------------------
@@ -406,7 +574,7 @@ def reminder_line(settings: Settings, now: datetime | None = None) -> str:
         return ""
     n = len(due)
     return (f"{settings.user_address.capitalize()}, {n} Kinetic lead{'s are' if n != 1 else ' is'} due a follow-up: "
-            + ", ".join(r["name"] for r in due[:3]) + (" and more" if n > 3 else "") +
+            + ", ".join(due_name(r) for r in due[:3]) + (" and more" if n > 3 else "") +
             ". Say \"draft the follow-ups\" when you're ready.")
 
 
@@ -424,15 +592,22 @@ async def watch(settings: Settings, announce, someone_there) -> None:
 def tool_definitions() -> list[dict]:
     return [{
         "name": "web_design_outreach",
-        "description": "Kinetic Web Designs outreach tracker: who has been contacted and who is due a follow-up. "
+        "description": "Kinetic Web Designs outreach tracker: who has been contacted, who is due a follow-up, and "
+                       "review and referral requests for clients. "
                        "mark: record a lead's status when the user says so: contacted (\"I emailed Joe's Barbers\", "
-                       "with channel and date if given), replied, interested, won, not interested, or opted out "
-                       "(\"they said no thanks\"). Drafting a first message with web_design_sales outreach records "
-                       "drafted by itself. leads: the list (filter by status or country). follow_ups: leads messaged "
-                       f"{FOLLOW_UP_DAYS}+ days ago with no reply. follow_up: one polite follow-up draft in their "
-                       "language; each lead gets at most one, two messages in all. summary: counts per status and per "
-                       "country. Never draft for anyone opted out or not interested. Drafts only: never send "
-                       "anything, and only mark a lead contacted when the user says they sent it.",
+                       "with channel and date if given), replied, interested, won, live (their site is up), not "
+                       "interested, or opted out (\"they said no thanks\"); founding true for a founding client. "
+                       "Drafting a first message with web_design_sales outreach records "
+                       "drafted by itself. leads: the list (filter by status or country). follow_ups: leads due a "
+                       f"follow-up: the first {FOLLOW_UP_DAYS} days after the first message, the last "
+                       f"{LAST_FOLLOW_UP_DAYS} days after it. follow_up: the next follow-up draft in their language "
+                       "(a polite nudge, then a short last-chance note); three messages in all, then stop. summary: "
+                       "counts per status and per country. review_request: for a won or live client, a Google review "
+                       "request (founding clients: phrased around their £100-off-for-a-review agreement) and a "
+                       "referral note (a free month of hosting and care when a business they recommend goes live). "
+                       "ask_reviews: won clients not asked for a review yet (count, default 5). Never draft for "
+                       "anyone opted out or not interested. Drafts only, signed \"Alfred, Kinetic Web Designs\": "
+                       "never send anything, and only mark a lead contacted when the user says they sent it.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -445,11 +620,16 @@ def tool_definitions() -> list[dict]:
                 "date": {"type": "string", "description": "mark: when it happened, YYYY-MM-DD or 'yesterday' "
                                                           "(default today)."},
                 "country": {"type": "string", "description": "leads: filter by country."},
-                "contact_name": {"type": "string", "description": "follow_up: the owner's first name if known."},
+                "contact_name": {"type": "string", "description": "follow_up, review_request: the owner's first name "
+                                                                  "if known."},
                 "language": {"type": "string", "description": "follow_up: write it in this language; default the "
                                                               "lead's country's."},
                 "price": {"type": "boolean", "description": "follow_up: mention the starting price (default true)."},
                 "mockup": {"type": "boolean", "description": "follow_up: mention the free mock-up (default true)."},
+                "founding": {"type": "boolean", "description": "mark, review_request: a founding client (had £100 "
+                                                              "off for an honest Google review and permission to "
+                                                              "show their site)."},
+                "count": {"type": "integer", "description": "ask_reviews: how many clients (default 5)."},
             },
             "required": ["action"],
             "additionalProperties": False,
@@ -460,5 +640,6 @@ def tool_definitions() -> list[dict]:
 async def run_tool(name: str, args: dict, settings: Settings, http=None):
     if args.get("action") == "follow_up":  # async: it may ask Claude for a translation
         return await follow_up(settings, args)
-    handlers = {"mark": mark, "leads": leads, "follow_ups": follow_ups, "follow_up": follow_up, "summary": summary}
+    handlers = {"mark": mark, "leads": leads, "follow_ups": follow_ups, "follow_up": follow_up, "summary": summary,
+                "review_request": review_request, "ask_reviews": ask_reviews}
     return await asyncio.to_thread(st.dispatch, handlers, args.get("action"), settings, args, "outreach tracker")

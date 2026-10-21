@@ -80,6 +80,11 @@ class Settings:
     # His identity: every account he has (TikTok, YouTube, Kick, Higgsfield, sign-ups) uses this address.
     alfred_email_address: str = os.getenv("JARVIS_ALFRED_EMAIL_ADDRESS", "alfredw.lsx@gmail.com").strip()
     alfred_email_app_password: str = "".join(os.getenv("JARVIS_ALFRED_EMAIL_APP_PASSWORD", "").split())
+    # Kinetic Web Designs: your Google review link for review-request drafts (kinetic_outreach)
+    kinetic_review_link: str = os.getenv("JARVIS_KINETIC_REVIEW_LINK", "").strip()
+    # Google Places API (New) for the client finder; empty: OpenStreetMap. The cap stops a run running up a bill.
+    google_places_key: str = os.getenv("JARVIS_GOOGLE_PLACES_KEY", "").strip()
+    places_max_calls: int = int(os.getenv("JARVIS_PLACES_MAX_CALLS", "100") or 100)
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
     # Calls over the internet: your phone posts to a private ntfy topic that Jarvis makes up himself
     now_playing: bool = _bool("JARVIS_NOW_PLAYING", True)  # pop-up card when a new song starts (Windows)

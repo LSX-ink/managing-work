@@ -235,7 +235,8 @@ def test_welcome_emails_after_the_deposit_invoice(s):
     assert "Dear Sal," in body and "- Logo design" in body and "Total: £1,045" in body
     assert "Deposit to start (50%): £522.50, invoice INV-0001" in body and "3 rounds of changes" in body
     assert "Subject: Next steps required from you" in body and "Hosting and care: £25 a month" in body
-    assert 'register salscafe.co.uk in my name' in body and "Lee\nKinetic Web Designs\n0161 111 1111" in body
+    assert 'register salscafe.co.uk in my name' in body and "Alfred, Kinetic Web Designs\n0161 111 1111" in body
+    assert "Lee" not in body and "https://kineticwebdesigns.co.uk/#quote" in body  # the site's Stripe plan link
     assert "insurance" not in body.lower() and 'reply "Yes to hosting and care"' in body
     folder = memory.root(s) / "Kinetic Web Designs" / "Clients" / "Sal's Cafe"
     assert (folder / "Welcome email 2 Q-0001.md").exists()
@@ -285,12 +286,27 @@ def test_outreach_drafts_are_never_sent(s):
     sales(s, action="my_details", owner="Lee", phone="07000 000000")
     email = sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe")
     body = email.card["text"]
-    assert body.startswith("Subject: A quick idea for Joe's Barbers") and "Hi Joe," in body
-    assert "No padlock" in body and "no thanks" in body and "Lee" in body
+    assert body.startswith("Subject: I made this for Joe's Barbers\n\nHi Joe,\n\nI made this for you: a free example of a "
+                           "new home page for Joe's Barbers. It's attached (Joe's Barbers home page mock-up.html)")
+    assert "No padlock" in body and "no thanks" in body and "Thanks,\nAlfred, Kinetic Web Designs\n07000" in body
+    assert "Lee" not in body  # signed by Alfred for the business, never the user's own name
     assert "Nothing has been sent" in email and "sole traders" in email
+    mock = "Kinetic Web Designs/Mockups/Joe's Barbers/Joe's Barbers home page mock-up.html"
+    assert mock in email and "Attach it to the email" in email and "can't carry attachments" in email
+    folder = memory.root(s) / "Kinetic Web Designs" / "Mockups" / "Joe's Barbers"
+    assert (folder / "index.html").exists() and "Concept home page" in (
+        folder / "Joe's Barbers home page mock-up.html").read_text(encoding="utf-8")
     none = sales(s, action="outreach", client="Sal's Cafe", channel="phone").card["text"]
-    assert "couldn't find a website" in none and "0161 000 0000" in none
-    assert sales(s, action="outreach", client="Bloom", channel="visit").card["text"].startswith("Walk-in script")
+    assert "couldn't find a website" in none and "0161 000 0000" in none and "Lee" not in none
+    assert '2. If yes: "I made this for you: a free example of a new home page for Sal\'s Cafe.' in none
+    visit = sales(s, action="outreach", client="Bloom", channel="visit").card["text"]
+    assert visit.startswith("Walk-in script") and "I made this for you" in visit
+    for channel in ("dm", "letter"):
+        text = sales(s, action="outreach", client="Gone Garage", channel=channel).card["text"]
+        assert "I made this for you" in text and "Gone Garage home page mock-up.html" in text
+    plain = sales(s, action="outreach", client="Ada", mockup=False)
+    assert "I made this for you" not in plain.card["text"] and "free and with no obligation" in plain.card["text"]
+    assert not (memory.root(s) / "Kinetic Web Designs" / "Mockups" / "Ada").exists()
     with pytest.raises(ValueError, match="Which kind of message"):
         sales(s, action="outreach", client="Bloom", channel="fax")
 
@@ -485,7 +501,8 @@ def test_drafts_are_recorded_and_nobody_is_messaged_twice(s):
     assert row["status"] == "drafted" and row["draft_channel"] == "email" and row["contact_name"] == "Joe"
     assert row["prospect"] == st.find_prospect(st.rows_of(s, st.PROSPECTS), "Joe's Barbers")["id"]
     said = track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")
-    assert said.startswith("Noted: you messaged Joe's Barbers by email.") and "one polite follow-up" in said
+    assert said.startswith("Noted: you messaged Joe's Barbers by email.") and "a polite follow-up" in said
+    assert "a last short one on" in said
     assert lead(s, "Joe's Barbers")["messages"] == 1
     track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")  # said twice: one message
     assert lead(s, "Joe's Barbers")["messages"] == 1
@@ -522,21 +539,23 @@ def test_finder_mark_keeps_the_tracker_in_step(s):
     assert st.find_prospect(st.rows_of(s, st.PROSPECTS), "Joe's Barbers")["status"] == "client"
 
 
-def test_one_polite_follow_up_after_five_days_then_stop(s):
+def test_two_follow_ups_at_three_and_seven_days_then_stop(s):
     finder(s, action="find", town="Stockport")
     sales(s, action="my_details", owner="Lee")
     sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe")
-    track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email", date=ago(6))
+    track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email", date=ago(3))
     track(s, action="mark", business="Sal's Cafe", status="contacted", channel="phone", date=ago(2))
     due = track(s, action="follow_ups")
-    assert "1 lead is due a follow-up: Joe's Barbers" in due and [r[0] for r in due.card["rows"]] == ["Joe's Barbers"]
+    assert "1 lead is due a follow-up: Joe's Barbers." in due and [r[0] for r in due.card["rows"]] == ["Joe's Barbers"]
+    assert due.card["rows"][0][1] == "First" and "day 3 and day 7" in due
     assert "Give them until" in track(s, action="follow_up", business="Sal's Cafe")
     assert "haven't told me you've messaged Bloom" in track(s, action="follow_up", business="Bloom")
     out = track(s, action="follow_up", business="Joe's Barbers")
     body = out.card["text"]
-    assert out.card["title"] == "Follow-up: Joe's Barbers" and "Nothing has been sent" in out and "one follow-up" in out
+    assert out.card["title"] == "Follow-up: Joe's Barbers" and "Nothing has been sent" in out
+    assert "a polite follow-up" in out and "first of two follow-ups" in out
     assert body.startswith("Subject: Following up: Joe's Barbers's website") and "Hi Joe," in body
-    assert "following up on my email from" in body and "won't chase you again" in body and "Lee" in body
+    assert "following up on my email from" in body and "Alfred, Kinetic Web Designs" in body and "Lee" not in body
     assert "half when we start building, half once everything's complete" in body and body.endswith(world.OPT_OUT)
     assert "klarna" not in body.lower() and "monthly payment" not in body.lower()
     assert "Outreach follow-up email " + st.today().isoformat() + ".md" in outreach_files(s, "Joe's Barbers")
@@ -544,15 +563,45 @@ def test_one_polite_follow_up_after_five_days_then_stop(s):
     plain = track(s, action="follow_up", business="Joe's Barbers", channel="dm", price=False).card["text"]
     assert "Websites start from" not in plain and plain.endswith(world.OPT_OUT)
     said = track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")
-    assert "two messages in all" in said and lead(s, "Joe's Barbers")["messages"] == 2
+    assert "That's their first follow-up" in said and lead(s, "Joe's Barbers")["messages"] == 2
+    assert "Nobody is due a follow-up" in track(s, action="follow_ups")  # the last one waits for day 7
+    wait = track(s, action="follow_up", business="Joe's Barbers")
+    assert "Give them until" in wait and "their last follow-up" in wait
+    assert lead(s, "Joe's Barbers")["contacted"] == ago(3)  # the first message's date
+    rows = st.rows_of(s, st.OUTREACH)
+    next(r for r in rows if r["name"] == "Joe's Barbers")["contacted"] = ago(7)  # four days on
+    st.save(s, st.OUTREACH, rows)
+    due = track(s, action="follow_ups")
+    assert "Joe's Barbers (last one)" in due and due.card["rows"][0][1] == "Last"
+    last = track(s, action="follow_up", business="Joe's Barbers")
+    body = last.card["text"]
+    assert "short last follow-up" in last and "It's their last follow-up" in last
+    assert body.startswith("Subject: Last note: Joe's Barbers's website") and "One last note from me" in body
+    assert "mock-up I made for you is still yours" in body and "won't message again" in body
+    assert "Websites start from" not in body and body.endswith(world.OPT_OUT) and "Lee" not in body
+    said = track(s, action="mark", business="Joe's Barbers", status="contacted", channel="dm")  # not the same message
+    assert "three messages in all" in said and lead(s, "Joe's Barbers")["messages"] == 3 == ko.MAX_MESSAGES
     assert "Nobody is due a follow-up" in track(s, action="follow_ups")
-    assert "leave them be" in track(s, action="follow_up", business="Joe's Barbers")
-    assert "two messages already" in sales(s, action="outreach", client="Joe's Barbers")
+    assert "Two follow-ups is the limit" in track(s, action="follow_up", business="Joe's Barbers")
+    assert "3 messages already" in sales(s, action="outreach", client="Joe's Barbers")
     track(s, action="mark", business="Joe's Barbers", status="replied")
     assert "already replied" in track(s, action="follow_up", business="Joe's Barbers")
     track(s, action="mark", business="Joe's Barbers", status="opted out")
     with pytest.raises(ValueError, match="won't draft anything"):
         track(s, action="follow_up", business="Joe's Barbers")
+
+
+def test_follow_up_due_dates_count_from_the_first_message(s):
+    rows = [{"name": "A", "status": "contacted", "messages": 1, "contacted": ago(2), "last_contacted": ago(2)},
+            {"name": "B", "status": "contacted", "messages": 1, "contacted": ago(3), "last_contacted": ago(3)},
+            {"name": "C", "status": "contacted", "messages": 2, "contacted": ago(6), "last_contacted": ago(1)},
+            {"name": "D", "status": "contacted", "messages": 2, "contacted": ago(7), "last_contacted": ago(4)},
+            {"name": "E", "status": "contacted", "messages": 3, "contacted": ago(20), "last_contacted": ago(13)},
+            {"name": "F", "status": "replied", "messages": 1, "contacted": ago(9), "last_contacted": ago(9)}]
+    st.save(s, st.OUTREACH, [{"id": i, **r} for i, r in enumerate(rows, 1)])
+    assert [r["name"] for r in ko.due_rows(s)] == ["B", "D"]  # B's first (day 3) and D's last (day 7) are due today
+    assert ko.next_due(rows[0]) == st.today() + timedelta(days=1) and ko.next_due(rows[4]) is None
+    assert [r["name"] for r in ko.due_rows(s, st.today() + timedelta(days=1))] == ["B", "D", "A", "C"]
 
 
 def test_follow_up_abroad_is_in_their_language(s, monkeypatch):
@@ -593,8 +642,8 @@ def test_daily_follow_up_reminder_is_said_once_a_day(s, monkeypatch):
     assert ko.reminder_line(s, later) == ""  # nothing due: nothing said
     st.save(s, ko.REMINDED, {})
     for name in ("Ada", "Bob"):
-        track(s, action="mark", business=name, status="contacted", channel="email", date=ago(5))
-    track(s, action="mark", business="Cal", status="contacted", channel="email", date=ago(4))
+        track(s, action="mark", business=name, status="contacted", channel="email", date=ago(3))
+    track(s, action="mark", business="Cal", status="contacted", channel="email", date=ago(2))
     assert ko.reminder_line(s, early) == ""  # not before nine
     said = ko.reminder_line(s, later)
     assert said == "Sir, 2 Kinetic leads are due a follow-up: Ada, Bob. Say \"draft the follow-ups\" when you're ready."
@@ -613,3 +662,202 @@ def test_daily_follow_up_reminder_is_said_once_a_day(s, monkeypatch):
     with pytest.raises(asyncio.CancelledError):
         asyncio.run(asyncio.wait_for(ko.watch(s, announce, lambda: True), 10))  # fail, never hang
     assert heard and heard[0][1] == "sales" and "due a follow-up" in heard[0][0]
+
+
+# ---- best bets, Google Places, founding clients, reviews and referrals ----------------------
+
+def test_social_page_only_counts_as_no_website_and_ranks_first(s, monkeypatch):
+    monkeypatch.setitem(globals(), "ELEMENTS", ELEMENTS + [
+        {"type": "node", "id": 6, "tags": {"name": "Lily's Nails", "shop": "beauty",
+                                           "website": "https://www.facebook.com/lilysnails", "phone": "0161 222"}},
+        {"type": "node", "id": 7, "tags": {"name": "Ink Studio", "shop": "tattoo",
+                                           "website": "https://instagram.com/inkstudio"}}])
+    out = finder(s, action="find", town="Stockport", kind="mixed")
+    rows = out.card["rows"]
+    assert [r[1] for r in rows] == ["Lily's Nails", "Sal's Cafe", "Ink Studio", "Gone Garage", "Joe's Barbers", "Bloom"]
+    assert rows[0][3] == "none" and rows[0][5] == "No website (Facebook only)" and rows[2][5] == "No website (Instagram only)"
+    assert "3 with no website" in out
+    lily = st.find_prospect(st.rows_of(s, st.PROSPECTS), "Lily's Nails")
+    assert lily["website"] == "" and lily["facebook"] == "https://www.facebook.com/lilysnails" and "audit" not in lily
+    assert "only your Facebook page" in sales(s, action="outreach", client="Lily's Nails").card["text"]
+    with pytest.raises(ValueError, match="Facebook page, not a website"):
+        finder(s, action="audit", url="https://m.facebook.com/somewhere")
+    # a social page saved as a "website" before this counted as none is fixed on the next find
+    saved = st.rows_of(s, st.PROSPECTS)
+    next(r for r in saved if r["name"] == "Ink Studio").update(website="https://instagram.com/inkstudio", instagram="")
+    st.save(s, st.PROSPECTS, saved)
+    finder(s, action="find", town="Stockport", kind="mixed")
+    assert st.find_prospect(st.rows_of(s, st.PROSPECTS), "Ink Studio")["website"] == ""
+
+
+def test_rank_key_puts_no_site_and_broken_before_weakest_score():
+    def p(name, website="", grade=None, score=0, **kw):
+        return {"name": name, "website": website, **({"audit": {"grade": grade, "score": score}} if grade else {}), **kw}
+    rows = [p("Strong", "https://a.test", "good", 92), p("Unchecked", "https://b.test"), p("Weak", "https://c.test", "weak", 20),
+            p("Broken", "https://d.test", "down"), p("FB", "https://facebook.com/x"), p("Quiet"), p("Phone", phone="1"),
+            p("Okay", "https://e.test", "ok", 60)]
+    assert [r["name"] for r in sorted(rows, key=kf.rank_key)] == \
+        ["Phone", "FB", "Quiet", "Broken", "Weak", "Okay", "Strong", "Unchecked"]  # ones you can reach first
+    assert kf.social_of("https://www.facebook.com/x") == "facebook" and kf.social_of("https://notfacebook.com") == ""
+
+
+PLACES_PAGES = [
+    {"places": [{"id": "g1", "displayName": {"text": "Fade Room"}, "formattedAddress": "1 King St, Manchester M2 4LQ, UK",
+                 "nationalPhoneNumber": "0161 555 0001", "businessStatus": "OPERATIONAL", "types": ["barber_shop"],
+                 "googleMapsUri": "https://maps.google.com/?cid=1", "rating": 4.8, "userRatingCount": 120},
+                {"id": "g2", "displayName": {"text": "Costa Coffee"}, "businessStatus": "OPERATIONAL"},
+                {"id": "g3", "displayName": {"text": "Old Barbers"}, "businessStatus": "CLOSED_PERMANENTLY"}],
+     "nextPageToken": "page2"},
+    {"places": [{"id": "g4", "displayName": {"text": "Joe's Barbers"}, "websiteUri": "http://joes.test",
+                 "formattedAddress": "4 High St, Manchester, UK", "businessStatus": "OPERATIONAL",
+                 "types": ["hair_care", "point_of_interest"]},
+                {"id": "g5", "displayName": {"text": "Snip Snip"}, "websiteUri": "https://www.instagram.com/snipsnip",
+                 "formattedAddress": "9 Deansgate, Manchester, UK"}],
+     "nextPageToken": "page3"},
+    {"places": [{"id": "g6", "displayName": {"text": "Gone Garage"}, "websiteUri": "https://gone.test"}],
+     "nextPageToken": "page4"},
+    {"places": [{"id": "g7", "displayName": {"text": "Page Four"}}]},
+]
+places_calls = []
+
+
+def places_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.host == "places.googleapis.com":
+        body = json.loads(request.content)
+        places_calls.append((dict(request.headers), body))
+        if request.headers.get("x-goog-api-key") != "test-key":
+            return httpx.Response(403, json={"error": {"message": "API key not valid"}})
+        page = {"": 0, "page2": 1, "page3": 2, "page4": 3}[body.get("pageToken", "")]
+        return httpx.Response(200, json=PLACES_PAGES[page])
+    return handler(request)
+
+
+def places_finder(s, **args):
+    async def go():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(places_handler)) as http:
+            return await kf.run_tool("web_client_finder", args, s, http)
+    return asyncio.run(go())
+
+
+def test_google_places_finds_leads_with_a_minimal_field_mask_and_a_call_cap(s, monkeypatch, capsys):
+    from dataclasses import replace
+    places_calls.clear()
+    monkeypatch.setitem(kf.places_used, "calls", 0)
+    g = replace(s, google_places_key="test-key", places_max_calls=100)
+    out = places_finder(g, action="find", town="Manchester", kind="barbers")
+    assert len(places_calls) == 3 and not queries  # three pages at most, and no OpenStreetMap
+    headers, body = places_calls[0]
+    assert body == {"textQuery": "hairdressers and barbers in Manchester", "pageSize": 20}
+    assert places_calls[1][1]["pageToken"] == "page2" and places_calls[2][1]["pageToken"] == "page3"
+    mask = headers["x-goog-fieldmask"]
+    assert mask.split(",") == [f"places.{f}" for f in ("id", "displayName", "formattedAddress", "websiteUri",
+                                                       "nationalPhoneNumber", "internationalPhoneNumber", "googleMapsUri",
+                                                       "businessStatus", "types", "rating", "userRatingCount")] + ["nextPageToken"]
+    names = [r[1] for r in out.card["rows"]]
+    assert "Costa Coffee" not in names and "Old Barbers" not in names and "Page Four" not in names
+    assert names == ["Fade Room", "Snip Snip", "Gone Garage", "Joe's Barbers"]
+    assert "Found on Google Maps" in out and "test-key" not in out and "test-key" not in capsys.readouterr().out
+    fade = st.find_prospect(st.rows_of(s, st.PROSPECTS), "Fade Room")
+    assert fade["google"] == "g1" and fade["country"] == "GB" and fade["rating"] == 4.8 and fade["kind"] == "barber shop"
+    assert "Google rating: 4.8 (120 reviews)" in places_finder(g, action="prospect", business="Fade Room").card["text"]
+    assert st.find_prospect(st.rows_of(s, st.PROSPECTS), "Snip Snip")["instagram"] == "https://www.instagram.com/snipsnip"
+    places_finder(g, action="find", town="Manchester", kind="barbers")  # the same places again: refreshed, not doubled
+    assert len(st.rows_of(s, st.PROSPECTS)) == 4
+    # the cap: one call left, then nothing more until Alfred restarts
+    monkeypatch.setitem(kf.places_used, "calls", 99)
+    places_calls.clear()
+    places_finder(g, action="find", town="Manchester", kind="barbers")
+    assert len(places_calls) == 1
+    out = places_finder(g, action="find", town="Stockport", kind="mixed")
+    assert "JARVIS_PLACES_MAX_CALLS" in out and "OpenStreetMap instead" in out and queries  # fell back
+    assert len(places_calls) == 1
+
+
+def test_google_places_bad_key_falls_back_to_openstreetmap(s, monkeypatch):
+    from dataclasses import replace
+    monkeypatch.setitem(kf.places_used, "calls", 0)
+    out = places_finder(replace(s, google_places_key="wrong"), action="find", town="Stockport", kind="mixed")
+    assert "turned the key down" in out and "OpenStreetMap instead" in out and "wrong" not in out
+    assert [r[1] for r in out.card["rows"]][:2] == ["Sal's Cafe", "Gone Garage"]
+    queries.clear()
+    finder(s, action="find", town="Stockport")  # no key: OpenStreetMap, no Google call
+    assert queries and kf.places_used["calls"] == 1
+
+
+def test_founding_offer_never_stacks_with_the_existing_website_discount(s):
+    out = sales(s, action="quote", client="Ada", package="business", founding=True)
+    q = st.rows_of(s, st.QUOTES)[0]
+    assert q["total"] == 795 and q["founding_discount"] == 100 and q["rebuild_discount"] == 0
+    assert "£100 founding client offer" in out
+    html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Ada" / "Quote Q-0001.html").read_text(encoding="utf-8")
+    assert "Founding client offer: £100 off" in html and "honest Google review" in html
+    assert "half when we start building, half once everything" in html and "No monthly instalments" in html
+    assert "https://kineticwebdesigns.co.uk/#quote" in html
+    sales(s, action="quote", client="Bob", package="business", founding=True, existing_website=True)
+    bob = st.rows_of(s, st.QUOTES)[1]  # 20% of £895 is £179, more than £100: the rebuild discount wins
+    assert bob["rebuild_discount"] == 179 and bob["founding_discount"] == 0 and bob["total"] == 716
+    sales(s, action="quote", client="Cal", package="starter", founding=True, existing_website=True)
+    cal = st.rows_of(s, st.QUOTES)[2]  # no rebuild discount on a starter site: the founding offer
+    assert cal["founding_discount"] == 100 and cal["rebuild_discount"] == 0 and cal["total"] == 295
+    sales(s, action="quote", client="Dee", package="business", founding=True)
+    with pytest.raises(ValueError, match="first 3 clients"):
+        sales(s, action="quote", client="Eve", package="business", founding=True)
+    sales(s, action="quote", client="Ada", package="shop", founding=True)  # Ada already has it: still fine
+    assert "Quote Q-0004 is now declined." == sales(s, action="quote_status", quote="Q-0004", status="declined")
+    sales(s, action="quote", client="Eve", package="business", founding=True)  # Dee declined: a place is free
+
+
+def test_invoice_has_half_and_half_terms_and_the_plan_link(s):
+    sales(s, action="quote", client="Sal's Cafe", package="business")
+    inv(s, action="invoice", quote="Q-0001")
+    html = (memory.root(s) / "Kinetic Web Designs" / "Clients" / "Sal's Cafe" / "Invoice INV-0001.html").read_text(encoding="utf-8")
+    assert "Payment terms: half when we start building, half once everything&#x27;s complete" in html or \
+        "Payment terms: half when we start building, half once everything's complete" in html
+    assert "https://kineticwebdesigns.co.uk/#quote" in html and "klarna" not in html.lower()
+    inv(s, action="invoice", quote="Q-0001", part="final")
+    reminder = inv(s, action="reminder", invoice="INV-0002").card["text"]
+    assert reminder.endswith("Thanks,\nAlfred, Kinetic Web Designs")
+
+
+def test_review_and_referral_requests_for_won_clients(s, monkeypatch):
+    from dataclasses import replace
+    assert "No won clients yet" in track(s, action="ask_reviews")
+    track(s, action="mark", business="Bloom", status="interested")
+    assert "isn't a client yet" in track(s, action="review_request", business="Bloom")
+    said = track(s, action="mark", business="Bloom", status="won")
+    assert "Once their site is live" in said
+    said = track(s, action="mark", business="Bloom", status="live")
+    assert 'ask Bloom for a review' in said and lead(s, "Bloom")["status"] == "live"
+    out = track(s, action="review_request", business="Bloom", contact_name="Bea")
+    body = out.card["text"]
+    assert "Subject: Could you leave Kinetic Web Designs a quick Google review?" in body and "Hi Bea," in body
+    assert "[your Google review link]" in body and "JARVIS_KINETIC_REVIEW_LINK" in out and "Nothing has been sent" in out
+    assert "Recommend a business to us, and when their website goes live you get a free month of hosting and care" in body
+    assert body.count("Thanks,\nAlfred, Kinetic Web Designs") == 2 and "founding" not in body.lower()
+    folder = memory.root(s) / "Kinetic Web Designs" / "Clients" / "Bloom"
+    assert (folder / f"Review request {st.today().isoformat()}.md").exists()
+    assert (folder / f"Referral note {st.today().isoformat()}.md").exists()
+    assert lead(s, "Bloom")["review_asked"] == st.today().isoformat()
+    # founding clients get a reminder of their agreement, with the user's own review link
+    g = replace(s, kinetic_review_link="https://g.page/r/kinetic/review")
+    sales(s, action="quote", client="Sal's Cafe", package="starter", founding=True)
+    sales(s, action="quote_status", quote="Q-0001", status="accepted")
+    for name in ("Ada", "Bob", "Cal", "Dee", "Eve", "Fay"):
+        track(s, action="mark", business=name, status="won")
+    track(s, action="mark", business="Fay", status="won", founding=True)
+    ask = track(g, action="ask_reviews")
+    names = [r[0] for r in ask.card["rows"]]
+    assert len(names) == 5 and set(names[:2]) == {"Fay", "Sal's Cafe"} and "Bloom" not in names  # founding first
+    assert "7 clients not asked for a Google review yet" in ask and ask.card["rows"][0][2] == "yes"
+    out = track(g, action="review_request", business="Sal's Cafe")
+    body = out.card["text"]
+    assert "founding clients" in body and "£100 off" in body and "honest Google review" in body
+    assert "permission to show the site" in body and "https://g.page/r/kinetic/review" in body
+    assert "JARVIS_KINETIC_REVIEW_LINK" not in out and "founding client review reminder" in out
+    assert lead(s, "Sal's Cafe")["status"] == "won" and lead(s, "Sal's Cafe")["founding"] is True
+    assert "Sal's Cafe" not in [r[0] for r in track(g, action="ask_reviews", count=10).card["rows"]]
+    track(s, action="mark", business="Bloom", status="opted out")
+    with pytest.raises(ValueError, match="won't draft anything"):
+        track(s, action="review_request", business="Bloom")
+    for text in (body, out):
+        assert "klarna" not in str(text).lower()

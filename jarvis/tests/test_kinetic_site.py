@@ -126,7 +126,7 @@ def test_reply_to_brief_makes_mockup_quote_and_unsent_draft(s):
     assert body.startswith("Hi Ada,") and "half when we start building, half once everything's complete" in body
     assert "klarna" not in body.lower() and "monthly payment" not in body.lower() and "£895" in body
     assert "Kinetic Web Designs/Mockups/Ada's Salon/index.html" in out and "Clients/Ada's Salon/Quote Q-0001.html" in out
-    assert body.endswith("Kind regards,\nKinetic Web Designs")
+    assert body.endswith("Kind regards,\nAlfred, Kinetic Web Designs")
     assert "NOT been sent" in out and "confirmed true" in out and out.card["buttons"][0]["say"] == "Yes, send email draft 1."
     root = memory.root(s) / "Kinetic Web Designs"
     assert (root / "Mockups" / "Ada's Salon" / "index.html").exists()
@@ -162,7 +162,10 @@ def test_ad_plan_for_salons_in_the_us(s):
     path = memory.root(s) / "Kinetic Web Designs" / "Ads" / f"Ad plan hairdressers United States {st.today().isoformat()}.md"
     plan = path.read_text(encoding="utf-8")
     assert "Use the salon or barbershop site video" in plan and "'salon site video.mp4'" in plan and "couldn't find it" in plan
-    assert "United States: start at about $6 (£5) to about $13 (£10) a day for 7 days" in plan
+    assert "United States: about $6 (£5) a day for 7 days" in plan
+    assert ksite.AD_RULE in plan and "only once your free posts bring in briefs" in plan
+    assert "£5 a day on the best video for a week, and keep the winner" in plan and "keep the winner" in out
+    assert plan.index("## When to start") < plan.index("## Video")
     assert "Hair salons" in plan and "#salonowner" in plan and "about $499" not in plan.split("## Caption")[0]
     assert "Websites from $499" in plan and "half when we start building, half once everything's complete" in plan
     assert "Commercial Music Library" in plan and "Alfred can't launch or pay for ads" in plan

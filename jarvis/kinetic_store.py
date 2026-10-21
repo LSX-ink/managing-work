@@ -26,6 +26,9 @@ DOMAIN_OWNERS = "kinetic-domain-owners.json"
 OUTREACH = "kinetic-outreach.json"
 MAX_ROWS = 2000
 NOT_SENT = "Nothing has been sent; you send it yourself when you're happy with it."
+SIGNER = "Alfred"  # every draft is signed by Alfred for the business, never with the user's own name
+SITE = "https://kineticwebdesigns.co.uk"
+PLAN_LINK = SITE + "/#quote"  # the site's quote section, with the Stripe hosting-and-care plan buttons
 
 
 def number(value, what: str, allow_zero: bool = False, top: float = 1_000_000) -> float:
@@ -93,8 +96,15 @@ def business(settings: Settings) -> dict:
     found = load(settings, BUSINESS, {})
     if not found.get("email"):  # Alfred's own address is the business email until the user sets another
         found = {**found, "email": settings.alfred_email_address}
-    return {"name": "Kinetic Web Designs", "owner": "", "phone": "", "website": "", "address": "",
-            "bank_name": "", "sort_code": "", "account_number": "", "vat_number": "", **found}
+    out = {"name": "Kinetic Web Designs", "owner": "", "phone": "", "website": "", "address": "",
+           "bank_name": "", "sort_code": "", "account_number": "", "vat_number": "", "plan_link": "", **found}
+    out["plan_link"] = out["plan_link"] or PLAN_LINK
+    return out
+
+
+def sign_off(me: dict) -> str:
+    """How every draft is signed: "Alfred, Kinetic Web Designs"."""
+    return f"{SIGNER}, {me['name']}"
 
 
 def slug(text: str) -> str:
