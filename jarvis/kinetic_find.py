@@ -3,7 +3,8 @@
 find: looks a town or city anywhere in the world up on OpenStreetMap (Nominatim; give the country too when the name
 is ambiguous, e.g. "Lagos, Nigeria" or "Seoul"), lists independent businesses of a kind near it (Overpass API; big
 chains with a brand tag are skipped), then audits the websites of the first few. The results are ranked best bet first:
-no website, then a website that doesn't load, then the lowest score. They're kept in kinetic-prospects.json and written
+no website or only a Facebook or Instagram page (a "website" that is a social page counts as none and isn't audited),
+then a website that doesn't load, then the lowest audit score. They're kept in kinetic-prospects.json and written
 up as a report in Kinetic Web Designs/Prospects. Each prospect keeps its country (from the map, or the one given), so
 quotes and outreach can use the local currency, language and email rules (see kinetic_world).
 
@@ -11,6 +12,12 @@ audit: reads one public website with plain HTTP (no scripts run, nothing is sent
 small business owner would care about: the padlock, working on phones, speed, being found on Google, tap-to-call, a
 way to get in touch, an out-of-date footer, share previews and very old tech. Each problem comes with a plain-words
 reason to use in a pitch. The report goes in Kinetic Web Designs/Audits/<domain>.md.
+
+With JARVIS_GOOGLE_PLACES_KEY set, find uses Google Places Text Search (New) instead: "<trade> in <town>", up to 3
+pages (60 businesses), asking only for the fields it needs (the field mask sets the price), skipping chains and
+businesses closed for good. JARVIS_PLACES_MAX_CALLS (default 100) caps the calls per run of Alfred so a search can't run
+up a bill. The key only travels in the request header; it is never shown or logged. Without a key, or if Google turns
+the search down, it uses OpenStreetMap.
 
 Every link is checked with memory.check_public (through design_extract.fetch), so a page can't steer Alfred into this
 PC or the home network. OpenStreetMap is volunteer-made, so some businesses are missing or out of date.
@@ -36,6 +43,21 @@ ACTIONS = ["find", "audit", "prospects", "prospect", "mark", "add_lead", "forget
 STATUSES = ["new", "lead", "contacted", "client", "not interested"]
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 OVERPASS = "https://overpass-api.de/api/interpreter"
+PLACES = "https://places.googleapis.com/v1/places:searchText"
+PLACES_FIELDS = ",".join(f"places.{f}" for f in (  # the fewest fields: the field mask sets the price of each call
+    "id", "displayName", "formattedAddress", "websiteUri", "nationalPhoneNumber", "internationalPhoneNumber",
+    "googleMapsUri", "businessStatus", "types", "rating", "userRatingCount")) + ",nextPageToken"
+PLACES_PAGES = 3  # 20 a page: 60 businesses at most
+PLACES_WORDS = {"cafes": "cafes", "restaurants": "restaurants", "takeaways": "takeaways", "pubs": "pubs and bars",
+                "hairdressers": "hairdressers and barbers", "beauty": "beauty salons", "trades": "tradesmen",
+                "garages": "car garages", "shops": "independent shops", "fitness": "gyms", "health": "clinics",
+                "cleaners": "dry cleaners", "hotels": "guest houses", "mixed": "independent local businesses"}
+CHAINS = {"costa", "starbucks", "caffe nero", "caffè nero", "greggs", "pret a manger", "mcdonald's", "burger king",
+          "kfc", "subway", "domino's", "pizza hut", "papa john's", "nando's", "wetherspoon", "toni & guy", "toni&guy",
+          "rush hair", "supercuts", "great clips", "kwik fit", "halfords", "specsavers", "boots", "superdrug",
+          "tesco", "sainsbury's", "asda", "morrisons", "aldi", "lidl", "co-op", "puregym", "the gym group",
+          "anytime fitness", "premier inn", "travelodge", "holiday inn", "mydentist", "timpson", "max spielmann"}
+places_used = {"calls": 0}  # Places calls made since Alfred started, against JARVIS_PLACES_MAX_CALLS
 OSM_HEADERS = {"User-Agent": "Alfred-assistant/1.0 (personal assistant; Kinetic Web Designs client finder)"}
 MAX_HTML = 3 * 1024 * 1024
 SLOW_SECONDS = 3.0
@@ -287,6 +309,32 @@ def kind_label(tags: dict) -> str:
     return "business"
 
 
+SOCIAL = {"facebook": ("facebook.com", "fb.com", "fb.me"), "instagram": ("instagram.com", "instagr.am")}
+
+
+def social_of(url: str) -> str:
+    """"facebook" or "instagram" when a web address is only a social media page, else ""."""
+    host = st.domain(url)
+    return next((k for k, hosts in SOCIAL.items() if any(host == h or host.endswith("." + h) for h in hosts)), "")
+
+
+def split_social(b: dict) -> dict:
+    """A "website" that is really a Facebook or Instagram page is kept as that page, and the business has no website."""
+    kind = social_of(b.get("website", ""))
+    if kind:
+        b[kind] = b.get(kind) or b["website"]
+        b["website"] = ""
+    return b
+
+
+def social_only(p: dict) -> str:
+    """"Facebook" or "Instagram" for a business with no website but a social page, else ""."""
+    if p.get("website") and not social_of(p["website"]):
+        return ""
+    return "Facebook" if p.get("facebook") or social_of(p.get("website", "")) == "facebook" else \
+        "Instagram" if p.get("instagram") or social_of(p.get("website", "")) == "instagram" else ""
+
+
 def business_of(element: dict, town: str, country: str = "") -> dict | None:
     tags = element.get("tags") or {}
     name = st.clean(tags.get("name"), 80)
@@ -295,11 +343,13 @@ def business_of(element: dict, town: str, country: str = "") -> dict | None:
     website = tags.get("website") or tags.get("contact:website") or tags.get("url") or ""
     address = ", ".join(x for x in (" ".join(filter(None, (tags.get("addr:housenumber"), tags.get("addr:street")))),
                                     tags.get("addr:city"), tags.get("addr:postcode")) if x)
-    return {"name": name, "kind": kind_label(tags), "town": town, "country": country, "website": st.clean(website, 200),
-            "phone": st.clean(tags.get("phone") or tags.get("contact:phone"), 40),
-            "email": st.clean(tags.get("email") or tags.get("contact:email"), 80), "address": st.clean(address, 160),
-            "facebook": st.clean(tags.get("contact:facebook") or tags.get("facebook"), 200),
-            "osm": f"{element.get('type', '')}/{element.get('id', '')}"}
+    return split_social({
+        "name": name, "kind": kind_label(tags), "town": town, "country": country, "website": st.clean(website, 200),
+        "phone": st.clean(tags.get("phone") or tags.get("contact:phone"), 40),
+        "email": st.clean(tags.get("email") or tags.get("contact:email"), 80), "address": st.clean(address, 160),
+        "facebook": st.clean(tags.get("contact:facebook") or tags.get("facebook"), 200),
+        "instagram": st.clean(tags.get("contact:instagram") or tags.get("instagram"), 200),
+        "osm": f"{element.get('type', '')}/{element.get('id', '')}"})
 
 
 async def geocode(http: httpx.AsyncClient, place: str) -> tuple[float, float, str, str]:
@@ -338,21 +388,91 @@ async def nearby(http: httpx.AsyncClient, lat: float, lon: float, radius: int, k
     return out
 
 
+def chain_name(name: str) -> bool:
+    key = name.lower().replace("’", "'")
+    return any(key == c or key.startswith(c + " ") for c in CHAINS)
+
+
+def business_of_place(place: dict, town: str, country: str = "") -> dict | None:
+    """A Google Places result as a prospect, or None for a chain or a business that has closed for good."""
+    name = st.clean((place.get("displayName") or {}).get("text"), 80)
+    if not name or chain_name(name) or place.get("businessStatus") == "CLOSED_PERMANENTLY":
+        return None
+    address = st.clean(place.get("formattedAddress"), 160)
+    country = country or (world.country_code(address.rsplit(",", 1)[-1]) if address else "")
+    kind = next((t.replace("_", " ") for t in place.get("types") or []
+                 if t not in ("point_of_interest", "establishment", "store", "food")), "business")
+    return split_social({
+        "name": name, "kind": kind, "town": town, "country": country, "website": st.clean(place.get("websiteUri"), 200),
+        "phone": st.clean(place.get("nationalPhoneNumber") or place.get("internationalPhoneNumber"), 40),
+        "email": "", "address": address, "facebook": "", "instagram": "", "osm": "",
+        "google": st.clean(place.get("id"), 120), "maps": st.clean(place.get("googleMapsUri"), 200),
+        "rating": place.get("rating") if isinstance(place.get("rating"), (int, float)) else None,
+        "reviews": place.get("userRatingCount") if isinstance(place.get("userRatingCount"), int) else None})
+
+
+async def places_search(settings: Settings, http: httpx.AsyncClient, kind: str, place: str, town: str,
+                        country: str = "") -> list[dict]:
+    """Up to 60 independent businesses from Google Places Text Search (New): "<trade> in <place>", 3 pages at most.
+    The key goes only in the X-Goog-Api-Key header and is never shown or logged."""
+    headers = {"X-Goog-Api-Key": settings.google_places_key, "X-Goog-FieldMask": PLACES_FIELDS,
+               "Content-Type": "application/json"}
+    query = f"{PLACES_WORDS[kind]} in {place}"
+    places, token = [], ""
+    for _ in range(PLACES_PAGES):
+        if places_used["calls"] >= settings.places_max_calls:
+            if places:
+                break
+            raise ValueError(f"I've made {places_used['calls']} Google Places searches since I started, which is the "
+                             "limit in JARVIS_PLACES_MAX_CALLS, so I've stopped to keep the bill down. Restart me or "
+                             "raise the limit to search again.")
+        places_used["calls"] += 1
+        body = {"textQuery": query, "pageSize": 20, **({"pageToken": token} if token else {})}
+        try:
+            r = await http.post(PLACES, json=body, headers=headers, timeout=20)
+        except httpx.HTTPError:
+            raise ValueError("Google Places didn't answer just now.") from None
+        if r.status_code in (400, 401, 403):
+            raise ValueError("Google Places turned the key down. Check JARVIS_GOOGLE_PLACES_KEY and that "
+                             "\"Places API (New)\" is enabled for it.")
+        if r.status_code != 200:
+            raise ValueError("Google Places is busy; try again in a minute.")
+        try:
+            data = r.json()
+        except ValueError:
+            raise ValueError("Google Places sent back something I couldn't read.") from None
+        places += [x for x in data.get("places") or [] if isinstance(x, dict)]
+        token = str(data.get("nextPageToken") or "")
+        if not token:
+            break
+    names = [st.clean((x.get("displayName") or {}).get("text"), 80).lower() for x in places]
+    out, seen = [], set()
+    for x, key in zip(places, names):
+        b = business_of_place(x, town, country)
+        if b and names.count(key) < 3 and b["google"] not in seen:  # three or more branches here: a chain
+            seen.add(b["google"])
+            out.append(b)
+    return out
+
+
 def rank_key(p: dict):
+    """Best bets first: no website or only a Facebook/Instagram page (ones you can reach first), then a broken site,
+    then the weakest audit score; websites not checked yet go last."""
     a = p.get("audit")
-    if not p.get("website"):
-        return (0, 0 if p.get("phone") or p.get("email") else 1, p["name"])
+    if not p.get("website") or social_only(p):
+        return (0, 0 if p.get("phone") or p.get("email") else 1, 0, p["name"])
     if not a:
-        return (3, 0, p["name"])
+        return (3, 0, 0, p["name"])
     if a["grade"] == "down":
-        return (1, 0, p["name"])
-    return (2, a["score"], p["name"])
+        return (1, 0, 0, p["name"])
+    return (2, 0, a["score"], p["name"])
 
 
 def headline(p: dict) -> tuple[str, str]:
     """(score text, top problem) for a prospect."""
-    if not p.get("website"):
-        return "no site", "No website" + (" (Facebook only)" if p.get("facebook") else "")
+    if not p.get("website") or social_only(p):
+        only = social_only(p)
+        return "no site", "No website" + (f" ({only} only)" if only else "")
     a = p.get("audit")
     if not a:
         return "not checked", "-"
@@ -367,11 +487,14 @@ def merge(settings: Settings, found: list[dict]) -> list[dict]:
     out = []
     for b in found:
         hit = next((r for r in rows if b.get("osm") and r.get("osm") == b["osm"]), None) or \
+            next((r for r in rows if b.get("google") and r.get("google") == b["google"]), None) or \
             next((r for r in rows if r["name"].lower() == b["name"].lower() and
                   (r.get("address", "").lower() == b.get("address", "").lower() or
                    st.domain(r.get("website")) == st.domain(b.get("website")) != "")), None)
         if hit:
             hit.update({k: v for k, v in b.items() if v})
+            if b.get("website") == "" and social_of(hit.get("website", "")):
+                split_social(hit)  # saved before social pages counted as no website
         else:
             if len(rows) >= st.MAX_ROWS:
                 break
@@ -382,10 +505,10 @@ def merge(settings: Settings, found: list[dict]) -> list[dict]:
     return out
 
 
-def report_md(town: str, kind: str, rows: list[dict], country: str = "") -> str:
+def report_md(town: str, kind: str, rows: list[dict], country: str = "", source: str = "OpenStreetMap") -> str:
     where_ = f"{town}, {world.country_name(country)}" if country else town
     lines = [f"# Web design prospects: {kind} near {where_}", "", f"Found by Alfred on {st.today().isoformat()} from "
-             "OpenStreetMap. Best bets first. Check each business is still trading before you contact them.", "",
+             f"{source}. Best bets first. Check each business is still trading before you contact them.", "",
              "| # | Business | Type | Website | Score | Biggest problem | Phone | Address |",
              "|---|---|---|---|---|---|---|---|"]
     for p in rows:
@@ -417,12 +540,23 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
         place = f"{place}, {asked}"
     kind = kind_key(args.get("kind"))
     radius = int(min(max(st.number(args.get("radius_km") or 3, "distance"), 0.5), 15) * 1000)
-    lat, lon, town, country = await geocode(http, place)
-    country = country or world.country_code(asked)  # the map's answer first; it knows "Lagos" is in Nigeria
-    found = await nearby(http, lat, lon, radius, kind, town, country)
+    found, source, fell_back = [], "OpenStreetMap", ""
+    if settings.google_places_key:
+        town = st.clean(place.split(",")[0], 60) or place
+        try:
+            found = await places_search(settings, http, kind, place, town, world.country_code(asked))
+            source = "Google Maps"
+        except ValueError as e:
+            fell_back = f" {e} I used OpenStreetMap instead."
+    if source == "OpenStreetMap":
+        lat, lon, town, country = await geocode(http, place)
+        country = country or world.country_code(asked)  # the map's answer first; it knows "Lagos" is in Nigeria
+        found = await nearby(http, lat, lon, radius, kind, town, country)
     if not found:
-        raise ValueError(f"OpenStreetMap has no independent {kind} listed within {radius // 1000} km of {town}. "
-                         "Try a bigger distance or another kind of business.")
+        raise ValueError(f"{source} has no independent {kind} listed " +
+                         (f"within {radius // 1000} km of {town}" if source == "OpenStreetMap" else f"in {town}") +
+                         ". Try a bigger distance or another kind of business." + fell_back)
+    country = next((b["country"] for b in found if b.get("country")), "")
     limit = int(min(max(int(args.get("audit_limit") or DEFAULT_AUDITS), 0), MAX_AUDITS))
     to_check = [b for b in found if b["website"]][:limit]
     gate = asyncio.Semaphore(4)
@@ -437,8 +571,8 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
     await asyncio.gather(*(check(b) for b in to_check))
     rows = sorted(merge(settings, found), key=rank_key)
     label = "businesses" if kind == "mixed" else kind
-    path = st.write(settings, ("Prospects",), f"{town} {label} {st.today().isoformat()}.md", report_md(town, label, rows, country),
-                    replace=True)
+    path = st.write(settings, ("Prospects",), f"{town} {label} {st.today().isoformat()}.md",
+                    report_md(town, label, rows, country, source), replace=True)
     none = sum(1 for p in rows if not p.get("website"))
     weak = sum(1 for p in rows if p.get("audit") and p["audit"]["grade"] in ("weak", "down"))
     unchecked = sum(1 for p in rows if p.get("website") and not p.get("audit"))
@@ -447,7 +581,7 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
             f"broken one. Best bets: {', '.join(best)}.")
     if unchecked:
         text += f" I didn't check {unchecked} other website{'s' if unchecked != 1 else ''}; ask me to audit any of them."
-    text += f" The list is saved in {st.where(settings, path)}."
+    text += f" The list is saved in {st.where(settings, path)}." + (" Found on Google Maps." if source != "OpenStreetMap" else "") + fell_back
     top = rows[0]
     return st.table(text, f"Prospects near {town}", COLUMNS, prospect_rows(rows[:60]), [
         {"label": "Outreach for #1", "say": f"Write an outreach message for prospect {top['id']}."},
@@ -460,6 +594,9 @@ async def audit(settings: Settings, args: dict, http: httpx.AsyncClient) -> scre
     who = args.get("business") or args.get("url")
     p = st.find_prospect(rows, who)
     url = args.get("url") or (p or {}).get("website")
+    if social_of(url or ""):
+        raise ValueError(f"That's a {social_of(url).capitalize()} page, not a website, so there's nothing to audit. "
+                         "That's the pitch: offer them their first proper website.")
     if not url:
         if p:
             raise ValueError(f"{p['name']} has no website on record, which is the pitch: offer them their first one.")
@@ -514,6 +651,8 @@ def prospect(settings: Settings, args: dict) -> screen.Shown:
         f"Website: {p.get('website') or 'none'}  |  Score: {score}  |  Status: {p.get('status', 'new')}",
         f"Phone: {p['phone']}" if p.get("phone") else "", f"Email: {p['email']}" if p.get("email") else "",
         f"Address: {p['address']}" if p.get("address") else "", f"Facebook: {p['facebook']}" if p.get("facebook") else "",
+        f"Instagram: {p['instagram']}" if p.get("instagram") else "", f"Google Maps: {p['maps']}" if p.get("maps") else "",
+        f"Google rating: {p['rating']} ({p.get('reviews') or 0} reviews)" if p.get("rating") else "",
         "", "Problems:" if p.get("audit") else ""] + [f"- {x['problem']}: {x['why']}" for x in (p.get("audit") or {}).get("problems", [])])
     return st.text_card(f"{p['name']}: {problem.lower()}.", p["name"], body, [
         {"label": "Write outreach", "say": f"Write an outreach message for prospect {p['id']}."},
@@ -569,8 +708,10 @@ def tool_definitions() -> list[dict]:
         "name": "web_client_finder",
         "description": "Kinetic Web Designs client finder, to win paid website work, anywhere in the world. find: "
                        "local independent businesses (cafes, hairdressers, trades, garages, shops...) near a town or "
-                       "city in any country from OpenStreetMap (e.g. salons in Lagos, barbers in Seoul), "
-                       "with their websites audited and ranked best bet first (no website, broken site, lowest score). "
+                       "city in any country from Google Maps (when a Places key is set) or OpenStreetMap (e.g. salons "
+                       "in Lagos, barbers in Seoul), "
+                       "with their websites audited and ranked best bet first (no website or only a Facebook/Instagram "
+                       "page, then a broken site, then the lowest score). "
                        "audit: score any public website out of 100 with plain-words problems to pitch (padlock, "
                        "phones, speed, Google, tap-to-call, old footer). prospects / prospect: the saved list or one "
                        "business. mark: set a prospect's status (e.g. contacted once the user has sent their "

@@ -237,6 +237,35 @@ def country_of(args: dict, prospect: dict | None) -> str:
 
 REBUILD_OFF = 20
 REBUILD_PACKAGES = ("business", "shop")
+FOUNDING_OFF = 100  # the website's founding client offer: £100 off for the first 3 clients
+FOUNDING_PLACES = 3
+FOUNDING_DEAL = "in return for an honest Google review and permission to show your site as an example of our work"
+
+
+def founding_clients(settings: Settings) -> list[str]:
+    """Clients who have the founding client offer on a quote that wasn't declined."""
+    names = []
+    for q in st.rows_of(settings, st.QUOTES):
+        if q.get("founding_discount") and q.get("status") != "declined" and q["client"] not in names:
+            names.append(q["client"])
+    return names
+
+
+def best_discount(settings: Settings, args: dict, name: str, package: str, first_price: float, subtotal: float
+                  ) -> tuple[str, float]:
+    """The one offer that saves the client most: ("rebuild" 20% off, "founding" £100 off, or "", 0). They never stack."""
+    rebuild = round(first_price * REBUILD_OFF / 100, 2) \
+        if args.get("existing_website") is True and package in REBUILD_PACKAGES else 0.0
+    founding = 0.0
+    if args.get("founding") is True:
+        taken = [n for n in founding_clients(settings) if n.lower() != name.lower()]
+        if len(taken) >= FOUNDING_PLACES:
+            raise ValueError(f"The founding client offer is for the first {FOUNDING_PLACES} clients, and "
+                             + ", ".join(taken[:FOUNDING_PLACES]) + " already have it.")
+        founding = float(min(FOUNDING_OFF, subtotal))
+    if founding > rebuild:
+        return "founding", founding
+    return ("rebuild", rebuild) if rebuild else ("", 0.0)
 
 def quote_lines(settings: Settings, args: dict) -> tuple[list[tuple[str, int, float]], float, str]:
     """[(description, qty, unit price)], monthly care price (0 if none) and the package key."""
@@ -272,10 +301,13 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     lines, care, package = quote_lines(settings, args)
     p = prices(settings)
     subtotal = sum(q * u for _, q, u in lines)
-    # Clients who already have a website get 20% off a business site or shop rebuild, as the website promises.
-    rebuild = round(lines[0][2] * REBUILD_OFF / 100, 2) if args.get("existing_website") is True and package in REBUILD_PACKAGES else 0.0
-    discount = st.number(args.get("discount"), "discount", True, subtotal - rebuild) if args.get("discount") else 0.0
-    total = round(subtotal - rebuild - discount, 2)
+    # Clients who already have a website get 20% off a business site or shop rebuild, and the first 3 clients get the
+    # founding client offer (£100 off): whichever saves them more, never both.
+    offer, off = best_discount(settings, args, name, package, lines[0][2], subtotal)
+    rebuild = off if offer == "rebuild" else 0.0
+    founding = off if offer == "founding" else 0.0
+    discount = st.number(args.get("discount"), "discount", True, subtotal - off) if args.get("discount") else 0.0
+    total = round(subtotal - off - discount, 2)
     deposit = round(total * p["deposit_percent"] / 100, 2)
     cur = world.currency_of(country_of(args, prospect))
     about = f" (about {world.money(world.convert(total, cur), cur)})" if cur != "GBP" else ""
@@ -300,10 +332,18 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     if rebuild:
         table.append(f"<tr><td>Existing website: {REBUILD_OFF}% off the {escape(lines[0][0].split(': ')[0])}</td><td></td><td></td>"
                      f"<td class=n>-{st.gbp(rebuild)}</td></tr>")
+    if founding:
+        table.append(f"<tr><td>Founding client offer: {st.gbp(FOUNDING_OFF)} off</td><td></td><td></td>"
+                     f"<td class=n>-{st.gbp(founding)}</td></tr>")
     if discount:
         table.append(f"<tr><td>Discount</td><td></td><td></td><td class=n>-{st.gbp(discount)}</td></tr>")
     table.append(f"<tr class=total><td>Total</td><td></td><td></td><td class=n>{st.gbp(total)}</td></tr></table>")
     body += ["<h2>Price</h2>", "".join(table)]
+    if founding:
+        body.append(f"<p class=note>As one of our first {FOUNDING_PLACES} clients you get {st.gbp(FOUNDING_OFF)} off "
+                    f"{escape(FOUNDING_DEAL)}." + (f" (It replaces the {REBUILD_OFF}% existing-website discount, as "
+                                                   "this saves you more.)" if args.get("existing_website") is True and
+                                                   package in REBUILD_PACKAGES else "") + "</p>")
     terms = world.payment_terms(p["deposit_percent"])
     body.append(f"<p class=note>You pay {escape(terms, False)}. Prices are in pounds (GBP)"
                 + (f"; {st.gbp(total)} is about {world.money(world.convert(total, cur), cur)} in "
@@ -311,20 +351,23 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
                    if about else "") + ".</p>")
     if care:
         body.append(f"<p>Optional {escape(p['care_plan']['name'].lower())}: {st.gbp(care)} a month. "
-                    f"{escape(p['care_plan']['includes'])} Cancel any time with a month's notice.</p>")
+                    f"{escape(p['care_plan']['includes'])} Cancel any time with a month's notice. Set it up at "
+                    f"<a href=\"{escape(st.business(settings)['plan_link'])}\">{escape(st.business(settings)['plan_link'])}</a>.</p>")
     vat = st.business(settings)["vat_number"]
     body += ["<h2>How it works</h2>", "<ol>",
              f"<li>You say yes, and I send an invoice for the {st.num(p['deposit_percent'])}% deposit "
-             f"({st.gbp(deposit)}) to book your start date.</li>" if deposit else "<li>You say yes and we book a start date.</li>",
+             f"({st.gbp(deposit)}) to book your start date{': half when we start building' if p['deposit_percent'] == 50 else ''}.</li>" if deposit else "<li>You say yes and we book a start date.</li>",
              "<li>A short call about your business, your customers and the look you like.</li>",
              "<li>I design and build the site, and you review it on your own phone.</li>",
-             f"<li>Once you're happy, it goes live and the rest ({st.gbp(total - deposit)}) is invoiced.</li>", "</ol>",
+             f"<li>Once you're happy, it goes live and the rest ({st.gbp(total - deposit)}) is invoiced"
+             f"{': the other half, once everything is complete' if p['deposit_percent'] == 50 else ''}.</li>", "</ol>",
              "<h2>The small print</h2>", "<ul>",
              "<li>You own the finished website and its content once the final invoice is paid.</li>",
              "<li>Your domain name is registered in your name, so it is yours. It is included with hosting and "
              "care; without it, the domain and any paid plugins or shop fees are paid by you, at cost.</li>",
              "<li>Changes beyond the included rounds are charged at an agreed hourly rate.</li>",
              f"<li>Prices {'exclude VAT' if vat else 'have no VAT to add'}.</li>",
+             "<li>No monthly instalments or buy-now-pay-later: you pay " + escape(terms, False) + ".</li>",
              "<li>If you are buying as a private individual rather than a business, you can cancel within 14 days "
              "of saying yes. If you ask me to start work sooner and then cancel, you pay only for the work done.</li>",
              "</ul>",
@@ -333,10 +376,13 @@ def quote(settings: Settings, args: dict) -> screen.Shown:
     path = st.write(settings, ("Clients", name), f"Quote {number}.html", html)
     rows.append({"id": qid, "number": number, "client": name, "package": package, "total": total, "deposit": deposit,
                  "care": care, "date": st.today().isoformat(), "valid_until": valid.isoformat(), "status": "draft",
-                 "lines": [[d, q, u] for d, q, u in lines], "discount": discount, "rebuild_discount": rebuild, "file": st.where(settings, path)})
+                 "lines": [[d, q, u] for d, q, u in lines], "discount": discount, "rebuild_discount": rebuild,
+                 "founding_discount": founding, "file": st.where(settings, path)})
     st.save(settings, st.QUOTES, rows)
     text = (f"Quote {number} for {name}: {st.gbp(total)}{about}" + (f", with a {st.gbp(deposit)} deposit" if deposit else "")
             + (f" and an optional {st.gbp(care)} a month care plan" if care else "") +
+            (f", with the {st.gbp(FOUNDING_OFF)} founding client offer" if founding else
+             f", with {REBUILD_OFF}% off for their existing website" if rebuild else "") +
             f". They pay {terms}. Saved in {st.where(settings, path)}; open it and print to PDF to send it. {st.NOT_SENT}")
     return st.file_shown(settings, path, text, [
         {"label": "Mark as sent", "say": f"Mark quote {number} as sent."},
@@ -390,6 +436,7 @@ def quote_status(settings: Settings, args: dict) -> str:
         return (f"Brilliant, {q['client']} accepted quote {q['number']} for {st.gbp(q['total'])}. Say \"make the "
                 f"deposit invoice for {q['number']}\" when you're ready. Next, collect their domain owner details: "
                 f"say \"domain owner details for {q['client']}\".")
+    return f"Quote {q['number']} is now {status}."
 
 
 # ---- domain owner details ----------------------------------------------------------
@@ -441,7 +488,6 @@ def domain_owner(settings: Settings, args: dict) -> screen.Shown:
                                    "owner (registrant) details.")
         text = f"{name}'s domain owner details are complete, so you can register {domain} in their name."
     return st.text_card(text, f"Domain owner: {name}", body)
-    return f"Quote {q['number']} is now {status}."
 
 
 # ---- welcome emails ----------------------------------------------------------------
@@ -457,7 +503,7 @@ def welcome_emails(settings: Settings, args: dict) -> screen.Shown:
     invoice_no = invoices[0]["number"] if invoices else "[Invoice number]"
     domain = st.load(settings, st.DOMAIN_OWNERS, {}).get(name, {}).get("domain") or "your domain name"
     care = q.get("care") or care_price(p, q.get("package") or "business")
-    sign = "\n".join(x for x in ("Kind regards,", me["owner"] or "[Your name]", me["name"],
+    sign = "\n".join(x for x in ("Kind regards,", st.sign_off(me),
                                   " · ".join(x for x in (me["phone"], me["email"]) if x)) if x)
     rounds = 2 if q["package"] == "starter" else 3
     order = "\n".join([f"- {package}" + (f": {includes}" if includes else "")] + [f"- {x}" for x in extras])
@@ -474,9 +520,8 @@ def welcome_emails(settings: Settings, args: dict) -> screen.Shown:
         f"- Full ownership of the finished website once the final invoice is paid\n\n"
         f"I'll send a short follow-up email with a few next steps. If you have any questions in the meantime, just "
         f"reply to this email.\n\n{sign}")
-    join = (f"To join, set up your Direct Debit here: {me['plan_link']}\nOr just reply \"Yes to hosting and care\" "
-            f"with your details from step 1." if me.get("plan_link") else
-            "To join, just reply \"Yes to hosting and care\" with your details from step 1.")
+    join = (f"To join, set up your plan here: {me['plan_link']}\nOr just reply \"Yes to hosting and care\" "
+            f"with your details from step 1.")
     second_email = (
         f"Dear {first},\n\nTo get your website started, there are three quick things I need from you.\n\n"
         f"1. Your domain owner details\nYour domain name ({domain}) will be registered in your name, so it legally "
@@ -643,8 +688,25 @@ def mockup(settings: Settings, args: dict) -> screen.Shown:
 TRANSLATED = ("email", "letter", "dm")  # what the prospect reads; phone and walk-in scripts are for the user
 
 
+def mockup_file(name: str) -> str:
+    """The mock-up copy's file name, fit to attach: "<business> home page mock-up.html" (kept under 60 characters)."""
+    short_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", name).strip()[:36].strip(" .") or "Your"
+    return f"{short_name} home page mock-up.html"
+
+
+def outreach_mockup(settings: Settings, args: dict) -> str:
+    """Make the free home page mock-up that goes with a first message, plus a copy with a name fit to attach.
+    Returns the copy's place in the memory folder."""
+    name = client_and_prospect(settings, args)[0]
+    mockup(settings, {k: v for k, v in args.items() if k in ("client", "business", "kind", "tagline", "services",
+                                                                "phone", "town", "style_from", "sections", "section_css")})
+    html = (st.folder(settings, "Mockups", name) / "index.html").read_text(encoding="utf-8")
+    return st.where(settings, st.write(settings, ("Mockups", name), mockup_file(name), html, replace=True))
+
+
 def outreach_draft(settings: Settings, args: dict) -> dict:
-    """The English draft and what goes with it: who, which channel, the country, its rules note and language."""
+    """The English draft and what goes with it: who, which channel, the country, its rules note and language.
+    Every first message opens with the free home page mock-up ("I made this for you") unless mockup is false."""
     name, prospect = client_and_prospect(settings, args)
     p = prospect or {}
     me = st.business(settings)
@@ -656,11 +718,13 @@ def outreach_draft(settings: Settings, args: dict) -> dict:
     language = world.language_code(args.get("language"), country)
     contact = st.clean(args.get("contact_name"), 40)
     hello = f"Hi {contact}," if contact else "Hi there,"
-    sign = me["owner"] or "[your name]"
+    sign = st.sign_off(me)
     designer = "a local web designer" if home else "a web designer based in the UK, working with businesses worldwide"
     a = p.get("audit") or {}
+    social = "Instagram" if p.get("instagram") and not p.get("facebook") else "Facebook" if p.get("facebook") else ""
     if not p.get("website"):
-        hook = (f"I searched for {name} online and couldn't find a website, only {'your Facebook page' if p.get('facebook') else 'a map listing'}. "
+        hook = (f"I searched for {name} online and couldn't find a website, only "
+                f"{'your ' + social + ' page' if social else 'a map listing'}. "
                 "That means people searching on Google tonight are finding someone else first.")
         points = ["a simple site that works on phones, with your hours, prices and a tap-to-call button",
                   "set up so you show up properly on Google and Google Maps"]
@@ -671,46 +735,61 @@ def outreach_draft(settings: Settings, args: dict) -> dict:
         hook = f"I had a look at your website ({st.domain(p['website'])}) and spotted a few quick wins."
         points = [f"{x['problem'][0].lower() + x['problem'][1:]}: {x['why'][0].lower() + x['why'][1:]}" for x in a["problems"][:3]]
     else:
-        hook = f"I'm {designer} and I'd love to help {name} win more customers online."
+        hook = f"I'm with Kinetic Web Designs, {designer}, and I'd love to help {name} win more customers online."
         points = ["a modern, phone-friendly site", "getting found on Google"]
-    offer = ("I've put together a free example of what a new home page could look like for you. No obligation; happy "
-             "to send it over or show you on my phone.") if args.get("mockup", True) else \
-        "I'd be happy to show you some ideas, free and with no obligation."
+    gift = args.get("mockup", True)
+    file = mockup_file(name)
+    made = f"I made this for you: a free example of a new home page for {name}."
+    opener = {"email": f"{made} It's attached ({file}), so you can open it on your phone. No obligation at all.",
+              "dm": f"{made} I've attached it ({file}); open it on your phone. No obligation.",
+              "letter": f"{made} It's printed and enclosed with this letter ({file}), and I'm happy to email you the "
+                        "live version to open on your phone. No obligation at all.",
+              }.get(channel, made) if gift else ""
+    offer = "" if gift else "I'd be happy to show you some ideas, free and with no obligation."
     pr = prices(settings)
     start = world.local_price(pr["packages"]["starter"]["price"], world.currency_of(country))
     price = f"Websites start from {start}, and you pay {world.payment_terms(pr['deposit_percent'])}."
     bullets = "\n".join(f"- {x[0].upper() + x[1:]}" for x in points)
     opt_out = world.OPT_OUT
+    lead_in = opener or hook
+    rest = hook if opener else ""
     if channel == "email":
-        subject = f"A quick idea for {name}'s website" if p.get("website") else f"Helping {name} get found online"
+        subject = f"I made this for {name}" if gift else \
+            (f"A quick idea for {name}'s website" if p.get("website") else f"Helping {name} get found online")
         # CAN-SPAM and CASL want a postal address in every sales email
         address = me["address"] or ("[your postal address]" if world.rules_of(country) in ("us", "ca") else "")
-        body = (f"Subject: {subject}\n\n{hello}\n\n{hook}\n\nA couple of things I'd suggest:\n{bullets}\n\n{offer}\n\n"
-                f"{price}\n\nWould a 10-minute chat this week be useful?\n\nThanks,\n{sign}\n{me['name']}"
+        body = (f"Subject: {subject}\n\n{hello}\n\n{lead_in}\n\n" + (f"{rest}\n\n" if rest else "") +
+                f"A couple of things I'd suggest:\n{bullets}\n\n" + (f"{offer}\n\n" if offer else "") +
+                f"{price}\n\nWould a 10-minute chat this week be useful?\n\nThanks,\n{sign}"
                 + "".join(f"\n{x}" for x in (me["phone"], me["website"], address) if x) + f"\n\n{opt_out}")
     elif channel == "letter":
         body = (f"{me['name']}\n{me['address'] or '[your address]'}\n{st.long_date(st.today())}\n\nTo the owner, {name}\n\n"
-                f"{hello.replace('Hi', 'Dear')}\n\n{hook}\n\nWhat I'd suggest:\n{bullets}\n\n{offer}\n\n{price}\n\n"
-                f"You can reach me on {me['phone'] or '[your phone]'} or {me['email'] or '[your email]'}.\n\n"
+                f"{hello.replace('Hi', 'Dear')}\n\n{lead_in}\n\n" + (f"{rest}\n\n" if rest else "") +
+                f"What I'd suggest:\n{bullets}\n\n" + (f"{offer}\n\n" if offer else "") + f"{price}\n\n"
+                f"You can reach us on {me['phone'] or '[your phone]'} or {me['email'] or '[your email]'}.\n\n"
                 f"Kind regards,\n{sign}\n\n{opt_out}")
     elif channel == "phone":
+        ask = (f"I made this for you: a free example of a new home page for {name}. Could I email it over so you can "
+               "see it on your phone?") if gift else offer
         body = (f"Phone script for {name}{(' (' + p['phone'] + ')') if p.get('phone') else ''}\n\n"
-                f"1. \"Hi, is that the owner? My name's {sign} from {me['name']}, {designer}. Have you got two minutes?\"\n"
-                f"2. If yes: \"{hook}\"\n3. \"I'd suggest:\"\n{bullets}\n4. \"{offer}\"\n"
+                f"1. \"Hi, is that the owner? I'm calling from {me['name']}, {designer}. Have you got two minutes?\"\n"
+                f"2. If yes: \"{ask}\"\n3. \"{hook}\"\n4. \"I'd suggest:\"\n{bullets}\n"
                 f"5. If they ask about price: \"{price}\"\n"
-                "6. Ask: \"Could I send it over this week?\" Agree a time and get their email.\n"
+                "6. Ask: \"What's the best email to send it to?\" Agree a time to talk it through.\n"
                 "7. If not now: thank them, ask if you can check back in a few months, and note it.\n"
                 "If they say no, thank them and don't call again.")
     elif channel == "visit":
         body = (f"Walk-in script for {name}{(', ' + p['address']) if p.get('address') else ''}\n\n"
-                "Go at a quiet time (mid-morning or mid-afternoon), and bring the mock-up on your phone.\n\n"
-                f"\"Hi, I'm {sign}, a web designer just round the corner. {hook} I made you a free example; can I show you "
-                f"in 30 seconds?\"\n\nPoints to mention:\n{bullets}\n\nIf they ask about price: \"{price}\"\n\nLeave your "
-                "card or number and ask for the best email to send the example to. If they're busy, ask when's better.\n"
-                "If they say no, thank them and don't come back.")
+                "Go at a quiet time (mid-morning or mid-afternoon), and bring the mock-up on your phone"
+                + (f" ({file})" if gift else "") + ".\n\n"
+                f"\"Hi, I'm from {me['name']}, a web designer just round the corner. "
+                + (f"I made this for you: a free example of a new home page for {name}. Can I show you in 30 seconds? "
+                   if gift else "") + f"{hook}\"\n\nPoints to mention:\n{bullets}\n\nIf they ask about price: "
+                f"\"{price}\"\n\nLeave your card or number and ask for the best email to send the example to. If "
+                "they're busy, ask when's better.\nIf they say no, thank them and don't come back.")
     else:
-        body = (f"{hello} {hook} I've made a free example home page for {name} to show what it could look like. Happy to "
-                f"send it over? No obligation. {price} {sign}, {me['name']}\n\n{opt_out}")
+        body = (f"{hello} {lead_in} " + (f"{rest} " if rest else "") + (f"{offer} " if offer else "") +
+                f"{price} {sign}\n\n{opt_out}")
     note = world.compliance_note(country) if channel in ("email", "dm", "letter") else \
         "Be friendly and brief, and take no for an answer."
     return {"name": name, "channel": channel, "country": country, "language": language, "body": body, "note": note}
@@ -720,6 +799,7 @@ async def outreach(settings: Settings, args: dict) -> screen.Shown | str:
     warning = await asyncio.to_thread(tracker.before_draft, settings, *client_and_prospect(settings, args))
     if warning:  # already messaged or already talking: no second first message
         return warning
+    attach = await asyncio.to_thread(outreach_mockup, settings, args) if args.get("mockup", True) else ""
     d = outreach_draft(settings, args)
     name, channel, body, language = d["name"], d["channel"], d["body"], d["language"]
     said = ""
@@ -736,11 +816,15 @@ async def outreach(settings: Settings, args: dict) -> screen.Shown | str:
                             d["country"], st.clean(args.get("contact_name"), 40))
     where_ = f" ({world.country_name(d['country'])})" if d["country"] not in ("", world.HOME) else ""
     article = "an" if channel == "email" else "a"
-    return st.text_card(f"I drafted {article} {channel} for {name}{where_}{said} and saved it in {st.where(settings, path)}. "
-                        f"{st.NOT_SENT} Once you've sent it, tell me and I'll mark them as contacted. {d['note']}",
+    how = {"email": "Attach it to the email", "dm": "Attach it to the message", "letter": "Print it and enclose it",
+           "phone": "Have it ready to email them", "visit": "Open it on your phone to show them"}[channel]
+    gift = (f" I also made their free home page mock-up: {attach}. {how}; drafts can't carry attachments."
+            if attach else "")
+    return st.text_card(f"I drafted {article} {channel} for {name}{where_}{said} and saved it in {st.where(settings, path)}."
+                        f"{gift} {st.NOT_SENT} Once you've sent it, tell me and I'll mark them as contacted. {d['note']}",
                         f"Outreach: {name}", body, [
                             {"label": "Mark contacted", "say": f"I sent the outreach {channel} to {name}."},
-                            {"label": "Make the mock-up", "say": f"Mock up a home page for {name}."}])
+                            {"label": "Redo the mock-up", "say": f"Mock up a home page for {name}."}])
 
 
 def tool_definitions() -> list[dict]:
@@ -759,11 +843,14 @@ def tool_definitions() -> list[dict]:
                        "user sends them). mockup: a free concept home page for a business, optionally "
                        "in a design system saved by extract_design_system (style_from); for a creative one, read the "
                        "client-websites design guide first and add 21st.dev sections (sections, section_css). outreach: a first message "
-                       "draft (email, letter, phone script, walk-in script, dm) from the audit, for prospects anywhere "
+                       "draft (email, letter, phone script, walk-in script, dm) from the audit that opens with a free "
+                       "home page mock-up Alfred makes for them (\"I made this for you\"; the user attaches it), for "
+                       "prospects anywhere "
                        "in the world: the price in their currency, written in their language (from their country, or "
                        "language) with English underneath, and a note on that country's email rules. Payment terms "
                        "are always half when we start building, half once everything's complete; never offer "
-                       "monthly instalments or Klarna. outreach is recorded as drafted in the outreach tracker "
+                       "monthly instalments or Klarna. Drafts are signed \"Alfred, Kinetic Web Designs\", never "
+                       "with the user's own name. quote founding: the founding client offer. outreach is recorded as drafted in the outreach tracker "
                        "(web_design_outreach), which refuses anyone opted out or not interested and warns when a lead "
                        "was already messaged. Drafts only: never "
                        "send anything, and only mark a quote sent when the user says they sent it.",
@@ -814,7 +901,13 @@ def tool_definitions() -> list[dict]:
                                                              "prospect's country, else the UK)."},
                 "language": {"type": "string", "description": "outreach: write it in this language (a code like fr, "
                                                               "de, es, pt, zh, ko, or a name); default the country's."},
-                "mockup": {"type": "boolean", "description": "outreach: offer a free mock-up (default true)."},
+                "mockup": {"type": "boolean", "description": "outreach: make the free home page mock-up and open the "
+                                                            "message with it (default true; only false if the user "
+                                                            "says so)."},
+                "founding": {"type": "boolean", "description": "quote: the founding client offer, £100 off for the "
+                                                              "first 3 clients in return for an honest Google review "
+                                                              "and permission to show their site. Doesn't stack with "
+                                                              "existing_website: the bigger saving wins."},
                 **{k: {"type": "string"} for k in DETAILS},
             },
             "required": ["action"],

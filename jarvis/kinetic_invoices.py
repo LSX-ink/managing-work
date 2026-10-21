@@ -12,6 +12,7 @@ from html import escape
 
 import kinetic_sales
 import kinetic_store as st
+import kinetic_world as world
 import screen
 from config import Settings
 
@@ -111,10 +112,14 @@ def invoice(settings: Settings, args: dict) -> screen.Shown:
     q = next((r for r in st.rows_of(settings, st.QUOTES) if r["number"] == quote_no), {}) if quote_no else {}
     monthly = (f"<div class=note><b>Monthly: {escape(kinetic_sales.prices(settings)['care_plan']['name'])}, "
                f"{st.gbp(q['care'])} a month</b><br>Paid separately by Direct Debit or card, starting the month your "
-               f"website goes live. Not included in the amount due above.</div>") if q.get("care") else ""
+               f"website goes live. Not included in the amount due above. Set it up at "
+               f"<a href=\"{escape(me['plan_link'])}\">{escape(me['plan_link'])}</a>.</div>") if q.get("care") else ""
+    deposit_percent = kinetic_sales.prices(settings)["deposit_percent"]
+    terms = (f"<p>Payment terms: {escape(world.payment_terms(deposit_percent), False)}. No monthly instalments.</p>"
+             if quote_no else "")
     body = [f"<h2>Invoice {number}</h2>",
             '<div class="meta">' + "".join(f"<div><b>{k}</b>{escape(v)}</div>" for k, v in meta) + "</div>",
-            "".join(table), pay, monthly, vat,
+            "".join(table), pay, terms, monthly, vat,
             f"<footer>Payment is due by {st.long_date(due)}. Thank you for your business.</footer>"]
     path = st.write(settings, ("Clients", client), f"Invoice {number}.html",
                     st.doc_html(settings, f"Invoice {number} for {client}", "\n".join(body)))
@@ -177,7 +182,7 @@ def reminder(settings: Settings, args: dict) -> screen.Shown:
         raise ValueError(f"{inv['number']} is {inv['status']}, so there's nothing to chase.")
     me = st.business(settings)
     days = (st.today() - date.fromisoformat(inv["due"])).days
-    sign = me["owner"] or "[your name]"
+    sign = st.sign_off(me)
     hello = f"Hi {st.clean(args.get('contact_name'), 40)}," if args.get("contact_name") else "Hi,"
     if days <= 0:
         line = f"Just a friendly reminder that invoice {inv['number']} for {st.gbp(inv['total'])} is due on {st.long_date(date.fromisoformat(inv['due']))}."
@@ -192,7 +197,7 @@ def reminder(settings: Settings, args: dict) -> screen.Shown:
     bank = f"\n\nBank: sort code {me['sort_code']}, account {me['account_number']}, reference {inv['number']}." \
         if me["sort_code"] and me["account_number"] else ""
     body = (f"Subject: Invoice {inv['number']} from {me['name']}\n\n{hello}\n\n{line}{bank}\n\nI've attached a copy "
-            f"of the invoice. If you've already paid, thank you, and please ignore this.\n\nThanks,\n{sign}\n{me['name']}")
+            f"of the invoice. If you've already paid, thank you, and please ignore this.\n\nThanks,\n{sign}")
     path = st.write(settings, ("Clients", inv["client"]), f"Reminder {inv['number']} {st.today().isoformat()}.md", body + "\n")
     tone = "a friendly" if days <= 14 else "a firmer"
     return st.text_card(f"I drafted {tone} reminder for {inv['number']} ({inv['client']}) and saved it in "
