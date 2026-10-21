@@ -440,3 +440,17 @@ def test_briefing_numbers_without_the_website(s, monkeypatch):
     full = kb.full_text(s, b)
     assert "| Briefs | couldn't check | couldn't check |" in full
     assert "Fix this step (messages): send more first messages" in full
+
+
+def test_asian_countries_have_currency_language_and_rules():
+    import kinetic_world as w
+    assert w.local_price(395, w.currency_of("JP")).startswith("about ¥")
+    assert w.local_price(395, w.currency_of("TH")).startswith("about ฿")
+    assert w.language_code("", "VN") == "vi" and w.language_code("", "HK") == "zh-hant"
+    assert w.language_code("chinese") == "zh"
+    assert not w.cold_email_ok("JP") and not w.cold_email_ok("VN") and w.cold_email_ok("SG")
+    assert w.lead_channels("JP", True) == ["dm"]
+    assert "Japan" in w.compliance_note("JP")
+    assert w.country_code("the Philippines") == "PH" and w.country_code("Saudi Arabia") == "SA"
+    assert all(w.COUNTRIES[c][1] in w.RATES_FROM_GBP for c in ("JP", "TH", "SG", "MY", "PH", "ID", "VN", "HK", "TW",
+                                                               "PK", "BD", "LK", "SA"))
