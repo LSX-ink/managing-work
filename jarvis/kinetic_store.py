@@ -1,8 +1,9 @@
-"""Shared bits for the Kinetic Web Designs business tools (kinetic_find, kinetic_sales, kinetic_invoices).
+"""Shared bits for the Kinetic Web Designs business tools (kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices).
 
 Data lives in the memory folder: kinetic-prospects.json (businesses found and their website audits), kinetic-prices.json
 (your package prices), kinetic-business.json (your business details for quotes and invoices), kinetic-quotes.json,
-kinetic-invoices.json and kinetic-domain-owners.json (who each client's domain is registered to). Documents are saved
+kinetic-invoices.json, kinetic-domain-owners.json (who each client's domain is registered to) and kinetic-outreach.json
+(who has been messaged, when, and how they answered). Documents are saved
 under the "Kinetic Web Designs" memory folder, in Prospects, Audits, Mockups and Clients/<client>. Nothing here sends an email,
 posts anything or takes a payment: every message is a draft the user sends themselves.
 """
@@ -22,6 +23,7 @@ BUSINESS = "kinetic-business.json"
 QUOTES = "kinetic-quotes.json"
 INVOICES = "kinetic-invoices.json"
 DOMAIN_OWNERS = "kinetic-domain-owners.json"
+OUTREACH = "kinetic-outreach.json"
 MAX_ROWS = 2000
 NOT_SENT = "Nothing has been sent; you send it yourself when you're happy with it."
 

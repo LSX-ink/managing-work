@@ -23,7 +23,9 @@ outreach: a short first message (email, letter, phone call, walk-in or social DM
 starting price in the prospect's currency and the payment terms. For a prospect abroad it is written in their language
 (from their country, or the one asked for) with the English version underneath. Drafts only: nothing is ever sent.
 The note it adds sums up that country's rules on unasked-for marketing (PECR, GDPR, CAN-SPAM, CASL, POPIA, PIPL...),
-and where cold email isn't allowed it drafts a social media DM instead.
+and where cold email isn't allowed it drafts a social media DM instead. Each draft is recorded in the outreach tracker
+(kinetic_outreach): nobody who opted out or said no gets a draft, and a lead already messaged gets a warning instead of
+a second first message.
 """
 
 import asyncio
@@ -33,6 +35,7 @@ from datetime import timedelta
 from html import escape
 
 import alfred_mail
+import kinetic_outreach as tracker
 import kinetic_store as st
 import kinetic_world as world
 import memory
@@ -713,7 +716,10 @@ def outreach_draft(settings: Settings, args: dict) -> dict:
     return {"name": name, "channel": channel, "country": country, "language": language, "body": body, "note": note}
 
 
-async def outreach(settings: Settings, args: dict) -> screen.Shown:
+async def outreach(settings: Settings, args: dict) -> screen.Shown | str:
+    warning = await asyncio.to_thread(tracker.before_draft, settings, *client_and_prospect(settings, args))
+    if warning:  # already messaged or already talking: no second first message
+        return warning
     d = outreach_draft(settings, args)
     name, channel, body, language = d["name"], d["channel"], d["body"], d["language"]
     said = ""
@@ -726,12 +732,14 @@ async def outreach(settings: Settings, args: dict) -> screen.Shown:
             said = f" in English only, as I couldn't translate it into {world.LANGUAGES[language]} just now"
     path = await asyncio.to_thread(st.write, settings, ("Clients", name),
                                    f"Outreach {channel} {st.today().isoformat()}.md", body + "\n")
+    await asyncio.to_thread(tracker.drafted, settings, name, client_and_prospect(settings, args)[1], channel,
+                            d["country"], st.clean(args.get("contact_name"), 40))
     where_ = f" ({world.country_name(d['country'])})" if d["country"] not in ("", world.HOME) else ""
     article = "an" if channel == "email" else "a"
     return st.text_card(f"I drafted {article} {channel} for {name}{where_}{said} and saved it in {st.where(settings, path)}. "
                         f"{st.NOT_SENT} Once you've sent it, tell me and I'll mark them as contacted. {d['note']}",
                         f"Outreach: {name}", body, [
-                            {"label": "Mark contacted", "say": f"Mark prospect {name} as contacted."},
+                            {"label": "Mark contacted", "say": f"I sent the outreach {channel} to {name}."},
                             {"label": "Make the mock-up", "say": f"Mock up a home page for {name}."}])
 
 
@@ -755,7 +763,9 @@ def tool_definitions() -> list[dict]:
                        "in the world: the price in their currency, written in their language (from their country, or "
                        "language) with English underneath, and a note on that country's email rules. Payment terms "
                        "are always half when we start building, half once everything's complete; never offer "
-                       "monthly instalments or Klarna. Drafts only: never "
+                       "monthly instalments or Klarna. outreach is recorded as drafted in the outreach tracker "
+                       "(web_design_outreach), which refuses anyone opted out or not interested and warns when a lead "
+                       "was already messaged. Drafts only: never "
                        "send anything, and only mark a quote sent when the user says they sent it.",
         "input_schema": {
             "type": "object",

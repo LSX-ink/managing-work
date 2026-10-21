@@ -9,6 +9,7 @@ import pytest
 import alfred_mail
 import kinetic_find as kf
 import kinetic_invoices as ki
+import kinetic_outreach as ko
 import kinetic_sales as ks
 import kinetic_store as st
 import kinetic_world as world
@@ -94,6 +95,10 @@ def sales(s, **args):
 
 def inv(s, **args):
     return ki.run_tool("web_design_invoices", args, s)
+
+
+def track(s, **args):
+    return asyncio.run(ko.run_tool("web_design_outreach", args, s))
 
 
 def test_scores_a_strong_and_a_weak_page():
@@ -324,7 +329,7 @@ def test_invoice_from_items_without_bank_details(s):
 
 def test_registered_with_alfred(s):
     names = {t["name"] for t in tools.client_tool_definitions(s)}
-    assert {"web_client_finder", "web_design_sales", "web_design_invoices"} <= names
+    assert {"web_client_finder", "web_design_sales", "web_design_outreach", "web_design_invoices"} <= names
 
 
 def test_existing_website_takes_20_percent_off_business_and_shop(s):
@@ -457,3 +462,153 @@ def test_outreach_abroad_is_translated_with_english_underneath(s, monkeypatch):
     plain = sales(s, action="outreach", client="Bar Madrid", country="Spain", channel="email")
     assert "couldn't translate it into Spanish" in plain and "English version" not in plain.card["text"]
     assert "€459" in plain.card["text"] and plain.card["text"].endswith(world.OPT_OUT)
+
+
+# ---- outreach tracker ----------------------------------------------------------------
+
+def ago(days: int) -> str:
+    return (st.today() - timedelta(days=days)).isoformat()
+
+
+def lead(s, name):
+    return next(r for r in st.rows_of(s, st.OUTREACH) if r["name"] == name)
+
+
+def outreach_files(s, name):
+    return sorted(p.name for p in (memory.root(s) / "Kinetic Web Designs" / "Clients" / name).glob("Outreach*"))
+
+
+def test_drafts_are_recorded_and_nobody_is_messaged_twice(s):
+    finder(s, action="find", town="Stockport")
+    sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe")
+    row = lead(s, "Joe's Barbers")
+    assert row["status"] == "drafted" and row["draft_channel"] == "email" and row["contact_name"] == "Joe"
+    assert row["prospect"] == st.find_prospect(st.rows_of(s, st.PROSPECTS), "Joe's Barbers")["id"]
+    said = track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")
+    assert said.startswith("Noted: you messaged Joe's Barbers by email.") and "one polite follow-up" in said
+    assert lead(s, "Joe's Barbers")["messages"] == 1
+    track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")  # said twice: one message
+    assert lead(s, "Joe's Barbers")["messages"] == 1
+    finder_row = st.find_prospect(st.rows_of(s, st.PROSPECTS), "Joe's Barbers")
+    assert finder_row["status"] == "contacted" and finder_row["contacted"] == st.today().isoformat()
+    again = sales(s, action="outreach", client="Joe's Barbers")
+    assert isinstance(again, str) and "already messaged Joe's Barbers by email" in again and "No double messaging" in again
+    assert len(outreach_files(s, "Joe's Barbers")) == 1  # no second draft
+    assert "won't draft anything for them again" in track(s, action="mark", business="Bloom", status="opted out")
+    with pytest.raises(ValueError, match="won't draft anything"):
+        sales(s, action="outreach", client="Bloom")
+    with pytest.raises(ValueError, match="shouldn't be messaged again"):
+        track(s, action="mark", business="Bloom", status="contacted")
+    track(s, action="mark", business="Sal's Cafe", status="not interested", date="yesterday")
+    with pytest.raises(ValueError, match="won't draft anything"):
+        sales(s, action="outreach", client="Sal's Cafe", channel="phone")
+    assert st.find_prospect(st.rows_of(s, st.PROSPECTS), "Sal's Cafe")["status"] == "not interested"
+    assert outreach_files(s, "Bloom") == [] and outreach_files(s, "Sal's Cafe") == []
+    track(s, action="mark", business="Gone Garage", status="interested")
+    assert "already marked interested" in sales(s, action="outreach", client="Gone Garage")
+    with pytest.raises(ValueError, match="Mark it as one of"):
+        track(s, action="mark", business="Gone Garage", status="maybe")
+    with pytest.raises(ValueError, match="in the future"):
+        track(s, action="mark", business="Gone Garage", status="replied", date="tomorrow")
+
+
+def test_finder_mark_keeps_the_tracker_in_step(s):
+    finder(s, action="find", town="Stockport")
+    finder(s, action="mark", business="Bloom", status="contacted")
+    assert lead(s, "Bloom")["status"] == "contacted" and lead(s, "Bloom")["messages"] == 1
+    finder(s, action="mark", business="Sal's Cafe", status="client")
+    assert lead(s, "Sal's Cafe")["status"] == "won"
+    track(s, action="mark", business="Joe's Barbers", status="won")
+    assert st.find_prospect(st.rows_of(s, st.PROSPECTS), "Joe's Barbers")["status"] == "client"
+
+
+def test_one_polite_follow_up_after_five_days_then_stop(s):
+    finder(s, action="find", town="Stockport")
+    sales(s, action="my_details", owner="Lee")
+    sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe")
+    track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email", date=ago(6))
+    track(s, action="mark", business="Sal's Cafe", status="contacted", channel="phone", date=ago(2))
+    due = track(s, action="follow_ups")
+    assert "1 lead is due a follow-up: Joe's Barbers" in due and [r[0] for r in due.card["rows"]] == ["Joe's Barbers"]
+    assert "Give them until" in track(s, action="follow_up", business="Sal's Cafe")
+    assert "haven't told me you've messaged Bloom" in track(s, action="follow_up", business="Bloom")
+    out = track(s, action="follow_up", business="Joe's Barbers")
+    body = out.card["text"]
+    assert out.card["title"] == "Follow-up: Joe's Barbers" and "Nothing has been sent" in out and "one follow-up" in out
+    assert body.startswith("Subject: Following up: Joe's Barbers's website") and "Hi Joe," in body
+    assert "following up on my email from" in body and "won't chase you again" in body and "Lee" in body
+    assert "half when we start building, half once everything's complete" in body and body.endswith(world.OPT_OUT)
+    assert "klarna" not in body.lower() and "monthly payment" not in body.lower()
+    assert "Outreach follow-up email " + st.today().isoformat() + ".md" in outreach_files(s, "Joe's Barbers")
+    assert lead(s, "Joe's Barbers")["follow_up_drafted"] == st.today().isoformat()
+    plain = track(s, action="follow_up", business="Joe's Barbers", channel="dm", price=False).card["text"]
+    assert "Websites start from" not in plain and plain.endswith(world.OPT_OUT)
+    said = track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")
+    assert "two messages in all" in said and lead(s, "Joe's Barbers")["messages"] == 2
+    assert "Nobody is due a follow-up" in track(s, action="follow_ups")
+    assert "leave them be" in track(s, action="follow_up", business="Joe's Barbers")
+    assert "two messages already" in sales(s, action="outreach", client="Joe's Barbers")
+    track(s, action="mark", business="Joe's Barbers", status="replied")
+    assert "already replied" in track(s, action="follow_up", business="Joe's Barbers")
+    track(s, action="mark", business="Joe's Barbers", status="opted out")
+    with pytest.raises(ValueError, match="won't draft anything"):
+        track(s, action="follow_up", business="Joe's Barbers")
+
+
+def test_follow_up_abroad_is_in_their_language(s, monkeypatch):
+    fake = FakeClaude()
+    monkeypatch.setattr(helpers, "_client", fake)
+    sales(s, action="outreach", client="Seoul Barbers", country="South Korea")
+    assert lead(s, "Seoul Barbers")["country"] == "KR" and lead(s, "Seoul Barbers")["draft_channel"] == "dm"
+    track(s, action="mark", business="Seoul Barbers", status="contacted", date=ago(8))
+    assert lead(s, "Seoul Barbers")["channel"] == "dm"  # the channel of the draft
+    out = track(s, action="follow_up", business="Seoul Barbers")
+    body = out.card["text"]
+    assert "follow-up dm for Seoul Barbers in Korean" in out and body.startswith("안녕하세요")
+    assert "English version:" in body and "about ₩690,000 (£395)" in body and body.endswith(world.OPT_OUT)
+    assert "Korean" in fake.asked[-1]["messages"][0]["content"]
+
+
+def test_summary_counts_per_status_and_country(s):
+    finder(s, action="find", town="Stockport")
+    sales(s, action="outreach", client="Seoul Barbers", country="South Korea")
+    track(s, action="mark", business="Joe's Barbers", status="contacted", channel="visit")
+    track(s, action="mark", business="Bloom", status="won")
+    out = track(s, action="summary")
+    assert out.startswith("5 leads: 2 new, 1 drafted, 1 contacted, 1 won.")
+    assert "By country: United Kingdom 4, South Korea 1." in out
+    rows = {r[0]: r for r in out.card["rows"]}
+    assert rows["All"][-1] == "5" and rows["South Korea"][2] == "1" and rows["United Kingdom"][1] == "2"
+    listed = track(s, action="leads", country="South Korea")
+    assert [r[0] for r in listed.card["rows"]] == ["Seoul Barbers"]
+    assert [r[0] for r in track(s, action="leads", status="won").card["rows"]] == ["Bloom"]
+    with pytest.raises(ValueError, match="No leads"):
+        track(s, action="leads", status="opted out")
+
+
+def test_daily_follow_up_reminder_is_said_once_a_day(s):
+    from datetime import datetime
+    today = st.today()
+    early, later = datetime(today.year, today.month, today.day, 8), datetime(today.year, today.month, today.day, 10)
+    assert ko.reminder_line(s, later) == ""  # nothing due: nothing said
+    st.save(s, ko.REMINDED, {})
+    for name in ("Ada", "Bob"):
+        track(s, action="mark", business=name, status="contacted", channel="email", date=ago(5))
+    track(s, action="mark", business="Cal", status="contacted", channel="email", date=ago(4))
+    assert ko.reminder_line(s, early) == ""  # not before nine
+    said = ko.reminder_line(s, later)
+    assert said == "Sir, 2 Kinetic leads are due a follow-up: Ada, Bob. Say \"draft the follow-ups\" when you're ready."
+    assert ko.reminder_line(s, later) == ""  # once a day
+    tomorrow = later + timedelta(days=1)
+    assert "3 Kinetic leads are due" in ko.reminder_line(s, tomorrow)
+
+    heard = []
+
+    async def announce(text, kind):
+        heard.append((text, kind))
+        raise asyncio.CancelledError  # stop the watcher after its first heads-up
+
+    st.save(s, ko.REMINDED, {})
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(ko.watch(s, announce, lambda: True))
+    assert heard and heard[0][1] == "sales" and "due a follow-up" in heard[0][0]
