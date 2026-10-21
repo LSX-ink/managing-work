@@ -1258,6 +1258,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 .cur-row select { font: inherit; padding: 6px 10px; border-radius: 12px; border: 1px solid currentColor; background: transparent; color: inherit; }
 .cur-row select option { color: #1d1a17; }
 .cur-row small { flex-basis: 100%; opacity: .75; }
+.cur-row[hidden] { display: none; }
 /* Add-on details: three dots under the price open a short description */
 .addon { flex-wrap: wrap; }
 .addons { align-items: start; }
@@ -1396,7 +1397,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   <div class="wrap">
     <div class="head"><h2 id="quote-title">See your price before you ask</h2>
       <p class="lede">You see three designs before you pay anything. Prices are fixed for what's listed. Once you've chosen your design, half is paid up front to book your start date and the rest when your site goes live. All prices are the full price: we are not VAT registered, so no VAT is added.</p>
-      <p class="cur-row"><label for="cur">Show prices in</label> <select id="cur"><option value="GBP">£ Pounds</option><option value="USD">$ US dollars</option><option value="EUR">€ Euros</option></select>
+      <p class="cur-row" hidden><label for="cur">Show prices in</label> <select id="cur"><option value="GBP">£ Pounds</option><option value="USD">$ US dollars</option><option value="EUR">€ Euros</option></select>
       <small>Prices are set in pounds. Dollars and euros are approximate; you pay in pounds and your bank converts it.</small></p></div>
     <div class="quote">
       <div>
@@ -1601,17 +1602,26 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       for (let t; (t = w.nextNode());) t.nodeValue = t.nodeValue.replace(/£([\d,]+)(k?)/g, (m, d, k) => k ? m : money(+d.replace(/,/g, "")));
     });
   }
-  // First visit: ask Cloudflare which country the visitor is in. If that points to another currency than the
-  // time-zone guess, remember it and redraw once.
-  if (!CURRENCIES[store.get("cur")]) {
-    fetch("/api/geo").then(r => r.ok ? r.json() : null).then(g => {
-      const c = g && g.country; if (!c) return;
-      const EURO = /^(AT|BE|HR|CY|EE|FI|FR|DE|GR|IE|IT|LV|LT|LU|MT|NL|PT|SK|SI|ES|MC|SM|VA|AD|ME|XK)$/;
-      const want = /^(GB|GG|JE|IM|GI)$/.test(c) ? "GBP" : EURO.test(c) ? "EUR" : "USD";
-      store.set("cur", want);
-      if (want !== CUR) location.reload();
-    }).catch(() => {});
-  }
+  // Ask Cloudflare which country the visitor is in. UK visitors always see pounds and no picker. Everyone else
+  // gets the picker; on a first visit their country's currency is remembered and the page redrawn once if the
+  // time-zone guess was different. If the country can't be found, the picker shows.
+  const curRow = document.querySelector(".cur-row");
+  const showPicker = () => { if (curRow) curRow.hidden = false; };
+  fetch("/api/geo").then(r => r.ok ? r.json() : null).then(g => {
+    const c = g && g.country;
+    if (!c) return showPicker();
+    if (/^(GB|GG|JE|IM|GI)$/.test(c)) {
+      store.set("cur", "GBP");
+      if (CUR !== "GBP") location.reload();
+      return;
+    }
+    showPicker();
+    if (CURRENCIES[store.get("cur")]) return;
+    const EURO = /^(AT|BE|HR|CY|EE|FI|FR|DE|GR|IE|IT|LV|LT|LU|MT|NL|PT|SK|SI|ES|MC|SM|VA|AD|ME|XK)$/;
+    const want = EURO.test(c) ? "EUR" : "USD";
+    store.set("cur", want);
+    if (want !== CUR) location.reload();
+  }).catch(showPicker);
   const curSel = document.getElementById("cur");
   if (curSel) {
     curSel.value = CUR;
