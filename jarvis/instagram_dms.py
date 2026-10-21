@@ -561,14 +561,16 @@ async def watch(settings: Settings, http: httpx.AsyncClient, announce) -> None:
         return
     await asyncio.sleep(FIRST_CHECK)
     while True:
-        try:
-            await poll(settings, http, announce)
-        except InstagramError as exc:
-            print(f"[jarvis] Instagram DMs: {scrub(str(exc), settings.instagram_token, current_token(settings))}",
-                  flush=True)
-        except Exception as exc:  # a bad file must not stop the watcher
-            print(f"[jarvis] Instagram DMs: {scrub(type(exc).__name__ + ': ' + str(exc), settings.instagram_token)}",
-                  flush=True)
+        import instagram_comments  # comment replies ride on the same poll
+        for label, check in (("DMs", poll), ("comments", instagram_comments.poll)):
+            try:
+                await check(settings, http, announce)
+            except InstagramError as exc:
+                print(f"[jarvis] Instagram {label}: "
+                      f"{scrub(str(exc), settings.instagram_token, current_token(settings))}", flush=True)
+            except Exception as exc:  # a bad file must not stop the watcher
+                print(f"[jarvis] Instagram {label}: "
+                      f"{scrub(type(exc).__name__ + ': ' + str(exc), settings.instagram_token)}", flush=True)
         await asyncio.sleep(max(15, settings.instagram_poll_seconds))
 
 
@@ -597,6 +599,8 @@ def status(settings: Settings, args: dict) -> str:
     text = (f"Instagram is connected for {who}. Auto-reply is {mode}. Last check: {s.get('last_poll') or 'not yet'}."
             f" {len(s['threads'])} conversation{'s' if len(s['threads']) != 1 else ''}, {c['replied']} answered, "
             f"{c['handed_off']} handed to you, {len(s['needs_you'])} waiting on you.")
+    import instagram_comments
+    text += instagram_comments.summary(settings)
     if s.get("last_error"):
         text += f" Last problem: {s['last_error']}"
     return text
@@ -685,8 +689,10 @@ async def test_token(settings: Settings, http: httpx.AsyncClient) -> str:
 def tool_definitions() -> list[dict]:
     return [{
         "name": "instagram_dms",
-        "description": "Kinetic Web Designs Instagram DMs (@kineticwebdesigns). Alfred auto-replies to people who "
-                       "message the account (never starts a conversation), and hands complaints, legal questions, "
+        "description": "Kinetic Web Designs Instagram DMs and comments (@kineticwebdesigns). Alfred auto-replies to "
+                       "people who message the account or comment on its own posts (never starts a conversation or "
+                       "comments anywhere else; interested commenters get a short public reply and a private DM), "
+                       "and hands complaints, legal questions, "
                        "price negotiations, requests for a person, abuse, spam and anything he's unsure of to the "
                        "user. status: connected?, last check, counts. list: recent conversations. needs_you: "
                        "messages waiting on the user. pause / resume: auto-replies (new messages are still "

@@ -94,6 +94,7 @@ class Settings:
     instagram_token: str = os.getenv("JARVIS_INSTAGRAM_TOKEN", "").strip()
     instagram_autoreply: bool = _bool("JARVIS_INSTAGRAM_AUTOREPLY", True)  # off: tell you about new DMs, don't answer
     instagram_poll_seconds: int = int(os.getenv("JARVIS_INSTAGRAM_POLL_SECONDS", "60") or 60)
+    instagram_comments: bool = _bool("JARVIS_INSTAGRAM_COMMENTS", True)  # answer comments on our own posts too
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
     # Calls over the internet: your phone posts to a private ntfy topic that Jarvis makes up himself
     now_playing: bool = _bool("JARVIS_NOW_PLAYING", True)  # pop-up card when a new song starts (Windows)
