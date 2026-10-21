@@ -19,18 +19,25 @@ HOME = "GB"  # Kinetic Web Designs is in Birmingham, so prices start in pounds a
 RATES_FROM_GBP = {
     "GBP": 1.0, "USD": 1.26, "EUR": 1.17, "NGN": 1950, "ZAR": 23.0, "KES": 163, "GHS": 16.0, "CNY": 9.1,
     "KRW": 1750, "CAD": 1.74, "AUD": 1.93, "AED": 4.63, "INR": 108,
+    "JPY": 190, "THB": 43, "SGD": 1.68, "MYR": 5.6, "PHP": 73, "IDR": 20500, "VND": 33000, "HKD": 9.8,
+    "TWD": 40, "PKR": 355, "BDT": 152, "LKR": 380, "SAR": 4.73,
 }
 CURRENCIES = {  # code: (symbol, name)
     "GBP": ("£", "pounds"), "USD": ("$", "US dollars"), "EUR": ("€", "euros"), "NGN": ("₦", "naira"),
     "ZAR": ("R", "rand"), "KES": ("KSh ", "Kenyan shillings"), "GHS": ("GH₵", "cedis"), "CNY": ("¥", "yuan"),
     "KRW": ("₩", "won"), "CAD": ("CA$", "Canadian dollars"), "AUD": ("A$", "Australian dollars"),
     "AED": ("AED ", "dirhams"), "INR": ("₹", "rupees"),
+    "JPY": ("¥", "yen"), "THB": ("฿", "baht"), "SGD": ("S$", "Singapore dollars"), "MYR": ("RM", "ringgit"),
+    "PHP": ("₱", "pesos"), "IDR": ("Rp ", "rupiah"), "VND": ("₫", "dong"), "HKD": ("HK$", "Hong Kong dollars"),
+    "TWD": ("NT$", "New Taiwan dollars"), "PKR": ("Rs ", "Pakistani rupees"), "BDT": ("৳", "taka"),
+    "LKR": ("Rs ", "Sri Lankan rupees"), "SAR": ("SAR ", "riyals"),
 }
 LANGUAGES = {
     "en": "English", "fr": "French", "de": "German", "es": "Spanish", "pt": "Portuguese", "it": "Italian",
     "nl": "Dutch", "zh": "Simplified Chinese", "ko": "Korean", "ja": "Japanese", "ar": "Arabic", "pl": "Polish",
     "sv": "Swedish", "da": "Danish", "fi": "Finnish", "el": "Greek", "cs": "Czech", "ro": "Romanian",
     "hu": "Hungarian", "sw": "Swahili", "hi": "Hindi", "tr": "Turkish",
+    "th": "Thai", "vi": "Vietnamese", "id": "Indonesian", "ms": "Malay", "zh-hant": "Traditional Chinese",
 }
 COUNTRIES = {  # code: (name, currency, language, rules)
     "GB": ("United Kingdom", "GBP", "en", "uk"),
@@ -45,16 +52,23 @@ COUNTRIES = {  # code: (name, currency, language, rules)
     "GH": ("Ghana", "GHS", "en", "gh"), "CN": ("China", "CNY", "zh", "cn"), "KR": ("South Korea", "KRW", "ko", "kr"),
     "AU": ("Australia", "AUD", "en", "au"), "AE": ("United Arab Emirates", "AED", "ar", "ae"),
     "IN": ("India", "INR", "en", "in"),
+    "JP": ("Japan", "JPY", "ja", "jp"), "TH": ("Thailand", "THB", "th", "th"), "SG": ("Singapore", "SGD", "en", "sg"),
+    "MY": ("Malaysia", "MYR", "ms", "my"), "PH": ("Philippines", "PHP", "en", "ph"),
+    "ID": ("Indonesia", "IDR", "id", "id"), "VN": ("Vietnam", "VND", "vi", "vn"),
+    "HK": ("Hong Kong", "HKD", "zh-hant", "hk"), "TW": ("Taiwan", "TWD", "zh-hant", "tw"),
+    "PK": ("Pakistan", "PKR", "en", "pk"), "BD": ("Bangladesh", "BDT", "en", "bd"),
+    "LK": ("Sri Lanka", "LKR", "en", "lk"), "SA": ("Saudi Arabia", "SAR", "ar", "sa"),
 }
 ALIASES = {
     "uk": "GB", "u.k.": "GB", "england": "GB", "scotland": "GB", "wales": "GB", "northern ireland": "GB",
     "britain": "GB", "great britain": "GB", "usa": "US", "u.s.": "US", "us": "US", "u.s.a.": "US", "america": "US",
     "united states of america": "US", "korea": "KR", "republic of korea": "KR", "uae": "AE", "dubai": "AE",
     "holland": "NL", "the netherlands": "NL", "czech republic": "CZ", "prc": "CN", "mainland china": "CN",
+    "the philippines": "PH", "viet nam": "VN", "hong kong sar": "HK", "ksa": "SA", "saudi": "SA",
 }
 # A currency with no rate above (e.g. SEK) shows prices in pounds only; add its rate to show it too.
 
-NO_COLD_EMAIL = {"DE", "AT", "CA", "CN", "KR"}  # outreach defaults to a DM here
+NO_COLD_EMAIL = {"DE", "AT", "CA", "CN", "KR", "JP", "VN"}  # outreach defaults to a DM here
 EU_NOTE = ("EU rules (GDPR and the ePrivacy rules): use only the business contact details they publish, keep it "
            "relevant to their work, say who you are, include an opt-out and stop if they ask. In Germany and Austria "
            "cold email needs their consent first, so use the contact form on their website or a social media DM "
@@ -87,6 +101,33 @@ RULES = {
           "if they ask.",
     "in": "India (DPDP Act 2023): use only business contact details they publish, say who you are, include an opt-out "
           "and don't text or call numbers on the Do Not Disturb register.",
+    "jp": "Japan (Act on Specified Electronic Mail): sales email needs their consent first, so don't cold email. "
+          "Use the contact form on their website, or message them on Instagram or their LINE official account, "
+          "and stop if they say no.",
+    "th": "Thailand (PDPA 2019): use only business contact details they publish, say who you are, include an "
+          "opt-out and stop if they ask. Many shops answer fastest on LINE or Facebook Messenger.",
+    "sg": "Singapore (Spam Control Act and PDPA): cold business email is allowed with an honest subject and an "
+          "unsubscribe; don't text or call numbers on the Do Not Call register, and stop if they ask.",
+    "my": "Malaysia (PDPA 2010): use only business contact details they publish, say who you are, include an "
+          "opt-out and stop if they ask. WhatsApp is the usual way small businesses talk.",
+    "ph": "Philippines (Data Privacy Act 2012): use only business contact details they publish, say who you are, "
+          "include an opt-out and stop if they ask. Facebook Messenger is often the quickest reply.",
+    "id": "Indonesia (PDP Law 2022): use only business contact details they publish, say who you are, include an "
+          "opt-out and stop if they ask. WhatsApp and Instagram DMs work best.",
+    "vn": "Vietnam (Decree 91 on spam): advertising email and texts need their consent first, so don't cold "
+          "email. Message them on Facebook or Zalo through the page they run, and stop if they say no.",
+    "hk": "Hong Kong (Unsolicited Electronic Messages Ordinance): say who you are, include an unsubscribe and stop "
+          "within 10 working days if they ask; don't message numbers on the Do-not-call registers.",
+    "tw": "Taiwan (PDPA): use only business contact details they publish, say who you are, include an opt-out and "
+          "stop if they ask. Many shops answer on LINE or Instagram.",
+    "pk": "Pakistan (PECA 2016): don't send bulk unsolicited messages; keep it one relevant message to contact "
+          "details they publish, say who you are, include an opt-out and stop if they ask.",
+    "bd": "Bangladesh: use only business contact details they publish, say who you are, keep it relevant, include "
+          "an opt-out and stop if they ask. Facebook pages and WhatsApp are the usual way in.",
+    "lk": "Sri Lanka (PDPA 2022): use only business contact details they publish, say who you are, include an "
+          "opt-out and stop if they ask.",
+    "sa": "Saudi Arabia (PDPL and the CST anti-spam rules): use only business contact details they publish, say who "
+          "you are, include an opt-out and stop if they ask. Keep it one relevant message; WhatsApp is common.",
 }
 DEFAULT_RULE = ("Check the local rules before cold emailing: use only contact details they publish, say who you are, "
                 "keep it relevant, include an opt-out and stop if they ask.")
@@ -183,13 +224,13 @@ def default_channel(code: str) -> str:
     return "dm" if code in NO_COLD_EMAIL else "email"
 
 
-NO_TEXTS = {"CA", "CN", "KR"}  # texts and WhatsApp messages need consent first, so no cold WhatsApp there
+NO_TEXTS = {"CA", "CN", "KR", "JP", "VN"}  # texts and WhatsApp messages need consent first, so no cold WhatsApp there
 COMPANY = re.compile(r"\b(?:ltd|limited|llp|plc|inc|llc|corp)\b\.?", re.I)
 
 
 def cold_email_ok(code: str, name: str = "") -> bool:
     """Whether a cold first email is fine for this lead. Never where cold email needs consent (Germany, Austria,
-    Canada, China, Korea); in the UK (PECR) only for a limited company, as sole traders and partnerships count as
+    Canada, China, Korea, Japan, Vietnam); in the UK (PECR) only for a limited company, as sole traders and partnerships count as
     people there, so they get a call or a DM instead."""
     if code in NO_COLD_EMAIL:
         return False
