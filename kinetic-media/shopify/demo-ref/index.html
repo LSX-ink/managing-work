@@ -1,0 +1,170 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Shopify makeover demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;background:#fff}
+body{font-family:Inter,sans-serif;overflow-x:hidden}
+canvas{display:block;width:100%;height:100%}
+/* ---------- BEFORE: default free theme look ---------- */
+#before{position:fixed;inset:0;z-index:50;background:#fff;color:#121212;font-family:"Liberation Sans",Arial,sans-serif;overflow:hidden}
+#bscroll{position:absolute;left:0;top:0;width:100%}
+.b-ann{background:#f3f3f3;text-align:center;font-size:13px;letter-spacing:.06em;padding:10px;border-bottom:1px solid #e6e6e6}
+.b-head{display:flex;align-items:center;justify-content:space-between;padding:22px 5vw;border-bottom:1px solid #e6e6e6}
+.b-logo{font-size:26px}
+.b-nav{display:flex;gap:28px;font-size:15px;color:#555}
+.b-icons{display:flex;gap:22px;font-size:15px;color:#555}
+.b-hero{position:relative;height:430px;background:#3a3a3a;overflow:hidden}
+.b-hero img{width:100%;height:100%;object-fit:cover;opacity:.55;filter:saturate(.6)}
+.b-hero .t{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:18px}
+.b-hero h1{font-size:40px;font-weight:400}
+.b-btn{border:1px solid #fff;padding:12px 30px;font-size:15px}
+.b-sec{padding:50px 5vw}
+.b-sec h2{font-size:24px;font-weight:400;margin-bottom:24px}
+.b-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.b-card img{width:100%;aspect-ratio:3/4;object-fit:cover;background:#eee;filter:saturate(.7) brightness(1.05)}
+.b-card p{font-size:14px;margin-top:10px;color:#333}.b-card span{font-size:14px;color:#666}
+.b-iwt{display:grid;grid-template-columns:1fr 1fr;background:#f3f3f3;margin:0 5vw}
+.b-iwt div{padding:60px;font-size:15px;color:#555;line-height:1.6}.b-iwt h3{font-size:24px;font-weight:400;color:#121212;margin-bottom:12px}
+.b-foot{padding:40px 5vw;margin-top:50px;border-top:1px solid #e6e6e6;font-size:13px;color:#777}
+#wipe{position:fixed;top:0;bottom:0;width:6px;z-index:60;background:var(--gold);box-shadow:0 0 40px 10px var(--gold);display:none}
+/* ---------- AFTER: Kinetic makeover ---------- */
+:root{--bg:#160910;--bg2:#24101b;--gold:#d4a66a;--cream:#f6ead8;--muted:#b9a093;--accent:#7a2a4a}
+#after{background:var(--bg);color:var(--cream)}
+.a-nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:22px 4.5vw;background:var(--bg);border-bottom:1px solid rgba(128,128,128,.15)}
+.a-logo{font-family:"Inter Display",Inter;font-weight:800;letter-spacing:.32em;font-size:22px}
+.a-logo b{color:var(--gold)}
+.a-links{display:flex;gap:38px;font-size:15px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.a-bag{border:1px solid var(--gold);color:var(--gold);padding:10px 22px;border-radius:99px;font-size:14px;letter-spacing:.08em}
+.a-hero{position:relative;height:900px;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;padding:0 4.5vw;overflow:hidden}
+.a-glow{position:absolute;right:8vw;top:120px;width:640px;height:640px;border-radius:50%;background:radial-gradient(circle,var(--accent),transparent 65%);opacity:.75}
+.a-kick{color:var(--gold);letter-spacing:.3em;text-transform:uppercase;font-size:15px;font-weight:600;margin-bottom:26px}
+.a-h1{font-family:"Inter Display",Inter;font-weight:900;font-size:min(8.4vw,150px);line-height:.92;letter-spacing:-.03em}
+.a-h1 .w{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.06em}
+.a-h1 .w i{display:inline-block;font-style:normal}
+.a-h1 em{font-style:normal;color:var(--gold)}
+.a-sub{margin-top:30px;font-size:20px;color:var(--muted);max-width:520px;line-height:1.5}
+.a-ctas{display:flex;gap:16px;margin-top:38px}
+.a-cta{background:var(--gold);color:var(--bg);font-weight:700;padding:18px 34px;border-radius:99px;font-size:16px;letter-spacing:.04em}
+.a-cta2{border:1px solid rgba(246,234,216,.35);padding:18px 30px;border-radius:99px;font-size:16px}
+.a-arch{position:relative;justify-self:center;width:470px;height:640px;border-radius:240px 240px 24px 24px;overflow:hidden;border:2px solid rgba(212,166,106,.5);box-shadow:0 40px 120px rgba(0,0,0,.6)}
+.chip{position:absolute;background:var(--bg2);box-shadow:0 10px 30px rgba(0,0,0,.25);border:1px solid rgba(212,166,106,.55);color:var(--cream);padding:12px 20px;border-radius:99px;font-size:15px;font-weight:600;backdrop-filter:blur(6px);white-space:nowrap}
+.chip b{color:var(--gold)}
+.a-marq{position:absolute;left:0;right:0;bottom:0;height:64px;background:var(--gold);color:var(--bg);overflow:hidden;display:flex;align-items:center}
+.a-marq div{white-space:nowrap;font-family:"Inter Display",Inter;font-weight:800;font-size:22px;letter-spacing:.14em}
+.a-sec{padding:110px 4.5vw}
+.a-h2{font-family:"Inter Display",Inter;font-weight:900;font-size:76px;letter-spacing:-.02em;line-height:1}
+.a-h2 em{font-style:normal;color:var(--gold)}
+.a-row{display:flex;justify-content:space-between;align-items:end;margin-bottom:48px}
+.a-row p{color:var(--muted);font-size:18px;max-width:420px}
+.a-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.a-card{background:var(--bg2);border-radius:22px;overflow:hidden;border:1px solid rgba(212,166,106,.18)}
+.a-card .m{height:440px;position:relative}
+.a-card .tag{position:absolute;left:16px;top:16px;background:var(--gold);color:var(--bg);font-size:12px;font-weight:800;letter-spacing:.12em;padding:7px 12px;border-radius:99px}
+.a-card .i{padding:20px 22px 24px}
+.a-card h4{font-size:20px;font-weight:700}
+.a-card .pr{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.a-card .pr span{color:var(--gold);font-size:20px;font-weight:700}
+.sw{display:flex;gap:7px}.sw i{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.25)}
+.qa{margin-top:16px;text-align:center;border-radius:99px;padding:13px;font-weight:700;font-size:15px;background:var(--cream);color:var(--bg)}
+.a-revs{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.a-rev{background:var(--bg2);border-radius:22px;padding:34px;border:1px solid rgba(212,166,106,.18)}
+.stars{color:var(--gold);font-size:26px;letter-spacing:4px}
+.stars i{font-style:normal;display:inline-block}
+.a-rev q{display:block;font-size:21px;line-height:1.45;margin:18px 0 22px;quotes:none}
+.a-rev b{color:var(--muted);font-weight:600;font-size:15px}
+.demo{font-size:13px;color:var(--muted);letter-spacing:.06em;margin-top:22px}
+.a-band{margin:0 4.5vw 110px;border-radius:26px;background:linear-gradient(110deg,var(--accent),var(--bg2));padding:60px;display:flex;justify-content:space-between;align-items:center}
+.a-band h3{font-family:"Inter Display",Inter;font-size:48px;font-weight:900}
+.a-foot{padding:40px 4.5vw;border-top:1px solid rgba(212,166,106,.2);color:var(--muted);font-size:14px;display:flex;justify-content:space-between}
+</style></head><body>
+<div id="after">
+ <nav class="a-nav"><div class="a-logo" id="brand">VELVET <b>&amp;</b> LACE</div><div class="a-links" id="links"><span>New in</span><span>Wigs</span><span>Bundles</span><span>Care</span></div><div class="a-bag">Bag (2)</div></nav>
+ <section class="a-hero"><div class="a-glow" id="glow"></div>
+  <div><div class="a-kick" id="kick">The new drop is here</div>
+   <h1 class="a-h1" id="h1"></h1>
+   <p class="a-sub" id="sub">HD lace, 100% human hair, styled and shipped from our London studio.</p>
+   <div class="a-ctas"><span class="a-cta" id="cta">Shop the drop</span><span class="a-cta2">Find your shade</span></div></div>
+  <div class="a-arch" id="arch"><canvas id="heroc" width="540" height="720"></canvas></div>
+  <div class="chip" id="c1"></div><div class="chip" id="c2"></div><div class="chip" id="c3"></div>
+  <div class="a-marq"><div id="marq"></div></div>
+ </section>
+ <section class="a-sec" id="drop"><div class="a-row"><h2 class="a-h2">The new drop</h2><p id="dropp">Every unit moves like it's on a model. Tap quick add and it's in your bag.</p></div>
+  <div class="a-grid" id="grid"></div></section>
+ <section class="a-sec" style="padding-top:20px"><div class="a-row"><h2 class="a-h2">What our customers say</h2><p>4.9 out of 5 from verified buyers</p></div>
+  <div class="a-revs" id="revs"></div><div class="demo">Sample reviews for this demo store</div></section>
+ <div class="a-band"><h3 id="band">Free tracked delivery. 30-day returns.</h3><span class="a-cta">Shop now</span></div>
+ <footer class="a-foot"><span id="fbrand">© Velvet &amp; Lace</span><span>Powered by Shopify · Designed by Kinetic Web Designs</span></footer>
+</div>
+<div id="wipe"></div>
+<div id="before"><div id="bscroll">
+ <div class="b-ann">Free UK delivery on orders over £50</div>
+ <div class="b-head"><div class="b-nav"><span>Home</span><span>Catalog</span><span>Contact</span></div><div class="b-logo">Velvet &amp; Lace</div><div class="b-icons"><span>Search</span><span>Account</span><span>Cart</span></div></div>
+ <div class="b-hero"><img src="clips/wigs-range/000.webp"><div class="t"><h1>Welcome to our store</h1><span class="b-btn">Shop all</span></div></div>
+ <div class="b-sec"><h2>Featured collection</h2><div class="b-grid">
+  <div class="b-card"><img src="clips/wigs-flow/000.webp"><p>Body Wave Lace Front Wig</p><span>£189.00 GBP</span></div>
+  <div class="b-card"><img src="clips/wigs-lace/000.webp"><p>HD Lace Wig 22 inch</p><span>£219.00 GBP</span></div>
+  <div class="b-card"><img src="clips/wigs-range/000.webp"><p>Deep Curl Unit</p><span>£249.00 GBP</span></div>
+  <div class="b-card"><img src="clips/wigs-silk/000.webp"><p>Silk Straight Bundle</p><span>£199.00 GBP</span></div></div></div>
+ <div class="b-iwt"><div style="background:#e9e9e9"></div><div><h3>Image with text</h3>Pair text with an image to focus on your chosen product, collection, or blog post.</div></div>
+ <div class="b-foot">© 2026, Velvet &amp; Lace · Powered by Shopify</div>
+</div></div>
+<script>
+const THEMES={
+ hair:{vars:{'--bg':'#160910','--bg2':'#24101b','--gold':'#d4a66a','--cream':'#f6ead8','--muted':'#b9a093','--accent':'#7a2a4a'},brand:'VELVET <b>&amp;</b> LACE',kick:'The new drop is here',
+  h1:[['Hair'],['that'],['moves',1],['you.']],sub:"HD lace, 100% human hair, styled and shipped from our London studio.",links:['New in','Wigs','Bundles','Care'],
+  hero:'wigs-flow',chips:['<b>HD</b> lace','<b>100%</b> human hair','Ships in <b>24h</b>'],marq:'NEW DROP · BODY WAVE · DEEP CURL · SILK STRAIGHT · HD LACE · ',cta:'Shop the drop',
+  prods:[['wigs-flow','Body Wave 24"','£189','NEW',['#2a1a12','#5a3a22','#b08a5a']],['wigs-lace','HD Lace Front','£219','BESTSELLER',['#1a1210','#4a2e1e']],['wigs-range','Deep Curl Unit','£249','LIMITED',['#120c0a','#6a4a2a','#c9a36a']],['wigs-silk','Silk Straight','£199','NEW',['#1a1210','#8a6a42']]],
+  revs:[['Honestly the best unit I have ever bought. The lace melted straight away.','Amara, London'],['Arrived next day and the curl pattern is exactly like the video.','Chloe, Birmingham'],['Ordering was so easy, and the colour match tool saved me.','Tasha, Manchester']],
+  band:'Free tracked delivery. 30-day returns.',fb:'© Velvet &amp; Lace'},
+ skin:{vars:{'--bg':'#fbeef0','--bg2':'#ffffff','--gold':'#c2547a','--cream':'#3a1622','--muted':'#8a5a68','--accent':'#f6c6d3'},brand:'GLOW <b>THEORY</b>',kick:'Skincare that shows up',
+  h1:[['Glow'],['like'],['you',1],['mean it.']],sub:"Clean formulas, real results, made in small batches in Leeds.",links:['Shop','Routines','Ingredients','Journal'],
+  hero:'beauty-swirl',chips:['<b>Vegan</b> formulas','Derm <b>tested</b>','Free <b>samples</b>'],marq:'GLOW SERUM · NIGHT CREAM · ROSE MIST · BARRIER BALM · ',cta:'Shop skincare',
+  prods:[['beauty-open','Barrier Balm','£34','NEW',['#f6c6d3','#e8a0b4']],['beauty-range','Glow Serum Set','£58','BESTSELLER',['#f3d6c6','#c2547a']],['beauty-swirl','Night Cream','£29','LIMITED',['#fff','#f6c6d3']],['beauty-open','Rose Mist','£22','NEW',['#f6c6d3']]],
+  revs:[['My skin has never looked this calm. I have reordered three times.','Priya, Leeds'],['The serum set is worth every penny, and it smells unreal.','Jade, Bristol'],['Fast delivery and gorgeous packaging. Perfect gift.','Sofia, Glasgow']],
+  band:'Free samples with every order.',fb:'© Glow Theory'},
+ fash:{vars:{'--bg':'#0d1117','--bg2':'#161d27','--gold':'#ff7a2f','--cream':'#eef2f7','--muted':'#9aa6b5','--accent':'#24405e'},brand:'NORTH<b>LINE</b>',kick:'Winter 26 is live',
+  h1:[['Built'],['for'],['the cold.',1]],sub:"Down jackets rated to minus twenty, in five colourways.",links:['New in','Jackets','Layers','Sale'],
+  hero:'fashion-spin',chips:['Rated <b>-20°C</b>','<b>650</b> fill power','Free <b>returns</b>'],marq:'EMBER · ONYX · GLACIER · MOSS · SLATE · ',cta:'Shop jackets',
+  prods:[['fashion-black','Onyx Puffer','£189','NEW',['#111','#333']],['fashion-lilac','Lilac Puffer','£179','BESTSELLER',['#c8b6e2']],['fashion-sage','Moss Puffer','£179','LIMITED',['#7d8f72']],['fashion-slate','Glacier Puffer','£189','NEW',['#4a6283']]],
+  revs:[['Warmest jacket I have owned, and it actually fits.','Daniel, Leeds'],['Ordered the onyx, came next day. Already want the moss one.','Ola, London'],['Size guide was spot on. Brilliant service.','Sam, Edinburgh']],
+  band:'Free delivery and free returns.',fb:'© Northline'}};
+const IM={};function clip(n){if(!IM[n]){IM[n]=[];for(let i=0;i<90;i++){const im=new Image();im.src=`clips/${n}/${String(i).padStart(3,'0')}.webp`;IM[n].push(im);}}return IM[n];}
+function draw(cv,n,f){const a=clip(n),im=a[((f%90)+90)%90];const x=cv.getContext('2d');x.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg2');x.fillRect(0,0,cv.width,cv.height);if(im.complete&&im.naturalWidth)x.drawImage(im,0,0,cv.width,cv.height);}
+let TH=null,THstart=0;
+function setTheme(k,t){const T=THEMES[k];TH=T;THstart=t;for(const v in T.vars)document.documentElement.style.setProperty(v,T.vars[v]);
+ brand.innerHTML=T.brand;kick.textContent=T.kick;sub.textContent=T.sub;cta.textContent=T.cta;band.textContent=T.band;fbrand.innerHTML=T.fb;
+ links.innerHTML=T.links.map(s=>`<span>${s}</span>`).join('');
+ h1.innerHTML=T.h1.map(([w,g])=>`<span class="w"><i>${g?'<em>'+w+'</em>':w}</i></span>`).join(' ');
+ [c1,c2,c3].forEach((c,i)=>c.innerHTML=T.chips[i]);marq.textContent=T.marq.repeat(8);
+ grid.innerHTML=T.prods.map(([n,nm,p,tag,sw])=>`<div class="a-card"><div class="m"><canvas width="540" height="720" data-c="${n}"></canvas><span class="tag">${tag}</span></div><div class="i"><h4>${nm}</h4><div class="pr"><span>${p}</span><div class="sw">${sw.map(c=>`<i style="background:${c}"></i>`).join('')}</div></div><div class="qa">Quick add +</div></div></div>`).join('');
+ revs.innerHTML=T.revs.map(([q,w])=>`<div class="a-rev"><div class="stars">${'<i>★</i>'.repeat(5)}</div><q>${q}</q><b>${w}</b></div>`).join('');
+ Object.values(THEMES).forEach(t=>{clip(t.hero);t.prods.forEach(p=>clip(p[0]))});}
+const sm=x=>x<0?0:x>1?1:x*x*(3-2*x),eo=x=>x<0?0:x>1?1:1-Math.pow(1-x,3);
+// t: seconds since video start; S: after-page scrollTop; B: before scroll; W: wipe progress 0..1 (1 = after fully shown)
+window.render=function(t,S,B,W){
+ document.scrollingElement.scrollTop=S;bscroll.style.transform=`translateY(${-B}px)`;
+ const vw=innerWidth;before.style.clipPath=`inset(0 ${(W*100).toFixed(3)}% 0 0)`;before.style.display=W>=1?'none':'block';
+ wipe.style.display=W>0&&W<1?'block':'none';wipe.style.left=(vw*(1-W)-3)+'px';
+ const ht=t-THstart,f=Math.floor(t*30);
+ // hero headline letters rise in, staggered
+ [...h1.querySelectorAll('.w i')].forEach((e,i)=>{const p=eo((ht-0.15-i*0.13)/0.55);e.style.transform=`translateY(${(1-p)*110}%)`;});
+ kick.style.opacity=eo((ht-0.05)/0.4);kick.style.letterSpacing=(0.3+0.25*(1-eo(ht/0.8)))+'em';
+ sub.style.opacity=eo((ht-0.75)/0.5);sub.style.transform=`translateY(${(1-eo((ht-0.75)/0.5))*24}px)`;
+ const hc=document.getElementById('heroc');draw(hc,TH.hero,f);
+ arch.style.transform=`translateY(${(1-eo((ht-0.2)/0.8))*60+Math.sin(t*1.3)*6}px) scale(${1+0.04*(1-eo(ht/1.2))})`;
+ glow.style.transform=`scale(${1+0.08*Math.sin(t*1.1)})`;glow.style.opacity=.55+.2*Math.sin(t*0.9);
+ const ar=arch.getBoundingClientRect(),hero=arch.parentElement.getBoundingClientRect();
+ const pos=[[-0.42,0.18],[0.62,0.42],[-0.36,0.78]];
+ [c1,c2,c3].forEach((c,i)=>{const p=eo((ht-0.9-i*0.25)/0.5);c.style.opacity=p;c.style.left=(ar.left-hero.left+ar.width*(0.5+pos[i][0])-60)+'px';
+  c.style.top=(ar.top-hero.top+ar.height*pos[i][1]+Math.sin(t*1.6+i*2)*9+(1-p)*30)+'px';});
+ marq.style.transform=`translateX(${-(t*90)%2000}px)`;
+ // product cards: glide in by scroll position, media keeps moving, quick add pulses
+ const vh=innerHeight;[...grid.children].forEach((c,i)=>{const r=c.parentElement.getBoundingClientRect();const p=eo((vh-r.top-120-i*70)/420);
+  c.style.transform=`translateY(${(1-p)*140}px) rotate(${(1-p)*(i%2?3:-3)}deg)`;c.style.opacity=Math.min(1,p*1.4);
+  draw(c.querySelector('canvas'),c.querySelector('canvas').dataset.c,f+i*17);
+  const q=c.querySelector('.qa');const k=(t*0.8+i*0.25)%1;q.style.transform=`scale(${1+0.05*Math.max(0,Math.sin(k*Math.PI*2))})`;});
+ [...revs.children].forEach((c,i)=>{const r=c.getBoundingClientRect();const p=eo((vh-r.top-80-i*60)/380);c.style.transform=`translateY(${(1-p)*90}px)`;c.style.opacity=p;
+  [...c.querySelectorAll('.stars i')].forEach((s,j)=>{const q=eo((vh-r.top-200-i*60-j*28)/80);s.style.transform=`scale(${q})`;s.style.opacity=q;});});
+};
+setTheme('hair',0);
+window.ready=()=>Promise.all(Object.values(IM).flat().map(i=>i.decode().catch(()=>0)));
+</script></body></html>
