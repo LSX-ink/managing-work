@@ -609,6 +609,18 @@ def test_percentages_odd_even_roots_and_remainders_are_instant():
     assert instant_answer("what's the remainder of 17 divided by 5?", en) == "The remainder is 2. 17 divided by 5 is 3 remainder 2."
 
 
+def test_heights_and_weights_the_british_way_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's 5 feet 10 in cm?", en) == "5 foot 10 is 178 cm, or 1.78 metres."
+    assert instant_answer("what's five foot ten in centimetres?", en) == "5 foot 10 is 178 cm, or 1.78 metres."
+    assert instant_answer("what is 6 foot in cm?", en) == "6 foot is 183 cm, or 1.83 metres."
+    assert instant_answer("how tall is 180 cm in feet?", en) == "180 cm is 5 foot 11."
+    assert instant_answer("Alfred, what's 70 kg in stone?", en) == "70 kg is 11 stone."
+    assert instant_answer("what's 85 kilos in stone and pounds?", en) == "85 kg is 13 stone 5 pounds."
+    assert instant_answer("what's 30 mph in km/h?", en) == "30 mph is 48.2803 km/h."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
@@ -616,7 +628,7 @@ def test_unit_conversions_are_instant():
     assert instant_answer("how many grams in 3 ounces", en) == "3 oz is 85.0486 g."
     assert instant_answer("Alfred, what is 20 degrees in Fahrenheit", en) == "20 degrees Celsius is 68 degrees Fahrenheit."
     assert instant_answer("how many feet in a mile", en) == "1 mile is 5,280 feet."
-    assert instant_answer("what is 75 kilos in stone", en) == "75 kg is 11.8105 stone."
+    assert instant_answer("what is 75 kilos in stone", en) == "75 kg is 11 stone 11 pounds."
     assert instant_answer("what is 3 cups in grams", en) is None  # needs the ingredient: Claude asks
     assert instant_answer("what is 10 pounds in euros", en) is None  # money goes to Claude
     assert instant_answer("how many people in London", en) is None
