@@ -13,6 +13,7 @@ function chargeRow(c) {
     id: c.id, kind: "payment", status, amount: c.amount || 0, currency: String(c.currency || "gbp").toLowerCase(),
     description: c.description || c.calculated_statement_descriptor || c.statement_descriptor || null,
     customer: (c.billing_details && c.billing_details.name) || null, charge_id: null,
+    email: String((c.billing_details && c.billing_details.email) || c.receipt_email || "").trim().toLowerCase().slice(0, 200) || null,
     created: (c.created || Math.floor(Date.now() / 1000)) * 1000, livemode: c.livemode ? 1 : 0
   };
 }
@@ -22,17 +23,17 @@ function refundRow(r, charge) {
   return {
     id: r.id, kind: "refund", status, amount: r.amount || 0, currency: String(r.currency || (charge && charge.currency) || "gbp").toLowerCase(),
     description: r.reason ? "Refund (" + String(r.reason).replace(/_/g, " ") + ")" : "Refund",
-    customer: (charge && charge.billing_details && charge.billing_details.name) || null, charge_id: chargeId,
+    customer: (charge && charge.billing_details && charge.billing_details.name) || null, charge_id: chargeId, email: null,
     created: (r.created || Math.floor(Date.now() / 1000)) * 1000, livemode: (r.livemode ?? (charge && charge.livemode)) ? 1 : 0
   };
 }
 function upsert(DB, row) {
   return DB.prepare(
-    `INSERT INTO payments (id, kind, status, amount, currency, description, customer, charge_id, created, livemode, updated)
-     VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT customer FROM payments WHERE id = ?)), ?, ?, ?, ?)
+    `INSERT INTO payments (id, kind, status, amount, currency, description, customer, charge_id, created, livemode, updated, email)
+     VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT customer FROM payments WHERE id = ?)), ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET status = excluded.status, amount = excluded.amount, description = COALESCE(excluded.description, description),
-       customer = COALESCE(excluded.customer, customer), updated = excluded.updated`)
-    .bind(row.id, row.kind, row.status, row.amount, row.currency, row.description, row.customer, row.charge_id, row.charge_id, row.created, row.livemode, Date.now());
+       customer = COALESCE(excluded.customer, customer), email = COALESCE(excluded.email, email), updated = excluded.updated`)
+    .bind(row.id, row.kind, row.status, row.amount, row.currency, row.description, row.customer, row.charge_id, row.charge_id, row.created, row.livemode, Date.now(), row.email);
 }
 
 export async function onRequestPost({ request, env }) {

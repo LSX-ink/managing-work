@@ -112,7 +112,7 @@ export async function runDrip(env, now = Date.now(), { dryRun = false } = {}) {
     out.checked++;
     const brief = await DB.prepare("SELECT 1 FROM briefs WHERE lower(email) = lower(?) LIMIT 1").bind(r.email).first();
     const paid = await DB.prepare(
-      "SELECT 1 FROM payments WHERE kind = 'payment' AND status = 'succeeded' AND (lower(customer) = lower(?) OR lower(description) LIKE '%' || lower(?) || '%') LIMIT 1")
+      "SELECT 1 FROM payments WHERE kind = 'payment' AND status = 'succeeded' AND (email = lower(?) OR lower(description) LIKE '%' || lower(?) || '%') LIMIT 1")
       .bind(r.email, r.email).first();
     if (brief || paid) {
       if (!dryRun) await DB.prepare("UPDATE signups SET drip_stopped = ? WHERE id = ?").bind(brief ? "brief" : "paid", r.id).run();
