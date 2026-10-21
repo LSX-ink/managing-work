@@ -328,6 +328,9 @@ def send(settings: Settings, args: dict) -> str:
 # ---- announcing new mail -------------------------------------------------------------
 
 def announcement(settings: Settings, msg) -> str:
+    import kinetic_site  # here, not at the top: kinetic_site imports this module
+    if brief := kinetic_site.brief_announcement(settings, msg):  # a new brief from the Kinetic website
+        return brief
     frm = _header(msg["From"])
     name = email.utils.parseaddr(frm)[0] or email.utils.parseaddr(frm)[1] or "someone"
     subject = _header(msg["Subject"]).rstrip(".") or "no subject"
