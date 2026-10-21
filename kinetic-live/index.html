@@ -938,6 +938,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .quote { display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; align-items: start; }
 @media (max-width: 900px) { .quote { grid-template-columns: 1fr; } }
 .packs { display: grid; gap: 10px; }
+.badge.shopify { background: #95bf47; color: #0b2b0b; }
 .pack { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r); padding: 18px 20px; cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease; }
 .pack:hover { border-color: color-mix(in srgb, var(--ink) 35%, var(--line)); }
 .pack:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
@@ -1465,6 +1466,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       <details><summary>What's in monthly hosting and care?</summary><p>Your domain name, fast and secure hosting, security updates, backups and small text changes, from £20 a month: £20 for a Starter website, £25 for a Business website and £30 for an Online shop. Need lots of big videos or downloads? Extra file storage is £5 a month per 10 GB.</p></details>
       <details><summary>What's the founding client offer?</summary><p>We're taking on our first few clients at £100 off any website. In return we ask for an honest Google review and permission to show your site as an example of our work. Tick "Founding client offer" in the quote while places last.</p></details>
       <details><summary>Do you have a referral reward?</summary><p>Yes. Recommend us to another business, and when their website goes live your next month of hosting and care is free. Ask them to put your name in the "Did someone recommend us?" box in their brief. There's no limit, so five referrals means five free months.</p></details>
+      <details><summary>Do you work with Shopify?</summary><p>Yes. A Shopify store redesign (£595) gives your existing store a new look with movement and personality, built on a copy so your shop keeps selling. A Shopify store setup (£995) builds you a new store with up to 25 products, payments and delivery ready. You see your design before you pay anything, then pay half when we start building and half once everything's complete. Shopify's own monthly plan is paid by you, directly to Shopify.</p></details>
       <details><summary>Who owns my website and domain?</summary><p>You do. Your domain is registered in your name and your accounts belong to you. If you ever leave, we hand everything over.</p></details>
       <details><summary>I already have a website. Can you improve it?</summary><p>Yes, and you get 20% off a Business website or Online shop. Tick "I already have a website" in the quote, add your website link to your brief and tell us what you like about it. We keep what works, fix what doesn't and send you three new designs in your colours.</p></details>
       <details><summary>Do you write the words too?</summary><p>We write the copy with you. If you'd like us to write whole pages for you, copywriting is £60 a page.</p></details>
@@ -2935,12 +2937,15 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 
   // ---------- quote ----------
   // Monthly hosting and care, by package.
-  const CARE = { starter: 20, business: 25, shop: 30 };
+  const CARE = { starter: 20, business: 25, shop: 30, shopify_redesign: 25, shopify_setup: 30 };
   const carePrice = () => CARE[state.pack] || 25;
   const PACKS = [
     { id: "starter", name: "Starter website", price: 395, weeks: "1 to 2 weeks", desc: "One page made for phones, contact form, tap-to-call and Google basics. 2 rounds of changes." },
     { id: "business", name: "Business website", price: 895, popular: true, weeks: "2 to 4 weeks", desc: "Up to 5 pages, basic Google Business Profile linking, share previews and secure hosting setup. 3 rounds of changes." },
-    { id: "shop", name: "Online shop", price: 1595, weeks: "4 to 6 weeks", desc: "Everything in Business, plus a shop with up to 20 products, card payments and delivery options." }
+    { id: "shop", name: "Online shop", price: 1595, weeks: "4 to 6 weeks", desc: "Everything in Business, plus a shop with up to 20 products, card payments and delivery options." },
+    // Shopify packages (same prices as Alfred's kinetic_sales.py)
+    { id: "shopify_redesign", name: "Shopify store redesign", price: 595, shopify: true, weeks: "2 to 3 weeks", desc: "A new look for your existing Shopify store: a home page in your brand with movement and personality, product and collection pages to match, a speed clean-up and 2 rounds of changes. Your products, orders and customers stay where they are." },
+    { id: "shopify_setup", name: "Shopify store setup", price: 995, shopify: true, weeks: "3 to 5 weeks", desc: "A new Shopify store designed and set up for you: a theme that feels like your brand, up to 25 products added, collections, payments, delivery and tax settings, a reviews app and 3 rounds of changes." }
   ];
   const ADDONS = [
     { id: "logo", name: "Logo design", price: 150,
@@ -2961,7 +2966,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   // Founding client offer: £100 off any package for the first few clients. Lower FOUNDING_LEFT as places
   // go; at 0 the offer disappears from the page.
   const FOUNDING_LEFT = 3, FOUNDING_OFF = 100;
-  const existingOff = p => state.existing && p.id !== "starter" ? Math.round(p.price * EXISTING_OFF) : 0;
+  const existingOff = p => state.existing && (p.id === "business" || p.id === "shop") ? Math.round(p.price * EXISTING_OFF) : 0;
   const foundingOff = () => state.founding && FOUNDING_LEFT > 0 ? FOUNDING_OFF : 0;
   const discountFor = p => Math.max(existingOff(p), foundingOff());
   const discountName = p => foundingOff() >= existingOff(p) ? "Founding client offer" : "Existing website discount (20%)";
@@ -2969,7 +2974,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   function renderPacks() {
     $("#packs").innerHTML = PACKS.map(p => { const off = discountFor(p);
       return `<label class="pack"><input type="radio" name="pack" value="${p.id}" ${state.pack === p.id ? "checked" : ""}>
-      <span><h3>${p.name}${p.popular ? '<span class="badge">Recommended</span>' : ""}</h3><p>${p.desc}</p></span>
+      <span><h3>${p.name}${p.popular ? '<span class="badge">Recommended</span>' : ""}${p.shopify ? '<span class="badge shopify">Shopify</span>' : ""}</h3><p>${p.desc}</p></span>
       <span class="price">${off ? `<s>${money(p.price)}</s>${money(p.price - off)}` : money(p.price)}</span></label>`; }).join("");
   }
   renderPacks();
@@ -3034,7 +3039,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     const total = lines.reduce((s, [, v]) => s + v, 0);
     showTotal(total);
     $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${v < 0 ? "\u2212" + money(-v) : money(v)}</dd>`).join("") +
-      (state.existing && p.id === "starter" && !foundingOff() ? `<dt>Existing website discount</dt><dd>Business or Shop only</dd>` : "") +
+      (state.existing && !existingOff(p) && !foundingOff() ? `<dt>Existing website discount</dt><dd>Business or Shop only</dd>` : "") +
       `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care (monthly, from go-live)</dt><dd>${money(carePrice())}/month</dd>` : "");
     $("#care-price").textContent = `${money(carePrice())}/mo`;
     $("#q-time").textContent = "Ready in " + p.weeks + " from your go-ahead";
@@ -3854,7 +3859,7 @@ html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,v
   const money = n => window.kxFmt ? window.kxFmt(n) : "£" + n.toLocaleString("en-GB", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
   const gbp = n => window.kxMoney ? window.kxMoney(n) : "£" + n;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const careOf = p => ({ starter: 20, business: 25, shop: 30 })[p] || 25;
+  const careOf = p => ({ starter: 20, business: 25, shop: 30, shopify_redesign: 25, shopify_setup: 30 })[p] || 25;
   const packId = () => { const r = q1('#packs input[name="pack"]:checked'); return r ? r.value : "business"; };
   const qLines = () => {
     const out = [];
@@ -3919,6 +3924,8 @@ html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,v
     if (care === false) return `Hosting and care covers your domain, hosting, security updates, backups and small text changes for ${gbp(careOf(p))} a month, with no long contract.`;
     if (ex) return "Add your current website's link to your brief so we can see what you like about it.";
     if (p === "shop") return "The Online shop includes up to 20 products, card payments and delivery options.";
+    if (p === "shopify_redesign") return "We work on a copy of your Shopify store, so it keeps selling while we build. You see your design before you pay anything.";
+    if (p === "shopify_setup") return "Your store is yours: you pay Shopify's own monthly plan directly, and we design and set everything up for you.";
     return "Tip: tap ••• on any add-on to see what's included before you tick it.";
   }
   function drawHint() {
@@ -3930,7 +3937,8 @@ html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,v
   refreshQuote.push(drawHint);
 
   /* package timeline */
-  const PT = [["starter", "Starter website", 1, 2], ["business", "Business website", 2, 4], ["shop", "Online shop", 4, 6]];
+  const PT = [["starter", "Starter website", 1, 2], ["business", "Business website", 2, 4], ["shop", "Online shop", 4, 6],
+    ["shopify_redesign", "Shopify store redesign", 2, 3], ["shopify_setup", "Shopify store setup", 3, 5]];
   const packsEl = q1("#packs"), time = D.createElement("div"); time.className = "kE-time";
   time.innerHTML = `<span class="t">How long each package takes, from your go-ahead</span>${PT.map(([id, n, a, b]) => `<button type="button" data-pk="${id}" aria-label="${n}: ${a} to ${b} weeks. Choose this package"><span>${n}</span><span class="track"><span class="seg" style="left:${a / 6 * 100}%;width:${(b - a) / 6 * 100}%"><span>${a}–${b} wk</span></span></span></button>`).join("")}
     <div class="axis" aria-hidden="true"><span></span><div><span>0</span><span>2</span><span>4</span><span>6 weeks</span></div></div>`;
