@@ -8,7 +8,7 @@ const PER_HOUR = 5;
 const FIELDS = [
   ["name", "Name", 120], ["business", "Business", 160], ["email", "Email", 200], ["phone", "Phone", 40],
   ["what", "What they do", 1000], ["currentSite", "Current website", 300], ["look", "Look and feel", 2000],
-  ["inspiration", "Sites they like", 1000], ["when", "When", 120], ["style", "Style", 80],
+  ["inspiration", "Sites they like", 1000], ["referredBy", "Recommended by", 160], ["when", "When", 120], ["style", "Style", 80],
   ["template", "Template", 120], ["package", "Package", 160], ["estimate", "Estimate", 60]
 ];
 const HEX = /^#[0-9a-f]{3,8}$/i;

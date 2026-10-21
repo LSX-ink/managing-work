@@ -1395,6 +1395,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       <div>
         <div class="packs" role="radiogroup" aria-label="Website package" id="packs"></div>
         <label class="addon existing"><input type="checkbox" id="existing"><span><b>I already have a website</b><br>Get 20% off a Business website or Online shop when we rebuild your current site.</span><em>20% off</em></label>
+        <label class="addon existing" id="founding-row"><input type="checkbox" id="founding"><span><b>Founding client offer</b><br>£100 off any website for one of our first <span id="founding-left">3</span> clients, in return for an honest Google review and letting us show your site. Not combined with the 20% off; you get whichever saves you more.</span><em>£100 off</em></label>
         <h3 class="addons-title">Add-ons</h3>
         <div class="addons" id="addons"></div>
       </div>
@@ -1454,6 +1455,8 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       <details><summary>What do I need to give you?</summary><p>Your vision in your own words, your three colours, and your logo and photos if you have them. No logo? Logo design is £150. No photos? Photo editing and stock images are £100.</p></details>
       <details><summary>Can I ask for changes?</summary><p>Yes. Starter websites include 2 rounds of changes and Business websites and shops include 3.</p></details>
       <details><summary>What's in monthly hosting and care?</summary><p>Your domain name, fast and secure hosting, security updates, backups and small text changes, from £20 a month: £20 for a Starter website, £25 for a Business website and £30 for an Online shop. Need lots of big videos or downloads? Extra file storage is £5 a month per 10 GB.</p></details>
+      <details><summary>What's the founding client offer?</summary><p>We're taking on our first few clients at £100 off any website. In return we ask for an honest Google review and permission to show your site as an example of our work. Tick "Founding client offer" in the quote while places last.</p></details>
+      <details><summary>Do you have a referral reward?</summary><p>Yes. Recommend us to another business, and when their website goes live your next month of hosting and care is free. Ask them to put your name in the "Did someone recommend us?" box in their brief. There's no limit, so five referrals means five free months.</p></details>
       <details><summary>Who owns my website and domain?</summary><p>You do. Your domain is registered in your name and your accounts belong to you. If you ever leave, we hand everything over.</p></details>
       <details><summary>I already have a website. Can you improve it?</summary><p>Yes, and you get 20% off a Business website or Online shop. Tick "I already have a website" in the quote, add your website link to your brief and tell us what you like about it. We keep what works, fix what doesn't and send you three new designs in your colours.</p></details>
       <details><summary>Do you write the words too?</summary><p>We write the copy with you. If you'd like us to write whole pages for you, copywriting is £60 a page.</p></details>
@@ -1481,6 +1484,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
           <small>Send us the link so we can see what you like about it and make it better.</small></div>
         <div class="f"><label for="v-look">How would you like it to look and feel?</label><textarea id="v-look" placeholder="Calm and premium, lots of photos of our work, easy to book…" required></textarea></div>
         <div class="f"><label for="v-like">Websites you like (optional)</label><input id="v-like" placeholder="Links or names, and what you like about them"></div>
+        <div class="f"><label for="v-ref">Did someone recommend us? (optional)</label><input id="v-ref" placeholder="Their name or business, so we can thank them"></div>
         <div class="f"><label for="v-when">When would you like it live?</label>
           <select id="v-when"><option>As soon as possible</option><option>Within a month</option><option>In 1 to 3 months</option><option>Just exploring</option></select></div>
         <p class="err" id="v-err" role="alert"></p>
@@ -2902,7 +2906,14 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   ];
   // Existing-website discount: 20% off the Business website and Online shop packages (not the Starter, not add-ons).
   const EXISTING_OFF = 0.2;
-  const discountFor = p => state.existing && p.id !== "starter" ? Math.round(p.price * EXISTING_OFF) : 0;
+  // Founding client offer: £100 off any package for the first few clients. Lower FOUNDING_LEFT as places
+  // go; at 0 the offer disappears from the page.
+  const FOUNDING_LEFT = 3, FOUNDING_OFF = 100;
+  const existingOff = p => state.existing && p.id !== "starter" ? Math.round(p.price * EXISTING_OFF) : 0;
+  const foundingOff = () => state.founding && FOUNDING_LEFT > 0 ? FOUNDING_OFF : 0;
+  const discountFor = p => Math.max(existingOff(p), foundingOff());
+  const discountName = p => foundingOff() >= existingOff(p) ? "Founding client offer" : "Existing website discount (20%)";
+  const discountShort = p => foundingOff() >= existingOff(p) ? "founding client offer" : "20% off";
   function renderPacks() {
     $("#packs").innerHTML = PACKS.map(p => { const off = discountFor(p);
       return `<label class="pack"><input type="radio" name="pack" value="${p.id}" ${state.pack === p.id ? "checked" : ""}>
@@ -2923,6 +2934,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
       <li><b>Small changes included.</b> New prices, opening hours, photos or text, updated whenever you ask.</li>
       <li><b>Fast and found on Google.</b> We keep your site quick and working on new phones and browsers, which helps customers find you.</li>
       <li><b>One person to call, no long contract.</b> Cancel any time with a month's notice.</li>
+      <li><b>Recommend a business, get a month free.</b> When a business you send us goes live, your next month of hosting and care is on us.</li>
     </ul></details>`;
   $("#packs").addEventListener("change", e => { state.pack = e.target.value; save(); quote(); });
   // The three dots under an add-on price show or hide what it includes (without ticking the box).
@@ -2943,6 +2955,11 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   $("#care").addEventListener("change", e => { state.care = e.target.checked; save(); quote(); });
   $("#existing").checked = !!state.existing;
   $("#existing").addEventListener("change", e => { state.existing = e.target.checked; save(); renderPacks(); quote(); });
+  if (FOUNDING_LEFT > 0) {
+    $("#founding-left").textContent = FOUNDING_LEFT;
+    $("#founding").checked = !!state.founding;
+    $("#founding").addEventListener("change", e => { state.founding = e.target.checked; save(); renderPacks(); quote(); });
+  } else { $("#founding-row").remove(); state.founding = false; }
   let shownTotal = null;
   function showTotal(t) {
     const el = $("#q-total");
@@ -2960,12 +2977,12 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   function quote() {
     const p = PACKS.find(x => x.id === state.pack) || PACKS[1];
     const lines = [[p.name, p.price]];
-    if (discountFor(p)) lines.push(["Existing website discount (20%)", -discountFor(p)]);
+    if (discountFor(p)) lines.push([discountName(p), -discountFor(p)]);
     ADDONS.forEach(a => { const q = state.addons[a.id]; if (q) lines.push([a.name + (a.per ? ` × ${q}` : ""), a.price * (a.per ? q : 1)]); });
     const total = lines.reduce((s, [, v]) => s + v, 0);
     showTotal(total);
     $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${v < 0 ? "\u2212" + money(-v) : money(v)}</dd>`).join("") +
-      (state.existing && p.id === "starter" ? `<dt>Existing website discount</dt><dd>Business or Shop only</dd>` : "") +
+      (state.existing && p.id === "starter" && !foundingOff() ? `<dt>Existing website discount</dt><dd>Business or Shop only</dd>` : "") +
       `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care (monthly, from go-live)</dt><dd>£${carePrice()}/month</dd>` : "");
     $("#care-price").textContent = `£${carePrice()}/mo`;
     $("#q-time").textContent = "Ready in " + p.weeks + " from your go-ahead";
@@ -2980,10 +2997,10 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     $("#s-tpl").textContent = (TEMPLATES.find(t => t.id === state.tpl) || TEMPLATES[0]).name;
     $("#s-pack").textContent = (PACKS.find(p => p.id === state.pack) || PACKS[1]).name;
     const pk = PACKS.find(p => p.id === state.pack) || PACKS[1];
-    $("#s-total").textContent = money(state.total || 895) + (state.care ? ` + £${carePrice()}/month` : "") + (discountFor(pk) ? " (20% off)" : "");
+    $("#s-total").textContent = money(state.total || 895) + (state.care ? ` + £${carePrice()}/month` : "") + (discountFor(pk) ? ` (${discountShort(pk)})` : "");
   }
   const draft = store.get("brief") || {};
-  ["name", "biz", "email", "phone", "what", "current", "look", "like", "when"].forEach(k => {
+  ["name", "biz", "email", "phone", "what", "current", "look", "like", "ref", "when"].forEach(k => {
     const el = $("#v-" + k); if (draft[k]) el.value = draft[k];
     el.addEventListener("input", () => { draft[k] = el.value; store.set("brief", draft); });
   });
@@ -3000,10 +3017,10 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     $("#v-err").textContent = "";
     const style = STYLES.find(s => s.id === state.style) || STYLES[0];
     const brief = { type: "brief", name: f("name"), business: f("biz"), email: f("email"), phone: f("phone"), what: f("what"), currentSite: f("current"), look: f("look"),
-      inspiration: f("like"), when: f("when"), style: style.name, colours: { main: state.c[0], background: state.c[1], accent: state.c[2] },
+      inspiration: f("like"), referredBy: f("ref"), when: f("when"), style: style.name, colours: { main: state.c[0], background: state.c[1], accent: state.c[2] },
       template: $("#s-tpl").textContent, package: $("#s-pack").textContent, estimate: $("#s-total").textContent, sent: new Date().toISOString() };
     const ok = await post(BRIEF_ENDPOINT, brief);
-    const text = `Website brief for ${brief.business}\nFrom: ${brief.name} (${brief.email}${brief.phone ? ", " + brief.phone : ""})\nWhat they do: ${brief.what || "-"}\nCurrent website: ${brief.currentSite || "-"}\nLook and feel: ${brief.look}\nSites they like: ${brief.inspiration || "-"}\nWhen: ${brief.when}\nStyle: ${brief.style}\nColours: ${brief.colours.main}, ${brief.colours.background}, ${brief.colours.accent}\nTemplate: ${brief.template}\nPackage: ${brief.package}\nEstimate: ${brief.estimate}`;
+    const text = `Website brief for ${brief.business}\nFrom: ${brief.name} (${brief.email}${brief.phone ? ", " + brief.phone : ""})\nWhat they do: ${brief.what || "-"}\nCurrent website: ${brief.currentSite || "-"}\nLook and feel: ${brief.look}\nSites they like: ${brief.inspiration || "-"}\nRecommended by: ${brief.referredBy || "-"}\nWhen: ${brief.when}\nStyle: ${brief.style}\nColours: ${brief.colours.main}, ${brief.colours.background}, ${brief.colours.accent}\nTemplate: ${brief.template}\nPackage: ${brief.package}\nEstimate: ${brief.estimate}`;
     const done = $("#v-done"); done.hidden = false; done.className = "sent";
     done.innerHTML = ok ? `<strong>Thanks, ${brief.name}. Your brief is with us.</strong><p>We'll reply to ${brief.email} with three designs in your colours.</p>`
       : `<strong>Your brief is ready.</strong><p>Copy it and email it to <span class="addr">alfredw.lsx@gmail.com</span>, and we'll reply with three designs in your colours.</p><pre id="brief-text"></pre><button class="btn ghost" type="button" id="copy-brief">Copy brief</button>`;
@@ -3843,7 +3860,7 @@ html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,v
   const ticked = id => { const i = q1(`#addons [data-a="${id}"]`); return !!(i && i.checked); };
   function hintText() {
     const p = packId(), ex = (q1("#existing") || {}).checked, care = (q1("#care") || {}).checked;
-    if (ex && p === "starter") return "The 20% off for an existing website applies to the Business website or Online shop, not the Starter.";
+    if (ex && p === "starter" && !(q1("#founding") || {}).checked) return "The 20% off for an existing website applies to the Business website or Online shop, not the Starter.";
     if (ticked("extra") && p === "starter") return "The Starter website is one page. The Business website includes up to 5 pages.";
     if (ticked("copy")) return "We write the copy with you anyway. This add-on is for whole pages written for you, at £60 a page.";
     if (care === false) return `Hosting and care covers your domain, hosting, security updates, backups and small text changes for £${careOf(p)} a month, with no long contract.`;
