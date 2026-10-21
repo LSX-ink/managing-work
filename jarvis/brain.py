@@ -772,8 +772,35 @@ def _money_answer(said: str) -> str | None:
 
 _QTY = r"(?P<n>-?\d[\d,]*(?:\.\d+)?|" + _AMOUNT[1:-1] + r") ?(?P<a>[a-z°][a-z°23 .]{0,24}?)"
 _CONVERT = re.compile(_NAME + r"(?:(?:what(?:'s| is)|convert|change|how much is|how (?:long|far|heavy|big|hot|cold) is) )?"
-                      + _QTY + r" (?:in|to|into|in to) (?P<b>[a-z°][a-z°23 .]{0,24}?)" + _END, re.I)
+                      + _QTY + r" (?:in|to|into|in to) (?P<b>[a-z°][a-z°23 ./]{0,24}?)" + _END, re.I)
 _HOW_MANY = re.compile(_NAME + r"how many (?P<b>[a-z°][a-z°23 .]{0,24}?) (?:is|are|in|make|makes|to) (?:a |an )?" + _QTY + _END, re.I)
+
+
+_FEET_INCHES = re.compile(_NAME + r"(?:what(?:'s| is)|convert|how (?:tall|much|long) is) (?P<ft>\d+) (?:feet|foot|ft)(?: and)?(?: (?P<inch>\d+(?:\.\d+)?)(?: inch(?:es)?| in)?)?"
+                          r" (?:in|to|into) (?:cm|centimet(?:re|er)s|met(?:re|er)s|m)" + _END, re.I)
+_TO_FEET = re.compile(_NAME + r"(?:what(?:'s| is)|convert|how tall is) (?P<n>\d+(?:\.\d+)?) ?(?P<unit>cm|centimet(?:re|er)s|m|met(?:re|er)s)"
+                      r"(?: tall)? (?:in|to|into) (?:feet(?: and inches)?|ft)" + _END, re.I)
+_TO_STONE = re.compile(_NAME + r"(?:what(?:'s| is)|convert|how much is) (?P<n>\d+(?:\.\d+)?) ?(?:kg|kilos?|kilograms?) (?:in|to|into) stones?(?: and pounds)?" + _END, re.I)
+
+
+def _height_weight(said: str) -> str | None:
+    """'5 feet 10 in cm', '180 cm in feet', '70 kg in stone': heights and weights the British way."""
+    said = spoken_numbers(said)
+    if m := _FEET_INCHES.match(said):
+        inches = int(m.group("ft")) * 12 + float(m.group("inch") or 0)
+        cm = inches * 2.54
+        extra = float(m.group("inch") or 0)
+        said_back = f"{m.group('ft')} foot" + (f" {_say_num(extra)}" if extra else "")
+        return f"{said_back} is {cm:.0f} cm, or {cm / 100:.2f} metres."
+    if m := _TO_FEET.match(said):
+        cm = float(m.group("n")) * (1 if m.group("unit").lower().startswith(("cm", "centi")) else 100)
+        feet, inches = divmod(round(cm / 2.54), 12)
+        return f"{_say_num(float(m.group('n')))} {m.group('unit').lower()} is {feet} foot{f' {inches}' if inches else ''}."
+    if m := _TO_STONE.match(said):
+        pounds = round(float(m.group("n")) * 2.20462)
+        stone, lbs = divmod(pounds, 14)
+        return f"{_say_num(float(m.group('n')))} kg is {stone} stone{f' {lbs} pound' + ('s' if lbs != 1 else '') if lbs else ''}."
+    return None
 
 
 def _units_answer(said: str) -> str | None:
@@ -1368,7 +1395,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said)
-            or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _height_weight(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said))
 
 
