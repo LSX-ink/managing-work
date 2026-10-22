@@ -308,6 +308,10 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
                         first: bool) -> str:
     from hq import outbox
     b = ctx.brain
+    # US and Canadian law (CAN-SPAM, CASL) need a postal address; Alfred's template only asks for it there
+    postal = b.get("settings.postal_address", "")
+    if postal:
+        body = body.replace("[your postal address]", postal)
     problems = outbox.rule_check(subject, body, link, first)
     if problems:
         if p:
