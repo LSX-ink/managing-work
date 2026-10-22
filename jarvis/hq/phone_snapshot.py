@@ -1,7 +1,7 @@
 """Builds the phone copy of the LSX HQ screen: the chosen design with the PC's current numbers baked in.
 
 Run from the jarvis folder:  python -m hq.phone_snapshot
-Writes memory/LSX HQ/Phone/lsx-hq.html and core.js, ready to publish to the owner's LSX HQ page.
+Writes Desktop/LSX HQ phone/lsx-hq.html and core.js, ready to publish to the owner's LSX HQ page.
 """
 
 import json
@@ -13,7 +13,7 @@ import httpx
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = Path(__file__).parent / "static"
-OUT = ROOT / "memory" / "LSX HQ" / "Phone"
+OUT = Path.home() / "OneDrive" / "Desktop" / "LSX HQ phone"  # inside the folder the Claude app may publish from
 HQ = "http://127.0.0.1:8341"
 
 SHIM = """<script>
