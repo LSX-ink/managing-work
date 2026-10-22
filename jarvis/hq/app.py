@@ -100,7 +100,17 @@ async def state():
             "runs_today": BRAIN.runs_today(a.key),
         })
     facts = BRAIN.facts()
+    pipeline = {}
+    try:
+        import kinetic_store as st
+        for r in st.rows_of(SETTINGS, st.OUTREACH):
+            pipeline[r.get("status", "new")] = pipeline.get(r.get("status", "new"), 0) + 1
+        pipeline["leads"] = len(st.rows_of(SETTINGS, st.PROSPECTS))
+    except Exception:
+        pass
     return JSONResponse({
+        "pipeline": pipeline,
+        "outbox": {"sent_today": BRAIN.count_today("warden", "win"), "cap": facts.get("settings.send_per_day", 15)},
         "time": now.strftime("%H:%M"), "hour": now.hour, "agents": agents,
         "divisions": sorted({a.division for a in AGENTS.values()}),
         "brain": {
