@@ -251,6 +251,22 @@ def record_sent(settings, p: dict | None, name: str, to: str, first: bool) -> No
     tracker.sync_prospect(settings, row)
 
 
+FREE_MAIL = {"gmail.com", "googlemail.com", "hotmail.com", "hotmail.co.uk", "outlook.com", "live.com", "live.co.uk",
+             "yahoo.com", "yahoo.co.uk", "icloud.com", "me.com", "aol.com", "btinternet.com", "sky.com", "proton.me"}
+
+
+def already_emailed(settings, to: str) -> str:
+    """The business we already emailed at this address (or, for a company domain, anyone at it): branches of one
+    business share an inbox, and nobody should get the same pitch twice."""
+    to = to.lower().strip()
+    domain = to.split("@")[-1]
+    for r in st.rows_of(settings, st.OUTREACH):
+        e = str(r.get("email") or "").lower().strip()
+        if e and (e == to or (domain not in FREE_MAIL and e.split("@")[-1] == domain)):
+            return r.get("name", "")
+    return ""
+
+
 def sent_today(ctx) -> int:
     return ctx.brain.count_today("warden", "win")
 

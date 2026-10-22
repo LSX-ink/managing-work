@@ -292,6 +292,10 @@ async def warden(ctx: Ctx) -> str:
             if looked >= 6:
                 break
             continue
+        twin = outbox.already_emailed(s, to)
+        if twin:
+            b.set(f"skip.{p['id']}", f"same inbox as {twin}, already emailed")
+            continue
         link = await asyncio.to_thread(outbox.publish_mockup, s, p)
         b.set(f"mockup.{p['name'].lower()}", link)
         subject, body = outbox.first_email(s, p, link)
@@ -301,7 +305,12 @@ async def warden(ctx: Ctx) -> str:
 
 def _due_by_email(s) -> list[dict]:
     import kinetic_outreach as tracker
-    return [r for r in tracker.due_rows(s) if r.get("channel") == "email" and r.get("email")]
+    rows, seen = [], set()
+    for r in tracker.due_rows(s):  # one follow-up per inbox, even when two branches share it
+        if r.get("channel") == "email" and r.get("email") and r["email"].lower() not in seen:
+            seen.add(r["email"].lower())
+            rows.append(r)
+    return rows
 
 
 async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: str, body: str, link: str,
