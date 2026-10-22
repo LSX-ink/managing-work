@@ -76,8 +76,25 @@ def closed_or_busy(row: dict | None) -> bool:
     return bool(row) and row.get("status") not in ("new", "drafted")
 
 
+MIN_REVIEWS = 25    # fewer reviews than this: too small or too quiet to be making real money
+MIN_RATING = 3.8    # customers like them: they're worth helping, and they'll care about how they look online
+
+
+def busy_score(p: dict) -> float:
+    """How likely this business is open, busy and making money, from what Google shows: lots of reviews (customers
+    keep coming), a good rating, and (once Vera has read their site) online booking that people use. 0 = skip."""
+    reviews, rating = int(p.get("reviews") or 0), float(p.get("rating") or 0)
+    if reviews < MIN_REVIEWS or rating < MIN_RATING or str(p.get("status") or "").lower() in ("closed", "dead"):
+        return 0.0
+    score = min(reviews, 1500) ** 0.5 * 2 + (rating - 3.5) * 10
+    if p.get("_booking"):
+        score += 15  # takes bookings online: a real, active business
+    return score
+
+
 def candidates(settings) -> list[dict]:
-    """Fresh leads with a website where a cold email is allowed, weakest website first."""
+    """Fresh, busy, money-making leads with a website where a cold email is allowed: most likely to reply first.
+    Quiet businesses (few reviews, low rating) are left out entirely."""
     rows = st.rows_of(settings, st.OUTREACH)
     by_name = {r["name"].lower(): r for r in rows}
     out = []
@@ -89,8 +106,10 @@ def candidates(settings) -> list[dict]:
         country = p.get("country") or world.HOME
         if not world.cold_email_ok(country, p["name"]):
             continue
+        if busy_score(p) <= 0:
+            continue
         out.append(p)
-    return sorted(out, key=kf.rank_key)
+    return sorted(out, key=busy_score, reverse=True)
 
 
 async def email_for(ctx, p: dict) -> str:
@@ -104,7 +123,11 @@ async def email_for(ctx, p: dict) -> str:
     if not addr and p.get("website"):
         try:
             audit = await asyncio.wait_for(kf.audit_url(ctx.http, p["website"]), 45)
+            if audit.get("grade") == "down":
+                b.set(key, "")  # a dead site: not a business we email
+                return ""
             addr = pick_address(audit.get("emails") or [], p["website"])
+            b.set(f"booking.{p['id']}", bool(audit.get("booking")))
         except Exception:
             addr = ""
     b.set(key, addr)
