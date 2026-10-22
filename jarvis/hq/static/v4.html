@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LSX HQ · Tower</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #07080a; --gold: #d8b25a; --lime: #c4f25c; --text: #ece9e0; --muted: #8d8a80; --edge: rgba(216,178,90,.18); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 500 13px/1.45 Inter, sans-serif; overflow: hidden; }
+.bar { position: fixed; top: 14px; left: 18px; right: 18px; height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: rgba(18,18,22,.85); border: 1px solid var(--edge); border-radius: 12px; z-index: 5; }
+.bar .logo { font: 700 15px "Space Grotesk"; letter-spacing: .08em; } .bar .logo b { color: var(--gold); }
+.bar .pill { padding: 5px 12px; border-radius: 8px; border: 1px solid var(--edge); color: var(--muted); font-size: 12px; } .bar .pill.on { background: #fff; color: #111; border-color: #fff; font-weight: 700; }
+.bar .sp { margin-left: auto; color: var(--muted); font-size: 12px; } .bar .sp b { color: var(--lime); }
+#tower { position: fixed; left: 0; top: 0; width: 42vw; height: 100vh; }
+#net { position: fixed; right: 0; top: 0; width: 58vw; height: 100vh; }
+#floors { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+.fl { position: absolute; transform: translate(0, -50%); display: flex; align-items: center; gap: 8px; pointer-events: auto; cursor: pointer; white-space: nowrap; }
+.fl i { width: 26px; height: 1px; background: linear-gradient(90deg, var(--c), transparent); }
+.fl b { font: 700 11px "Space Grotesk"; letter-spacing: .14em; color: var(--c); text-transform: uppercase; }
+.fl span { color: var(--muted); font-size: 11px; }
+.fl.on b { text-shadow: 0 0 10px var(--c); } .fl.on span { color: #fff; }
+#netlabels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.grp { position: absolute; transform: translate(-50%, -50%); font: 700 13px "Space Grotesk"; letter-spacing: .3em; color: rgba(236,233,224,.55); }
+.hub { position: absolute; transform: translate(-50%, 18px); text-align: center; font: 600 11px Inter; color: var(--text); pointer-events: auto; cursor: pointer; white-space: nowrap; }
+.hub small { display: block; color: var(--muted); font-size: 10px; }
+.panel { position: fixed; z-index: 4; background: rgba(18,18,22,.86); border: 1px solid var(--edge); border-radius: 12px; padding: 12px 14px; backdrop-filter: blur(10px); }
+.panel h4 { margin: 0 0 8px; font: 700 10.5px Inter; letter-spacing: .16em; color: var(--muted); text-transform: uppercase; display: flex; justify-content: space-between; }
+.feed { right: 18px; bottom: 18px; width: 380px; height: 250px; overflow: hidden; }
+.feed .ev { font-size: 12px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.04); animation: in .3s; } .feed .ev b { color: var(--c); } .feed .ev time { color: var(--muted); font-size: 11px; margin-right: 6px; }
+@keyframes in { from { opacity: 0; transform: translateY(-4px); } }
+.orders { left: 18px; bottom: 18px; width: 360px; max-height: 220px; overflow: auto; white-space: pre-wrap; font-size: 12.5px; }
+.kpis { left: calc(42vw + 10px); bottom: 18px; display: flex; gap: 18px; }
+.kpis div b { display: block; font: 700 22px "Space Grotesk"; color: #fff; } .kpis div span { font-size: 10.5px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head>
+<body>
+<div id="tower"></div><canvas id="net"></canvas><div id="netlabels"></div><div id="floors"></div>
+<div class="bar"><div class="logo">LSX <b>HQ</b></div><span class="pill on" id="div">Kinetic Web Designs</span><span class="pill">Dashboard</span><span class="pill">+ Next venture</span><div class="sp"><b id="liveN">0</b> agents working · <span id="clock">--:--</span></div></div>
+<div class="panel orders"><h4>Today's orders <span>Atlas</span></h4><div id="orders"></div></div>
+<div class="panel kpis" id="kpis"></div>
+<div class="panel feed"><h4>Live work <span id="evN"></span></h4><div id="feed"></div></div>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { state, on, start, esc, openAgent, numbers, fmtTime, working } from "/static/core.js";
+const $ = s => document.querySelector(s);
+
+/* ---------------- the tower: one glass floor per agent, lit warm, glowing in the agent's colour while it works */
+const host = $("#tower"), W = () => host.clientWidth, H = () => host.clientHeight;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(W(), H());
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.shadowMap.enabled = true; host.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, W() / H(), .1, 300); camera.position.set(26, 16, 44); camera.lookAt(0, 8.2, 0);
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(W(), H()), .7, .55, .55));
+scene.add(new THREE.HemisphereLight(0xffeedd, 0x111015, .35));
+const tower = new THREE.Group(); scene.add(tower);
+const FH = 2.1, floors = {};
+const mat = { slab: new THREE.MeshStandardMaterial({ color: 0x15151a, metalness: .6, roughness: .35 }), frame: new THREE.MeshStandardMaterial({ color: 0x0c0c0f, metalness: .8, roughness: .3 }),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0xbfd8ff, transparent: true, opacity: .14, roughness: .05, metalness: .1 }), desk: new THREE.MeshStandardMaterial({ color: 0xe8dcc4, roughness: .6 }),
+  person: new THREE.MeshStandardMaterial({ color: 0x2b2b33, roughness: .8 }), plant: new THREE.MeshStandardMaterial({ color: 0x3f7f45, roughness: .9 }) };
+function buildTower(agents) {
+  const base = new THREE.Mesh(new THREE.BoxGeometry(9, .6, 7), mat.slab); base.position.y = -.3; tower.add(base);
+  const glowBase = new THREE.Mesh(new THREE.BoxGeometry(9.3, .05, 7.3), new THREE.MeshBasicMaterial({ color: 0xc4f25c })); glowBase.position.y = .02; tower.add(glowBase);
+  agents.forEach((a, i) => {
+    const y = i * FH + .1, f = new THREE.Group(); f.position.y = y; tower.add(f);
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(7.6, .18, 5.6), mat.slab); f.add(slab);
+    for (const [x, z] of [[-3.7, -2.7], [3.7, -2.7], [-3.7, 2.7], [3.7, 2.7]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(.16, FH, .16), mat.frame); c.position.set(x, FH / 2, z); f.add(c); }
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(7.5, FH - .2, 5.5), mat.glass); glass.position.y = FH / 2; f.add(glass);
+    const people = [];
+    for (let k = 0; k < 6; k++) { const x = -2.6 + (k % 3) * 2.6, z = k < 3 ? -1.2 : 1.1;
+      const d = new THREE.Mesh(new THREE.BoxGeometry(1.5, .07, .7), mat.desk); d.position.set(x, .78, z); f.add(d);
+      const scr = new THREE.Mesh(new THREE.BoxGeometry(.7, .42, .04), new THREE.MeshStandardMaterial({ color: 0x000000, emissive: a.colour, emissiveIntensity: .4 })); scr.position.set(x, 1.12, z - .25); f.add(scr);
+      const p = new THREE.Mesh(new THREE.CapsuleGeometry(.17, .42, 4, 8), mat.person); p.position.set(x, .75, z + .55); f.add(p); people.push({ p, scr }); }
+    const plant = new THREE.Mesh(new THREE.IcosahedronGeometry(.32, 0), mat.plant); plant.position.set(3.2, .5, 2.2); f.add(plant);
+    const lamp = new THREE.PointLight(0xffd9a0, 6, 8, 2); lamp.position.set(0, FH - .4, 0); f.add(lamp);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(7.62, .05, .05), new THREE.MeshBasicMaterial({ color: a.colour })); strip.position.set(0, .12, 2.82); f.add(strip);
+    floors[a.key] = { f, people, lamp, strip, col: new THREE.Color(a.colour), y };
+  });
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(7.8, .25, 5.8), mat.slab); roof.position.y = agents.length * FH + .1; tower.add(roof);
+  const crown = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 2.4), mat.frame); crown.position.y = agents.length * FH + .8; tower.add(crown);
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(.22, 12, 10), new THREE.MeshBasicMaterial({ color: 0xc4f25c })); beacon.position.y = agents.length * FH + 1.6; tower.add(beacon);
+}
+const v = new THREE.Vector3();
+function floorLabels() {
+  const rect = host.getBoundingClientRect(); let h = "";
+  state.agents.forEach(a => { const fl = floors[a.key]; if (!fl) return;
+    v.set(4.2, fl.y + FH / 2, 3).applyMatrix4(tower.matrixWorld).project(camera);
+    const x = rect.left + (v.x + 1) / 2 * rect.width, y = (1 - v.y) / 2 * rect.height;
+    h += `<div class="fl ${a.status === "working" ? "on" : ""}" data-k="${a.key}" style="--c:${a.colour};left:${Math.min(x, rect.width - 10)}px;top:${y}px"><i></i><b>${a.emoji} ${esc(a.title)}</b><span>${esc(a.status === "working" ? "working…" : (a.last ? a.last.result : a.job)).slice(0, 38)}</span></div>`; });
+  $("#floors").innerHTML = h; $("#floors").querySelectorAll(".fl").forEach(e => e.onclick = () => openAgent(e.dataset.k));
+}
+
+/* ---------------- the work network: department groups, each agent a hub, each recent job a node that pops in */
+const cv = $("#net"), g = cv.getContext("2d");
+function sizeNet() { cv.width = cv.clientWidth * devicePixelRatio; cv.height = cv.clientHeight * devicePixelRatio; }
+sizeNet();
+const GROUPS = { ceo: "COMMAND", scout: "GROWTH", studio: "GROWTH", closer: "REVENUE", warden: "REVENUE", analyst: "REVENUE", concierge: "CLIENTS", guardian: "OPERATIONS" };
+const GPOS = { COMMAND: [.5, .2], GROWTH: [.22, .42], REVENUE: [.74, .45], CLIENTS: [.3, .76], OPERATIONS: [.74, .8] };
+let hubs = {}, sats = [];
+function placeHubs() {
+  const byG = {}; state.agents.forEach(a => (byG[GROUPS[a.key] || "OPERATIONS"] ||= []).push(a));
+  Object.entries(byG).forEach(([grp, list]) => list.forEach((a, i) => { const [gx, gy] = GPOS[grp] || [.5, .5], spread = (i - (list.length - 1) / 2) * .1;
+    hubs[a.key] = { x: gx + spread, y: gy + .06 + Math.abs(spread) * .2, grp }; }));
+}
+function addSat(e) { const h = hubs[e.agent]; if (!h) return; const ang = Math.random() * Math.PI * 2, r = .045 + Math.random() * .05;
+  sats.push({ key: e.agent, ang, r, born: performance.now(), kind: e.kind }); if (sats.length > 140) sats.shift(); }
+function drawNet(t) {
+  const Wc = cv.width, Hc = cv.height, dpr = devicePixelRatio; g.clearRect(0, 0, Wc, Hc);
+  const P = (x, y) => [x * Wc, y * Hc];
+  // links between hubs and the CEO, pulses running along them
+  const ceo = hubs.ceo;
+  Object.entries(hubs).forEach(([k, h]) => { if (!ceo || k === "ceo") return; const [x1, y1] = P(ceo.x, ceo.y), [x2, y2] = P(h.x, h.y), a = state.agents.find(z => z.key === k);
+    g.strokeStyle = "rgba(196,242,92,.16)"; g.lineWidth = 1 * dpr; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    if (a && a.status === "working") { const f = (t / 1200) % 1; g.fillStyle = a.colour; g.beginPath(); g.arc(x1 + (x2 - x1) * f, y1 + (y2 - y1) * f, 3 * dpr, 0, 7); g.fill(); } });
+  sats.forEach(s => { const h = hubs[s.key]; if (!h) return; const a = state.agents.find(z => z.key === s.key), col = a ? a.colour : "#888";
+    const age = Math.min(1, (t - s.born) / 600), ang = s.ang + t * .00005, [hx, hy] = P(h.x, h.y), x = hx + Math.cos(ang) * s.r * Wc * age, y = hy + Math.sin(ang) * s.r * Hc * 1.6 * age;
+    g.strokeStyle = col + "55"; g.lineWidth = .8 * dpr; g.beginPath(); g.moveTo(hx, hy); g.lineTo(x, y); g.stroke();
+    g.fillStyle = s.kind === "error" ? "#ff5a5a" : s.kind === "win" ? "#c4f25c" : col; g.beginPath(); g.arc(x, y, (s.kind === "win" ? 4 : 2.6) * dpr, 0, 7); g.fill(); });
+  state.agents.forEach(a => { const h = hubs[a.key]; if (!h) return; const [x, y] = P(h.x, h.y), on = a.status === "working", r = (on ? 15 + Math.sin(t / 200) * 2 : 12) * dpr;
+    const grd = g.createRadialGradient(x, y, 0, x, y, r * 3); grd.addColorStop(0, a.colour + (on ? "aa" : "55")); grd.addColorStop(1, "transparent");
+    g.fillStyle = grd; g.beginPath(); g.arc(x, y, r * 3, 0, 7); g.fill();
+    g.fillStyle = "#0b0b0e"; g.strokeStyle = a.colour; g.lineWidth = 2 * dpr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.stroke();
+    g.font = `${14 * dpr}px Inter`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff"; g.fillText(a.emoji, x, y + 1); });
+}
+function netLabels() {
+  const rect = cv.getBoundingClientRect(); let h = "";
+  Object.entries(GPOS).forEach(([k, [x, y]]) => { if (Object.values(hubs).some(z => z.grp === k)) h += `<div class="grp" style="left:${rect.left + x * rect.width}px;top:${y * rect.height - 34}px">${k}</div>`; });
+  state.agents.forEach(a => { const hb = hubs[a.key]; if (!hb) return; h += `<div class="hub" data-k="${a.key}" style="left:${rect.left + hb.x * rect.width}px;top:${hb.y * rect.height}px">${esc(a.name)}<small>${esc(a.title)}</small></div>`; });
+  $("#netlabels").innerHTML = h; $("#netlabels").querySelectorAll(".hub").forEach(e => e.onclick = () => openAgent(e.dataset.k));
+}
+
+let built = false, lastL = 0;
+function loop(t) {
+  tower.rotation.y = Math.sin(t / 9000) * .35 - .25;
+  state.agents.forEach(a => { const fl = floors[a.key]; if (!fl) return; const on = a.status === "working";
+    fl.lamp.color.set(on ? a.colour : 0xffd9a0); fl.lamp.intensity = on ? 14 + Math.sin(t / 180) * 3 : 6;
+    fl.people.forEach(({ p, scr }, k) => { p.position.y = .75 + (on ? Math.abs(Math.sin(t / 160 + k)) * .05 : 0); scr.material.emissiveIntensity = on ? 1.4 + Math.sin(t / 90 + k) * .4 : .35; }); });
+  composer.render(); drawNet(t);
+  if (t - lastL > 120) { lastL = t; floorLabels(); netLabels(); }
+  requestAnimationFrame(loop);
+}
+addEventListener("resize", () => { camera.aspect = W() / H(); camera.updateProjectionMatrix(); renderer.setSize(W(), H()); composer.setSize(W(), H()); sizeNet(); });
+on("state", s => {
+  if (!built && s.agents.length) { buildTower(s.agents); placeHubs(); built = true; requestAnimationFrame(loop); }
+  $("#clock").textContent = s.time; $("#liveN").textContent = working(); $("#div").textContent = (s.divisions || [])[0] || "Kinetic Web Designs";
+  $("#orders").textContent = s.brain.priorities || "Atlas sets the orders at 07:55.";
+  const n = numbers();
+  $("#kpis").innerHTML = [["Leads", n.leads], ["Emails today", `${n.sent}/${n.cap}`], ["Contacted", n.contacted], ["Replies", n.replies], ["Won", n.won], ["IG answered", n.ig]].map(([k, x]) => `<div><b>${x}</b><span>${k}</span></div>`).join("");
+});
+on("events", (list, ready) => {
+  const box = $("#feed");
+  list.forEach(e => { addSat(e); box.insertAdjacentHTML("afterbegin", `<div class="ev" style="--c:${state.colours[e.agent] || "#888"}"><time>${fmtTime(e.ts).slice(0, 5)}</time><b>${esc(state.names[e.agent] || e.agent)}</b> ${esc(e.text)}</div>`); });
+  while (box.children.length > 60) box.lastChild.remove(); $("#evN").textContent = box.children.length;
+});
+start();
+</script>
+</body>
+</html>

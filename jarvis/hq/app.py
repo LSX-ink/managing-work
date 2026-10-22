@@ -78,9 +78,40 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+STATIC = Path(__file__).parent / "static"
+
+
 @app.get("/")
 async def page():
-    return FileResponse(Path(__file__).parent / "static" / "hq.html")
+    """The design the owner picked (1 to 7); design 1 until they choose."""
+    pick = int(BRAIN.get("settings.view", 1) or 1)
+    chosen = STATIC / f"v{pick}.html"
+    return FileResponse(chosen if chosen.exists() else STATIC / "hq.html")
+
+
+@app.get("/v/{n}")
+async def design(n: int):
+    f = STATIC / f"v{n}.html"
+    if not f.exists():
+        raise HTTPException(404, "No such design")
+    return FileResponse(f)
+
+
+@app.get("/static/{name}")
+async def static_file(name: str):
+    f = (STATIC / name).resolve()
+    if f.parent != STATIC.resolve() or not f.exists():
+        raise HTTPException(404, "Not found")
+    return FileResponse(f)
+
+
+@app.post("/api/view/{n}")
+async def choose(n: int):
+    if not (STATIC / f"v{n}.html").exists():
+        raise HTTPException(404, "No such design")
+    BRAIN.set("settings.view", n)
+    BRAIN.log("hq", f"design {n} chosen for LSX HQ", "info")
+    return {"view": n}
 
 
 @app.get("/api/state")
@@ -100,16 +131,21 @@ async def state():
             "runs_today": BRAIN.runs_today(a.key),
         })
     facts = BRAIN.facts()
-    pipeline = {}
+    pipeline, cities = {}, {}
     try:
         import kinetic_store as st
         for r in st.rows_of(SETTINGS, st.OUTREACH):
             pipeline[r.get("status", "new")] = pipeline.get(r.get("status", "new"), 0) + 1
-        pipeline["leads"] = len(st.rows_of(SETTINGS, st.PROSPECTS))
+        prospects = st.rows_of(SETTINGS, st.PROSPECTS)
+        pipeline["leads"] = len(prospects)
+        for p in prospects:
+            town = str(p.get("town") or "").split(",")[0].strip().lower()
+            if town:
+                cities[town] = cities.get(town, 0) + 1
     except Exception:
         pass
     return JSONResponse({
-        "pipeline": pipeline,
+        "pipeline": pipeline, "cities": cities,
         "outbox": {"sent_today": BRAIN.count_today("warden", "win"), "cap": facts.get("settings.send_per_day", 15)},
         "time": now.strftime("%H:%M"), "hour": now.hour, "agents": agents,
         "divisions": sorted({a.division for a in AGENTS.values()}),

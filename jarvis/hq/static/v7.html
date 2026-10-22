@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LSX HQ · World Ops</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #01030a; --cyan: #4fd1ff; --gold: #ffc24b; --text: #e6efff; --muted: #7c8aa8; --edge: rgba(79,209,255,.18); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 500 13px/1.45 Sora, sans-serif; overflow: hidden; }
+#scene { position: fixed; inset: 0; }
+#labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.city { position: absolute; transform: translate(8px, -50%); font: 700 10px "JetBrains Mono"; letter-spacing: .1em; color: #ffe2a8; text-shadow: 0 0 6px #000; white-space: nowrap; }
+.city b { color: var(--gold); }
+.sat { position: absolute; transform: translate(-50%, -130%); font: 700 10.5px "JetBrains Mono"; letter-spacing: .14em; color: var(--c); text-shadow: 0 0 8px var(--c); pointer-events: auto; cursor: pointer; white-space: nowrap; }
+.sat.on::after { content: " ● LIVE"; color: #7dff9a; }
+.hud { position: fixed; z-index: 3; }
+.title { left: 28px; top: 24px; }
+.title h1 { margin: 0; font: 800 30px Sora; letter-spacing: .04em; } .title h1 b { color: var(--cyan); }
+.title p { margin: 4px 0 0; color: var(--muted); font: 600 11px "JetBrains Mono"; letter-spacing: .22em; }
+.big { left: 28px; top: 110px; display: grid; gap: 14px; }
+.big div b { display: block; font: 800 42px/1 Sora; background: linear-gradient(90deg, #fff, var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.big div span { font: 600 10.5px "JetBrains Mono"; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; }
+.panel { background: rgba(6,12,28,.78); border: 1px solid var(--edge); border-radius: 14px; backdrop-filter: blur(10px); padding: 12px 14px; }
+.panel h4 { margin: 0 0 8px; font: 700 10.5px "JetBrains Mono"; letter-spacing: .2em; color: var(--muted); display: flex; justify-content: space-between; }
+.agents { left: 28px; bottom: 24px; width: 330px; }
+.ag { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; } .ag b { color: var(--c); font-weight: 700; } .ag small { color: var(--muted); }
+.ag .s { font: 700 10px "JetBrains Mono"; color: var(--muted); } .ag .s.working { color: #7dff9a; }
+.board { right: 24px; top: 24px; width: 330px; max-height: 44vh; overflow: auto; }
+.row { display: grid; grid-template-columns: 1fr 120px 34px; gap: 8px; align-items: center; padding: 3px 0; font-size: 12.5px; }
+.row .bar { height: 5px; border-radius: 4px; background: rgba(255,255,255,.07); overflow: hidden; } .row .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--gold)); }
+.row b { text-align: right; font: 700 12px "JetBrains Mono"; }
+.feed { right: 24px; bottom: 24px; width: 380px; height: 34vh; overflow: hidden; }
+.ev { font-size: 12px; padding: 4px 0; animation: in .3s; } .ev b { color: var(--c); } .ev time { color: var(--muted); font: 500 10.5px "JetBrains Mono"; margin-right: 6px; }
+@keyframes in { from { opacity: 0; } }
+.orders { left: 50%; transform: translateX(-50%); bottom: 24px; width: 520px; max-height: 130px; overflow: auto; white-space: pre-wrap; font-size: 12px; }
+</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head>
+<body>
+<div id="scene"></div><div id="labels"></div>
+<div class="hud title"><h1>LSX <b>WORLD OPS</b></h1><p>KINETIC WEB DESIGNS · GLOBAL OUTREACH · <span id="clock">--:--</span></p></div>
+<div class="hud big" id="big"></div>
+<div class="hud panel agents"><h4>AGENTS IN ORBIT <span id="live"></span></h4><div id="ags"></div></div>
+<div class="hud panel board"><h4>LEADS BY CITY <span id="cityN"></span></h4><div id="board"></div></div>
+<div class="hud panel feed"><h4>LIVE <span id="evN"></span></h4><div id="feed"></div></div>
+<div class="hud panel orders"><h4>TODAY'S ORDERS · ATLAS</h4><div id="orders"></div></div>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { state, on, start, esc, openAgent, numbers, fmtTime, working, CITIES } from "/static/core.js";
+const $ = s => document.querySelector(s);
+const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight); $("#scene").appendChild(renderer.domElement);
+const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, .1, 1000); camera.position.set(0, 18, 52);
+const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.enablePan = false; controls.minDistance = 30; controls.maxDistance = 90;
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera)); composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .9, .5, .2));
+// stars
+const sg = new THREE.BufferGeometry(), sp = new Float32Array(3000 * 3); for (let i = 0; i < 3000; i++) { const p = new THREE.Vector3().randomDirection().multiplyScalar(300 + Math.random() * 200); sp.set([p.x, p.y, p.z], i * 3); }
+sg.setAttribute("position", new THREE.BufferAttribute(sp, 3)); scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0x9fb6ff, size: .7 })));
+// the earth: night lights texture, a glowing atmosphere and a slow spin
+const R = 14, earth = new THREE.Group(); scene.add(earth); earth.rotation.y = -1.2; earth.rotation.x = .35;
+const tex = new THREE.TextureLoader().load("https://cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/earth-night.jpg"); tex.colorSpace = THREE.SRGBColorSpace;
+earth.add(new THREE.Mesh(new THREE.SphereGeometry(R, 96, 64), new THREE.MeshBasicMaterial({ map: tex, color: 0xaac4ff })));
+const atmo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.08, 64, 48), new THREE.ShaderMaterial({ transparent: true, side: THREE.BackSide, blending: THREE.AdditiveBlending,
+  vertexShader: "varying vec3 n; void main(){ n = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }",
+  fragmentShader: "varying vec3 n; void main(){ float i = pow(.72 - dot(n, vec3(0,0,1.)), 3.); gl_FragColor = vec4(.31,.82,1.,1.) * i; }" })); scene.add(atmo);
+const ll = (lat, lon, r = R) => { const ph = (90 - lat) * Math.PI / 180, th = (lon + 180) * Math.PI / 180; return new THREE.Vector3(-r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th)); };
+const HQ = CITIES.birmingham, pins = new THREE.Group(); earth.add(pins); let arcs = [];
+const hq = new THREE.Mesh(new THREE.SphereGeometry(.32, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffc24b })); hq.position.copy(ll(...HQ, R + .1)); earth.add(hq);
+function plot(cities) {
+  pins.clear(); arcs.forEach(a => earth.remove(a.line, a.dot)); arcs = [];
+  Object.entries(cities).forEach(([name, n]) => { const c = CITIES[name]; if (!c) return; const p = ll(...c, R + .05);
+    const h = Math.min(4, .6 + Math.sqrt(n) * .5), bar = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, h, 8), new THREE.MeshBasicMaterial({ color: 0x4fd1ff }));
+    bar.position.copy(ll(...c, R + h / 2)); bar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ll(...c, 1).normalize()); pins.add(bar);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff })); cap.position.copy(ll(...c, R + h)); pins.add(cap);
+    if (name !== "birmingham") { const a = ll(...HQ, R), b = ll(...c, R), mid = a.clone().add(b).multiplyScalar(.5), lift = R + a.distanceTo(b) * .45;
+      const curve = new THREE.QuadraticBezierCurve3(a, mid.normalize().multiplyScalar(lift), b);
+      const line = new THREE.Mesh(new THREE.TubeGeometry(curve, 50, .035, 6), new THREE.MeshBasicMaterial({ color: 0xffc24b, transparent: true, opacity: .45 })); earth.add(line);
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(.13, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })); earth.add(dot);
+      arcs.push({ curve, line, dot, t: Math.random() }); } });
+}
+// agents as satellites
+const sats = {};
+function buildSats(agents) { agents.forEach((a, i) => { const m = new THREE.Mesh(new THREE.OctahedronGeometry(.42), new THREE.MeshBasicMaterial({ color: a.colour })); scene.add(m);
+  const orbit = new THREE.Mesh(new THREE.TorusGeometry(R + 4 + (i % 3) * 1.6, .015, 4, 160), new THREE.MeshBasicMaterial({ color: a.colour, transparent: true, opacity: .18 }));
+  const tilt = (i - agents.length / 2) * .22; orbit.rotation.set(Math.PI / 2 + tilt, 0, i * .4); scene.add(orbit);
+  sats[a.key] = { m, orbit, r: R + 4 + (i % 3) * 1.6, tilt, spin: i * .4, ph: i / agents.length * Math.PI * 2 }; }); }
+const v = new THREE.Vector3(), project = p => { v.copy(p).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight, v.z]; };
+let built = false, lastL = 0; const clock = new THREE.Clock();
+function loop() {
+  const t = clock.getElapsedTime(); earth.rotation.y += .0012;
+  arcs.forEach(a => { a.t = (a.t + .004) % 1; a.dot.position.copy(a.curve.getPoint(a.t)); });
+  state.agents.forEach(a => { const s = sats[a.key]; if (!s) return; const on = a.status === "working", ang = s.ph + t * (on ? .5 : .15);
+    const p = new THREE.Vector3(Math.cos(ang) * s.r, 0, Math.sin(ang) * s.r).applyEuler(s.orbit.rotation.clone()).applyAxisAngle(new THREE.Vector3(1, 0, 0), 0);
+    const local = new THREE.Vector3(Math.cos(ang) * s.r, Math.sin(ang) * s.r, 0).applyEuler(s.orbit.rotation); s.m.position.copy(local);
+    s.m.rotation.y = t * 2; s.m.scale.setScalar(on ? 1.5 + Math.sin(t * 8) * .2 : 1); s.orbit.material.opacity = on ? .6 : .16; });
+  controls.update(); composer.render();
+  if (t - lastL > .1) { lastL = t; labels(); }
+  requestAnimationFrame(loop);
+}
+function labels() {
+  let h = ""; const cities = state.cities || {};
+  Object.entries(cities).sort((a, b) => b[1] - a[1]).slice(0, 14).forEach(([name, n]) => { const c = CITIES[name]; if (!c) return;
+    const wp = ll(...c, R + .3).applyMatrix4(earth.matrixWorld), facing = wp.clone().normalize().dot(camera.position.clone().normalize()); if (facing < .15) return;
+    const [x, y] = project(wp); h += `<div class="city" style="left:${x}px;top:${y}px">${esc(name.toUpperCase())} <b>${n}</b></div>`; });
+  state.agents.forEach(a => { const s = sats[a.key]; if (!s) return; const [x, y, z] = project(s.m.position); if (z > 1) return;
+    h += `<div class="sat ${a.status === "working" ? "on" : ""}" data-k="${a.key}" style="--c:${a.colour};left:${x}px;top:${y}px">${a.emoji} ${esc(a.name.toUpperCase())}</div>`; });
+  $("#labels").innerHTML = h; $("#labels").querySelectorAll(".sat").forEach(e => e.onclick = () => openAgent(e.dataset.k));
+}
+addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); });
+let lastCities = "";
+on("state", s => {
+  if (!built && s.agents.length) { buildSats(s.agents); built = true; loop(); }
+  const key = JSON.stringify(s.cities || {}); if (key !== lastCities) { lastCities = key; plot(s.cities || {}); }
+  $("#clock").textContent = s.time; const n = numbers();
+  $("#big").innerHTML = [["Leads worldwide", n.leads], ["Cities", Object.keys(s.cities || {}).length], ["Emails today", `${n.sent}/${n.cap}`], ["Replies", n.replies]].map(([k, x]) => `<div><b>${x}</b><span>${k}</span></div>`).join("");
+  $("#live").textContent = `${working()} LIVE`;
+  $("#ags").innerHTML = s.agents.map(a => `<div class="ag" data-k="${a.key}" style="--c:${a.colour}"><span>${a.emoji}</span><div><b>${esc(a.name)}</b> <small>${esc(a.title)}</small></div><span class="s ${a.status}">${a.status === "working" ? "LIVE" : a.status.toUpperCase()}</span></div>`).join("");
+  $("#ags").querySelectorAll(".ag").forEach(e => e.onclick = () => openAgent(e.dataset.k));
+  const rows = Object.entries(s.cities || {}).sort((a, b) => b[1] - a[1]), max = Math.max(1, ...rows.map(r => r[1]));
+  $("#cityN").textContent = rows.length;
+  $("#board").innerHTML = rows.slice(0, 16).map(([c, x]) => `<div class="row"><span>${esc(c.replace(/\b\w/g, m => m.toUpperCase()))}</span><div class="bar"><i style="width:${x / max * 100}%"></i></div><b>${x}</b></div>`).join("");
+  $("#orders").textContent = s.brain.priorities || "Atlas sets the orders at 07:55.";
+});
+on("events", list => { const box = $("#feed");
+  list.forEach(e => box.insertAdjacentHTML("afterbegin", `<div class="ev" style="--c:${state.colours[e.agent] || "#888"}"><time>${fmtTime(e.ts).slice(0, 5)}</time><b>${esc(state.names[e.agent] || e.agent)}</b> ${esc(e.text)}</div>`));
+  while (box.children.length > 50) box.lastChild.remove(); $("#evN").textContent = box.children.length; });
+start();
+</script>
+</body>
+</html>
