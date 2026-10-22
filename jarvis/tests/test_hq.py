@@ -44,6 +44,24 @@ def test_time_slots_run_once_per_slot(tmp_path):
     assert not a.due(b, datetime.now()) or datetime.now() >= day.replace(hour=13, minute=5)
 
 
-def test_roster_has_seven_distinct_agents():
+def test_roster_has_eight_distinct_agents():
     keys = [a.key for a in roster()]
-    assert len(keys) == len(set(keys)) == 7 and "closer" in keys and all(a.run for a in roster())
+    assert len(keys) == len(set(keys)) == 8 and "warden" in keys and all(a.run for a in roster())
+
+
+def test_vera_holds_back_bad_emails():
+    from hq import outbox
+    link = "https://kineticwebdesigns.co.uk/m/x/"
+    good = ("Hi there,\n\nYour site doesn't work well on phones. So I made you this: a free example of a new home page. "
+            f"You can open it on your phone here: {link}\n\nSee your design before you pay anything.\n\nWebsites start "
+            "from £395, and you pay half when we start building and half once everything's complete.\n\nThanks,\n"
+            "Alfred, Kinetic Web Designs\n\nIf you'd rather not hear from me, just reply 'no thanks' and I won't contact "
+            "you again.")
+    assert outbox.rule_check("I made this for X", good, link, True) == []
+    bad = good.replace("See your design before you pay anything.", "Pay monthly with Klarna. [Your name]")
+    problems = outbox.rule_check("I made this for X", bad, link, True)
+    assert any("see your design" in p for p in problems) and any("Klarna" in p for p in problems)
+    assert any("placeholder" in p for p in problems)
+    assert outbox.pick_address(["noreply@shop.co.uk", "hello@shop.co.uk", "x@gmail.com"],
+                               "https://www.shop.co.uk") == "hello@shop.co.uk"
+    assert not outbox.good_address("logo@2x.png")

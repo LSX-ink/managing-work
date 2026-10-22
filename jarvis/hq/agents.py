@@ -74,12 +74,16 @@ class Ctx:
             raise RuntimeError("OmniRoute isn't set up")
         base = s.omniroute_url.rstrip("/")
         base = base if base.endswith("/v1") else base + "/v1"
-        r = await self.http.post(f"{base}/chat/completions", timeout=90,
-                                 headers={"Authorization": f"Bearer {s.omniroute_key or 'omniroute'}"},
-                                 json={"model": s.omniroute_model or "auto", "max_tokens": max_tokens,
-                                       "messages": [{"role": "user", "content": prompt}]})
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"].strip()
+        for tokens in (max_tokens, max_tokens * 3):  # thinking models can spend the budget before answering: retry once
+            r = await self.http.post(f"{base}/chat/completions", timeout=120,
+                                     headers={"Authorization": f"Bearer {s.omniroute_key or 'omniroute'}"},
+                                     json={"model": s.omniroute_model or "auto", "max_tokens": tokens,
+                                           "messages": [{"role": "user", "content": prompt}]})
+            r.raise_for_status()
+            text = ((r.json().get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+            if text.strip():
+                return text.strip()
+        raise RuntimeError("the free AI gave an empty answer")
 
 
 # ---------------------------------------------------------------- the agents' work
@@ -195,6 +199,8 @@ async def closer(ctx: Ctx) -> str:
     done_today = b.count_today("closer", "win")
     made, notes = 0, []
     for row in tracker.due_rows(s):
+        if row.get("channel") == "email" and row.get("email"):
+            continue  # Vera checks and sends email follow-ups herself
         try:
             out = await tracker.follow_up(s, {"business": row["name"]})
             b.log("closer", f"follow-up drafted for {row['name']}", "win", {"lead": row["name"], "type": "follow-up"})
@@ -241,7 +247,8 @@ async def ceo(ctx: Ctx) -> str:
     }
     prompt = ("You are the CEO agent of Kinetic Web Designs, a small UK web design agency selling websites "
               "(Starter £395, Business £895, Online shop £1,595, Shopify redesign £595, setup £995) worldwide. "
-              "The owner sends 10 to 20 outreach messages a day themselves and posts 2 videos a day at 6pm. "
+              "Vera (quality control) checks and sends up to 15 cold emails a day; the owner sends 10 to 20 "
+              "Instagram/WhatsApp DMs a day by hand and posts 2 videos a day at 6pm. "
               "From this snapshot of the business brain, write exactly 3 short, concrete priorities for today "
               "(one line each, numbered, plain English, most money-making first), then one line on the biggest risk. "
               "No preamble.\n\nSnapshot:\n" + json.dumps(snapshot, default=str)[:6000])
@@ -253,6 +260,72 @@ async def ceo(ctx: Ctx) -> str:
     b.set("ceo.priorities", plan)
     b.log("ceo", "Today's priorities:\n" + plan, "win")
     return "priorities set"
+
+
+async def warden(ctx: Ctx) -> str:
+    """Vera, quality control: checks every outreach email and, as the owner asked (22 Oct 2026), sends the ones that
+    pass without waiting for them, one per run, within the limits in hq/outbox.py."""
+    from hq import outbox
+    s, b = ctx.settings, ctx.brain
+    if not b.get("settings.autosend", True):
+        return "auto-send is off"
+    for note in await asyncio.to_thread(outbox.watch_replies, ctx):
+        b.log("warden", note, "warn" if "REPLIED" in note else "info")
+    if not outbox.in_hours(outbox.uk_now()):
+        return "outside sending hours (Mon to Sat, 9:00 to 17:30)"
+    cap = int(b.get("settings.send_per_day", 15))
+    if outbox.sent_today(ctx) >= cap:
+        return f"today's limit reached ({cap} emails)"
+    for row in _due_by_email(s):  # 1. an email follow-up that's due
+        link = b.get(f"mockup.{row['name'].lower()}", "")
+        made = outbox.follow_up_email(s, row["name"], link)
+        if made:
+            return await _vet_and_send(ctx, None, row["name"], row["email"], *made, link, first=False)
+    looked = 0
+    for p in outbox.candidates(s):  # 2. a first email to the best fresh lead we can email
+        if b.get(f"skip.{p['id']}"):
+            continue
+        looked += 1
+        to = await outbox.email_for(ctx, p)
+        if not to:
+            b.set(f"skip.{p['id']}", "no email address found")
+            if looked >= 6:
+                break
+            continue
+        link = await asyncio.to_thread(outbox.publish_mockup, s, p)
+        b.set(f"mockup.{p['name'].lower()}", link)
+        subject, body = outbox.first_email(s, p, link)
+        return await _vet_and_send(ctx, p, p["name"], to, subject, body, link, first=True)
+    return "no fresh leads with an email address right now (Hawk will find more)"
+
+
+def _due_by_email(s) -> list[dict]:
+    import kinetic_outreach as tracker
+    return [r for r in tracker.due_rows(s) if r.get("channel") == "email" and r.get("email")]
+
+
+async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: str, body: str, link: str,
+                        first: bool) -> str:
+    from hq import outbox
+    b = ctx.brain
+    problems = outbox.rule_check(subject, body, link, first)
+    if problems:
+        if p:
+            b.set(f"skip.{p['id']}", "failed checks: " + ", ".join(problems))
+        b.log("warden", f"held back the email to {name}: " + ", ".join(problems), "warn")
+        return f"held back {name}"
+    ok, why = await outbox.ai_check(ctx, p or {"name": name}, subject, body)
+    if not ok:
+        if p:
+            b.set(f"skip.{p['id']}", "editor said no: " + why)
+        b.log("warden", f"held back the email to {name}. Editor's note: {why}", "warn")
+        return f"held back {name}"
+    await asyncio.to_thread(outbox.send, ctx.settings, to, subject, body)
+    await asyncio.to_thread(outbox.record_sent, ctx.settings, p, name, to, first)
+    kind = "first email" if first else "follow-up"
+    b.log("warden", f"checked and sent the {kind} to {name} ({to.split('@')[1]}): \"{subject}\"", "win",
+          {"lead": name, "type": kind, "link": link})
+    return f"sent the {kind} to {name}"
 
 
 def roster() -> list[Agent]:
@@ -271,4 +344,7 @@ def roster() -> list[Agent]:
               times=("08:40", "17:40"), run=studio),
         Agent("guardian", "Sentinel", "Guardian", "🛡️", "#94a3b8", "Keeps Alfred, the free AI, the website and every connection up.",
               every=5, run=guardian),
+        Agent("warden", "Vera", "Quality Control", "🔍", "#a78bfa",
+              "Double-checks every email (house rules plus a strict AI editor) and sends the ones that pass, within safe daily limits.",
+              every=15, hours=(9, 18), run=warden),
     ]
