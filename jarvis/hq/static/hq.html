@@ -3,117 +3,106 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LSX HQ · Command Bridge</title>
+<title>LSX HQ · Agents Office</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root { --bg: #04060d; --cyan: #33e1ff; --mag: #ff3dbb; --vio: #8b5cf6; --gold: #ffcf4a; --green: #3dffa2; --red: #ff4d6d;
-  --panel: rgba(10, 16, 34, .72); --edge: rgba(51, 225, 255, .28); --text: #dbe7ff; --muted: #7d8db3; }
+:root { --bg: #0b0b0f; --panel: rgba(22, 21, 27, .82); --edge: rgba(255, 236, 200, .12); --text: #ece7dc; --muted: #9a9384; --amber: #f6b44b; --green: #4ade80; --red: #f87171; --cyan: #67e8f9; }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 500 14px/1.4 Rajdhani, system-ui, sans-serif; overflow: hidden; }
-body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1;
-  background: repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 120%, rgba(139,92,246,.18), transparent 60%); }
-#scene { position: fixed; inset: 0; z-index: 0; }
-.hud { position: fixed; inset: 0; z-index: 2; display: grid; grid-template-columns: 330px 1fr 350px; grid-template-rows: 70px 1fr 170px; gap: 12px; padding: 12px; pointer-events: none; }
-.hud > * { pointer-events: auto; }
-header { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 18px;
-  background: linear-gradient(180deg, rgba(10,16,34,.9), rgba(10,16,34,.55)); border: 1px solid var(--edge); clip-path: polygon(0 0, 100% 0, 98.5% 100%, 1.5% 100%); }
-.h-left { display: flex; gap: 14px; align-items: center; }
-.sigil { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, var(--gold) 35%, #b45309 70%); box-shadow: 0 0 22px var(--gold); animation: throb 2.4s infinite; }
-@keyframes throb { 50% { box-shadow: 0 0 40px var(--gold), 0 0 80px rgba(255,207,74,.4); } }
-.title { font: 900 22px/1 Orbitron, sans-serif; letter-spacing: .32em; background: linear-gradient(90deg, #fff, var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 30px rgba(51,225,255,.35); }
-.sub { font: 600 11px Orbitron; letter-spacing: .3em; color: var(--muted); }
-.divs { display: flex; gap: 8px; justify-content: center; }
-.chip { font: 700 11px Orbitron; letter-spacing: .16em; padding: 6px 12px; border: 1px solid var(--cyan); color: var(--cyan); background: rgba(51,225,255,.08); box-shadow: inset 0 0 12px rgba(51,225,255,.2); }
-.chip.add { border-style: dashed; color: var(--muted); border-color: var(--muted); background: none; box-shadow: none; }
-.h-right { display: flex; gap: 16px; justify-content: flex-end; align-items: center; }
-.health { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; max-width: 520px; font: 600 11px JetBrains Mono; color: var(--muted); }
-.health span { display: inline-flex; align-items: center; gap: 5px; }
-.led { width: 7px; height: 7px; border-radius: 50%; background: #445; } .led.ok { background: var(--green); box-shadow: 0 0 8px var(--green); } .led.bad { background: var(--red); box-shadow: 0 0 10px var(--red); animation: blink .7s infinite; }
-@keyframes blink { 50% { opacity: .2; } }
-.clock { font: 900 26px Orbitron; color: #fff; text-shadow: 0 0 18px var(--cyan); }
-.col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-.panel { background: var(--panel); border: 1px solid var(--edge); backdrop-filter: blur(8px); position: relative; display: flex; flex-direction: column; min-height: 0;
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px)); }
-.panel::before { content: ""; position: absolute; left: 0; top: 0; width: 40%; height: 2px; background: linear-gradient(90deg, var(--c, var(--cyan)), transparent); }
-.panel h2 { margin: 0; padding: 10px 14px 8px; font: 700 11px Orbitron; letter-spacing: .24em; color: var(--c, var(--cyan)); display: flex; justify-content: space-between; align-items: center; }
-.panel h2 i { font-style: normal; color: var(--muted); font-size: 10px; }
-.pb { padding: 2px 14px 12px; overflow: auto; min-height: 0; }
-.pb::-webkit-scrollbar { width: 4px; } .pb::-webkit-scrollbar-thumb { background: var(--edge); }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 500 13px/1.45 Inter, system-ui, sans-serif; overflow: hidden; }
+#scene { position: fixed; inset: 0; }
+.top { position: fixed; top: 0; left: 0; right: 0; height: 46px; display: flex; align-items: center; gap: 14px; padding: 0 16px; background: rgba(14,13,18,.92); border-bottom: 1px solid var(--edge); z-index: 5; backdrop-filter: blur(10px); }
+.brand { font: 800 14px Inter; letter-spacing: .14em; } .brand b { color: var(--amber); }
+.crumb { color: var(--muted); font-size: 12px; } .crumb span { color: var(--text); }
+.tabs { display: flex; gap: 6px; margin-left: 10px; }
+.tab { font: 600 11px Inter; padding: 5px 10px; border: 1px solid var(--edge); border-radius: 6px; color: var(--muted); background: rgba(255,255,255,.02); }
+.tab.on { color: #111; background: var(--amber); border-color: var(--amber); }
+.health { margin-left: auto; display: flex; gap: 10px; font: 500 11px "JetBrains Mono"; color: var(--muted); }
+.health span { display: inline-flex; gap: 5px; align-items: center; }
+.led { width: 7px; height: 7px; border-radius: 50%; background: #555; } .led.ok { background: var(--green); box-shadow: 0 0 8px var(--green); } .led.bad { background: var(--red); animation: blink .8s infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+.live { font: 700 11px Inter; color: #111; background: var(--green); padding: 4px 8px; border-radius: 5px; letter-spacing: .08em; }
+.clock { font: 700 15px "JetBrains Mono"; }
+.side { position: fixed; top: 58px; bottom: 12px; width: 300px; display: flex; flex-direction: column; gap: 10px; z-index: 4; }
+.side.l { left: 12px; width: 260px; } .side.r { right: 12px; width: 340px; }
+.panel { background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; backdrop-filter: blur(12px); display: flex; flex-direction: column; min-height: 0; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+.panel h3 { margin: 0; padding: 11px 14px 9px; font: 700 11px Inter; letter-spacing: .14em; color: var(--muted); display: flex; justify-content: space-between; text-transform: uppercase; border-bottom: 1px solid var(--edge); }
+.panel h3 b { color: var(--text); }
+.pb { padding: 8px 12px 12px; overflow: auto; min-height: 0; }
+.pb::-webkit-scrollbar { width: 4px; } .pb::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 4px; }
 .grow { flex: 1; }
-.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.kpi { border: 1px solid rgba(51,225,255,.18); padding: 8px; background: rgba(51,225,255,.04); }
-.kpi b { display: block; font: 700 22px Orbitron; color: #fff; text-shadow: 0 0 12px var(--c, var(--cyan)); }
-.kpi span { font: 600 10px Orbitron; letter-spacing: .12em; color: var(--muted); }
-.agent { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(51,225,255,.08); cursor: pointer; }
-.agent:hover { background: rgba(51,225,255,.05); }
-.agent .em { font-size: 18px; text-align: center; filter: drop-shadow(0 0 6px var(--c)); }
-.agent b { font: 700 13px Orbitron; letter-spacing: .08em; color: var(--c); } .agent small { display: block; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
-.st { font: 700 10px Orbitron; letter-spacing: .12em; padding: 3px 7px; border: 1px solid currentColor; }
-.st.working { color: var(--green); animation: blink 1.1s infinite; box-shadow: 0 0 10px rgba(61,255,162,.4); } .st.idle { color: var(--muted); } .st.error { color: var(--red); } .st.paused { color: var(--gold); }
-.orders { white-space: pre-wrap; font: 600 14px/1.5 Rajdhani; }
-.stream .ev { font: 12px/1.45 "JetBrains Mono", monospace; padding: 5px 0 5px 10px; border-left: 2px solid var(--c, #334); margin-bottom: 4px; white-space: pre-wrap; animation: in .35s ease; }
-.stream .ev b { color: var(--c); } .stream .ev time { color: var(--muted); margin-right: 6px; }
-.stream .ev.win { background: linear-gradient(90deg, rgba(61,255,162,.07), transparent); } .stream .ev.error { background: linear-gradient(90deg, rgba(255,77,109,.1), transparent); } .stream .ev.warn { background: linear-gradient(90deg, rgba(255,207,74,.07), transparent); }
-@keyframes in { from { opacity: 0; transform: translateX(8px); } }
-.bottom { grid-column: 1 / -1; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; min-height: 0; }
-.pipe { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; align-items: end; height: 100%; }
-.stage { text-align: center; } .bar { margin: 0 auto 6px; width: 70%; background: linear-gradient(180deg, var(--c), transparent); box-shadow: 0 0 16px var(--c); min-height: 4px; transition: height .8s; }
-.stage b { font: 700 18px Orbitron; color: #fff; display: block; } .stage span { font: 600 10px Orbitron; letter-spacing: .1em; color: var(--muted); }
-.meter { height: 10px; border: 1px solid var(--edge); margin: 10px 0 6px; } .meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--vio), var(--mag)); box-shadow: 0 0 14px var(--mag); transition: width .8s; }
-.need { border-left: 2px solid var(--mag); padding: 4px 8px; margin-bottom: 6px; background: rgba(255,61,187,.06); font-size: 13px; }
-.set { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 6px 0; color: var(--muted); font-size: 13px; }
-.set input, .set select { width: 120px; background: rgba(4,6,13,.8); color: var(--text); border: 1px solid var(--edge); padding: 4px 6px; font: 600 13px Rajdhani; }
-button { font: 700 11px Orbitron; letter-spacing: .14em; color: #04060d; background: linear-gradient(90deg, var(--cyan), #7af0ff); border: 0; padding: 9px 14px; cursor: pointer; box-shadow: 0 0 18px rgba(51,225,255,.45); clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
-button.ghost { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); box-shadow: none; }
-#labels { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
-.lab { position: absolute; transform: translate(-50%, -100%); text-align: center; pointer-events: auto; cursor: pointer; }
-.lab b { display: block; font: 700 12px Orbitron; letter-spacing: .14em; color: var(--c); text-shadow: 0 0 10px var(--c); }
-.lab span { font: 600 11px Rajdhani; color: #c6d4f5; background: rgba(4,6,13,.65); padding: 1px 6px; border: 1px solid rgba(255,255,255,.08); }
-.lab .say { display: block; max-width: 220px; margin-top: 4px; font: 600 12px Rajdhani; color: #fff; background: rgba(10,16,34,.85); border: 1px solid var(--c); padding: 4px 8px; box-shadow: 0 0 14px var(--c); animation: in .3s ease; }
-.core-lab { position: absolute; transform: translate(-50%, 0); font: 900 13px Orbitron; letter-spacing: .4em; color: var(--gold); text-shadow: 0 0 14px var(--gold); text-align: center; }
-.core-lab small { display: block; font: 600 10px Orbitron; letter-spacing: .2em; color: var(--muted); }
-.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: none; place-items: center; z-index: 9; }
+.dept { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: center; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+.dept:hover { background: rgba(255,255,255,.04); }
+.dept i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); box-shadow: 0 0 10px var(--c); }
+.dept b { display: block; font-weight: 700; } .dept small { color: var(--muted); font-size: 11.5px; }
+.pill { font: 700 10px Inter; padding: 3px 7px; border-radius: 20px; letter-spacing: .06em; }
+.pill.working { background: rgba(74,222,128,.15); color: var(--green); } .pill.idle { background: rgba(255,255,255,.06); color: var(--muted); }
+.pill.error { background: rgba(248,113,113,.15); color: var(--red); } .pill.paused { background: rgba(246,180,75,.15); color: var(--amber); }
+.orders { white-space: pre-wrap; font-size: 12.5px; }
+.report { border: 1px solid var(--edge); border-left: 3px solid var(--c); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; background: rgba(255,255,255,.02); cursor: pointer; }
+.report .h { display: flex; justify-content: space-between; align-items: center; }
+.report b { color: var(--c); font: 700 12px Inter; letter-spacing: .06em; text-transform: uppercase; }
+.report p { margin: 4px 0 0; font-size: 12.5px; color: #d8d2c6; }
+.report small { color: var(--muted); font: 500 11px "JetBrains Mono"; }
+.ev { font: 11.5px/1.45 "JetBrains Mono"; padding: 3px 0; color: #cfc8ba; white-space: pre-wrap; animation: in .3s ease; }
+.ev time { color: var(--muted); } .ev b { color: var(--c); font-weight: 700; }
+.ev.win { color: #bdf5cf; } .ev.error { color: #fecaca; } .ev.warn { color: #fde3b0; }
+@keyframes in { from { opacity: 0; transform: translateY(-4px); } }
+.bottom { position: fixed; left: 284px; right: 364px; bottom: 12px; display: flex; gap: 10px; z-index: 4; }
+.stat { flex: 1; background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; padding: 10px 12px; backdrop-filter: blur(12px); }
+.stat b { font: 800 22px Inter; display: block; } .stat span { color: var(--muted); font: 600 10.5px Inter; letter-spacing: .1em; text-transform: uppercase; }
+.stat .bar { height: 3px; border-radius: 3px; background: rgba(255,255,255,.08); margin-top: 7px; overflow: hidden; } .stat .bar i { display: block; height: 100%; background: var(--c); }
+#cards { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+.card { position: absolute; transform: translate(-50%, -100%); min-width: 150px; background: rgba(20,19,24,.9); border: 1px solid rgba(255,236,200,.16); border-radius: 10px; padding: 8px 10px; pointer-events: auto; cursor: pointer; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+.card::after { content: ""; position: absolute; left: 50%; bottom: -26px; width: 1px; height: 26px; background: linear-gradient(var(--c), transparent); }
+.card .t { display: flex; justify-content: space-between; gap: 10px; align-items: center; font: 700 10.5px Inter; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.card .n { font: 800 22px Inter; color: #fff; line-height: 1.1; } .card .n small { font: 600 11px Inter; color: var(--muted); margin-left: 4px; }
+.card .k { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; font-size: 11px; color: var(--muted); margin-top: 4px; } .card .k b { color: var(--text); font-weight: 600; text-align: right; }
+.card .say { margin-top: 6px; font-size: 11.5px; color: #fff; border-top: 1px solid var(--edge); padding-top: 5px; max-width: 220px; }
+.card.working { border-color: var(--c); box-shadow: 0 0 0 1px var(--c), 0 0 26px -4px var(--c); }
+.node { position: absolute; transform: translate(-50%, -50%); font: 700 10px "JetBrains Mono"; letter-spacing: .14em; color: var(--c); text-shadow: 0 0 8px var(--c); white-space: nowrap; text-transform: uppercase; pointer-events: none; }
+.node::before { content: ""; display: block; width: 14px; height: 14px; margin: 0 auto 3px; border: 2px solid var(--c); border-radius: 50%; box-shadow: 0 0 10px var(--c); }
+.node.on::before { background: var(--c); animation: blink .6s infinite; }
+.brainlab { position: absolute; transform: translate(-50%, 0); text-align: center; font: 700 11px "JetBrains Mono"; letter-spacing: .3em; color: #ffe3a3; text-shadow: 0 0 12px #f6b44b; pointer-events: none; }
+.brainlab small { display: block; color: var(--muted); letter-spacing: .14em; font-size: 10px; }
+.sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; place-items: center; z-index: 9; }
 .sheet.open { display: grid; }
-.card { width: min(560px, 92vw); max-height: 84vh; overflow: auto; background: rgba(10,16,34,.96); border: 1px solid var(--c); box-shadow: 0 0 40px -6px var(--c); padding: 20px; }
-.card h3 { margin: 0; font: 700 18px Orbitron; color: var(--c); letter-spacing: .12em; } .card p { color: var(--muted); }
-.row { display: flex; gap: 10px; margin: 12px 0; }
-@media (max-width: 1300px) { .hud { grid-template-columns: 290px 1fr 300px; } .bottom { grid-template-columns: 1fr 1fr; } .bottom > :last-child { display: none; } }
+.modal { width: min(560px, 92vw); max-height: 84vh; overflow: auto; background: #16151b; border: 1px solid var(--c); border-radius: 14px; padding: 20px; box-shadow: 0 0 50px -10px var(--c); }
+.modal h2 { margin: 0; color: var(--c); font: 800 18px Inter; } .modal p { color: var(--muted); }
+.row { display: flex; gap: 8px; margin: 12px 0; }
+button { font: 700 12px Inter; border-radius: 8px; padding: 8px 14px; border: 1px solid var(--edge); background: #24222b; color: var(--text); cursor: pointer; }
+button.go { background: var(--amber); color: #111; border-color: var(--amber); }
+.set { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 6px 0; color: var(--muted); font-size: 12px; }
+.set input { width: 110px; background: #121117; color: var(--text); border: 1px solid var(--edge); border-radius: 6px; padding: 4px 6px; font: inherit; }
 </style>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 </head>
 <body>
 <div id="scene"></div>
-<div id="labels"></div>
-<div class="hud">
-  <header>
-    <div class="h-left"><div class="sigil"></div><div><div class="title">LSX HQ</div><div class="sub">COMMAND BRIDGE · AGENCY OPS</div></div></div>
-    <div class="divs" id="divs"></div>
-    <div class="h-right"><div class="health" id="health"></div><div class="clock" id="clock">--:--</div></div>
-  </header>
-
-  <div class="col">
-    <section class="panel" style="--c:var(--gold)"><h2>TODAY'S ORDERS <i>ATLAS · CEO</i></h2><div class="pb orders" id="orders" style="max-height:230px">Atlas sets the orders at 07:55.</div></section>
-    <section class="panel grow"><h2>ACTIVE AGENTS <i id="activeN"></i></h2><div class="pb" id="agents"></div></section>
-  </div>
-  <div></div>
-  <div class="col">
-    <section class="panel"><h2>AI OVERVIEW <i>LIVE</i></h2><div class="pb"><div class="kpis" id="kpis"></div></div></section>
-    <section class="panel grow stream" style="--c:var(--mag)"><h2>AUTOMATION STREAM <i id="streamN"></i></h2><div class="pb" id="stream"></div></section>
-  </div>
-
-  <div class="bottom">
-    <section class="panel" style="--c:var(--green)"><h2>PIPELINE <i>KINETIC WEB DESIGNS</i></h2><div class="pb" style="height:120px"><div class="pipe" id="pipe"></div></div></section>
-    <section class="panel" style="--c:var(--vio)"><h2>VERA · OUTBOX <i>QUALITY CONTROL</i></h2><div class="pb"><div id="outbox"></div><div class="meter"><i id="meter" style="width:0"></i></div><div id="numbers" style="color:var(--muted);font-size:12.5px;max-height:52px;overflow:auto"></div></div></section>
-    <section class="panel" style="--c:var(--mag)"><h2>NEEDS YOU · ORDERS <i id="needN"></i></h2><div class="pb">
-      <div id="needs"></div>
-      <div class="set">Trade of the week <input id="trade"></div>
-      <div class="set">DM drafts / day <input id="perday" type="number" min="0" max="40"></div>
-      <button id="save" style="width:100%">TRANSMIT ORDERS</button>
-    </div></section>
-  </div>
+<div id="cards"></div>
+<div class="top">
+  <div class="brand">LSX <b>HQ</b></div>
+  <div class="crumb">AGENTS OFFICE · <span id="divname">Kinetic Web Designs</span></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="health" id="health"></div>
+  <div class="live">● LIVE</div>
+  <div class="clock" id="clock">--:--</div>
 </div>
-<div class="sheet" id="sheet"><div class="card" id="card"></div></div>
+<div class="side l">
+  <div class="panel"><h3>Departments <b id="deptN"></b></h3><div class="pb" id="depts"></div></div>
+  <div class="panel grow"><h3>Today's orders <b>Atlas · CEO</b></h3><div class="pb orders" id="orders"></div></div>
+  <div class="panel"><h3>Orders to the team</h3><div class="pb">
+    <div class="set">Trade of the week <input id="trade"></div>
+    <div class="set">DM drafts per day <input id="perday" type="number" min="0" max="40"></div>
+    <button class="go" id="save" style="width:100%;margin-top:4px">Send orders</button>
+  </div></div>
+</div>
+<div class="side r">
+  <div class="panel grow" style="flex:1.2"><h3>Agent reports <b id="repN"></b></h3><div class="pb" id="reports"></div></div>
+  <div class="panel grow"><h3>Events <b id="evN"></b></h3><div class="pb" id="events"></div></div>
+</div>
+<div class="bottom" id="stats"></div>
+<div class="sheet" id="sheet"><div class="modal" id="modal"></div></div>
 
 <script type="module">
 import * as THREE from "three";
@@ -121,185 +110,226 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-let agents = [], lastId = 0, colours = { hq: "#ffcf4a" }, names = { hq: "HQ" }, memories = 0, ready = false;
-const bubbles = {};
+let agents = [], lastId = 0, colours = { hq: "#f6b44b" }, names = { hq: "HQ" }, memories = 0, ready = false;
+const said = {};
 
-/* ------------------------------------------------------------------ the 3D office
-   A neural brain core in the middle (a glowing icosahedron inside a shell of linked particles), and one floating
-   glass platform per agent in a ring around it: each has desks, screens and low-poly people. A working platform
-   lights up, its people bob and type, and pulses of light run along its beam to the core. */
-const host = $("#scene");
+/* ============================================================ the office: an isometric diorama
+   Each department is a miniature office on its own raised floor: tiled carpet in its colour, glass walls,
+   rows of desks with monitors, chairs, people and plants. Roads of light join every department to the central
+   plaza, where the brain floats: thousands of memory particles in coloured clusters, with each agent as a node
+   on its orbit. */
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping; host.appendChild(renderer.domElement);
-const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x04060d, 0.018);
-const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 400);
-camera.position.set(0, 34, 52);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+$("#scene").appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0b0f);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const aspect = innerWidth / innerHeight, VIEW = 30;
+const camera = new THREE.OrthographicCamera(-VIEW * aspect, VIEW * aspect, VIEW, -VIEW, 1, 500);
+camera.position.set(60, 58, 60); camera.zoom = 1.05; camera.updateProjectionMatrix();
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 4); controls.enableDamping = true; controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
-controls.minDistance = 22; controls.maxDistance = 90; controls.maxPolarAngle = Math.PI * 0.46;
+controls.target.set(0, 0, 0); controls.enableDamping = true; controls.minZoom = .7; controls.maxZoom = 3.2;
+controls.minPolarAngle = .65; controls.maxPolarAngle = 1.1; controls.autoRotate = true; controls.autoRotateSpeed = .25;
 const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.05, 0.55, 0.12); composer.addPass(bloom);
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .55, .5, .78));
 
-scene.add(new THREE.AmbientLight(0x4466aa, 0.55));
-const key = new THREE.DirectionalLight(0x99bbff, 0.9); key.position.set(10, 30, 15); scene.add(key);
-const coreLight = new THREE.PointLight(0xffcf4a, 60, 40, 1.6); coreLight.position.set(0, 4, 0); scene.add(coreLight);
+scene.add(new THREE.HemisphereLight(0xfff1dc, 0x1a1520, .55));
+const sun = new THREE.DirectionalLight(0xffe2b8, 1.6); sun.position.set(30, 60, 20); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, far: 200 }); sun.shadow.bias = -.0005;
+scene.add(sun);
 
-// floor grid
-const grid = new THREE.GridHelper(220, 110, 0x163a5a, 0x0c1a2e); grid.position.y = -2.2; grid.material.transparent = true; grid.material.opacity = 0.55; scene.add(grid);
-const ringGeo = new THREE.RingGeometry(9.5, 9.7, 96); const ringMat = new THREE.MeshBasicMaterial({ color: 0x33e1ff, transparent: true, opacity: .35, side: THREE.DoubleSide });
-for (const r of [1, 1.9, 2.8]) { const ring = new THREE.Mesh(ringGeo, ringMat.clone()); ring.scale.setScalar(r); ring.rotation.x = -Math.PI / 2; ring.position.y = -2.1; ring.material.opacity = .25 / r; scene.add(ring); }
+// ground: dark slab with a fine grid and light roads
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({ color: 0x121117, roughness: .95 }));
+ground.rotation.x = -Math.PI / 2; ground.position.y = -.6; ground.receiveShadow = true; scene.add(ground);
+const g1 = new THREE.GridHelper(160, 80, 0x2a2733, 0x1b1922); g1.position.y = -.58; scene.add(g1);
+const plaza = new THREE.Mesh(new THREE.CylinderGeometry(9, 9.6, .5, 64), new THREE.MeshStandardMaterial({ color: 0x24212b, roughness: .6, metalness: .2 }));
+plaza.position.y = -.35; plaza.receiveShadow = true; scene.add(plaza);
+const plazaRing = new THREE.Mesh(new THREE.TorusGeometry(9.3, .08, 8, 96), new THREE.MeshBasicMaterial({ color: 0xf6b44b })); plazaRing.rotation.x = Math.PI / 2; plazaRing.position.y = -.08; scene.add(plazaRing);
 
-// the brain core
-const core = new THREE.Group(); scene.add(core); core.position.y = 4;
-const coreMat = new THREE.MeshStandardMaterial({ color: 0xffcf4a, emissive: 0xffa31a, emissiveIntensity: 2.2, roughness: .3, metalness: .2 });
-const coreMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(2.2, 2), coreMat); core.add(coreMesh);
-const wire = new THREE.Mesh(new THREE.IcosahedronGeometry(3.4, 1), new THREE.MeshBasicMaterial({ color: 0x33e1ff, wireframe: true, transparent: true, opacity: .35 })); core.add(wire);
-const N = 900, pts = new Float32Array(N * 3), seeds = [];
-for (let i = 0; i < N; i++) { const r = 4.6 + Math.random() * 3.6, t = Math.random() * Math.PI * 2, p = Math.acos(2 * Math.random() - 1);
-  pts.set([r * Math.sin(p) * Math.cos(t), r * Math.cos(p) * .8, r * Math.sin(p) * Math.sin(t)], i * 3); seeds.push(Math.random() * 6); }
-const cloudGeo = new THREE.BufferGeometry(); cloudGeo.setAttribute("position", new THREE.BufferAttribute(pts, 3));
-const cloud = new THREE.Points(cloudGeo, new THREE.PointsMaterial({ color: 0x9fdcff, size: .11, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false })); core.add(cloud);
-// neural links between nearby particles
-const linkPos = [];
-for (let i = 0; i < N; i += 3) for (let j = i + 3; j < Math.min(N, i + 60); j += 3) {
-  const dx = pts[i*3]-pts[j*3], dy = pts[i*3+1]-pts[j*3+1], dz = pts[i*3+2]-pts[j*3+2]; if (dx*dx+dy*dy+dz*dz < 2.2) linkPos.push(pts[i*3],pts[i*3+1],pts[i*3+2],pts[j*3],pts[j*3+1],pts[j*3+2]); }
-const linkGeo = new THREE.BufferGeometry(); linkGeo.setAttribute("position", new THREE.Float32BufferAttribute(linkPos, 3));
-core.add(new THREE.LineSegments(linkGeo, new THREE.LineBasicMaterial({ color: 0xff3dbb, transparent: true, opacity: .22, blending: THREE.AdditiveBlending })));
-
-// agent platforms
-const pods = {};
-const R = 17.5;
-function person(col) {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(.32, .7, 4, 10), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .25, roughness: .6 }));
-  body.position.y = .75; g.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(.28, 16, 12), new THREE.MeshStandardMaterial({ color: 0xf1d4b8, roughness: .7 })); head.position.y = 1.55; g.add(head);
-  g.userData.body = body; return g;
-}
-function makePod(a, i, n) {
-  const col = new THREE.Color(a.colour), ang = i / n * Math.PI * 2 - Math.PI / 2;
-  const g = new THREE.Group(); g.position.set(Math.cos(ang) * R, 0, Math.sin(ang) * R); g.lookAt(0, 0, 0); scene.add(g);
-  const base = new THREE.Mesh(new THREE.BoxGeometry(9, .5, 7), new THREE.MeshStandardMaterial({ color: 0x0b1428, metalness: .6, roughness: .25, transparent: true, opacity: .92 }));
-  g.add(base);
-  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(base.geometry), new THREE.LineBasicMaterial({ color: col })); g.add(edges);
-  const glow = new THREE.Mesh(new THREE.PlaneGeometry(9, 7), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .14, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
-  glow.rotation.x = -Math.PI / 2; glow.position.y = .27; g.add(glow);
-  // glass back wall
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(9, 3.2, .1), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .15, transparent: true, opacity: .16 }));
-  wall.position.set(0, 1.85, -3.45); g.add(wall);
-  const screens = [], people = [];
-  for (let k = 0; k < 3; k++) {
-    const x = -2.8 + k * 2.8;
-    const desk = new THREE.Mesh(new THREE.BoxGeometry(2.1, .12, 1), new THREE.MeshStandardMaterial({ color: 0x1b2742, metalness: .4, roughness: .4 })); desk.position.set(x, 1.1, -1.1); g.add(desk);
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(.12, .85, .7), desk.material); leg.position.set(x, .67, -1.1); g.add(leg);
-    const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.5, .85), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .5 }));
-    scr.position.set(x, 1.75, -1.5); g.add(scr); screens.push(scr);
-    const p = person(col); p.position.set(x, .25, -.1); p.rotation.y = Math.PI; g.add(p); people.push(p);
+// ---- the brain: memory clusters on a sphere, plus an orbit with the agent nodes
+const brain = new THREE.Group(); brain.position.y = 9; scene.add(brain);
+let brainPts;
+function buildBrain(cols) {
+  const N = 9000, pos = new Float32Array(N * 3), col = new Float32Array(N * 3), tmp = new THREE.Color();
+  const centres = cols.map((_, i) => new THREE.Vector3().setFromSphericalCoords(1, Math.acos(1 - 2 * (i + .5) / cols.length), i * 2.399));
+  for (let i = 0; i < N; i++) {
+    const k = i % (cols.length + 2), r = 6.2 * Math.cbrt(Math.random());
+    let p = new THREE.Vector3().randomDirection().multiplyScalar(r);
+    if (k < cols.length && Math.random() < .75) { p = centres[k].clone().multiplyScalar(4.4).add(new THREE.Vector3().randomDirection().multiplyScalar(Math.random() * 2.1)); tmp.set(cols[k]); }
+    else tmp.setHSL(.1 + Math.random() * .08, .5, .6 + Math.random() * .3);
+    pos.set([p.x, p.y, p.z], i * 3); col.set([tmp.r, tmp.g, tmp.b], i * 3);
   }
-  // beam to the core
-  const from = g.position.clone().setY(1.5), to = new THREE.Vector3(0, 4, 0);
-  const mid = from.clone().lerp(to, .5).add(new THREE.Vector3(0, 6, 0));
-  const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
-  const beam = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, .05, 6, false), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .2, blending: THREE.AdditiveBlending }));
-  scene.add(beam);
-  const pulses = Array.from({ length: 4 }, (_, k) => { const m = new THREE.Mesh(new THREE.SphereGeometry(.18, 10, 8), new THREE.MeshBasicMaterial({ color: col })); m.userData.t = k / 4; m.visible = false; scene.add(m); return m; });
-  const light = new THREE.PointLight(col, 0, 14, 1.8); light.position.set(0, 3, 0); g.add(light);
-  pods[a.key] = { g, glow, screens, people, beam, curve, pulses, light, wall, col, burst: 0 };
+  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  brainPts = new THREE.Points(geo, new THREE.PointsMaterial({ size: .12, vertexColors: true, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false }));
+  brain.add(brainPts);
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(6.8, 48, 32), new THREE.MeshBasicMaterial({ color: 0xf6b44b, wireframe: true, transparent: true, opacity: .05 })); brain.add(shell);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(1.6, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffd38a })); brain.add(glow);
+  for (const [r, tilt, op] of [[9.5, .25, .35], [10.4, -.18, .2]]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r, .03, 6, 160), new THREE.MeshBasicMaterial({ color: 0xf6b44b, transparent: true, opacity: op }));
+    ring.rotation.x = Math.PI / 2 + tilt; brain.add(ring);
+  }
+}
+const nodes = {};
+
+// ---- departments
+const depts = {};
+const box = (w, h, d, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.castShadow = true; m.receiveShadow = true; return m; };
+const M = {
+  desk: new THREE.MeshStandardMaterial({ color: 0xd9c7a8, roughness: .6 }),
+  deskDark: new THREE.MeshStandardMaterial({ color: 0x3a3440, roughness: .5 }),
+  chair: new THREE.MeshStandardMaterial({ color: 0x2b2830, roughness: .7 }),
+  skin: [0xf1c9a5, 0xc68642, 0x8d5524, 0xe0ac69, 0xffdbac].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: .8 })),
+  leaf: new THREE.MeshStandardMaterial({ color: 0x3f8f4a, roughness: .9 }), pot: new THREE.MeshStandardMaterial({ color: 0xe8e0d0, roughness: .8 }),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: .9, roughness: .05, thickness: .1, transparent: true, opacity: .25 }),
+  frame: new THREE.MeshStandardMaterial({ color: 0x1a1820, metalness: .7, roughness: .3 }),
+};
+function department(a, i, n) {
+  const col = new THREE.Color(a.colour), ang = i / n * Math.PI * 2 + Math.PI / 4, R = 26;
+  const g = new THREE.Group(); g.position.set(Math.cos(ang) * R, 0, Math.sin(ang) * R); g.rotation.y = -ang + Math.PI / 2; scene.add(g);
+  const W = 13, D = 10;
+  const base = box(W + .8, .8, D + .8, new THREE.MeshStandardMaterial({ color: 0x1c1a21, metalness: .4, roughness: .4 })); base.position.y = -.2; g.add(base);
+  const lip = new THREE.Mesh(new THREE.BoxGeometry(W + .9, .06, D + .9), new THREE.MeshBasicMaterial({ color: col })); lip.position.y = .21; g.add(lip);
+  // carpet tiles in the department colour
+  const tileMat = new THREE.MeshStandardMaterial({ color: col.clone().lerp(new THREE.Color(0x2a2730), .62), roughness: .9 });
+  const tileMat2 = new THREE.MeshStandardMaterial({ color: col.clone().lerp(new THREE.Color(0x2a2730), .7), roughness: .9 });
+  for (let x = 0; x < W; x += 1) for (let z = 0; z < D; z += 1) { const t = new THREE.Mesh(new THREE.BoxGeometry(.98, .06, .98), (x + z) % 2 ? tileMat : tileMat2);
+    t.position.set(x - W / 2 + .5, .26, z - D / 2 + .5); t.receiveShadow = true; g.add(t); }
+  // glass walls on two sides
+  for (const [w, d, x, z] of [[W, .08, 0, -D / 2], [.08, D, -W / 2, 0]]) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, d), M.glass); wall.position.set(x, 1.4, z); g.add(wall);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(w + .05, .08, d + .05), M.frame); top.position.set(x, 2.5, z); g.add(top);
+  }
+  // desks in two rows of four: desk, monitor, chair, person
+  const screens = [], people = [];
+  for (let row = 0; row < 2; row++) for (let k = 0; k < 4; k++) {
+    const x = -4.5 + k * 3, z = -2.4 + row * 4.4;
+    const top = box(2.2, .1, 1.1, k % 2 ? M.desk : M.deskDark); top.position.set(x, 1.05, z); g.add(top);
+    for (const lx of [-.95, .95]) { const leg = box(.08, .75, .9, M.frame); leg.position.set(x + lx, .65, z); g.add(leg); }
+    const scr = new THREE.Mesh(new THREE.BoxGeometry(.95, .58, .05), new THREE.MeshStandardMaterial({ color: 0x0b0b0f, emissive: col, emissiveIntensity: .35 }));
+    scr.position.set(x - .35, 1.48, z - .38); g.add(scr); screens.push(scr);
+    const scr2 = scr.clone(); scr2.material = scr.material; scr2.position.x = x + .55; scr2.rotation.y = -.25; g.add(scr2);
+    const kb = box(.6, .03, .2, M.chair); kb.position.set(x, 1.12, z + .1); g.add(kb);
+    const chair = box(.6, .1, .6, M.chair); chair.position.set(x, .7, z + .85); g.add(chair);
+    const back = box(.6, .7, .08, M.chair); back.position.set(x, 1.05, z + 1.12); g.add(back);
+    const p = new THREE.Group();
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(.24, .45, 4, 10), new THREE.MeshStandardMaterial({ color: col.clone().lerp(new THREE.Color(0xffffff), .25), roughness: .7 }));
+    torso.position.y = 1.15; torso.castShadow = true; p.add(torso);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(.2, 16, 12), M.skin[(i + k + row) % M.skin.length]); head.position.y = 1.68; head.castShadow = true; p.add(head);
+    p.position.set(x, 0, z + .78); g.add(p); people.push(p);
+  }
+  // plants in the corners and a meeting table
+  for (const [x, z] of [[W / 2 - .8, D / 2 - .8], [-W / 2 + .9, D / 2 - .8], [W / 2 - .8, -D / 2 + .9]]) {
+    const pot = box(.5, .45, .5, M.pot); pot.position.set(x, .5, z); g.add(pot);
+    const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(.55, 0), M.leaf); leaf.position.set(x, 1.15, z); leaf.castShadow = true; g.add(leaf);
+  }
+  const light = new THREE.PointLight(col, 0, 18, 2); light.position.set(0, 4, 0); g.add(light);
+  // a road of light from the department to the plaza
+  const from = new THREE.Vector3(Math.cos(ang) * (R - 7.5), -.25, Math.sin(ang) * (R - 7.5)), to = new THREE.Vector3(Math.cos(ang) * 9.6, -.25, Math.sin(ang) * 9.6);
+  const road = new THREE.Mesh(new THREE.BoxGeometry(from.distanceTo(to), .05, 1.2), new THREE.MeshStandardMaterial({ color: 0x1a1820, roughness: .6 }));
+  road.position.copy(from).lerp(to, .5); road.rotation.y = -ang; road.receiveShadow = true; scene.add(road);
+  const lane = new THREE.Mesh(new THREE.BoxGeometry(from.distanceTo(to), .06, .08), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .55 }));
+  lane.position.copy(road.position); lane.position.y = -.21; lane.rotation.y = -ang; scene.add(lane);
+  const runners = Array.from({ length: 3 }, (_, k) => { const m = new THREE.Mesh(new THREE.SphereGeometry(.22, 10, 8), new THREE.MeshBasicMaterial({ color: col })); m.userData.t = k / 3; m.visible = false; scene.add(m); return m; });
+  // the agent's node on the brain's orbit
+  depts[a.key] = { g, screens, people, light, lip, col, from, to, runners, ang, burst: 0 };
+  nodes[a.key] = new THREE.Vector3(Math.cos(ang) * 9.5, 9 + Math.sin(ang * 2) * 1.2, Math.sin(ang) * 9.5);
 }
 
 const v = new THREE.Vector3();
-function labels() {
+function project(p) { v.copy(p).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }
+function overlay() {
   let html = "";
-  const cpos = new THREE.Vector3(0, 9.5, 0).project(camera);
-  html += `<div class="core-lab" style="left:${(cpos.x + 1) / 2 * innerWidth}px;top:${(1 - cpos.y) / 2 * innerHeight}px">THE BRAIN<small>${memories} MEMORIES · NEURAL CORE</small></div>`;
-  agents.forEach(a => { const p = pods[a.key]; if (!p) return;
-    v.copy(p.g.position).setY(4.2).project(camera); if (v.z > 1) return;
-    const x = (v.x + 1) / 2 * innerWidth, y = (1 - v.y) / 2 * innerHeight, b = bubbles[a.key];
-    const say = a.status === "working" ? `${a.emoji} working: ${a.job.split(".")[0].toLowerCase()}` : (b && b.until > Date.now() ? b.text : "");
-    html += `<div class="lab" data-k="${a.key}" style="--c:${a.colour};left:${x}px;top:${y}px"><b>${a.emoji} ${esc(a.name.toUpperCase())}</b><span>${esc(a.title)}</span>${say ? `<div class="say">${esc(say)}</div>` : ""}</div>`;
+  const [bx, by] = project(new THREE.Vector3(0, 19, 0));
+  html += `<div class="brainlab" style="left:${bx}px;top:${by}px">SECOND BRAIN<small>${memories} MEMORIES · ${agents.length} AGENTS LINKED</small></div>`;
+  agents.forEach(a => { const d = depts[a.key]; if (!d) return;
+    const [nx, ny] = project(nodes[a.key]);
+    html += `<div class="node ${a.status === "working" ? "on" : ""}" style="--c:${a.colour};left:${nx}px;top:${ny}px">${esc(a.name)}</div>`;
+    const [cx, cy] = project(d.g.position.clone().setY(6));
+    const s = said[a.key], live = a.status === "working";
+    const say = live ? `Working: ${a.job.split(".")[0].toLowerCase()}…` : (s && s.until > Date.now() ? s.text : "");
+    html += `<div class="card ${live ? "working" : ""}" data-k="${a.key}" style="--c:${a.colour};left:${cx}px;top:${cy}px">
+      <div class="t"><span style="color:${a.colour}">${a.emoji} ${esc(a.title)}</span><span class="pill ${a.status}">${a.status === "working" ? "LIVE" : a.status.toUpperCase()}</span></div>
+      <div class="n">${a.wins_today}<small>done today</small></div>
+      <div class="k"><span>${esc(a.name)}</span><b>${a.runs_today} runs</b><span>Next</span><b>${esc(a.next)}</b></div>
+      ${say ? `<div class="say">${esc(say)}</div>` : ""}</div>`;
   });
-  $("#labels").innerHTML = html;
-  $("#labels").querySelectorAll(".lab").forEach(el => el.onclick = () => openAgent(el.dataset.k));
+  $("#cards").innerHTML = html;
+  $("#cards").querySelectorAll(".card").forEach(el => el.onclick = () => openAgent(el.dataset.k));
 }
 
-const clock = new THREE.Clock(); let lastLab = 0;
+const clock = new THREE.Clock(); let lastO = 0;
 function animate() {
   const t = clock.getElapsedTime(), busy = agents.some(a => a.status === "working");
-  coreMesh.rotation.y = t * .25; coreMesh.rotation.x = t * .13; wire.rotation.y = -t * .18; cloud.rotation.y = t * .05;
-  const pulse = 1 + Math.sin(t * (busy ? 6 : 2)) * .06; coreMesh.scale.setScalar(pulse);
-  coreMat.emissiveIntensity = (busy ? 3 : 2) + Math.sin(t * 3) * .4; coreLight.intensity = busy ? 90 : 55;
-  agents.forEach(a => { const p = pods[a.key]; if (!p) return;
+  brain.rotation.y = t * .07; if (brainPts) brainPts.material.size = .12 + (busy ? Math.sin(t * 4) * .02 : 0);
+  brain.position.y = 9 + Math.sin(t * .7) * .3;
+  agents.forEach(a => { const d = depts[a.key]; if (!d) return;
     const on = a.status === "working", err = a.status === "error";
-    p.burst = Math.max(0, p.burst - .012);
-    p.glow.material.opacity = (on ? .32 + Math.sin(t * 5) * .1 : .1) + p.burst * .5;
-    p.light.intensity = on ? 30 + Math.sin(t * 6) * 8 : p.burst * 40;
-    p.wall.material.emissiveIntensity = on ? .6 : .15;
-    p.beam.material.opacity = on ? .7 : .14 + p.burst * .6;
-    p.screens.forEach((s, k) => { s.material.opacity = on ? .7 + Math.sin(t * 9 + k) * .25 : err ? .25 : .35; s.material.color.set(err ? 0xff4d6d : p.col); });
-    p.people.forEach((pp, k) => { pp.position.y = .25 + (on ? Math.abs(Math.sin(t * 7 + k)) * .08 : Math.sin(t * 1.2 + k) * .02);
-      pp.rotation.y = Math.PI + (on ? 0 : Math.sin(t * .4 + k * 2) * .6); });
-    p.pulses.forEach(m => { m.visible = on || p.burst > 0; if (!m.visible) return; m.userData.t = (m.userData.t + (on ? .008 : .015)) % 1; m.position.copy(p.curve.getPoint(m.userData.t)); });
-    p.g.position.y = Math.sin(t * .8 + a.key.length) * .25;
+    d.burst = Math.max(0, d.burst - .01);
+    d.screens.forEach((s, k) => { s.material.emissiveIntensity = on ? 1.1 + Math.sin(t * 8 + k) * .4 : (err ? .2 : .35) + d.burst; if (err) s.material.emissive.set(0xf87171); });
+    d.people.forEach((p, k) => { p.position.y = on ? Math.abs(Math.sin(t * 6 + k)) * .05 : 0; p.rotation.y = on ? 0 : Math.sin(t * .5 + k * 1.7) * .4; });
+    d.light.intensity = on ? 40 + Math.sin(t * 5) * 10 : d.burst * 50;
+    d.lip.material.color.copy(d.col).multiplyScalar(on ? 1.6 : 1);
+    d.runners.forEach(m => { m.visible = on || d.burst > 0; if (!m.visible) return; m.userData.t = (m.userData.t + .006) % 1;
+      const p = d.from.clone().lerp(d.to, m.userData.t); m.position.set(p.x, -.05 + Math.sin(m.userData.t * Math.PI) * .2, p.z); });
   });
   controls.update(); composer.render();
-  if (t - lastLab > .1) { labels(); lastLab = t; }
+  if (t - lastO > .08) { overlay(); lastO = t; }
   requestAnimationFrame(animate);
 }
-addEventListener("resize", () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); });
-renderer.domElement.addEventListener("pointerdown", () => { controls.autoRotate = false; clearTimeout(window._ar); window._ar = setTimeout(() => controls.autoRotate = true, 8000); });
+addEventListener("resize", () => { const a = innerWidth / innerHeight; Object.assign(camera, { left: -VIEW * a, right: VIEW * a }); camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); });
+renderer.domElement.addEventListener("pointerdown", () => { controls.autoRotate = false; clearTimeout(window._ar); window._ar = setTimeout(() => controls.autoRotate = true, 10000); });
 
-/* ------------------------------------------------------------------ data */
+/* ============================================================ data */
 function render(s) {
   $("#clock").textContent = s.time;
   const fresh = !agents.length;
   agents = s.agents; agents.forEach(a => { colours[a.key] = a.colour; names[a.key] = a.name; });
-  if (fresh) agents.forEach((a, i) => makePod(a, i, agents.length));
+  if (fresh) { buildBrain(agents.map(a => a.colour)); agents.forEach((a, i) => department(a, i, agents.length)); }
   const b = s.brain; memories = b.memories || 0;
-  $("#divs").innerHTML = (s.divisions || []).map(d => `<span class="chip">${esc(d.toUpperCase())}</span>`).join("") + `<span class="chip add">+ NEXT VENTURE</span>`;
-  $("#orders").textContent = b.priorities || "Atlas sets the orders at 07:55.";
-  $("#activeN").textContent = `${agents.filter(a => a.status === "working").length} WORKING / ${agents.length}`;
-  $("#agents").innerHTML = agents.map(a => `<div class="agent" data-k="${a.key}" style="--c:${a.colour}"><div class="em">${a.emoji}</div><div><b>${esc(a.name.toUpperCase())}</b><small>${esc(a.title)} · ${esc(a.last ? a.last.result : a.job)}</small></div><span class="st ${a.status}">${a.status === "working" ? "LIVE" : a.status.toUpperCase()}</span></div>`).join("");
-  $("#agents").querySelectorAll(".agent").forEach(el => el.onclick = () => openAgent(el.dataset.k));
+  $("#divname").textContent = (s.divisions || ["Kinetic Web Designs"])[0];
+  $("#tabs").innerHTML = (s.divisions || []).map(d => `<span class="tab on">${esc(d)}</span>`).join("") + `<span class="tab">+ Next venture</span>`;
+  $("#health").innerHTML = Object.entries(b.health || {}).map(([k, v]) => `<span><i class="led ${v ? "ok" : "bad"}"></i>${k.replace(/_/g, " ")}</span>`).join("");
+  $("#deptN").textContent = `${agents.filter(a => a.status === "working").length} working · ${agents.length}`;
+  $("#depts").innerHTML = agents.map(a => `<div class="dept" data-k="${a.key}" style="--c:${a.colour}"><i></i><div><b>${a.emoji} ${esc(a.name)}</b><small>${esc(a.title)}</small></div><span class="pill ${a.status}">${a.status === "working" ? "LIVE" : a.status.toUpperCase()}</span></div>`).join("");
+  $("#depts").querySelectorAll(".dept").forEach(el => el.onclick = () => openAgent(el.dataset.k));
+  $("#orders").textContent = b.priorities || "Atlas sets the day's orders at 07:55.";
+  $("#repN").textContent = agents.length;
+  $("#reports").innerHTML = agents.map(a => `<div class="report" data-k="${a.key}" style="--c:${a.colour}"><div class="h"><b>${a.emoji} ${esc(a.name)}</b><small>${a.last ? esc(a.last.when) : "—"} · next ${esc(a.next)}</small></div><p>${esc(a.last ? a.last.result : a.job)}</p></div>`).join("");
+  $("#reports").querySelectorAll(".report").forEach(el => el.onclick = () => openAgent(el.dataset.k));
   const pl = s.pipeline || {}, ig = b.instagram || {}, ob = s.outbox || { sent_today: 0, cap: 15 };
-  $("#kpis").innerHTML = [["LEADS", pl.leads ?? b.leads_total ?? 0, "--cyan"], ["EMAILED", ob.sent_today, "--vio"], ["IG ANSWERED", ig.replied ?? 0, "--mag"], ["REPLIES", (pl.replied || 0) + (pl.interested || 0), "--green"]]
-    .map(([k, n, c]) => `<div class="kpi" style="--c:var(${c})"><b>${esc(n)}</b><span>${k}</span></div>`).join("");
-  const stages = [["FOUND", pl.leads || 0, "#33e1ff"], ["DRAFTED", pl.drafted || 0, "#8b5cf6"], ["CONTACTED", pl.contacted || 0, "#ff3dbb"], ["REPLIED", (pl.replied || 0) + (pl.interested || 0), "#ffcf4a"], ["WON", (pl.won || 0) + (pl.live || 0), "#3dffa2"], ["OPTED OUT", pl["opted out"] || 0, "#64748b"]];
-  const max = Math.max(1, ...stages.map(x => x[1]));
-  $("#pipe").innerHTML = stages.map(([k, n, c]) => `<div class="stage" style="--c:${c}"><div class="bar" style="height:${Math.max(4, n / max * 64)}px"></div><b>${n}</b><span>${k}</span></div>`).join("");
-  $("#outbox").innerHTML = `<div style="display:flex;justify-content:space-between;font:700 13px Orbitron;letter-spacing:.1em"><span style="color:var(--vio)">🔍 VERA</span><span>${ob.sent_today} / ${ob.cap} SENT TODAY</span></div>`;
-  $("#meter").style.width = Math.min(100, ob.sent_today / Math.max(1, ob.cap) * 100) + "%";
-  $("#numbers").textContent = b.numbers || "";
-  const needs = b.needs_you || [];
-  $("#needN").textContent = needs.length ? `${needs.length} WAITING` : "";
-  $("#needs").innerHTML = needs.map(n => `<div class="need"><b>@${esc(n.who)}</b> ${esc(n.text)}</div>`).join("");
-  $("#health").innerHTML = Object.entries(b.health || {}).map(([k, v]) => `<span><i class="led ${v ? "ok" : "bad"}"></i>${k.replace(/_/g, " ").toUpperCase()}</span>`).join("");
+  const st = [["Leads found", pl.leads || 0, "#67e8f9", 1], ["Emails sent today", `${ob.sent_today}/${ob.cap}`, "#a78bfa", ob.sent_today / Math.max(1, ob.cap)],
+    ["Contacted", pl.contacted || 0, "#f472b6", Math.min(1, (pl.contacted || 0) / 50)], ["Replies", (pl.replied || 0) + (pl.interested || 0), "#f6b44b", Math.min(1, ((pl.replied || 0) + (pl.interested || 0)) / 10)],
+    ["Won", (pl.won || 0) + (pl.live || 0), "#4ade80", Math.min(1, ((pl.won || 0) + (pl.live || 0)) / 5)], ["Instagram answered", ig.replied ?? 0, "#e879f9", Math.min(1, (ig.replied || 0) / 20)]];
+  $("#stats").innerHTML = st.map(([k, n, c, f]) => `<div class="stat" style="--c:${c}"><b>${esc(n)}</b><span>${k}</span><div class="bar"><i style="width:${Math.max(3, f * 100)}%"></i></div></div>`).join("");
   if (fresh) { $("#trade").value = b.settings.trade; $("#perday").value = b.settings.drafts_per_day; }
 }
 function addEvents(list) {
-  const box = $("#stream");
+  const box = $("#events");
   list.forEach(e => {
     if (e.kind === "start") return;
-    if (ready && pods[e.agent] && (e.kind === "win" || e.kind === "done")) pods[e.agent].burst = 1;
-    if (ready && e.kind !== "done") bubbles[e.agent] = { text: e.text.length > 120 ? e.text.slice(0, 118) + "…" : e.text, until: Date.now() + 9000 };
-    const tm = new Date(e.ts * 1000).toTimeString().slice(0, 5);
-    box.insertAdjacentHTML("afterbegin", `<div class="ev ${e.kind}" style="--c:${colours[e.agent] || "#64748b"}"><time>${tm}</time><b>${esc((names[e.agent] || e.agent).toUpperCase())}</b> ${esc(e.text)}</div>`);
+    if (ready && depts[e.agent] && (e.kind === "win" || e.kind === "done")) depts[e.agent].burst = 1;
+    if (ready && e.kind !== "done") said[e.agent] = { text: e.text.length > 110 ? e.text.slice(0, 108) + "…" : e.text, until: Date.now() + 9000 };
+    const tm = new Date(e.ts * 1000).toTimeString().slice(0, 8);
+    box.insertAdjacentHTML("afterbegin", `<div class="ev ${e.kind}" style="--c:${colours[e.agent] || "#888"}"><time>${tm}</time> <b>${esc((names[e.agent] || e.agent).toUpperCase())}</b> → ${esc(e.text)}</div>`);
   });
   while (box.children.length > 150) box.lastChild.remove();
-  $("#streamN").textContent = `${box.children.length} EVENTS`;
+  $("#evN").textContent = box.children.length;
   if (list.length) lastId = list[list.length - 1].id;
   ready = true;
 }
 async function openAgent(key) {
   const a = agents.find(x => x.key === key), evs = await (await fetch(`/api/events?agent=${key}&limit=25`)).json();
-  const card = $("#card"); card.style.setProperty("--c", a.colour);
-  card.innerHTML = `<h3>${a.emoji} ${esc(a.name.toUpperCase())} · ${esc(a.title.toUpperCase())}</h3><p>${esc(a.division)} division · ${esc(a.job)}</p>
-    <div class="row"><button id="runnow">RUN NOW</button><button class="ghost" id="pause">${a.status === "paused" ? "RESUME" : "PAUSE"}</button><button class="ghost" id="close">CLOSE</button></div>
+  const m = $("#modal"); m.style.setProperty("--c", a.colour);
+  m.innerHTML = `<h2>${a.emoji} ${esc(a.name)} · ${esc(a.title)}</h2><p>${esc(a.division)} · ${esc(a.job)}</p>
+    <div class="row"><button class="go" id="runnow">Run now</button><button id="pause">${a.status === "paused" ? "Resume" : "Pause"}</button><button id="close">Close</button></div>
     <p>Last: ${a.last ? esc(a.last.when + " · " + a.last.result) : "not yet"} · Next: ${esc(a.next)}</p>
-    <div class="stream">${evs.reverse().filter(e => e.kind !== "start").map(e => `<div class="ev ${e.kind}" style="--c:${a.colour}"><time>${new Date(e.ts * 1000).toLocaleString("en-GB").slice(0, 17)}</time> ${esc(e.text)}</div>`).join("") || "<p>No work logged yet.</p>"}</div>`;
+    ${evs.reverse().filter(e => e.kind !== "start").map(e => `<div class="ev ${e.kind}" style="--c:${a.colour}"><time>${new Date(e.ts * 1000).toLocaleString("en-GB").slice(0, 17)}</time> ${esc(e.text)}</div>`).join("") || "<p>No work logged yet.</p>"}`;
   $("#sheet").classList.add("open");
   $("#runnow").onclick = async () => { await fetch(`/api/run/${key}`, { method: "POST" }); $("#sheet").classList.remove("open"); tick(); };
   $("#pause").onclick = async () => { await fetch(`/api/pause/${key}`, { method: "POST" }); $("#sheet").classList.remove("open"); tick(); };
@@ -308,9 +338,9 @@ async function openAgent(key) {
 $("#sheet").onclick = e => { if (e.target.id === "sheet") $("#sheet").classList.remove("open"); };
 $("#save").onclick = async () => {
   await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trade: $("#trade").value || "barbers", drafts_per_day: +$("#perday").value || 20 }) });
-  $("#save").textContent = "TRANSMITTED ✓"; setTimeout(() => $("#save").textContent = "TRANSMIT ORDERS", 1600);
+  $("#save").textContent = "Orders sent ✓"; setTimeout(() => $("#save").textContent = "Send orders", 1600);
 };
-async function tick() { try { render(await (await fetch("/api/state")).json()); } catch (e) {} }
+async function tick() { try { render(await (await fetch("/api/state")).json()); } catch (e) { console.error(e); } }
 async function feedTick() { try { addEvents(await (await fetch(`/api/events?after=${lastId}`)).json()); } catch (e) {} }
 await tick(); await feedTick(); animate();
 setInterval(tick, 3000); setInterval(feedTick, 2000);
