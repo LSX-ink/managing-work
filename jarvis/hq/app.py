@@ -147,7 +147,7 @@ async def state():
     return JSONResponse({
         "pipeline": pipeline, "cities": cities,
         "outbox": {"sent_today": BRAIN.count_today("warden", "win"), "cap": facts.get("settings.send_per_day", 15)},
-        "time": now.strftime("%H:%M"), "hour": now.hour, "agents": agents,
+        "time": now.strftime("%H:%M"), "hour": now.hour, "agents": agents, "view": int(BRAIN.get("settings.view", 1) or 1),
         "divisions": sorted({a.division for a in AGENTS.values()}),
         "brain": {
             "priorities": facts.get("ceo.priorities"), "numbers": facts.get("numbers.briefing"),
