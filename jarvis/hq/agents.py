@@ -13,6 +13,8 @@ import json
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from pathlib import Path
+from urllib.parse import quote_plus
 
 import httpx
 
@@ -207,19 +209,54 @@ async def closer(ctx: Ctx) -> str:
             notes.append(str(out)[:300])
         except Exception as e:
             b.log("closer", f"couldn't draft the follow-up for {row['name']}: {e}", "warn")
-    while made < per_run and done_today + made < daily:
-        try:
-            out = await sales.outreach(s, {"video": bool(b.get("settings.videos", False))})
-        except ValueError as e:
-            b.log("closer", f"stopped: {e}", "info")
-            break
-        text = getattr(out, "speak", None) or getattr(out, "text", None) or str(out)
-        if "already" in text.lower() and "messag" in text.lower():
-            break  # no fresh leads left: Scout needs to find more
-        made += 1
-        b.log("closer", f"first message drafted: {str(text)[:220]}", "win", {"type": "first"})
+    made = 0
+    if not b.get(f"closer.dms.{datetime.now().date()}"):  # one list a day, at Blade's first run
+        made = await dm_list(ctx, min(per_run, max(0, daily - done_today)))
     b.set("closer.last", datetime.now().isoformat(timespec="minutes"))
-    return f"{made} first messages and {len(notes)} follow-ups drafted"
+    return f"{made} Instagram DMs ready for you and {len(notes)} follow-ups drafted"
+
+
+DM_FOLDER = Path.home() / "OneDrive" / "Desktop" / "Instagram DMs"
+
+
+async def dm_list(ctx: Ctx, n: int) -> int:
+    """The owner's morning list (asked for 23 Oct 2026): the best UK sole-trader leads, which the law doesn't let us
+    cold-email, each with a free mock-up online and a ready-to-send DM. The owner sends them by hand on Instagram."""
+    import kinetic_outreach as tracker
+    import kinetic_world as world
+    from hq import outbox
+    s, b = ctx.settings, ctx.brain
+    leads = outbox.sole_traders(s, outbox.limited_companies(b))[:n]
+    if not leads:
+        return 0
+    items = []
+    for p in leads:
+        try:
+            link = await asyncio.to_thread(outbox.publish_mockup, s, p, False)
+            items.append((p, link, outbox.dm_text(s, p, link)))
+        except Exception as e:
+            b.log("closer", f"couldn't make the mock-up for {p['name']}: {e}", "warn")
+    if not items:
+        return 0
+    await asyncio.to_thread(outbox.deploy_site)
+    today = datetime.now().date()
+    lines = [f"# Instagram DMs for {today.strftime('%A %d %B')}", "",
+             "Busy UK barbers and salons we can't email (sole traders). Find each one on Instagram, send the message, "
+             "then tell Alfred \"sent to <name>\" so the follow-ups are tracked.", ""]
+    for i, (p, link, text) in enumerate(items, 1):
+        ig = f"https://instagram.com/{p['instagram'].lstrip('@')}" if p.get("instagram") else \
+            "https://www.google.com/search?q=" + quote_plus(f"{p['name']} {p.get('town', '')} instagram")
+        lines += [f"## {i}. {p['name']} ({p.get('town', '')})",
+                  f"{p.get('rating')}★ from {p.get('reviews')} Google reviews · {'website: ' + p['website'] if p.get('website') else 'no website'}",
+                  f"Instagram: {ig}", f"Mock-up: {link}", "", "```", text, "```", ""]
+        await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=True)
+        b.log("closer", f"DM ready for {p['name']} ({p.get('town', '')}): mock-up {link}", "win", {"lead": p["name"], "type": "dm"})
+    DM_FOLDER.mkdir(parents=True, exist_ok=True)
+    file = DM_FOLDER / f"Instagram DMs {today.isoformat()}.md"
+    file.write_text("\n".join(lines), encoding="utf-8")
+    b.set(f"closer.dms.{today}", str(file))
+    b.set("closer.dms.latest", "\n".join(lines))
+    return len(items)
 
 
 async def studio(ctx: Ctx) -> str:
@@ -282,7 +319,8 @@ async def warden(ctx: Ctx) -> str:
         if made:
             return await _vet_and_send(ctx, None, row["name"], row["email"], *made, link, first=False)
     looked = 0
-    for p in outbox.candidates(s):  # 2. a first email to the best fresh lead we can email
+    await outbox.check_companies(ctx)  # UK leads that are limited companies can be emailed too (PECR)
+    for p in outbox.candidates(s, outbox.limited_companies(b)):  # 2. a first email to the best fresh lead we can email
         if b.get(f"skip.{p['id']}"):
             continue
         looked += 1
@@ -347,7 +385,7 @@ def roster() -> list[Agent]:
               times=("07:55",), run=ceo),
         Agent("scout", "Hawk", "Lead Hunter", "🦅", "#4cc9f0", "Finds fresh businesses with weak or no websites, UK and worldwide.",
               times=("08:30", "11:30", "14:30", "17:30"), run=scout),
-        Agent("closer", "Blade", "Closer", "🗡️", "#f72585", "Drafts first messages with mock-ups and the follow-ups due. Drafts only.",
+        Agent("closer", "Blade", "Closer", "🗡️", "#f72585", "Each morning: your Instagram DM list (UK sole traders) with mock-ups, plus follow-ups due. Drafts only.",
               times=("09:05", "13:05"), run=closer),
         Agent("concierge", "Echo", "Concierge", "💬", "#b5179e", "Watches Instagram DMs and comments Alfred answers; flags what needs you.",
               every=2, run=concierge),

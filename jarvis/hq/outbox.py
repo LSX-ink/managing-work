@@ -92,24 +92,109 @@ def busy_score(p: dict) -> float:
     return score
 
 
-def candidates(settings) -> list[dict]:
+def _fresh_busy(settings) -> list[dict]:
+    """Busy leads we haven't messaged yet, best first."""
+    by_name = {r["name"].lower(): r for r in st.rows_of(settings, st.OUTREACH)}
+    out = [p for p in st.rows_of(settings, st.PROSPECTS)
+           if not closed_or_busy(by_name.get(p["name"].lower())) and busy_score(p) > 0
+           and (by_name.get(p["name"].lower()) or {}).get("draft_channel") != "dm"]  # on the owner's DM list already
+    return sorted(out, key=busy_score, reverse=True)
+
+
+def candidates(settings, ltd: set | None = None) -> list[dict]:
     """Fresh, busy, money-making leads with a website where a cold email is allowed: most likely to reply first.
-    Quiet businesses (few reviews, low rating) are left out entirely."""
-    rows = st.rows_of(settings, st.OUTREACH)
-    by_name = {r["name"].lower(): r for r in rows}
+    Quiet businesses (few reviews, low rating) are left out entirely. ltd: UK leads Companies House shows are
+    limited companies (PECR allows a cold email to them even when the name doesn't say Ltd)."""
     out = []
-    for p in st.rows_of(settings, st.PROSPECTS):
+    for p in _fresh_busy(settings):
         if not p.get("website") or kf.social_only(p):
             continue
-        if closed_or_busy(by_name.get(p["name"].lower())):
-            continue
         country = p.get("country") or world.HOME
-        if not world.cold_email_ok(country, p["name"]):
-            continue
-        if busy_score(p) <= 0:
+        if not (world.cold_email_ok(country, p["name"]) or (ltd and p["id"] in ltd)):
             continue
         out.append(p)
-    return sorted(out, key=busy_score, reverse=True)
+    return out
+
+
+def is_uk(p: dict) -> bool:
+    return world.rules_of(p.get("country") or world.HOME) == "uk"
+
+
+def sole_traders(settings, ltd: set) -> list[dict]:
+    """Busy UK leads we can't cold-email (sole traders and partnerships under PECR): the owner DMs these by hand."""
+    return [p for p in _fresh_busy(settings) if is_uk(p) and not world.cold_email_ok(p.get("country") or world.HOME,
+                                                                                       p["name"]) and p["id"] not in ltd]
+
+
+# ---- Companies House: is a UK lead a limited company? -------------------------------------------------
+
+CH = "https://find-and-update.company-information.service.gov.uk"
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Kinetic Web Designs lead check"}
+CH_ITEM = re.compile(r'<li class="type-company">.*?href="/company/(\w+)".*?>\s*(.*?)\s*</a>.*?'
+                     r'<p class="meta crumbtrail">(.*?)</p>\s*<p>(.*?)</p>', re.S)
+
+
+def _norm(name: str) -> str:
+    name = re.sub(r"\b(limited|ltd|the|uk)\b", " ", name.lower().replace("&", " and "))
+    return re.sub(r"[^a-z0-9]+", "", name)
+
+
+def _outcode(text: str) -> str:
+    m = re.search(r"\b([A-Z]{1,2}\d[A-Z\d]?)\s*\d[A-Z]{2}\b", text.upper())
+    return m.group(1) if m else ""
+
+
+def _base_name(p: dict) -> str:
+    """The trading name without a branch or town tag: "Ted's Grooming Room | Soho" -> "Ted's Grooming Room"."""
+    name = re.split(r"\s+[|\-–]\s+|\s*\|\s*", p["name"])[0]
+    town = str(p.get("town") or "").strip()
+    if town and name.lower().endswith(" " + town.lower()):
+        name = name[: -len(town) - 1]
+    return name.strip()
+
+
+async def companies_house(http, p: dict) -> str:
+    """The company number when Companies House lists an active limited company with this exact name in the same
+    town or postcode area; "" otherwise. Strict on purpose: when in doubt it counts as a sole trader (no email)."""
+    name = _base_name(p)
+    for attempt in range(3):  # the public search often answers 502 when busy
+        r = await http.get(f"{CH}/search", params={"q": name}, headers=UA, timeout=25)
+        if r.status_code != 502:
+            break
+        await asyncio.sleep(4 * (attempt + 1))
+    r.raise_for_status()
+    town, area = str(p.get("town") or "").lower(), _outcode(p.get("address") or "")
+    for number, title, meta, address in CH_ITEM.findall(r.text):
+        if "dissolved" in meta.lower() or _norm(title) != _norm(name) or not re.search(r"\b(limited|ltd)\b", title, re.I):
+            continue
+        if (town and town in address.lower()) or (area and _outcode(address) == area):
+            return number
+    return ""
+
+
+async def check_companies(ctx, limit: int = 8) -> int:
+    """Look up the next few busy UK leads with a website on Companies House (cached in the brain as ch.<id>)."""
+    b, done = ctx.brain, 0
+    for p in _fresh_busy(ctx.settings):
+        if done >= limit:
+            break
+        if not is_uk(p) or not p.get("website") or world.cold_email_ok(world.HOME, p["name"]) or \
+                b.get(f"ch.{p['id']}") is not None:
+            continue
+        try:
+            number = await companies_house(ctx.http, p)
+        except Exception:
+            break  # Companies House is busy or down: try again next run
+        b.set(f"ch.{p['id']}", number)
+        if number:
+            b.log("warden", f"{p['name']} is a limited company (Companies House {number}), so it can be emailed", "info")
+        done += 1
+        await asyncio.sleep(3)
+    return done
+
+
+def limited_companies(brain) -> set:
+    return {int(k[3:]) for k, v in brain.facts().items() if k.startswith("ch.") and v and k[3:].isdigit()}
 
 
 async def email_for(ctx, p: dict) -> str:
@@ -136,8 +221,9 @@ async def email_for(ctx, p: dict) -> str:
 
 # ---- the mock-up, online -------------------------------------------------------------------------
 
-def publish_mockup(settings, p: dict) -> str:
-    """Make the lead's mock-up and put it online at kineticwebdesigns.co.uk/m/<name>/ (hidden from Google)."""
+def publish_mockup(settings, p: dict, deploy: bool = True) -> str:
+    """Make the lead's mock-up and put it online at kineticwebdesigns.co.uk/m/<name>/ (hidden from Google).
+    deploy=False only writes it into the site, for a batch that deploys once at the end (deploy_site)."""
     sales.outreach_mockup(settings, {"client": p["id"]})
     html = (st.folder(settings, "Mockups", p["name"]) / "index.html").read_text(encoding="utf-8")
     if "noindex" not in html:
@@ -145,12 +231,26 @@ def publish_mockup(settings, p: dict) -> str:
     out = LIVE / "m" / slug(p["name"])
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(html, encoding="utf-8")
+    if deploy:
+        deploy_site()
+    return f"{SITE}/m/{slug(p['name'])}/"
+
+
+def deploy_site() -> None:
     r = subprocess.run(["npx.cmd", "--yes", "wrangler", "pages", "deploy", ".", "--cwd", str(LIVE), "--project-name",
                         "kinetic", "--branch", "main", "--commit-dirty=true"], capture_output=True, text=True,
                        timeout=300)
     if r.returncode != 0:
         raise RuntimeError("couldn't put the mock-up online: " + (r.stderr or r.stdout)[-200:])
-    return f"{SITE}/m/{slug(p['name'])}/"
+
+
+def dm_text(settings, p: dict, link: str) -> str:
+    """The Instagram DM the owner sends by hand: Alfred's short first message with the mock-up as a link."""
+    body = sales.outreach_draft(settings, {"client": p["id"]}, "dm")["body"]
+    body = re.sub(r" \([^()]*mock-up[^()]*\.html\)", "", body)
+    body = re.sub(r"\bgoogle\b", "Google", body)
+    return re.sub(r"(a free (?:home page|store makeover) mock-up)", rf"\1: {link}", body, count=1) \
+        if link not in body else body
 
 
 # ---- writing ----------------------------------------------------------------------------------------
