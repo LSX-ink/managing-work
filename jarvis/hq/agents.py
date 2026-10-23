@@ -249,6 +249,9 @@ async def dm_list(ctx: Ctx, n: int) -> int:
             link = await outbox.make_mockup(ctx, p)  # Iris builds and checks it
             if not link:
                 continue
+            if b.get(f"strong_site.{p['id']}"):  # their site is already good: not an easy win (owner, 23 Oct)
+                b.set(f"ig.none.{p['id']}", True)
+                continue
             items.append((p, handle, link, outbox.dm_text(s, p, link, b)))
             if handle:
                 b.set(f"ig.dm.{handle.lower()}", p["name"])
@@ -386,6 +389,9 @@ async def warden(ctx: Ctx) -> str:
         link = await outbox.make_mockup(ctx, p)  # Iris builds and checks it
         if not link:
             b.set(f"skip.{p['id']}", "the mock-up didn't pass Iris's checks")
+            continue
+        if b.get(f"strong_site.{p['id']}"):
+            b.set(f"skip.{p['id']}", "their website is already strong: not an easy win")
             continue
         await asyncio.to_thread(outbox.deploy_site)
         b.set(f"mockup.{p['name'].lower()}", link)
