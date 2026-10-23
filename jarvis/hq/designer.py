@@ -121,7 +121,7 @@ async def enrich(ctx, p: dict, folder: Path) -> dict:
         except Exception:
             pass
     brand = b.get(f"brand.{p['id']}")
-    if brand is None:  # their own look: colours from their site (or their shop photo), fonts and logo from the site
+    if brand is None or (p.get("website") and "nav" not in brand):  # v6 reads their layout too: redo older brands  # their own look: colours from their site (or their shop photo), fonts and logo from the site
         brand = {}
         has_site = p.get("website") and not kf.social_only(p)
         if has_site:
@@ -139,6 +139,32 @@ async def enrich(ctx, p: dict, folder: Path) -> dict:
                         else:
                             accent = tuple(int(mockup.TRADES[mockup.trade_for(p)][0][2][i:i + 2], 16) for i in (1, 3, 5))
                     brand.update(finish_palette(c["bg"], accent))
+                    # their layout: headline, menu, hero picture and fonts, so it reads as their site, upgraded
+                    h1 = re.sub(r"\s+", " ", c.get("h1") or "").strip()
+                    section_words = r"\b(about|gallery|contact|why us|our team|services|welcome|home|menu|book now)\b"
+                    if 8 <= len(h1) <= 70 and len(h1.split()) >= 2 and not re.search(section_words, h1, re.I):
+                        brand["h1"] = h1
+                    seen, nav = set(), []
+                    for n in c.get("nav") or []:
+                        if n.lower() in seen or re.search(r"\b(home|menu|close|skip|cart|basket|shop|log ?in|account|view)\b", n, re.I):
+                            continue
+                        seen.add(n.lower())
+                        nav.append(n.title() if n.isupper() else n)
+                    brand["nav"] = nav[:5]
+                    if c.get("fonts") and not brand.get("fonts"):
+                        brand["fonts"] = c["fonts"][:2]
+                    if c.get("hero"):
+                        try:
+                            from urllib.parse import urljoin
+                            got = await http.get(urljoin(p["website"], c["hero"]), timeout=25,
+                                                 headers={"User-Agent": "Mozilla/5.0"})
+                            if got.status_code == 200 and got.headers.get("content-type", "").startswith("image/") \
+                                    and len(got.content) > 15_000:
+                                (folder / "hero.jpg").write_bytes(got.content)
+                                slim(folder / "hero.jpg", 1600)
+                                brand["hero"] = "hero.jpg"
+                        except Exception:
+                            pass
             except Exception:
                 pass
         source = folder / photos[0] if photos else None
@@ -233,7 +259,22 @@ COLOURS_JS = """() => {
     if (el.matches('h1, h2, h3, .logo, [class*=logo]')) add(accents, rgb(st.color), 3);
     if (parseFloat(st.borderTopWidth) > 1) add(accents, rgb(st.borderTopColor), 1);
   });
-  return {area, accents, body: rgb(getComputedStyle(document.body).backgroundColor)};
+  // their layout cues (owner, 23 Oct 2026: "closer to their current but better")
+  const fam = el => el ? getComputedStyle(el).fontFamily.split(',')[0].replace(/["']/g, '').trim() : '';
+  const h1 = document.querySelector('h1');
+  const navs = [...document.querySelectorAll('header a, nav a')].map(a => a.innerText.trim())
+    .filter(t => t && t.length < 22 && !/^(\\+|0\\d|http)/.test(t));
+  let hero = '', best = 0;
+  [...document.querySelectorAll('img, header, section, div')].slice(0, 1500).forEach(el => {
+    const r = el.getBoundingClientRect(); if (r.top > 700 || r.width < 500 || r.height < 250) return;
+    let src = el.tagName === 'IMG' ? (el.currentSrc || el.src) : '';
+    if (!src) { const m = getComputedStyle(el).backgroundImage.match(/url\\(["']?([^"')]+)/); src = m ? m[1] : ''; }
+    if (src && !src.startsWith('data:') && !/\\.svg/i.test(src) && r.width * r.height > best) { best = r.width * r.height; hero = src; }
+  });
+  return {area, accents, body: rgb(getComputedStyle(document.body).backgroundColor),
+          h1: h1 ? h1.innerText.trim().replace(/\\s+/g, ' ') : '', nav: [...new Set(navs)].slice(0, 6),
+          head_font: fam(h1 || document.querySelector('h2')), body_font: fam(document.body), hero,
+          dark_hero: (() => { const el = document.elementFromPoint(innerWidth / 2, 200); return el ? (rgb(getComputedStyle(el).color) || [0,0,0]).reduce((a, b) => a + b) > 500 : false })()};
 }"""
 
 
@@ -267,7 +308,10 @@ async def site_colours(url: str) -> dict:
     if not cands:
         return {}
     accent = max(cands)[1]
-    return {"bg": bg, "accent": accent}
+    generic = {"serif", "sans-serif", "system-ui", "-apple-system", "arial", "helvetica", "times new roman", "inherit", ""}
+    fonts = [f for f in (got.get("head_font"), got.get("body_font")) if f and f.lower() not in generic]
+    return {"bg": bg, "accent": accent, "h1": got.get("h1") or "", "nav": got.get("nav") or [], "hero": got.get("hero") or "",
+            "fonts": list(dict.fromkeys(fonts))}
 
 
 def _saturation(rgb) -> float:

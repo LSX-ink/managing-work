@@ -14,7 +14,7 @@ from urllib.parse import quote_plus
 
 # Raise this whenever the design gains something: Iris then rebuilds every mock-up already sent out, so what's added
 # to one is added to all (owner, 23 Oct 2026).
-VERSION = 5
+VERSION = 6
 
 TRADES = {  # trade: (palette (bg, ink, accent, soft), headline, intro, services [(name, line)], book word)
     "barber": (("#0e0d0c", "#f4efe6", "#c9a24d", "#1b1916"),
@@ -56,6 +56,10 @@ TRADES = {  # trade: (palette (bg, ink, accent, soft), headline, intro, services
                   ("Get in touch", "Call or message and we'll come straight back to you.")],
                  "Get in touch"),
 }
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(text).lower().replace("limited", "").replace("ltd", ""))
 
 
 def trade_for(p: dict) -> str:
@@ -121,7 +125,13 @@ def html_for(p: dict, maker: str = "Kinetic Web Designs", extra: dict | None = N
                + "".join(f'<figure class="reveal" style="--d:{i * 90}ms"><img src="{e(ph)}" alt="{e(name)}" loading="lazy"></figure>'
                          for i, ph in enumerate(photos))
                + "</div><p class='credit'>Photos from " + e(name) + "'s Google listing.</p></div></section>") if photos else ""
-    hero_img = (f'<div class="hero-photo load"><img src="{e(photos[0])}" alt="" fetchpriority="high"></div>') if photos else ""
+    hero_bg = brand.get("hero") or ""  # their own hero picture, full-bleed like their current site
+    hero_img = "" if hero_bg else (f'<div class="hero-photo load"><img src="{e(photos[0])}" alt="" fetchpriority="high"></div>') if photos else ""
+    theirs = brand.get("h1") or ""
+    if theirs and _norm(theirs) not in (_norm(name), _norm(p.get("name") or "")) and _norm(name) not in _norm(theirs):
+        headline = e(theirs)  # keep their own words, set bigger and better
+    links = "".join(f'<a href="{"#visit" if re.search(r"contact|find|locat|visit", l, re.I) else "#services"}">{e(l)}</a>'
+                    for l in brand.get("nav") or [] if not re.search(r"book|call", l, re.I))
     said = [r for r in x.get("reviews") or [] if r.get("text")][:3]
     quotes = ("<section class='quotes'><div class='wrap'><h2 class='reveal'>In their words.</h2><div class='grid'>"
               + "".join(f'<blockquote class="card reveal" style="--d:{i * 80}ms"><span class="stars">{"★" * int(r.get("rating") or 5)}</span>'
@@ -169,7 +179,7 @@ nav .wrap{{display:flex;justify-content:space-between;align-items:center;height:
 .btn{{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--on);padding:14px 26px;border-radius:999px;text-decoration:none;font-weight:600;
 transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;box-shadow:0 10px 30px -12px var(--accent)}}.btn:hover{{transform:translateY(-2px)}}
 nav .btn{{padding:10px 18px;font-size:.92rem}}
-.hero{{position:relative;min-height:calc(100svh - 68px);display:grid;align-items:center;padding:60px 0 90px;isolation:isolate;overflow:hidden}}.hero .wrap{{width:100%}}
+.hero{{position:relative;min-height:calc(100svh - 68px);display:grid;align-items:center;padding:60px 0 90px;isolation:isolate;overflow:hidden}}.hero .wrap{{width:100%}}.hero.full{{background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,.72)),var(--hero) center/cover;color:#fff}}.hero.full::before{{display:none}}.hero.full .lead{{opacity:.92}}.hero.full .rating{{border-color:rgba(255,255,255,.35)}}.hero.full h1 em,.hero.full .kicker,.hero.full .stars{{color:color-mix(in srgb,var(--accent) 30%,#fff)}}.hero.full .kicker{{text-shadow:0 1px 8px rgba(0,0,0,.6)}}.menu{{display:flex;gap:22px;margin-left:auto;margin-right:18px;font-size:.92rem}}.menu a{{text-decoration:none;opacity:.8}}.menu a:hover{{opacity:1}}@media (max-width:900px){{.menu{{display:none}}}}
 .hero::before{{content:"";position:absolute;inset:-20% -10% auto auto;width:70vmax;height:70vmax;border-radius:50%;z-index:-1;
 background:radial-gradient(circle,color-mix(in srgb,var(--accent) 34%,transparent),transparent 62%);animation:drift 14s ease-in-out infinite alternate}}
 @keyframes drift{{to{{transform:translate(-8vw,6vh) scale(1.08)}}}}
@@ -221,8 +231,8 @@ border-radius:50%;background:var(--accent);color:var(--bg);display:grid;place-it
 @media (max-width:760px){{#visit .wrap,.hero.has-photo .wrap,.row{{grid-template-columns:1fr}}.hero-photo{{aspect-ratio:4/3;transform:none}}.hours{{columns:1}}nav .btn{{display:none}}section{{padding:80px 0}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important;transition:none!important}}.load,.reveal{{opacity:1;transform:none}}}}
 </style></head><body>
-<nav><div class="wrap"><span class="logo">{(f'<img src="{e(logo)}" alt="{e(name)}" class="mark{" pill" if brand.get("logo_pill") else ""}">' if logo else f"{e(name)}<i>.</i>")}</span>{call}</div></nav>
-<header class="hero{' has-photo' if photos else ''}"><div class="wrap"><div>
+<nav><div class="wrap"><span class="logo">{(f'<img src="{e(logo)}" alt="{e(name)}" class="mark{" pill" if brand.get("logo_pill") else ""}">' if logo else f"{e(name)}<i>.</i>")}</span><span class="menu">{links}</span>{call}</div></nav>
+<header class="hero{' has-photo' if photos and not hero_bg else ''}{' full' if hero_bg else ''}"{f' style="--hero:url({e(hero_bg)})"' if hero_bg else ''}><div class="wrap"><div>
 <p class="kicker load">{e(name)}{where}</p>
 <h1 class="load">{headline}</h1>
 <p class="lead load">{e(intro)}</p>
