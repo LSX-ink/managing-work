@@ -230,36 +230,45 @@ async def dm_list(ctx: Ctx, n: int) -> int:
     import kinetic_world as world
     from hq import outbox
     s, b = ctx.settings, ctx.brain
-    leads = outbox.sole_traders(s, outbox.limited_companies(b))[:n]
-    if not leads:
-        return 0
     items = []
-    for p in leads:
+    for p in outbox.sole_traders(s, outbox.limited_companies(b)):
+        if len(items) >= n:
+            break
+        handle = p.get("instagram", "").lstrip("@") or await outbox.instagram_handle(ctx.http, p)
+        if handle and b.get(f"ig.dm.{handle.lower()}"):
+            await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=False)
+            continue  # another branch already got a DM on this account: one message per inbox
         try:
             link = await asyncio.to_thread(outbox.publish_mockup, s, p, False)
-            items.append((p, link, outbox.dm_text(s, p, link)))
+            items.append((p, handle, link, outbox.dm_text(s, p, link)))
+            if handle:
+                b.set(f"ig.dm.{handle.lower()}", p["name"])
         except Exception as e:
             b.log("closer", f"couldn't make the mock-up for {p['name']}: {e}", "warn")
     if not items:
         return 0
     await asyncio.to_thread(outbox.deploy_site)
     today = datetime.now().date()
-    lines = [f"# Instagram DMs for {today.strftime('%A %d %B')}", "",
-             "Busy barbers and salons we can't email (UK sole traders, and countries where a sales email needs consent). Find each one on Instagram, send the message, "
-             "then tell Alfred \"sent to <name>\" so the follow-ups are tracked.", ""]
-    for i, (p, link, text) in enumerate(items, 1):
-        ig = f"https://instagram.com/{p['instagram'].lstrip('@')}" if p.get("instagram") else \
-            "https://www.google.com/search?q=" + quote_plus(f"{p['name']} {p.get('town', '')} instagram")
-        lines += [f"## {i}. {p['name']} ({p.get('town', '')})",
-                  f"{p.get('rating')}â˜… from {p.get('reviews')} Google reviews Â· {'website: ' + p['website'] if p.get('website') else 'no website'}",
-                  f"Instagram: {ig}", f"Mock-up: {link}", "", "```", text, "```", ""]
-        await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=True)
-        b.log("closer", f"DM ready for {p['name']} ({p.get('town', '')}): mock-up {link}", "win", {"lead": p["name"], "type": "dm"})
-    DM_FOLDER.mkdir(parents=True, exist_ok=True)
     file = DM_FOLDER / f"Instagram DMs {today.isoformat()}.md"
-    file.write_text("\n".join(lines), encoding="utf-8")
+    old = file.read_text(encoding="utf-8") if file.exists() else ""
+    start = old.count("\n## ") + 1
+    lines = [] if old else [f"# Instagram DMs for {today.strftime('%A %d %B')}", "",
+                            "Busy barbers and salons we can't email (UK sole traders, and countries where a sales "
+                            "email needs consent). Search the @name on Instagram, paste the message, send, then tell "
+                            "Alfred \"sent to <name>\" so the follow-ups are tracked.", ""]
+    for i, (p, handle, link, text) in enumerate(items, start):
+        where = f"@{handle}" if handle else "not on their website: search \"" + p["name"] + "\" on Instagram"
+        lines += [f"## {i}. {p['name']} ({p.get('town', '')})", f"Instagram: {where}",
+                  f"{p.get('rating')}★ from {p.get('reviews')} Google reviews · "
+                  + (f"website: {p['website']}" if p.get("website") else "no website"),
+                  f"Mock-up: {link}", "", "```", text, "```", ""]
+        await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=True)
+        b.log("closer", f"DM ready for {p['name']} ({where}): mock-up {link}", "win", {"lead": p["name"], "type": "dm"})
+    DM_FOLDER.mkdir(parents=True, exist_ok=True)
+    text_all = (old.rstrip("\n") + "\n\n" if old else "") + "\n".join(lines)
+    file.write_text(text_all, encoding="utf-8")
     b.set(f"closer.dms.{today}", str(file))
-    b.set("closer.dms.latest", "\n".join(lines))
+    b.set("closer.dms.latest", text_all)
     return len(items)
 
 
@@ -287,7 +296,7 @@ async def ceo(ctx: Ctx) -> str:
         "trade_of_the_week": _trade(b),
     }
     prompt = ("You are the CEO agent of Kinetic Web Designs, a small UK web design agency selling websites "
-              "(Starter Â£395, Business Â£895, Online shop Â£1,595, Shopify redesign Â£595, setup Â£995) worldwide. "
+              "(Starter £395, Business £895, Online shop £1,595, Shopify redesign £595, setup £995) worldwide. "
               "Vera (quality control) checks and sends up to 15 cold emails a day; the owner sends 10 to 20 "
               "Instagram/WhatsApp DMs a day by hand and posts 2 videos a day at 6pm. "
               "From this snapshot of the business brain, write exactly 3 short, concrete priorities for today "
@@ -296,7 +305,7 @@ async def ceo(ctx: Ctx) -> str:
     try:
         plan = await ctx.ask_ai(prompt, 2000)
     except Exception as e:
-        plan = ("1. Send today's outreach drafts (10â€“20). 2. Post the 2 videos at 6pm. "
+        plan = ("1. Send today's outreach drafts (10–20). 2. Post the 2 videos at 6pm. "
                 "3. Answer anything on the Instagram 'needs you' list.") + f" (AI unavailable: {type(e).__name__})"
     b.set("ceo.priorities", plan)
     b.log("ceo", "Today's priorities:\n" + plan, "win")
@@ -385,21 +394,21 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
 
 def roster() -> list[Agent]:
     return [
-        Agent("ceo", "Atlas", "CEO", "ðŸ‘‘", "#f5c84c", "Reads the brain each morning and sets the day's 3 priorities.",
+        Agent("ceo", "Atlas", "CEO", "👑", "#f5c84c", "Reads the brain each morning and sets the day's 3 priorities.",
               times=("07:55",), run=ceo),
-        Agent("scout", "Hawk", "Lead Hunter", "ðŸ¦…", "#4cc9f0", "Finds fresh businesses with weak or no websites, UK and worldwide.",
+        Agent("scout", "Hawk", "Lead Hunter", "🦅", "#4cc9f0", "Finds fresh businesses with weak or no websites, UK and worldwide.",
               times=("08:30", "11:30", "14:30", "17:30"), run=scout),
-        Agent("closer", "Blade", "Closer", "ðŸ—¡ï¸", "#f72585", "Each morning: your Instagram DM list (UK sole traders) with mock-ups, plus follow-ups due. Drafts only.",
+        Agent("closer", "Blade", "Closer", "🗡️", "#f72585", "Each morning: your Instagram DM list (with @names and mock-ups), plus follow-ups due. Drafts only.",
               times=("09:05", "13:05"), run=closer),
-        Agent("concierge", "Echo", "Concierge", "ðŸ’¬", "#b5179e", "Watches Instagram DMs and comments Alfred answers; flags what needs you.",
+        Agent("concierge", "Echo", "Concierge", "💬", "#b5179e", "Watches Instagram DMs and comments Alfred answers; flags what needs you.",
               every=2, run=concierge),
-        Agent("analyst", "Ledger", "Analyst", "ðŸ“Š", "#4ade80", "Sign-ups, briefs, payments and the five weekly numbers.",
+        Agent("analyst", "Ledger", "Analyst", "📊", "#4ade80", "Sign-ups, briefs, payments and the five weekly numbers.",
               every=60, hours=(7, 23), run=analyst),
-        Agent("studio", "Reel", "Studio", "ðŸŽ¬", "#fb923c", "Today's posts, times and captions.",
+        Agent("studio", "Reel", "Studio", "🎬", "#fb923c", "Today's posts, times and captions.",
               times=("08:40", "17:40"), run=studio),
-        Agent("guardian", "Sentinel", "Guardian", "ðŸ›¡ï¸", "#94a3b8", "Keeps Alfred, the free AI, the website and every connection up.",
+        Agent("guardian", "Sentinel", "Guardian", "🛡️", "#94a3b8", "Keeps Alfred, the free AI, the website and every connection up.",
               every=5, run=guardian),
-        Agent("warden", "Vera", "Quality Control", "ðŸ”", "#a78bfa",
+        Agent("warden", "Vera", "Quality Control", "🔍", "#a78bfa",
               "Double-checks every email (house rules plus a strict AI editor) and sends the ones that pass, within safe daily limits.",
               every=15, hours=(9, 18), run=warden),
     ]

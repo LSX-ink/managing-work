@@ -245,6 +245,27 @@ def deploy_site() -> None:
         raise RuntimeError("couldn't put the mock-up online: " + (r.stderr or r.stdout)[-200:])
 
 
+IG_LINK = re.compile(r"instagram\.com/([A-Za-z0-9_.]{2,30})", re.I)
+IG_NOT_A_NAME = {"p", "reel", "reels", "explore", "accounts", "stories", "tv", "about", "developer", "legal",
+                 "sharer", "share", "invites", "direct", "web", "embed"}
+
+
+async def instagram_handle(http, p: dict) -> str:
+    """The business's Instagram name, read off the Instagram link on their website ("" when there isn't one)."""
+    site = p.get("website") or ""
+    if not site:
+        return ""
+    for url in (site, site.rstrip("/") + "/contact", site.rstrip("/") + "/contact-us"):
+        try:
+            r = await http.get(url, headers=UA, timeout=20)
+        except Exception:
+            continue
+        names = [h.rstrip(".") for h in IG_LINK.findall(r.text) if h.lower() not in IG_NOT_A_NAME]
+        if names:
+            return names[0]
+    return ""
+
+
 def dm_text(settings, p: dict, link: str) -> str:
     """The Instagram DM the owner sends by hand: Alfred's short first message with the mock-up as a link."""
     body = sales.outreach_draft(settings, {"client": p["id"]}, "dm")["body"]
