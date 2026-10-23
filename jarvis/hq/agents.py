@@ -23,8 +23,12 @@ from hq.brain import Brain
 
 UK_CITIES = ["Birmingham", "Manchester", "Leeds", "London", "Liverpool", "Bristol", "Sheffield", "Nottingham",
              "Leicester", "Croydon", "Glasgow", "Cardiff", "Newcastle", "Coventry", "Bradford", "Brighton"]
-WORLD_CITIES = ["Dublin, Ireland", "Houston, USA", "Atlanta, USA", "Toronto, Canada", "Lagos, Nigeria",
-                "Johannesburg, South Africa", "Nairobi, Kenya", "Sydney, Australia", "Dubai, UAE"]
+# The owner (23 Oct 2026): "we aren't limited to the UK". Half of Hawk's searches go abroad, to English-speaking
+# places; kinetic_world still decides per country whether Vera may email or it goes on the DM list.
+WORLD_CITIES = ["Dublin, Ireland", "New York, USA", "Sydney, Australia", "Lagos, Nigeria", "Houston, USA",
+                "Cork, Ireland", "Melbourne, Australia", "Atlanta, USA", "Johannesburg, South Africa", "Chicago, USA",
+                "Auckland, New Zealand", "Galway, Ireland", "Los Angeles, USA", "Accra, Ghana", "Brisbane, Australia",
+                "Dallas, USA", "Nairobi, Kenya", "Miami, USA", "Dubai, UAE", "Cape Town, South Africa"]
 
 
 @dataclass
@@ -177,7 +181,7 @@ async def scout(ctx: Ctx) -> str:
     import kinetic_store as st
     s, b = ctx.settings, ctx.brain
     turn = b.get("scout.turn", 0)
-    city =(WORLD_CITIES[(turn // 3) % len(WORLD_CITIES)] if turn % 3 == 2 else UK_CITIES[turn % len(UK_CITIES)])
+    city = WORLD_CITIES[(turn // 2) % len(WORLD_CITIES)] if turn % 2 else UK_CITIES[(turn // 2) % len(UK_CITIES)]
     b.set("scout.turn", turn + 1)
     before = len(st.rows_of(s, st.PROSPECTS))
     trade = _trade(b)
