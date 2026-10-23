@@ -289,7 +289,7 @@ async def warden(ctx: Ctx) -> str:
         to = await outbox.email_for(ctx, p)
         if not to:
             b.set(f"skip.{p['id']}", "no email address found")
-            if looked >= 6:
+            if looked >= 15:  # most small businesses list no email, so look further each run
                 break
             continue
         twin = outbox.already_emailed(s, to)
