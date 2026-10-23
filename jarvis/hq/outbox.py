@@ -121,9 +121,10 @@ def is_uk(p: dict) -> bool:
 
 
 def sole_traders(settings, ltd: set) -> list[dict]:
-    """Busy UK leads we can't cold-email (sole traders and partnerships under PECR): the owner DMs these by hand."""
-    return [p for p in _fresh_busy(settings) if is_uk(p) and not world.cold_email_ok(p.get("country") or world.HOME,
-                                                                                       p["name"]) and p["id"] not in ltd]
+    """Busy leads we can't cold-email (UK sole traders and partnerships under PECR, and countries where a sales
+    email needs consent first): the owner DMs these by hand."""
+    return [p for p in _fresh_busy(settings) if not world.cold_email_ok(p.get("country") or world.HOME, p["name"])
+            and p["id"] not in ltd]
 
 
 # ---- Companies House: is a UK lead a limited company? -------------------------------------------------

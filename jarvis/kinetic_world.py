@@ -68,7 +68,7 @@ ALIASES = {
 }
 # A currency with no rate above (e.g. SEK) shows prices in pounds only; add its rate to show it too.
 
-NO_COLD_EMAIL = {"DE", "AT", "CA", "CN", "KR", "JP", "VN"}  # outreach defaults to a DM here
+NO_COLD_EMAIL = {"DE", "AT", "CA", "CN", "KR", "JP", "VN", "ZA", "GH"}  # outreach defaults to a DM here (ZA, GH: consent first)
 EU_NOTE = ("EU rules (GDPR and the ePrivacy rules): use only the business contact details they publish, keep it "
            "relevant to their work, say who you are, include an opt-out and stop if they ask. In Germany and Austria "
            "cold email needs their consent first, so use the contact form on their website or a social media DM "

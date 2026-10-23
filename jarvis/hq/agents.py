@@ -1,4 +1,4 @@
-"""The LSX HQ agents (Kinetic Web Designs division). Each has one job, a schedule, and writes what it did to the shared brain.
+﻿"""The LSX HQ agents (Kinetic Web Designs division). Each has one job, a schedule, and writes what it did to the shared brain.
 
 They reuse Alfred's own Kinetic tools (lead finder, outreach drafts, follow-ups, briefing, content calendar,
 Instagram replies), so nothing new talks to the outside world. Hard rules, same as Alfred's:
@@ -245,13 +245,13 @@ async def dm_list(ctx: Ctx, n: int) -> int:
     await asyncio.to_thread(outbox.deploy_site)
     today = datetime.now().date()
     lines = [f"# Instagram DMs for {today.strftime('%A %d %B')}", "",
-             "Busy UK barbers and salons we can't email (sole traders). Find each one on Instagram, send the message, "
+             "Busy barbers and salons we can't email (UK sole traders, and countries where a sales email needs consent). Find each one on Instagram, send the message, "
              "then tell Alfred \"sent to <name>\" so the follow-ups are tracked.", ""]
     for i, (p, link, text) in enumerate(items, 1):
         ig = f"https://instagram.com/{p['instagram'].lstrip('@')}" if p.get("instagram") else \
             "https://www.google.com/search?q=" + quote_plus(f"{p['name']} {p.get('town', '')} instagram")
         lines += [f"## {i}. {p['name']} ({p.get('town', '')})",
-                  f"{p.get('rating')}★ from {p.get('reviews')} Google reviews · {'website: ' + p['website'] if p.get('website') else 'no website'}",
+                  f"{p.get('rating')}â˜… from {p.get('reviews')} Google reviews Â· {'website: ' + p['website'] if p.get('website') else 'no website'}",
                   f"Instagram: {ig}", f"Mock-up: {link}", "", "```", text, "```", ""]
         await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=True)
         b.log("closer", f"DM ready for {p['name']} ({p.get('town', '')}): mock-up {link}", "win", {"lead": p["name"], "type": "dm"})
@@ -287,7 +287,7 @@ async def ceo(ctx: Ctx) -> str:
         "trade_of_the_week": _trade(b),
     }
     prompt = ("You are the CEO agent of Kinetic Web Designs, a small UK web design agency selling websites "
-              "(Starter £395, Business £895, Online shop £1,595, Shopify redesign £595, setup £995) worldwide. "
+              "(Starter Â£395, Business Â£895, Online shop Â£1,595, Shopify redesign Â£595, setup Â£995) worldwide. "
               "Vera (quality control) checks and sends up to 15 cold emails a day; the owner sends 10 to 20 "
               "Instagram/WhatsApp DMs a day by hand and posts 2 videos a day at 6pm. "
               "From this snapshot of the business brain, write exactly 3 short, concrete priorities for today "
@@ -296,7 +296,7 @@ async def ceo(ctx: Ctx) -> str:
     try:
         plan = await ctx.ask_ai(prompt, 2000)
     except Exception as e:
-        plan = ("1. Send today's outreach drafts (10–20). 2. Post the 2 videos at 6pm. "
+        plan = ("1. Send today's outreach drafts (10â€“20). 2. Post the 2 videos at 6pm. "
                 "3. Answer anything on the Instagram 'needs you' list.") + f" (AI unavailable: {type(e).__name__})"
     b.set("ceo.priorities", plan)
     b.log("ceo", "Today's priorities:\n" + plan, "win")
@@ -385,21 +385,21 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
 
 def roster() -> list[Agent]:
     return [
-        Agent("ceo", "Atlas", "CEO", "👑", "#f5c84c", "Reads the brain each morning and sets the day's 3 priorities.",
+        Agent("ceo", "Atlas", "CEO", "ðŸ‘‘", "#f5c84c", "Reads the brain each morning and sets the day's 3 priorities.",
               times=("07:55",), run=ceo),
-        Agent("scout", "Hawk", "Lead Hunter", "🦅", "#4cc9f0", "Finds fresh businesses with weak or no websites, UK and worldwide.",
+        Agent("scout", "Hawk", "Lead Hunter", "ðŸ¦…", "#4cc9f0", "Finds fresh businesses with weak or no websites, UK and worldwide.",
               times=("08:30", "11:30", "14:30", "17:30"), run=scout),
-        Agent("closer", "Blade", "Closer", "🗡️", "#f72585", "Each morning: your Instagram DM list (UK sole traders) with mock-ups, plus follow-ups due. Drafts only.",
+        Agent("closer", "Blade", "Closer", "ðŸ—¡ï¸", "#f72585", "Each morning: your Instagram DM list (UK sole traders) with mock-ups, plus follow-ups due. Drafts only.",
               times=("09:05", "13:05"), run=closer),
-        Agent("concierge", "Echo", "Concierge", "💬", "#b5179e", "Watches Instagram DMs and comments Alfred answers; flags what needs you.",
+        Agent("concierge", "Echo", "Concierge", "ðŸ’¬", "#b5179e", "Watches Instagram DMs and comments Alfred answers; flags what needs you.",
               every=2, run=concierge),
-        Agent("analyst", "Ledger", "Analyst", "📊", "#4ade80", "Sign-ups, briefs, payments and the five weekly numbers.",
+        Agent("analyst", "Ledger", "Analyst", "ðŸ“Š", "#4ade80", "Sign-ups, briefs, payments and the five weekly numbers.",
               every=60, hours=(7, 23), run=analyst),
-        Agent("studio", "Reel", "Studio", "🎬", "#fb923c", "Today's posts, times and captions.",
+        Agent("studio", "Reel", "Studio", "ðŸŽ¬", "#fb923c", "Today's posts, times and captions.",
               times=("08:40", "17:40"), run=studio),
-        Agent("guardian", "Sentinel", "Guardian", "🛡️", "#94a3b8", "Keeps Alfred, the free AI, the website and every connection up.",
+        Agent("guardian", "Sentinel", "Guardian", "ðŸ›¡ï¸", "#94a3b8", "Keeps Alfred, the free AI, the website and every connection up.",
               every=5, run=guardian),
-        Agent("warden", "Vera", "Quality Control", "🔍", "#a78bfa",
+        Agent("warden", "Vera", "Quality Control", "ðŸ”", "#a78bfa",
               "Double-checks every email (house rules plus a strict AI editor) and sends the ones that pass, within safe daily limits.",
               every=15, hours=(9, 18), run=warden),
     ]
