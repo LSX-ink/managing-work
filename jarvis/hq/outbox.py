@@ -284,7 +284,7 @@ async def instagram_handle(http, p: dict) -> str:
 PLAIN = [  # our audit's short labels, said the way a shop owner would understand them
     (r"tap", "customers can't tap your number to ring you from their phone"),
     (r"google can't read|business details|structured", "Google can't read your business details, so you show up less in searches"),
-    (r"title|description|meta", "your site doesn't tell Google what you do, so you show up less in searches"),
+    (r"title|description|meta", "it doesn't tell Google what you do, so you show up less in searches"),
     (r"share preview|preview", "your link shows no preview picture when it's shared on WhatsApp or Instagram"),
     (r"slow|speed", "your site is slow to open on phones"),
     (r"secure|https", "browsers warn people your site isn't secure"),
@@ -318,6 +318,8 @@ def dm_text(settings, p: dict, link: str, brain=None) -> str:
         problem = f"on your website, {plain(found[0])}"
     if problem and not problem.endswith("."):
         problem += "."
+    if problem.startswith("Your "):
+        problem = "y" + problem[1:]
     if isinstance(speed, int) and speed < 50:
         problem = (problem + " " if problem else "") + f"Google also scores your site just {speed}/100 for speed on phones."
     gap = (f"One thing I spotted: {problem}" if problem else
