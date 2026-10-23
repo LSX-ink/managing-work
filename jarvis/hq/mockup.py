@@ -73,7 +73,9 @@ def clean_name(p: dict) -> str:
     return name or "Your business"
 
 
-def html_for(p: dict, maker: str = "Kinetic Web Designs") -> str:
+def html_for(p: dict, maker: str = "Kinetic Web Designs", extra: dict | None = None) -> str:
+    """extra (from hq/designer.py, all real): photos (paths next to the page), hours, reviews [{author, text,
+    rating}], fixes [(their site today, this design)] and fixes_title."""
     e = escape
     trade = trade_for(p)
     (bg, ink, accent, soft), headline, intro, services, book = TRADES[trade]
@@ -98,6 +100,27 @@ def html_for(p: dict, maker: str = "Kinetic Web Designs") -> str:
     visit = (f'<p>{e(address)}</p>' if address else f'<p>Right here{where}.</p>') + \
         (f'<p class="phone"><a href="tel:{e(tel)}">{e(phone)}</a></p>' if tel else "")
     marquee = " &middot; ".join(e(s) for s, _ in services) + " &middot; "
+    x = extra or {}
+    photos = [ph for ph in x.get("photos") or [] if ph][:4]
+    gallery = ("<section class='gallery'><div class='wrap'><h2 class='reveal'>Inside " + e(name) + ".</h2><div class='shots'>"
+               + "".join(f'<figure class="reveal" style="--d:{i * 90}ms"><img src="{e(ph)}" alt="{e(name)}" loading="lazy"></figure>'
+                         for i, ph in enumerate(photos))
+               + "</div><p class='credit'>Photos from " + e(name) + "'s Google listing.</p></div></section>") if photos else ""
+    hero_img = (f'<div class="hero-photo load"><img src="{e(photos[0])}" alt=""></div>') if photos else ""
+    said = [r for r in x.get("reviews") or [] if r.get("text")][:3]
+    quotes = ("<section class='quotes'><div class='wrap'><h2 class='reveal'>In their words.</h2><div class='grid'>"
+              + "".join(f'<blockquote class="card reveal" style="--d:{i * 80}ms"><span class="stars">{"★" * int(r.get("rating") or 5)}</span>'
+                        f'<p>&ldquo;{e(r["text"][:260].rstrip())}{"…" if len(r["text"]) > 260 else ""}&rdquo;</p>'
+                        f'<cite>{e(r.get("author") or "Google review")}</cite></blockquote>' for i, r in enumerate(said))
+              + "</div></div></section>") if said else ""
+    hours = x.get("hours") or []
+    hours_html = ("<ul class='hours'>" + "".join(f"<li>{e(h)}</li>" for h in hours[:7]) + "</ul>") if hours else ""
+    fixes = x.get("fixes") or []
+    fix_html = (f"<section class='fixes'><div class='wrap'><p class='kicker reveal'>A note for {e(name)} from {e(maker)}</p><h2 class='reveal'>"
+                + e(x.get("fixes_title") or "Built to win you more customers.") + "</h2><div class='rows'>"
+                + "".join(f'<div class="row reveal" style="--d:{i * 70}ms"><div><span>Today</span><p>{e(a)}</p></div>'
+                          f'<div><span>This design</span><p>{e(b)}</p></div></div>' for i, (a, b) in enumerate(fixes[:5]))
+                + "</div></div></section>") if fixes else ""
     return f"""<!DOCTYPE html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
@@ -107,7 +130,7 @@ def html_for(p: dict, maker: str = "Kinetic Web Designs") -> str:
 <style>
 :root{{--bg:{bg};--ink:{ink};--accent:{accent};--soft:{soft};--head:'Fraunces',Georgia,serif;--body:'Inter',system-ui,sans-serif}}
 *{{box-sizing:border-box;margin:0}}html{{scroll-behavior:smooth}}
-body{{background:var(--bg);color:var(--ink);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden}}
+body{{background:var(--bg);color:var(--ink);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden;overflow-wrap:break-word}}
 a{{color:inherit}}.wrap{{max-width:1120px;margin:0 auto;padding:0 22px}}
 nav{{position:sticky;top:0;z-index:5;backdrop-filter:blur(12px);background:color-mix(in srgb,var(--bg) 80%,transparent);border-bottom:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}}
 nav .wrap{{display:flex;justify-content:space-between;align-items:center;height:68px;gap:14px}}
@@ -127,7 +150,7 @@ h1 em{{font-style:italic;color:var(--accent)}}
 .rating{{display:inline-flex;gap:10px;align-items:center;margin-top:34px;padding:10px 16px;border-radius:999px;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);font-size:.95rem}}
 .stars{{color:var(--accent);letter-spacing:2px}}
 .load{{opacity:0;transform:translateY(24px);animation:up .9s cubic-bezier(.2,.8,.2,1) forwards}}
-.load:nth-child(2){{animation-delay:.12s}}.load:nth-child(3){{animation-delay:.24s}}.load:nth-child(4){{animation-delay:.36s}}.load:nth-child(5){{animation-delay:.48s}}
+.hero-photo.load{{animation-delay:.3s}}.load:nth-child(2){{animation-delay:.12s}}.load:nth-child(3){{animation-delay:.24s}}.load:nth-child(4){{animation-delay:.36s}}.load:nth-child(5){{animation-delay:.48s}}
 @keyframes up{{to{{opacity:1;transform:none}}}}
 .marquee{{border-block:1px solid color-mix(in srgb,var(--ink) 12%,transparent);overflow:hidden;white-space:nowrap;padding:18px 0;font-family:var(--head);font-size:1.5rem}}
 .marquee div{{display:inline-block;animation:slide 26s linear infinite}}@keyframes slide{{to{{transform:translateX(-50%)}}}}
@@ -141,21 +164,35 @@ section{{padding:110px 0}}h2{{font-family:var(--head);font-weight:500;font-size:
 #visit .wrap{{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:end}}#visit p{{font-size:1.15rem;opacity:.85}}.phone a{{font-family:var(--head);font-size:2rem;text-decoration:none}}
 footer{{padding:34px 0;font-size:.82rem;opacity:.55;border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}}
 .js .reveal{{opacity:0;transform:translateY(30px);transition:opacity .8s,transform .8s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0ms)}}.js .reveal.in{{opacity:1;transform:none}}
-@media (max-width:760px){{#visit .wrap{{grid-template-columns:1fr}}nav .btn{{display:none}}section{{padding:80px 0}}}}
+.hero.has-photo .wrap{{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}}
+.hero-photo{{border-radius:28px;overflow:hidden;aspect-ratio:4/5;box-shadow:0 40px 80px -30px rgba(0,0,0,.6);transform:rotate(1.5deg)}}
+.hero-photo img,.shots img{{width:100%;height:100%;object-fit:cover;display:block}}
+.shots{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}}.shots figure{{margin:0;border-radius:18px;overflow:hidden;aspect-ratio:1}}
+.credit{{font-size:.8rem;opacity:.55;margin-top:14px}}
+blockquote.card{{margin:0}}blockquote p{{font-size:1.05rem;margin:12px 0 16px;opacity:.9}}blockquote cite{{font-style:normal;font-weight:600;opacity:.7}}
+.hours{{list-style:none;padding:0;margin:18px 0 0;columns:2;gap:24px;font-size:.98rem;opacity:.85}}.hours li{{padding:3px 0;break-inside:avoid}}
+.fixes{{background:var(--soft)}}.rows{{display:grid;gap:14px}}
+.row{{display:grid;grid-template-columns:1fr 1fr;border-radius:20px;overflow:hidden;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}}
+.row>div{{padding:22px 24px}}.row>div:first-child{{opacity:.72}}.row>div:last-child{{background:color-mix(in srgb,var(--accent) 16%,var(--bg))}}
+.row span{{display:block;text-transform:uppercase;letter-spacing:.18em;font-size:.72rem;font-weight:600;color:var(--accent);margin-bottom:6px}}
+@media (max-width:760px){{#visit .wrap,.hero.has-photo .wrap,.row{{grid-template-columns:1fr}}.hero-photo{{aspect-ratio:4/3;transform:none}}.hours{{columns:1}}nav .btn{{display:none}}section{{padding:80px 0}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important;transition:none!important}}.load,.reveal{{opacity:1;transform:none}}}}
 </style></head><body>
 <nav><div class="wrap"><span class="logo">{e(name)}<i>.</i></span>{call}</div></nav>
-<header class="hero"><div class="wrap">
+<header class="hero{' has-photo' if photos else ''}"><div class="wrap"><div>
 <p class="kicker load">{e(name)}{where}</p>
 <h1 class="load">{headline}</h1>
 <p class="lead load">{e(intro)}</p>
 <div class="load">{call}</div>
 <div class="load">{stars}</div>
-</div></header>
+</div>{hero_img}</div></header>
 <div class="marquee" aria-hidden="true"><div>{marquee * 4}</div></div>
 <section id="services"><div class="wrap"><h2 class="reveal">What we do best.</h2><div class="grid">{cards}</div></div></section>
+{gallery}
 {proof}
-<section id="visit"><div class="wrap"><div><h2 class="reveal">Come and see us.</h2>{visit}</div>
+{quotes}
+{fix_html}
+<section id="visit"><div class="wrap"><div><h2 class="reveal">Come and see us.</h2>{visit}{hours_html}</div>
 <div class="reveal">{call}<p style="margin-top:16px"><a class="link" href="{e(maps)}" target="_blank" rel="noopener">Get directions &rarr;</a></p></div></div></section>
 <footer><div class="wrap">A free concept home page for {e(name)}, designed by {e(maker)}. Not the live site.</div></footer>
 <script>

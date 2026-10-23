@@ -246,7 +246,9 @@ async def dm_list(ctx: Ctx, n: int) -> int:
             await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=False)
             continue  # another branch already got a DM on this account: one message per inbox
         try:
-            link = await asyncio.to_thread(outbox.publish_mockup, s, p, False)
+            link = await outbox.make_mockup(ctx, p)  # Iris builds and checks it
+            if not link:
+                continue
             items.append((p, handle, link, outbox.dm_text(s, p, link)))
             if handle:
                 b.set(f"ig.dm.{handle.lower()}", p["name"])
@@ -277,6 +279,29 @@ async def dm_list(ctx: Ctx, n: int) -> int:
     b.set(f"closer.dms.{today}", str(file))
     b.set("closer.dms.latest", text_all)
     return len(items)
+
+
+async def designer(ctx: Ctx) -> str:
+    """Iris: upgrades mock-ups already sent out to the full version (their photos, hours, reviews, what it fixes),
+    three a run, re-checking each, so every link we've given anyone shows our best work."""
+    import kinetic_store as st
+    from hq import outbox
+    s, b = ctx.settings, ctx.brain
+    ps = {p["name"]: p for p in st.rows_of(s, st.PROSPECTS)}
+    done, held = 0, 0
+    for r in st.rows_of(s, st.OUTREACH):
+        p = ps.get(r["name"])
+        if done + held >= 3 or not p or b.get(f"iris.{p['id']}"):
+            continue
+        if not (outbox.LIVE / "m" / outbox.slug(p["name"])).exists():
+            continue
+        link = await outbox.make_mockup(ctx, p)
+        b.set(f"iris.{p['id']}", bool(link))
+        done, held = done + bool(link), held + (not link)
+    if done:
+        await asyncio.to_thread(outbox.deploy_site)
+    return f"{done} mock-ups upgraded and checked" + (f", {held} held back" if held else "") if done or held else \
+        "every mock-up is up to date"
 
 
 async def studio(ctx: Ctx) -> str:
@@ -354,7 +379,11 @@ async def warden(ctx: Ctx) -> str:
         if twin:
             b.set(f"skip.{p['id']}", f"same inbox as {twin}, already emailed")
             continue
-        link = await asyncio.to_thread(outbox.publish_mockup, s, p)
+        link = await outbox.make_mockup(ctx, p)  # Iris builds and checks it
+        if not link:
+            b.set(f"skip.{p['id']}", "the mock-up didn't pass Iris's checks")
+            continue
+        await asyncio.to_thread(outbox.deploy_site)
         b.set(f"mockup.{p['name'].lower()}", link)
         subject, body = outbox.first_email(s, p, link)
         return await _vet_and_send(ctx, p, p["name"], to, subject, body, link, first=True)
@@ -418,4 +447,8 @@ def roster() -> list[Agent]:
         Agent("warden", "Vera", "Quality Control", "🔍", "#a78bfa",
               "Double-checks every email (house rules plus a strict AI editor) and sends the ones that pass, within safe daily limits.",
               every=15, hours=(9, 18), run=warden),
+        Agent("designer", "Iris", "Designer", "🎨", "#f4a261",
+              "Builds every mock-up from the shop's own Google photos, hours and reviews, shows what their current site "
+              "costs them, then checks it on a phone and a laptop before anyone sees it.",
+              every=30, hours=(8, 20), run=designer),
     ]

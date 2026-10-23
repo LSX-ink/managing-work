@@ -44,9 +44,9 @@ def test_time_slots_run_once_per_slot(tmp_path):
     assert not a.due(b, datetime.now()) or datetime.now() >= day.replace(hour=13, minute=5)
 
 
-def test_roster_has_eight_distinct_agents():
+def test_roster_has_nine_distinct_agents():
     keys = [a.key for a in roster()]
-    assert len(keys) == len(set(keys)) == 8 and "warden" in keys and all(a.run for a in roster())
+    assert len(keys) == len(set(keys)) == 9 and {"warden", "designer"} <= set(keys) and all(a.run for a in roster())
 
 
 def test_vera_holds_back_bad_emails():

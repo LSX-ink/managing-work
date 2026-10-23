@@ -242,6 +242,16 @@ def publish_mockup(settings, p: dict, deploy: bool = True) -> str:
     return f"{SITE}/m/{slug(p['name'])}/"
 
 
+async def make_mockup(ctx, p: dict) -> str:
+    """Iris (hq/designer.py) builds and checks the lead's mock-up in the site folder; its link, or "" when it was held
+    back. Call deploy_site() afterwards to put it online. Shopify stores keep their store makeover."""
+    from hq import designer
+    if mockup.trade_for(p) == "business" and sales.store_lead(p):
+        return await asyncio.to_thread(publish_mockup, ctx.settings, p, False)
+    ok, _ = await designer.build(ctx, p, LIVE / "m" / slug(p["name"]), st.business(ctx.settings)["name"])
+    return f"{SITE}/m/{slug(p['name'])}/" if ok else ""
+
+
 def deploy_site() -> None:
     r = subprocess.run(["npx.cmd", "--yes", "wrangler", "pages", "deploy", ".", "--cwd", str(LIVE), "--project-name",
                         "kinetic", "--branch", "main", "--commit-dirty=true"], capture_output=True, text=True, encoding="utf-8", errors="replace",
