@@ -30,6 +30,7 @@ import kinetic_outreach as tracker
 import kinetic_sales as sales
 import kinetic_store as st
 import kinetic_world as world
+from hq import mockup
 
 SITE = "https://kineticwebdesigns.co.uk"
 LIVE = Path(r"C:\Users\Thato\kinetic-repo\kinetic-live")
@@ -225,8 +226,12 @@ async def email_for(ctx, p: dict) -> str:
 def publish_mockup(settings, p: dict, deploy: bool = True) -> str:
     """Make the lead's mock-up and put it online at kineticwebdesigns.co.uk/m/<name>/ (hidden from Google).
     deploy=False only writes it into the site, for a batch that deploys once at the end (deploy_site)."""
-    sales.outreach_mockup(settings, {"client": p["id"]})
-    html = (st.folder(settings, "Mockups", p["name"]) / "index.html").read_text(encoding="utf-8")
+    if mockup.trade_for(p) != "business" or not sales.store_lead(p):  # the premium concept (23 Oct 2026)
+        html = mockup.html_for(p, st.business(settings)["name"])
+        st.write(settings, ("Mockups", p["name"]), "index.html", html, replace=True)
+    else:  # Shopify stores keep their store makeover
+        sales.outreach_mockup(settings, {"client": p["id"]})
+        html = (st.folder(settings, "Mockups", p["name"]) / "index.html").read_text(encoding="utf-8")
     if "noindex" not in html:
         html = html.replace("<head>", '<head><meta name="robots" content="noindex, nofollow">', 1)
     out = LIVE / "m" / slug(p["name"])
@@ -239,7 +244,7 @@ def publish_mockup(settings, p: dict, deploy: bool = True) -> str:
 
 def deploy_site() -> None:
     r = subprocess.run(["npx.cmd", "--yes", "wrangler", "pages", "deploy", ".", "--cwd", str(LIVE), "--project-name",
-                        "kinetic", "--branch", "main", "--commit-dirty=true"], capture_output=True, text=True,
+                        "kinetic", "--branch", "main", "--commit-dirty=true"], capture_output=True, text=True, encoding="utf-8", errors="replace",
                        timeout=300)
     if r.returncode != 0:
         raise RuntimeError("couldn't put the mock-up online: " + (r.stderr or r.stdout)[-200:])
