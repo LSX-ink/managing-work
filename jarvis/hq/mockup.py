@@ -14,7 +14,7 @@ from urllib.parse import quote_plus
 
 # Raise this whenever the design gains something: Iris then rebuilds every mock-up already sent out, so what's added
 # to one is added to all (owner, 23 Oct 2026).
-VERSION = 4
+VERSION = 5
 
 TRADES = {  # trade: (palette (bg, ink, accent, soft), headline, intro, services [(name, line)], book word)
     "barber": (("#0e0d0c", "#f4efe6", "#c9a24d", "#1b1916"),
@@ -83,6 +83,17 @@ def html_for(p: dict, maker: str = "Kinetic Web Designs", extra: dict | None = N
     e = escape
     trade = trade_for(p)
     (bg, ink, accent, soft), headline, intro, services, book = TRADES[trade]
+    brand = (extra or {}).get("brand") or {}  # their own look, read off their website (owner, 23 Oct 2026)
+    bg, ink, accent, soft = (brand.get(k) or d for k, d in (("bg", bg), ("ink", ink), ("accent", accent), ("soft", soft)))
+    fonts = [f for f in brand.get("fonts") or [] if re.fullmatch(r"[A-Za-z0-9 ]{2,40}", f)][:2]
+    head_font = f"'{fonts[0]}',Georgia,serif" if fonts else "'Fraunces',Georgia,serif"
+    body_font = f"'{fonts[-1]}',system-ui,sans-serif" if len(fonts) > 1 else "'Inter',system-ui,sans-serif"
+    font_link = ("https://fonts.googleapis.com/css2?" + "&".join(
+        "family=" + quote_plus(f) + ":wght@400;500;600;700" for f in (fonts + ["Inter"] if len(fonts) == 1 else fonts))
+        + "&display=swap") if fonts else (
+        "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500"
+        "&family=Inter:wght@400;500;600&display=swap")
+    logo = brand.get("logo") or ""
     name, town = clean_name(p), str(p.get("town") or "").strip()
     phone = str(p.get("phone") or "").strip()
     tel = re.sub(r"[^\d+]", "", phone)
@@ -145,17 +156,17 @@ def html_for(p: dict, maker: str = "Kinetic Web Designs", extra: dict | None = N
 <meta name="robots" content="noindex, nofollow">
 <title>{e(name)}{where} | concept home page</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="{e(font_link)}" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
-:root{{--bg:{bg};--ink:{ink};--accent:{accent};--soft:{soft};--head:'Fraunces',Georgia,serif;--body:'Inter',system-ui,sans-serif}}
+:root{{--bg:{bg};--ink:{ink};--accent:{accent};--soft:{soft};--on:{brand.get('on_accent') or bg};--head:{head_font};--body:{body_font}}}
 *{{box-sizing:border-box;margin:0}}html{{scroll-behavior:smooth}}
 body{{background:var(--bg);color:var(--ink);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden;overflow-wrap:break-word}}
 a{{color:inherit}}.wrap{{max-width:1120px;margin:0 auto;padding:0 22px}}
 nav{{position:sticky;top:0;z-index:5;backdrop-filter:blur(12px);background:color-mix(in srgb,var(--bg) 80%,transparent);border-bottom:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}}
 nav .wrap{{display:flex;justify-content:space-between;align-items:center;height:68px;gap:14px}}
 .logo{{font-family:var(--head);font-weight:700;font-size:1.3rem;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.logo i{{color:var(--accent);font-style:normal}}
-.btn{{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--bg);padding:14px 26px;border-radius:999px;text-decoration:none;font-weight:600;
+.logo i{{color:var(--accent);font-style:normal}}.logo{{display:flex;align-items:center;gap:10px}}.mark{{height:38px;width:auto;max-width:120px;object-fit:contain}}.mark.pill{{background:var(--accent);padding:6px 12px;border-radius:12px;height:46px}}
+.btn{{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--on);padding:14px 26px;border-radius:999px;text-decoration:none;font-weight:600;
 transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s;box-shadow:0 10px 30px -12px var(--accent)}}.btn:hover{{transform:translateY(-2px)}}
 nav .btn{{padding:10px 18px;font-size:.92rem}}
 .hero{{position:relative;min-height:calc(100svh - 68px);display:grid;align-items:center;padding:60px 0 90px;isolation:isolate;overflow:hidden}}.hero .wrap{{width:100%}}
@@ -178,7 +189,7 @@ section{{padding:110px 0}}h2{{font-family:var(--head);font-weight:500;font-size:
 .card{{background:var(--soft);border-radius:22px;padding:30px;border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);transition:transform .35s cubic-bezier(.2,.8,.2,1)}}
 .card:hover{{transform:translateY(-6px)}}.card .n{{font-size:.8rem;letter-spacing:.2em;color:var(--accent);font-weight:600}}
 .card h3{{font-family:var(--head);font-weight:500;font-size:1.5rem;margin:14px 0 8px}}.card p{{opacity:.75}}
-.proof{{background:var(--accent);color:var(--bg)}}.proof .big{{font-family:var(--head);font-size:clamp(5rem,16vw,10rem);line-height:.9}}
+.proof{{background:var(--accent);color:var(--on)}}.proof .big{{font-family:var(--head);font-size:clamp(5rem,16vw,10rem);line-height:.9}}
 .proof .big span{{font-size:.35em;opacity:.7}}.proof p{{font-size:1.25rem;max-width:40ch;margin-top:14px}}.link{{display:inline-block;margin-top:22px;font-weight:600}}
 #visit .wrap{{display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:end}}#visit p{{font-size:1.15rem;opacity:.85}}.phone a{{font-family:var(--head);font-size:2rem;text-decoration:none}}
 footer{{padding:34px 0;font-size:.82rem;opacity:.55;border-top:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}}
@@ -210,7 +221,7 @@ border-radius:50%;background:var(--accent);color:var(--bg);display:grid;place-it
 @media (max-width:760px){{#visit .wrap,.hero.has-photo .wrap,.row{{grid-template-columns:1fr}}.hero-photo{{aspect-ratio:4/3;transform:none}}.hours{{columns:1}}nav .btn{{display:none}}section{{padding:80px 0}}}}
 @media (prefers-reduced-motion:reduce){{*{{animation:none!important;transition:none!important}}.load,.reveal{{opacity:1;transform:none}}}}
 </style></head><body>
-<nav><div class="wrap"><span class="logo">{e(name)}<i>.</i></span>{call}</div></nav>
+<nav><div class="wrap"><span class="logo">{(f'<img src="{e(logo)}" alt="{e(name)}" class="mark{" pill" if brand.get("logo_pill") else ""}">' if logo else f"{e(name)}<i>.</i>")}</span>{call}</div></nav>
 <header class="hero{' has-photo' if photos else ''}"><div class="wrap"><div>
 <p class="kicker load">{e(name)}{where}</p>
 <h1 class="load">{headline}</h1>

@@ -120,15 +120,230 @@ async def enrich(ctx, p: dict, folder: Path) -> dict:
                 card.unlink()
         except Exception:
             pass
+    brand = b.get(f"brand.{p['id']}")
+    if brand is None:  # their own look: colours from their site (or their shop photo), fonts and logo from the site
+        brand = {}
+        has_site = p.get("website") and not kf.social_only(p)
+        if has_site:
+            brand.update(await brand_from_site(http, p["website"], folder))
+            try:
+                c = await site_colours(p["website"])
+                if c:
+                    accent = c["accent"]
+                    if _saturation(accent) < 0.18:  # grey buttons: take the colour from their logo or shop instead
+                        for pic in [folder / brand.get("logo", "-"), before, *(folder / x for x in photos)]:
+                            vivid = vivid_colour(pic) if pic.suffix in (".png", ".jpg", ".webp") and pic.exists() else None
+                            if vivid:
+                                accent = vivid
+                                break
+                        else:
+                            accent = tuple(int(mockup.TRADES[mockup.trade_for(p)][0][2][i:i + 2], 16) for i in (1, 3, 5))
+                    brand.update(finish_palette(c["bg"], accent))
+            except Exception:
+                pass
+        source = folder / photos[0] if photos else None
+        if "bg" not in brand and source and source.exists():  # no site to read: their shop photo gives the accent
+            try:
+                brand.update(palette_from(source, mockup.TRADES[mockup.trade_for(p)][0][0]))
+            except Exception:
+                pass
+        b.set(f"brand.{p['id']}", brand)
+    if brand.get("logo") and not (folder / brand["logo"]).exists():
+        brand = {k: v for k, v in brand.items() if k != "logo"}
+    if brand.get("logo", "").endswith((".png", ".webp", ".jpg")) and brand.get("bg"):
+        try:  # a white logo on a light page (or dark on dark) sits on a pill in their brand colour instead
+            from PIL import Image, ImageStat
+            with Image.open(folder / brand["logo"]) as im:
+                rgba = im.convert("RGBA")
+                lum = ImageStat.Stat(rgba.convert("L"), mask=rgba.split()[3].point(lambda a: 255 if a > 128 else 0)).mean[0]
+            bg_lum = _lum(tuple(int(brand["bg"][i:i + 2], 16) for i in (1, 3, 5))) * 255
+            if abs(lum - bg_lum) < 90:
+                brand = {**brand, "logo_pill": True}
+        except Exception:
+            pass
     design_speed = b.get("design.template_speed")
     speed = extra.get("speed")
     if isinstance(speed, int) and speed >= 70 and len(extra.get("fixes") or []) <= 1:
         b.set(f"strong_site.{p['id']}", True)  # their site is already decent: Blade puts them last
-    return {**extra, "photos": photos, "before": before.name if before.exists() else "",
+    return {**extra, "photos": photos, "brand": brand, "before": before.name if before.exists() else "",
             "design_speed": design_speed if isinstance(design_speed, int) else None}
 
 
 PHONE = {"width": 390, "height": 760}
+
+
+def _lum(rgb) -> float:
+    def ch(c):
+        c /= 255
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = rgb
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+
+
+def _contrast(a, b) -> float:
+    la, lb = sorted((_lum(a), _lum(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def _hex(rgb) -> str:
+    return "#%02x%02x%02x" % tuple(int(x) for x in rgb)
+
+
+def palette_from(image: Path, keep_bg: str | None = None) -> dict:
+    """Their colours from a picture of their site (or their own photo): the main background, the boldest brand
+    colour, text that reads on both. Adjusted so text and buttons always have enough contrast."""
+    import colorsys
+    from PIL import Image
+    with Image.open(image) as im:
+        small = im.convert("RGB").resize((120, 220))
+        counts = small.quantize(colors=10, method=Image.Quantize.MEDIANCUT).convert("RGB").getcolors(120 * 220)
+    counts = sorted(counts or [], reverse=True)
+    if not counts:
+        return {}
+    bg = counts[0][1] if not keep_bg else tuple(int(keep_bg[i:i + 2], 16) for i in (1, 3, 5))
+
+    def vivid(item):
+        n, rgb = item
+        h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb))
+        return s * (0.25 + min(l, 1 - l)) * (n ** 0.5)
+    options = [c for c in counts if _contrast(c[1], bg) > 1.6]
+    accent = max(options, key=vivid)[1] if options else (201, 162, 77)
+    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in accent))
+    for _ in range(12):  # push the accent lighter or darker until it stands out from the background
+        if _contrast(accent, bg) >= 3:
+            break
+        l = min(0.92, l + 0.06) if _lum(bg) < 0.4 else max(0.12, l - 0.06)
+        accent = tuple(round(c * 255) for c in colorsys.hls_to_rgb(h, l, s))
+    ink = (245, 241, 234) if _lum(bg) < 0.4 else (24, 22, 20)
+    on = (17, 17, 17) if _contrast((17, 17, 17), accent) >= _contrast((255, 255, 255), accent) else (255, 255, 255)
+    soft = tuple(round(b * 0.92 + i * 0.08) for b, i in zip(bg, ink))
+    return {"bg": _hex(bg), "ink": _hex(ink), "accent": _hex(accent), "soft": _hex(soft), "on_accent": _hex(on)}
+
+
+COLOURS_JS = """() => {
+  const rgb = s => { const m = s && s.match(/rgba?\\(([^)]+)\\)/); if (!m) return null;
+    const v = m[1].split(',').map(x => parseFloat(x)); return (v.length > 3 && v[3] < 0.5) ? null : v.slice(0, 3).map(Math.round); };
+  const area = {}, accents = {};
+  const add = (bag, c, w) => { if (c) { const k = c.join(','); bag[k] = (bag[k] || 0) + w; } };
+  [...document.querySelectorAll('body, body *')].slice(0, 2500).forEach(el => {
+    const r = el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return;
+    const st = getComputedStyle(el), w = Math.min(r.width * r.height, 2e6);
+    add(area, rgb(st.backgroundColor), w);
+    if (el.matches('a, button, .btn, [class*=button], [class*=btn]')) { add(accents, rgb(st.backgroundColor), 4); add(accents, rgb(st.color), 2); }
+    if (el.matches('h1, h2, h3, .logo, [class*=logo]')) add(accents, rgb(st.color), 3);
+    if (parseFloat(st.borderTopWidth) > 1) add(accents, rgb(st.borderTopColor), 1);
+  });
+  return {area, accents, body: rgb(getComputedStyle(document.body).backgroundColor)};
+}"""
+
+
+async def site_colours(url: str) -> dict:
+    """Their brand colours from their live site's own styles (not the photos on it): the background that covers most
+    of the page and the boldest colour on their buttons, links and headings."""
+    import colorsys
+    from playwright.async_api import async_playwright
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(channel="msedge")
+        try:
+            pg = await browser.new_page(viewport={"width": 1280, "height": 900})
+            await pg.goto(url, wait_until="load", timeout=45000)
+            await pg.wait_for_timeout(2000)
+            got = await pg.evaluate(COLOURS_JS)
+        finally:
+            await browser.close()
+    area = sorted(((w, tuple(map(int, k.split(",")))) for k, w in got["area"].items()), reverse=True)
+    if not area:
+        return {}
+    bg = area[0][1]
+
+    def sat(rgb):
+        h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb))
+        return s * min(l, 1 - l) * 2
+
+    cands = [(w, tuple(map(int, k.split(",")))) for k, w in got["accents"].items()]
+    cands += [(w / 8000, c) for w, c in area[1:6]]  # big coloured bands (a green header, a gold strip) count most
+    cands = [(w, c) for w, c in cands if c not in ((0, 0, 238), (85, 26, 139), (0, 102, 204), (30, 111, 245))]  # browser-default link blues
+    cands = [(w * (0.15 + sat(c)), c) for w, c in cands if _contrast(c, bg) > 1.5]
+    if not cands:
+        return {}
+    accent = max(cands)[1]
+    return {"bg": bg, "accent": accent}
+
+
+def _saturation(rgb) -> float:
+    import colorsys
+    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb))
+    return s * min(l, 1 - l) * 2
+
+
+def vivid_colour(image: Path):
+    """The strongest real colour in a picture (a logo's gold, a shop sign's red), or None if it's all greys."""
+    from PIL import Image
+    with Image.open(image) as im:
+        im = im.convert("RGBA").resize((96, 96))
+        px = [(r, g, b) for r, g, b, a in im.getdata() if a > 128]
+    if not px:
+        return None
+    small = Image.new("RGB", (len(px), 1))
+    small.putdata(px)
+    counts = small.quantize(colors=8, method=Image.Quantize.MEDIANCUT).convert("RGB").getcolors(len(px)) or []
+    best = max(counts, key=lambda c: _saturation(c[1]) * (c[0] ** 0.5), default=None)
+    return best[1] if best and _saturation(best[1]) >= 0.25 else None
+
+
+def finish_palette(bg, accent) -> dict:
+    """Text, soft panels and button text that read on their colours, with the accent nudged until it stands out."""
+    import colorsys
+    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in accent))
+    for _ in range(12):
+        if _contrast(accent, bg) >= 3:
+            break
+        l = min(0.92, l + 0.06) if _lum(bg) < 0.4 else max(0.12, l - 0.06)
+        accent = tuple(round(c * 255) for c in colorsys.hls_to_rgb(h, l, s))
+    ink = (245, 241, 234) if _lum(bg) < 0.4 else (24, 22, 20)
+    on = (17, 17, 17) if _contrast((17, 17, 17), accent) >= _contrast((255, 255, 255), accent) else (255, 255, 255)
+    soft = tuple(round(b * 0.92 + i * 0.08) for b, i in zip(bg, ink))
+    return {"bg": _hex(bg), "ink": _hex(ink), "accent": _hex(accent), "soft": _hex(soft), "on_accent": _hex(on)}
+
+
+GOOGLE_FONT = re.compile(r"fonts\.googleapis\.com/css2?\?family=([^\"'&>]+)", re.I)
+LOGO_IMG = re.compile(r"<img[^>]+>", re.I)
+
+
+async def brand_from_site(http, site: str, folder: Path) -> dict:
+    """Fonts (Google Fonts they load) and their logo, read off their own website. The logo is saved next to the page."""
+    try:
+        r = await http.get(site, timeout=25, headers={"User-Agent": "Mozilla/5.0"})
+        html = r.text
+    except Exception:
+        return {}
+    fonts = []
+    for m in GOOGLE_FONT.findall(html):
+        for fam in re.split(r"\|", m.replace("+", " ")):
+            fam = re.sub(r"[:%].*", "", fam).strip()
+            if fam and fam not in fonts and re.fullmatch(r"[A-Za-z0-9 ]{2,40}", fam):
+                fonts.append(fam)
+    logo_url = ""
+    for tag in LOGO_IMG.findall(html):
+        if re.search(r"logo", tag, re.I):
+            m = re.search(r"""(?:data-src|src)=["']([^"']+)""", tag)
+            if m and not m.group(1).startswith("data:"):
+                logo_url = m.group(1)
+                break
+    out = {"fonts": fonts[:2]}
+    if logo_url:
+        from urllib.parse import urljoin
+        try:
+            got = await http.get(urljoin(str(r.url), logo_url), timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+            kind = got.headers.get("content-type", "")
+            ext = ".svg" if "svg" in kind else ".png" if "png" in kind else ".webp" if "webp" in kind else \
+                ".jpg" if "jpeg" in kind or "jpg" in kind else ""
+            if got.status_code == 200 and ext and 300 < len(got.content) < 800_000:
+                (folder / f"logo{ext}").write_bytes(got.content)
+                out["logo"] = f"logo{ext}"
+        except Exception:
+            pass
+    return out
 
 
 def no_site_card(p: dict) -> str:
