@@ -272,7 +272,8 @@ async def dm_list(ctx: Ctx, n: int) -> int:
                   + (f"website: {p['website']}" if p.get("website") else "no website"),
                   f"Mock-up: {link}",
                   f"Video to attach (open on your phone, save, then add it to the DM): {link}preview.mp4"
-                  if (outbox.LIVE / "m" / outbox.slug(p["name"]) / "preview.mp4").exists() else "",
+                  if b.get("settings.mockup_video", False) and
+                  (outbox.LIVE / "m" / outbox.slug(p["name"]) / "preview.mp4").exists() else "",
                   "", "```", text, "```", ""]
         await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=True)
         b.log("closer", f"DM ready for {p['name']} ({where}): mock-up {link}", "win", {"lead": p["name"], "type": "dm"})

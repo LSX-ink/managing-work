@@ -272,7 +272,7 @@ async def build(ctx, p: dict, site_folder: Path, maker: str) -> tuple[bool, list
         page.write_text(mockup.html_for(p, maker, ex), encoding="utf-8")
         problems = await check(ctx, p, page)
         if not problems:
-            if not (site_folder / "preview.mp4").exists():
+            if ctx.brain.get("settings.mockup_video", False) and not (site_folder / "preview.mp4").exists():  # off: owner, 23 Oct
                 try:
                     await film(page)
                 except Exception as e:
