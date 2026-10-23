@@ -109,21 +109,46 @@ async def enrich(ctx, p: dict, folder: Path) -> dict:
         if file.exists() and file.stat().st_size > 5000:
             photos.append(file.name)
     before = folder / "before.jpg"
-    if p.get("website") and not kf.social_only(p) and not before.exists():
+    if not before.exists():  # every mock-up gets the before/after (owner, 23 Oct 2026: "add to one, add to all")
         try:
-            await shoot(p["website"], before)
+            if p.get("website") and not kf.social_only(p):
+                await shoot(p["website"], before)
+            else:  # no website: "before" is what people find today, a map pin and nothing to click
+                card = folder / "_before.html"
+                card.write_text(no_site_card(p), encoding="utf-8")
+                await shoot(card.as_uri(), before)
+                card.unlink()
         except Exception:
             pass
     design_speed = b.get("design.template_speed")
     speed = extra.get("speed")
-    strong = isinstance(speed, int) and speed >= 70 and len(extra.get("fixes") or []) <= 1
-    if strong:  # their site is already decent: a before/after wouldn't win them over, so leave it out
-        b.set(f"strong_site.{p['id']}", True)
-    return {**extra, "photos": photos, "before": before.name if before.exists() and not strong else "",
+    if isinstance(speed, int) and speed >= 70 and len(extra.get("fixes") or []) <= 1:
+        b.set(f"strong_site.{p['id']}", True)  # their site is already decent: Blade puts them last
+    return {**extra, "photos": photos, "before": before.name if before.exists() else "",
             "design_speed": design_speed if isinstance(design_speed, int) else None}
 
 
 PHONE = {"width": 390, "height": 760}
+
+
+def no_site_card(p: dict) -> str:
+    """The "before" for a business with no website: a plain phone screen of what a search finds today."""
+    from html import escape as e
+    name, town = mockup.clean_name(p), str(p.get("town") or "")
+    stars = f"{float(p['rating']):.1f} ★ ({int(p.get('reviews') or 0):,})" if p.get("rating") else ""
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<style>body{{margin:0;font:15px/1.4 Arial,sans-serif;background:#f1f3f4;color:#202124}}
+.bar{{background:#fff;padding:14px 16px;border-bottom:1px solid #ddd;font-size:16px;color:#5f6368}}
+.box{{background:#fff;margin:12px;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.15)}}
+.map{{height:150px;border-radius:10px;background:repeating-linear-gradient(45deg,#e8eaed 0 12px,#dfe1e5 12px 24px);
+display:grid;place-items:center;font-size:34px}}h2{{font-size:20px;margin:12px 0 4px}}.s{{color:#5f6368}}
+.btns{{display:flex;gap:8px;margin-top:14px}}.btns span{{flex:1;text-align:center;border:1px solid #dadce0;border-radius:18px;
+padding:8px 0;color:#1a73e8}}.btns .no{{color:#bbb;border-style:dashed}}.note{{margin:18px 14px;padding:14px;border-radius:10px;
+background:#fde8e8;color:#a52a2a;font-weight:bold;text-align:center}}</style></head><body>
+<div class="bar">{e(name)} {e(town)}</div><div class="box"><div class="map">\U0001F4CD</div><h2>{e(name)}</h2>
+<div class="s">{e(stars)} &middot; {e(p.get('kind') or 'Local business')}</div><div class="s">{e(p.get('address') or town)}</div>
+<div class="btns"><span>Directions</span><span>Call</span><span class="no">No website</span></div></div>
+<div class="note">No website: no prices, no photos of your work, no booking.</div></body></html>"""
 
 
 def slim(file: Path, width: int = 960) -> None:

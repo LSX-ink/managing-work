@@ -286,21 +286,21 @@ async def dm_list(ctx: Ctx, n: int) -> int:
 
 
 async def designer(ctx: Ctx) -> str:
-    """Iris: upgrades mock-ups already sent out to the full version (their photos, hours, reviews, what it fixes),
-    three a run, re-checking each, so every link we've given anyone shows our best work."""
+    """Iris: upgrades every mock-up already sent out to the latest design (hq/mockup.VERSION), three a run,
+    re-checking each, so every link we've given anyone shows our best work and gets every new feature."""
     import kinetic_store as st
-    from hq import outbox
+    from hq import mockup, outbox
     s, b = ctx.settings, ctx.brain
     ps = {p["name"]: p for p in st.rows_of(s, st.PROSPECTS)}
     done, held = 0, 0
     for r in st.rows_of(s, st.OUTREACH):
         p = ps.get(r["name"])
-        if done + held >= 3 or not p or b.get(f"iris.{p['id']}"):
+        if done + held >= 3 or not p or b.get(f"iris.{p['id']}") == mockup.VERSION:
             continue
         if not (outbox.LIVE / "m" / outbox.slug(p["name"])).exists():
             continue
         link = await outbox.make_mockup(ctx, p)
-        b.set(f"iris.{p['id']}", bool(link))
+        b.set(f"iris.{p['id']}", mockup.VERSION if link else 0)
         done, held = done + bool(link), held + (not link)
     if done:
         await asyncio.to_thread(outbox.deploy_site)

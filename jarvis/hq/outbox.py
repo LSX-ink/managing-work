@@ -249,6 +249,8 @@ async def make_mockup(ctx, p: dict) -> str:
     if mockup.trade_for(p) == "business" and sales.store_lead(p):
         return await asyncio.to_thread(publish_mockup, ctx.settings, p, False)
     ok, _ = await designer.build(ctx, p, LIVE / "m" / slug(p["name"]), st.business(ctx.settings)["name"])
+    if ok:
+        ctx.brain.set(f"iris.{p['id']}", mockup.VERSION)
     return f"{SITE}/m/{slug(p['name'])}/" if ok else ""
 
 

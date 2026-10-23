@@ -12,6 +12,10 @@ import re
 from html import escape
 from urllib.parse import quote_plus
 
+# Raise this whenever the design gains something: Iris then rebuilds every mock-up already sent out, so what's added
+# to one is added to all (owner, 23 Oct 2026).
+VERSION = 4
+
 TRADES = {  # trade: (palette (bg, ink, accent, soft), headline, intro, services [(name, line)], book word)
     "barber": (("#0e0d0c", "#f4efe6", "#c9a24d", "#1b1916"),
                "Sharp cuts.<br><em>Every single time.</em>",
