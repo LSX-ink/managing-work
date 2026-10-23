@@ -231,11 +231,18 @@ async def dm_list(ctx: Ctx, n: int) -> int:
     from hq import outbox
     s, b = ctx.settings, ctx.brain
     items = []
+    looked = 0
     for p in outbox.sole_traders(s, outbox.limited_companies(b)):
-        if len(items) >= n:
+        if len(items) >= n or looked >= n * 6:
             break
+        if b.get(f"ig.none.{p['id']}"):
+            continue
+        looked += 1
         handle = p.get("instagram", "").lstrip("@") or await outbox.instagram_handle(ctx.http, p)
-        if handle and b.get(f"ig.dm.{handle.lower()}"):
+        if not handle:  # the owner needs an @name to find them (asked 23 Oct 2026): only shops that give one
+            b.set(f"ig.none.{p['id']}", True)
+            continue
+        if b.get(f"ig.dm.{handle.lower()}"):
             await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=False)
             continue  # another branch already got a DM on this account: one message per inbox
         try:
