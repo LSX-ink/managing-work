@@ -1,4 +1,4 @@
-﻿"""The LSX HQ agents (Kinetic Web Designs division). Each has one job, a schedule, and writes what it did to the shared brain.
+"""The LSX HQ agents (Kinetic Web Designs division). Each has one job, a schedule, and writes what it did to the shared brain.
 
 They reuse Alfred's own Kinetic tools (lead finder, outreach drafts, follow-ups, briefing, content calendar,
 Instagram replies), so nothing new talks to the outside world. Hard rules, same as Alfred's:
@@ -249,7 +249,7 @@ async def dm_list(ctx: Ctx, n: int) -> int:
             link = await outbox.make_mockup(ctx, p)  # Iris builds and checks it
             if not link:
                 continue
-            items.append((p, handle, link, outbox.dm_text(s, p, link)))
+            items.append((p, handle, link, outbox.dm_text(s, p, link, b)))
             if handle:
                 b.set(f"ig.dm.{handle.lower()}", p["name"])
         except Exception as e:

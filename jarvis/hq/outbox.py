@@ -281,8 +281,57 @@ async def instagram_handle(http, p: dict) -> str:
     return ""
 
 
-def dm_text(settings, p: dict, link: str) -> str:
-    """The Instagram DM the owner sends by hand: Alfred's short first message with the mock-up as a link."""
+PLAIN = [  # our audit's short labels, said the way a shop owner would understand them
+    (r"tap", "customers can't tap your number to ring you from their phone"),
+    (r"google can't read|business details|structured", "Google can't read your business details, so you show up less in searches"),
+    (r"title|description|meta", "your site doesn't tell Google what you do, so you show up less in searches"),
+    (r"share preview|preview", "your link shows no preview picture when it's shared on WhatsApp or Instagram"),
+    (r"slow|speed", "your site is slow to open on phones"),
+    (r"secure|https", "browsers warn people your site isn't secure"),
+    (r"book", "there's no easy way to book online"),
+]
+
+
+def plain(problem: str) -> str:
+    for pattern, said in PLAIN:
+        if re.search(pattern, problem, re.I):
+            return said
+    text = re.sub(r"\bgoogle\b", "Google", problem.strip().rstrip("."))
+    return text[0].lower() + text[1:] if text[:1].isupper() and not text.startswith("Google") else text
+
+
+def dm_text(settings, p: dict, link: str, brain=None) -> str:
+    """The Instagram DM the owner sends by hand (asked 23 Oct 2026 for "a nice message" with the link): warm, about
+    them first (their real Google rating), their one biggest website problem, then the mock-up made from their own
+    photos and reviews, the no-risk terms, and an easy way to say no."""
+    name = _base_name(p)
+    rating, reviews = p.get("rating"), int(p.get("reviews") or 0)
+    praise = (f"{float(rating):.1f}★ from {reviews:,} Google reviews is seriously impressive, your customers clearly "
+              "love you." if rating and reviews >= 25 else "your customers clearly rate you.")
+    extra = (brain.get(f"design.{p['id']}") if brain else None) or {}  # what Iris found on their site
+    speed = extra.get("speed")
+    found = [a for a, _ in extra.get("fixes") or [] if p.get("website")]
+    problem = kf.biggest_problem({**p, "name": p["name"]}).get("short") or ""
+    problem = re.sub(r"^I had a look at your website \(([^)]+)\):\s*", r"on \1, ", problem.strip())
+    problem = re.sub(r"\bgoogle\b", "Google", problem)
+    if found and not problem:
+        problem = f"on your website, {plain(found[0])}"
+    if problem and not problem.endswith("."):
+        problem += "."
+    if isinstance(speed, int) and speed < 50:
+        problem = (problem + " " if problem else "") + f"Google also scores your site just {speed}/100 for speed on phones."
+    gap = (f"One thing I spotted: {problem}" if problem else
+           ("Your website doesn't show off how good you are yet." if p.get("website") else
+            "You don't have a website yet, so people who find you on Google can't see your work or book easily."))
+    return (f"Hi {name} team! \U0001F44B\n\nI came across you on Google, and {praise}\n\n{gap} So I put together a free "
+            f"concept of what your website could look like, using your own photos and reviews:\n{link}\n\n"
+            "It's yours to look at, no catch. If you love it, we can make it real, and you only pay half when we "
+            "start and half once it's finished.\n\nWould love to hear what you think!\nAlfred, Kinetic Web Designs\n\n"
+            "(If it's not for you, just say and I won't message again.)")
+
+
+def dm_text_short(settings, p: dict, link: str) -> str:
+    """The older, shorter DM (kept for reference): Alfred's first message with the mock-up as a link."""
     body = sales.outreach_draft(settings, {"client": p["id"]}, "dm")["body"]
     body = re.sub(r" \([^()]*mock-up[^()]*\.html\)", "", body)
     body = re.sub(r"\bgoogle\b", "Google", body).replace(p["name"], _base_name(p))  # "Ted's Grooming Room", not "... | Soho"
