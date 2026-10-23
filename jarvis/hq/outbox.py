@@ -270,7 +270,7 @@ def dm_text(settings, p: dict, link: str) -> str:
     """The Instagram DM the owner sends by hand: Alfred's short first message with the mock-up as a link."""
     body = sales.outreach_draft(settings, {"client": p["id"]}, "dm")["body"]
     body = re.sub(r" \([^()]*mock-up[^()]*\.html\)", "", body)
-    body = re.sub(r"\bgoogle\b", "Google", body)
+    body = re.sub(r"\bgoogle\b", "Google", body).replace(p["name"], _base_name(p))  # "Ted's Grooming Room", not "... | Soho"
     return re.sub(r"(a free (?:home page|store makeover) mock-up)", rf"\1: {link}", body, count=1) \
         if link not in body else body
 
