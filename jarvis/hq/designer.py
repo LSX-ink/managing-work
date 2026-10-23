@@ -88,6 +88,8 @@ async def enrich(ctx, p: dict, folder: Path) -> dict:
             except Exception:
                 audit = None
         extra["fixes"], extra["fixes_title"] = fixes_for(p, audit)
+        if p.get("website") and not kf.social_only(p):
+            extra["speed"] = await kf.pagespeed(s, http, p["website"])  # Google's own phone score, or None
         b.set(key, extra)
     folder.mkdir(parents=True, exist_ok=True)
     photos = []
@@ -99,11 +101,87 @@ async def enrich(ctx, p: dict, folder: Path) -> dict:
                                    headers={"X-Goog-Api-Key": s.google_places_key})
                 if r.status_code == 200 and r.headers.get("content-type", "").startswith("image/"):
                     file.write_bytes(r.content)
+                    slim(file)
             except Exception:
                 pass
+        if file.exists() and file.stat().st_size > 300_000:
+            slim(file)
         if file.exists() and file.stat().st_size > 5000:
             photos.append(file.name)
-    return {**extra, "photos": photos}
+    before = folder / "before.jpg"
+    if p.get("website") and not kf.social_only(p) and not before.exists():
+        try:
+            await shoot(p["website"], before)
+        except Exception:
+            pass
+    design_speed = b.get("design.template_speed")
+    return {**extra, "photos": photos, "before": before.name if before.exists() else "",
+            "design_speed": design_speed if isinstance(design_speed, int) else None}
+
+
+PHONE = {"width": 390, "height": 760}
+
+
+def slim(file: Path, width: int = 960) -> None:
+    """Shrink a photo so the page stays fast on phones (the speed score is part of the pitch)."""
+    from PIL import Image
+    with Image.open(file) as im:
+        im = im.convert("RGB")
+        if im.width > width:
+            im = im.resize((width, round(im.height * width / im.width)))
+        im.save(file, "JPEG", quality=72, optimize=True, progressive=True)
+
+
+async def shoot(url: str, out: Path) -> None:
+    """The top of a page as it looks on a phone, as a JPEG (their current site, or our design)."""
+    from playwright.async_api import async_playwright
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(channel="msedge")
+        try:
+            pg = await browser.new_page(viewport=PHONE, device_scale_factor=2, is_mobile=True)
+            await pg.goto(url, wait_until="load", timeout=45000)
+            await pg.wait_for_timeout(2500)
+            await pg.screenshot(path=str(out), type="jpeg", quality=78)
+            slim(out, 600)
+        finally:
+            await browser.close()
+
+
+FPS, SECONDS = 15, 18
+
+
+async def film(page: Path) -> None:
+    """An 18-second, silent, phone-shaped video of the mock-up scrolling, saved next to it as preview.mp4. Free: frames
+    from the browser joined by ffmpeg on this PC, no voice or video credits."""
+    import subprocess
+    import tempfile
+    from playwright.async_api import async_playwright
+    from tiktokstudio_video import ffmpeg
+    with tempfile.TemporaryDirectory(prefix="iris-video-") as tmp:
+        frames = FPS * SECONDS
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(channel="msedge")
+            try:
+                pg = await browser.new_page(viewport={"width": 405, "height": 720}, device_scale_factor=2, is_mobile=True)
+                await pg.goto(page.as_uri(), wait_until="networkidle")
+                await pg.evaluate("[...document.images].forEach(i => i.loading = 'eager')")
+                await pg.wait_for_timeout(1800)
+                tall = await pg.evaluate("document.documentElement.scrollHeight - innerHeight")
+                hold = FPS * 2  # still at the top, then a smooth scroll, then still at the bottom
+                for i in range(frames):
+                    t = min(1, max(0, (i - hold) / max(1, frames - 2 * hold)))
+                    ease = t * t * (3 - 2 * t)
+                    await pg.evaluate(f"window.scrollTo(0, {round(tall * ease)})")
+                    await pg.screenshot(path=f"{tmp}/f{i:04d}.jpg", type="jpeg", quality=82)
+            finally:
+                await browser.close()
+        r = await asyncio.to_thread(subprocess.run, [
+            ffmpeg(), "-y", "-loglevel", "error", "-framerate", str(FPS), "-i", f"{tmp}/f%04d.jpg",
+            "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,format=yuv420p",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "24", "-movflags", "+faststart",
+            str(page.parent / "preview.mp4")], capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            raise RuntimeError(r.stderr[-160:])
 
 
 async def check(ctx, p: dict, page: Path) -> list[str]:
@@ -177,14 +255,28 @@ async def critique(ctx, p: dict, page: Path) -> str:
 async def build(ctx, p: dict, site_folder: Path, maker: str) -> tuple[bool, list[str]]:
     """Make, check and (if needed) rebuild the mock-up in site_folder/index.html. (passed, problems)."""
     extra = await enrich(ctx, p, site_folder)
-    attempts = [extra, {**extra, "photos": []}, {"fixes": extra.get("fixes"), "fixes_title": extra.get("fixes_title")}]
+    attempts = [extra, {**extra, "photos": [], "before": ""},
+                {"fixes": extra.get("fixes"), "fixes_title": extra.get("fixes_title")}]
     problems: list[str] = []
     page = site_folder / "index.html"
     before = page.read_bytes() if page.exists() else None  # put back if nothing passes, so a link never breaks
     for i, ex in enumerate(attempts):
+        after = site_folder / "after.jpg"
+        if ex.get("before"):  # the "after" picture is our own design on a phone: shoot it, then add the slider
+            page.write_text(mockup.html_for(p, maker, {**ex, "before": ""}), encoding="utf-8")
+            try:
+                await shoot(page.as_uri(), after)
+                ex = {**ex, "after": after.name}
+            except Exception:
+                pass
         page.write_text(mockup.html_for(p, maker, ex), encoding="utf-8")
         problems = await check(ctx, p, page)
         if not problems:
+            if not (site_folder / "preview.mp4").exists():
+                try:
+                    await film(page)
+                except Exception as e:
+                    ctx.brain.log("designer", f"no video for {p['name']} this time ({str(e)[:80]})", "info")
             why = await critique(ctx, p, page)
             note = f" Editor's note: {why}" if why else ""
             ctx.brain.log("designer", f"mock-up for {p['name']} passed every check" + (" (rebuilt)" if i else "") + note,

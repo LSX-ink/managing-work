@@ -270,7 +270,10 @@ async def dm_list(ctx: Ctx, n: int) -> int:
         lines += [f"## {i}. {p['name']} ({p.get('town', '')})", f"Instagram: {where}",
                   f"{p.get('rating')}★ from {p.get('reviews')} Google reviews · "
                   + (f"website: {p['website']}" if p.get("website") else "no website"),
-                  f"Mock-up: {link}", "", "```", text, "```", ""]
+                  f"Mock-up: {link}",
+                  f"Video to attach (open on your phone, save, then add it to the DM): {link}preview.mp4"
+                  if (outbox.LIVE / "m" / outbox.slug(p["name"]) / "preview.mp4").exists() else "",
+                  "", "```", text, "```", ""]
         await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=True)
         b.log("closer", f"DM ready for {p['name']} ({where}): mock-up {link}", "win", {"lead": p["name"], "type": "dm"})
     DM_FOLDER.mkdir(parents=True, exist_ok=True)

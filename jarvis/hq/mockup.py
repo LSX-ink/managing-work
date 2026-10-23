@@ -106,7 +106,7 @@ def html_for(p: dict, maker: str = "Kinetic Web Designs", extra: dict | None = N
                + "".join(f'<figure class="reveal" style="--d:{i * 90}ms"><img src="{e(ph)}" alt="{e(name)}" loading="lazy"></figure>'
                          for i, ph in enumerate(photos))
                + "</div><p class='credit'>Photos from " + e(name) + "'s Google listing.</p></div></section>") if photos else ""
-    hero_img = (f'<div class="hero-photo load"><img src="{e(photos[0])}" alt=""></div>') if photos else ""
+    hero_img = (f'<div class="hero-photo load"><img src="{e(photos[0])}" alt="" fetchpriority="high"></div>') if photos else ""
     said = [r for r in x.get("reviews") or [] if r.get("text")][:3]
     quotes = ("<section class='quotes'><div class='wrap'><h2 class='reveal'>In their words.</h2><div class='grid'>"
               + "".join(f'<blockquote class="card reveal" style="--d:{i * 80}ms"><span class="stars">{"★" * int(r.get("rating") or 5)}</span>'
@@ -115,18 +115,33 @@ def html_for(p: dict, maker: str = "Kinetic Web Designs", extra: dict | None = N
               + "</div></div></section>") if said else ""
     hours = x.get("hours") or []
     hours_html = ("<ul class='hours'>" + "".join(f"<li>{e(h)}</li>" for h in hours[:7]) + "</ul>") if hours else ""
+    ba = ("<section class='ba'><div class='wrap'><p class='kicker reveal'>Before and after</p><h2 class='reveal'>"
+          "Your website today, and with us.</h2><div class='cmp reveal' style='--x:50%'>"
+          f"<img src='{e(x['after'])}' alt='This design on a phone'><div class='b'><img src='{e(x['before'])}' "
+          "alt='Your current website on a phone'></div><i class='bar'></i><span class='l'>Today</span>"
+          "<span class='r'>This design</span><input type='range' min='0' max='100' value='50' "
+          "aria-label='Slide to compare'></div><p class='credit'>Slide to compare. Both shown on a phone.</p></div>"
+          "</section>") if x.get("before") and x.get("after") else ""
+    speed, ours = x.get("speed"), x.get("design_speed")
+    if not (isinstance(speed, int) and speed < 60):  # only worth showing when their site is clearly slow
+        speed = None
+    if not (isinstance(ours, int) and isinstance(speed, int) and ours >= speed + 15):
+        ours = None
+    speed_html = (f"<div class='speed reveal'><div><b>{int(speed)}</b><span>/100</span><p>Your site's Google speed score "
+                  f"on phones today</p></div>" + (f"<div class='ours'><b>{int(ours)}</b><span>/100</span><p>This design, "
+                  f"tested the same way</p></div>" if ours else "") + "</div>") if isinstance(speed, int) else ""
     fixes = x.get("fixes") or []
     fix_html = (f"<section class='fixes'><div class='wrap'><p class='kicker reveal'>A note for {e(name)} from {e(maker)}</p><h2 class='reveal'>"
-                + e(x.get("fixes_title") or "Built to win you more customers.") + "</h2><div class='rows'>"
+                + e(x.get("fixes_title") or "Built to win you more customers.") + "</h2>" + speed_html + "<div class='rows'>"
                 + "".join(f'<div class="row reveal" style="--d:{i * 70}ms"><div><span>Today</span><p>{e(a)}</p></div>'
                           f'<div><span>This design</span><p>{e(b)}</p></div></div>' for i, (a, b) in enumerate(fixes[:5]))
-                + "</div></div></section>") if fixes else ""
+                + "</div></div></section>") if (fixes or speed_html) else ""
     return f"""<!DOCTYPE html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{e(name)}{where} | concept home page</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{{--bg:{bg};--ink:{ink};--accent:{accent};--soft:{soft};--head:'Fraunces',Georgia,serif;--body:'Inter',system-ui,sans-serif}}
 *{{box-sizing:border-box;margin:0}}html{{scroll-behavior:smooth}}
@@ -171,6 +186,19 @@ footer{{padding:34px 0;font-size:.82rem;opacity:.55;border-top:1px solid color-m
 .credit{{font-size:.8rem;opacity:.55;margin-top:14px}}
 blockquote.card{{margin:0}}blockquote p{{font-size:1.05rem;margin:12px 0 16px;opacity:.9}}blockquote cite{{font-style:normal;font-weight:600;opacity:.7}}
 .hours{{list-style:none;padding:0;margin:18px 0 0;columns:2;gap:24px;font-size:.98rem;opacity:.85}}.hours li{{padding:3px 0;break-inside:avoid}}
+.cmp{{position:relative;max-width:400px;aspect-ratio:390/760;border-radius:30px;overflow:hidden;margin:0 auto;
+box-shadow:0 40px 80px -30px rgba(0,0,0,.55);border:8px solid #0b0b0b}}
+.cmp img{{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}}
+.cmp .b{{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--x)) 0 0)}}
+.cmp .bar{{position:absolute;top:0;bottom:0;left:var(--x);width:3px;margin-left:-1.5px;background:var(--accent);box-shadow:0 0 18px var(--accent)}}
+.cmp .bar::after{{content:"\\2194";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:42px;height:42px;
+border-radius:50%;background:var(--accent);color:var(--bg);display:grid;place-items:center;font-size:20px;font-style:normal}}
+.cmp span{{position:absolute;top:14px;padding:5px 12px;border-radius:999px;font-size:.75rem;font-weight:600;background:rgba(0,0,0,.65);color:#fff}}
+.cmp .l{{left:14px}}.cmp .r{{right:14px}}.cmp input{{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}}
+.ba .credit{{text-align:center}}.ba h2{{margin-left:auto;margin-right:auto;text-align:center}}.ba .kicker{{text-align:center}}
+.speed{{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 28px}}.speed>div{{flex:1 1 240px;border-radius:22px;padding:26px;background:var(--bg)}}
+.speed b{{font-family:var(--head);font-size:4.4rem;line-height:1;font-weight:500;color:#d64545}}.speed .ours b{{color:#2f9e63}}
+.speed span{{font-size:1.2rem;opacity:.6}}.speed p{{margin-top:8px;opacity:.75}}
 .fixes{{background:var(--soft)}}.rows{{display:grid;gap:14px}}
 .row{{display:grid;grid-template-columns:1fr 1fr;border-radius:20px;overflow:hidden;border:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}}
 .row>div{{padding:22px 24px}}.row>div:first-child{{opacity:.72}}.row>div:last-child{{background:color-mix(in srgb,var(--accent) 16%,var(--bg))}}
@@ -191,6 +219,7 @@ blockquote.card{{margin:0}}blockquote p{{font-size:1.05rem;margin:12px 0 16px;op
 {gallery}
 {proof}
 {quotes}
+{ba}
 {fix_html}
 <section id="visit"><div class="wrap"><div><h2 class="reveal">Come and see us.</h2>{visit}{hours_html}</div>
 <div class="reveal">{call}<p style="margin-top:16px"><a class="link" href="{e(maps)}" target="_blank" rel="noopener">Get directions &rarr;</a></p></div></div></section>
@@ -199,6 +228,9 @@ blockquote.card{{margin:0}}blockquote p{{font-size:1.05rem;margin:12px 0 16px;op
 document.documentElement.classList.add('js');
 const io=new IntersectionObserver(es=>es.forEach(x=>{{if(x.isIntersecting){{x.target.classList.add('in');io.unobserve(x.target)}}}}),{{threshold:.12}});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+document.querySelectorAll('.cmp').forEach(c=>{{const r=c.querySelector('input');const set=v=>{{c.style.setProperty('--x',v+'%');r.value=v}};
+r.addEventListener('input',()=>set(r.value));
+new IntersectionObserver((es,o)=>{{if(es[0].isIntersecting){{o.disconnect();let t=0;const s=()=>{{t+=.02;set(50+38*Math.sin(t*Math.PI));if(t<2)requestAnimationFrame(s);else set(50)}};setTimeout(s,500)}}}},{{threshold:.4}}).observe(c)}});
 </script>
 </body></html>
 """
