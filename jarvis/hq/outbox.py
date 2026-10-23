@@ -328,7 +328,7 @@ def dm_text(settings, p: dict, link: str, brain=None) -> str:
     return (f"Hi {name} team! \U0001F44B\n\nI came across you on Google, and {praise}\n\n{gap} So I put together a free "
             f"concept of what your website could look like, using your own photos and reviews:\n{link}\n\n"
             "It's yours to look at, no catch. If you love it, we can make it real, and you only pay half when we "
-            "start and half once it's finished.\n\nWould love to hear what you think!\nAlfred, Kinetic Web Designs\n\n"
+            "start and half once it's finished.\n\nWould love to hear what you think!\nKinetic Web Designs\n\n"
             "(If it's not for you, just say and I won't message again.)")
 
 
