@@ -115,7 +115,11 @@ async def enrich(ctx, p: dict, folder: Path) -> dict:
         except Exception:
             pass
     design_speed = b.get("design.template_speed")
-    return {**extra, "photos": photos, "before": before.name if before.exists() else "",
+    speed = extra.get("speed")
+    strong = isinstance(speed, int) and speed >= 70 and len(extra.get("fixes") or []) <= 1
+    if strong:  # their site is already decent: a before/after wouldn't win them over, so leave it out
+        b.set(f"strong_site.{p['id']}", True)
+    return {**extra, "photos": photos, "before": before.name if before.exists() and not strong else "",
             "design_speed": design_speed if isinstance(design_speed, int) else None}
 
 
