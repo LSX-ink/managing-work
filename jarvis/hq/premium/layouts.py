@@ -166,7 +166,7 @@ p.l{color:var(--muted);max-width:520px;font-size:1.05rem}
 .map{height:300px;margin-top:20px}footer{padding:40px 7vw;color:var(--muted);font-size:.8rem}
 .cur{position:fixed;width:12px;height:12px;border-radius:50%;background:var(--gold);pointer-events:none;z-index:99;transform:translate(-50%,-50%);transition:width .3s,height .3s,opacity .3s;mix-blend-mode:difference;left:-40px}
 @media (max-width:900px){.media{position:relative;width:100%;height:62svh}.media::after{background:linear-gradient(180deg,transparent 50%,var(--bg))}main{margin:0}main>section{min-height:auto;padding:80px 22px}
-.top{top:auto;bottom:16px;right:16px}.brandmark{position:absolute}.cur{display:none}.thumbs{grid-template-columns:repeat(2,1fr)}}
+.top{top:auto;bottom:16px;right:16px;transform:translateY(170%);transition:transform .5s cubic-bezier(.2,.8,.2,1)}.top.on{transform:none}.top{}.brandmark{position:absolute}.cur{display:none}.thumbs{grid-template-columns:repeat(2,1fr)}}
 """
 SPLIT_JS = """
 const imgs=[...document.querySelectorAll('.media img')],tag=document.querySelector('.media .tag'),bar=document.querySelector('.media .bar'),secs=[...document.querySelectorAll('main>section')];
@@ -175,6 +175,7 @@ secs.forEach(s=>so2.observe(s));addEventListener('scroll',()=>{bar.style.height=
 const cu=document.querySelector('.cur');addEventListener('pointermove',ev=>{cu.style.left=ev.clientX+'px';cu.style.top=ev.clientY+'px'});
 document.querySelectorAll('a,summary,button').forEach(x=>{x.addEventListener('pointerenter',()=>{cu.style.width=cu.style.height='54px'});x.addEventListener('pointerleave',()=>{cu.style.width=cu.style.height='12px'})});
 document.querySelector('.acc details').open=true;
+const tp=document.querySelector('.top'),tpOn=()=>tp&&tp.classList.toggle('on',scrollY>innerHeight*.6);addEventListener('scroll',tpOn,{passive:true});tpOn();
 """
 
 

@@ -104,8 +104,9 @@ async def write_config(client, model: str, folder: Path, layout: str, fonts: str
     for k in ("audit", "layout", "fonts"):
         example.pop(k, None)
     light = layout == "editorial"
-    ask = (f"Layout: {layout}." + (" It is a LIGHT page: also give colours paper, text, soft, rule (and a darker gold "
-                                   "that reads on paper)." if light else "")
+    ask = (f"Layout: {layout}." + (" It is a LIGHT page: also give colours paper (the page), text (the words), soft "
+                                   "(secondary words: a mid grey that still reads on paper, 4.5:1), rule (thin lines) "
+                                   "and a darker gold that reads on paper." if light else "")
            + f"\n\nExample config (another business, for the format only):\n{json.dumps(example, ensure_ascii=False)[:6000]}"
            + f"\n\nTheir Google listing facts (used as they are): {json.dumps(facts, ensure_ascii=False)[:3000]}"
            + f"\n\nTheir website colours, most used first: {site['colours'][:10]}\nLogo files: {site['logos']}"
@@ -133,8 +134,53 @@ def usable_image(path: Path) -> bool:
         return False
 
 
+def _lum(hex_: str) -> float:
+    rgb = [int(hex_[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    r, g, b = [x / 12.92 if x <= .03928 else ((x + .055) / 1.055) ** 2.4 for x in rgb]
+    return .2126 * r + .7152 * g + .0722 * b
+
+
+def contrast(a: str, b: str) -> float:
+    hi, lo = sorted((_lum(a), _lum(b)), reverse=True)
+    return (hi + .05) / (lo + .05)
+
+
+def _mix(a: str, b: str, t: float) -> str:
+    return "#" + "".join(f"{round(int(a[i:i + 2], 16) * (1 - t) + int(b[i:i + 2], 16) * t):02x}" for i in (1, 3, 5))
+
+
+def readable(fg: str, bg: str, strong: str, need: float = 4.5) -> str:
+    """fg, moved toward the strong text colour only as far as it takes to read on bg (web-design-guidelines: 4.5:1).
+    Owner, 27 Oct 2026: two editorial mock-ups came out with near-white words on a near-white page."""
+    for step in range(11):
+        c = _mix(fg, strong, step / 10)
+        if contrast(c, bg) >= need:
+            return c
+    return strong
+
+
+HEX = re.compile(r"#[0-9a-fA-F]{6}")
+
+
+def fix_contrast(col: dict, layout: str) -> dict:
+    col = dict(col)
+    if layout == "editorial":
+        paper, text = col.get("paper", "#f6f1ea"), col.get("text", "#1d1a17")
+        if HEX.fullmatch(paper) and HEX.fullmatch(text):
+            col["text"] = readable(text, paper, "#000000", 7)
+            col["soft"] = readable(col["soft"] if HEX.fullmatch(col.get("soft", "")) else "#6c645b", paper, col["text"])
+    for bg in ("bg", "panel"):
+        if all(HEX.fullmatch(col.get(k, "")) for k in (bg, "ink", "muted")):
+            col["ink"] = readable(col["ink"], col[bg], "#ffffff", 7)
+            col["muted"] = readable(col["muted"], col[bg], col["ink"])
+    return col
+
+
 def tidy(c: dict, folder: Path, photos: list[str], layout: str, fonts: str | None, facts: dict) -> dict:
-    """Google's facts back word for word, only real photo files and each one once, the chosen layout and fonts."""
+    """Google's facts back word for word, only real photo files and each one once, the chosen layout and fonts, and
+    text colours that read."""
+    if isinstance(c.get("colours"), dict):
+        c["colours"] = fix_contrast(c["colours"], layout)
     c.update({k: v for k, v in facts.items() if v})  # Google's own words win
     c["short"] = c.get("short") or facts["name"]
     used: set[str] = set()

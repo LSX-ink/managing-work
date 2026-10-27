@@ -54,7 +54,9 @@ def build(src: Path, out: Path) -> None:
         if c.get("logo_light"):  # a dark logo on a dark page: knock out a white background, then paint it in the ink colour
             tone = col.get("text", col["ink"]) if c.get("layout") == "editorial" else col["ink"]  # dark logo on the light editorial page
             ink = tuple(int(tone[i:i + 2], 16) for i in (1, 3, 5))
-            white_bg = im.getpixel((1, 1))[3] > 200 and min(im.getpixel((1, 1))[:3]) > 235
+            w, h = im.size  # judge the background by the whole border, not one corner (a thin dark frame fooled it)
+            edge = [im.getpixel((x, y)) for x in range(w) for y in (0, h - 1)] + [im.getpixel((x, y)) for y in range(h) for x in (0, w - 1)]
+            white_bg = sum(1 for r, g, b, a in edge if a > 200 and min(r, g, b) > 235) > len(edge) * .5
             px = [(*ink, 0 if (white_bg and r > 235 and g > 235 and b > 235) else a) for r, g, b, a in im.getdata()]
             im.putdata(px)
         im = im.crop(im.getbbox() or (0, 0, *im.size)); im.save(out / "logo.png"); logo = "logo.png"
