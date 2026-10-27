@@ -23,6 +23,7 @@ from starlette.requests import ClientDisconnect
 
 import alerts
 import alfredmem
+import health
 import helpers
 import instagram_dms
 import kinetic_briefing
@@ -90,6 +91,8 @@ async def lifespan(app: FastAPI):
     watchers.append(asyncio.create_task(instagram_dms.watch(settings, app.state.http,  # replies to Instagram DMs
                                                             lambda text, kind: announce(app, text, kind))))
     watchers.append(tiktokstudio.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
+    if settings.health_alerts:  # the drive filling up, HQ or the website going down
+        watchers.append(asyncio.create_task(health.watch(settings, lambda text, kind: announce(app, text, kind))))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
     yield

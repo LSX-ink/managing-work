@@ -152,3 +152,21 @@ def test_money():
     assert kb.money(44750, "gbp") == "£447.50" and kb.money(1000, "USD") == "$10.00"
     assert kb.money(500, "nok") == "5.00 NOK"
     assert date.fromisoformat("2026-10-21") == TODAY
+
+
+def test_weekly_report_compares_the_week_just_gone_with_the_one_before(s):
+    w = kb.weekly_gather(s, date(2026, 10, 26))  # a Monday
+    assert (w["week"], w["sunday"]) == (date(2026, 10, 19), date(2026, 10, 25))
+    assert (w["numbers"]["this"]["messages"], w["numbers"]["last"]["messages"]) == (0, 1)  # Joe's: the 15th
+    assert kb.weekly_short(s, w).startswith("Week of 19 October: 0 messages sent (down from 1); 0 replies; ")
+    assert "| Messages sent |" in kb.weekly_text(s, w)
+    out = asyncio.run(kb.run_tool("kinetic_briefing", {"action": "weekly"}, s))
+    assert "your weekly report" in out
+
+
+def test_weekly_report_comes_once_on_monday_morning(s):
+    assert kb.weekly_auto(s, datetime(2026, 10, 26, 8, 0)) == ("", "")  # before nine
+    assert kb.weekly_auto(s, datetime(2026, 10, 27, 10, 0)) == ("", "")  # a Tuesday
+    spoken, shown = kb.weekly_auto(s, datetime(2026, 10, 26, 9, 30))
+    assert spoken.startswith("Sir, your weekly report. Week of 19 October") and shown.startswith("Weekly report.")
+    assert kb.weekly_auto(s, datetime(2026, 10, 26, 11, 0)) == ("", "")  # once a week

@@ -107,6 +107,7 @@ class Settings:
     ntfy_server: str = os.getenv("JARVIS_NTFY_SERVER", "https://ntfy.sh").strip()
     # And the other way: the alerts that matter go to your phone (the free ntfy app) on a second private topic
     phone_push: bool = _bool("JARVIS_PHONE_PUSH", True)
+    health_alerts: bool = _bool("JARVIS_HEALTH_ALERTS", True)  # drive full, HQ or the website down (health.watch)
     phone_push_kinds: str = os.getenv("JARVIS_PHONE_PUSH_KINDS", "briefing,instagram,email,sales,health,weekly")
     calendar_url: str = os.getenv("JARVIS_CALENDAR_URL", "").strip()  # private iCal (.ics) address, read-only
     # New abilities: requests Alfred can't handle go to Claude as GitHub issues on this repository

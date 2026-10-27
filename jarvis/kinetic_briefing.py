@@ -29,8 +29,10 @@ import kinetic_store as st
 from config import Settings
 
 NAMES = {"kinetic_briefing"}
-ACTIONS = ["briefing", "last"]
+ACTIONS = ["briefing", "last", "weekly"]
 LAST_RUN = "kinetic-briefing-last.json"
+LAST_WEEKLY = "kinetic-weekly-last.json"
+WEEKLY_DAY = 0  # Monday, from BRIEF_HOUR: the week just gone
 BRIEF_HOUR = 9
 CHECK_SECONDS = 600
 FIRST_LOOK = 60  # seconds after start before the first check, so a quick restart (or a test) never runs wrangler
@@ -369,6 +371,84 @@ def last(settings: Settings, args: dict):
     return st.file_shown(settings, found[-1], f"Your last briefing is on the screen ({st.where(settings, found[-1])}).")
 
 
+# ---- the weekly report -------------------------------------------------------------
+
+def weekly_gather(settings: Settings, today: date | None = None) -> dict:
+    """The last full week (Monday to Sunday) against the week before it."""
+    today = today or st.today()
+    this_monday, _ = mondays(today)
+    sunday = this_monday - timedelta(days=1)
+    week, before = mondays(sunday)
+    site = site_part(settings, ms(week), (ms(week), ms(before)))
+    return {"week": week, "sunday": sunday, "site": site, "numbers": numbers(settings, site, sunday),
+            "unpaid": [r for r in st.rows_of(settings, st.INVOICES) if r.get("status") == "unpaid"]}
+
+
+def _change(label: str, now, before) -> str:
+    """"33 messages sent (up from 20)"."""
+    if now is None:
+        return f"{label} couldn't be checked"
+    if before is None or now == before:
+        return f"{now} {label}" + (" (same as the week before)" if now == before and now else "")
+    return f"{now} {label} ({'up' if now > before else 'down'} from {before})"
+
+
+def weekly_short(settings: Settings, w: dict) -> str:
+    n = w["numbers"]
+    this, last = n["this"], n["last"]
+    step, hint = weakest(n)
+    parts = [_change(label, this[key], last[key]) for label, key in (
+        ("messages sent", "messages"), ("replies", "replies"), ("mock-ups", "mockups"), ("briefs", "briefs"),
+        ("payments", "payments"))]
+    return (f"Week of {w['week'].strftime('%d %B').lstrip('0')}: " + "; ".join(parts) + ". "
+            + (f"The step to work on is {step}: {hint}" if step else hint[0].upper() + hint[1:]))
+
+
+def weekly_text(settings: Settings, w: dict) -> str:
+    signups = w["site"].get("signups") or {}
+    lines = [f"# Weekly report: {w['week'].strftime('%d %B %Y').lstrip('0')} to "
+             f"{w['sunday'].strftime('%d %B').lstrip('0')}", "",
+             "This week is the week just gone; last week is the one before it.", ""]
+    lines += numbers_lines(w["numbers"])
+    lines += ["", "## Also", f"- Website sign-ups: {signups['error'] if 'error' in signups else signups.get('n', 0)}",
+              f"- Unpaid invoices: {len(w['unpaid'])}"]
+    return "\n".join(lines) + "\n"
+
+
+def weekly_save(settings: Settings, w: dict):
+    return st.write(settings, ("Briefings",), f"Weekly report {w['week'].isoformat()}.md", weekly_text(settings, w),
+                    replace=True)
+
+
+def weekly(settings: Settings, args: dict):
+    w = weekly_gather(settings)
+    path = weekly_save(settings, w)
+    return st.file_shown(settings, path, f"{settings.user_address.capitalize()}, your weekly report. "
+                         f"{weekly_short(settings, w)} The full version is on the screen and saved in "
+                         f"{st.where(settings, path)}.")
+
+
+def weekly_due(settings: Settings, now: datetime | None = None) -> bool:
+    """True once a week, on WEEKLY_DAY from BRIEF_HOUR, and records it (even across a restart)."""
+    now = now or datetime.now()
+    week = now.date().isocalendar()[:2]
+    if now.weekday() != WEEKLY_DAY or now.hour < BRIEF_HOUR or st.load(settings, LAST_WEEKLY, {}).get("week") == list(week):
+        return False
+    st.save(settings, LAST_WEEKLY, {"week": list(week)})
+    return True
+
+
+def weekly_auto(settings: Settings, now: datetime | None = None) -> tuple[str, str]:
+    """(spoken, notification) for the weekly report, or ("", "") when it isn't due."""
+    if not weekly_due(settings, now):
+        return "", ""
+    w = weekly_gather(settings, (now or datetime.now()).date())
+    path = weekly_save(settings, w)
+    short = weekly_short(settings, w)
+    return (f"{settings.user_address.capitalize()}, your weekly report. {short}",
+            f"Weekly report. {short} Full report: {st.where(settings, path)}.")
+
+
 # ---- once a day by himself -----------------------------------------------------------
 
 def due(settings: Settings, now: datetime | None = None) -> bool:
@@ -400,6 +480,9 @@ async def watch(settings: Settings, announce, someone_there) -> None:
                 spoken, shown = await asyncio.to_thread(daily, settings)
                 if spoken:
                     await announce(spoken, "briefing", shown)
+                spoken, shown = await asyncio.to_thread(weekly_auto, settings)
+                if spoken:
+                    await announce(spoken, "weekly", shown)
         except Exception as exc:  # a bad file or a missing tool must not stop the watcher
             print(f"[jarvis] Morning briefing: {exc!r}", flush=True)
         await asyncio.sleep(CHECK_SECONDS)
@@ -412,7 +495,9 @@ def tool_definitions() -> list[dict]:
                        "briefing: new website sign-ups and briefs since yesterday, Stripe payments, follow-ups due "
                        "today, unpaid and overdue invoices, where the email series is at and the best leads to "
                        "contact today; a short spoken summary, the full version on screen and saved as a .md in "
-                       "Kinetic Web Designs/Briefings. last: show the last saved briefing. Read-only: nothing is sent.",
+                       "Kinetic Web Designs/Briefings. last: show the last saved briefing. weekly: the weekly report (\"weekly "
+                       "report\", \"how did last week go?\"): last week's messages, replies, mock-ups, briefs and "
+                       "payments against the week before, and the step to work on. Read-only: nothing is sent.",
         "input_schema": {
             "type": "object",
             "properties": {"action": {"type": "string", "enum": ACTIONS}},
@@ -423,6 +508,6 @@ def tool_definitions() -> list[dict]:
 
 
 async def run_tool(name: str, args: dict, settings: Settings, http=None):
-    handlers = {"briefing": briefing, "last": last}
+    handlers = {"briefing": briefing, "last": last, "weekly": weekly}
     return await asyncio.to_thread(st.dispatch, handlers, args.get("action") or "briefing", settings, args,
                                    "briefing")
