@@ -127,3 +127,12 @@ async def test_the_review_cannot_break_the_page_shape(tmp_path, monkeypatch):
     assert new["h1"] == ["a", "b", "c"]
     assert new["colours"]["muted"] == "#a0a0a0" and new["colours"]["gold"] == "#ffcc00"  # partial change merged
     assert new["experience"]["title"] == "Reciprocity" and new["experience"]["text"] == "X"
+
+
+def test_a_logo_the_builder_cannot_read_is_left_out(tmp_path):
+    from PIL import Image
+    Image.new("RGB", (8, 8)).save(tmp_path / "logo0.png")
+    (tmp_path / "logo1.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg'/>")
+    assert auto.usable_image(tmp_path / "logo0.png") and not auto.usable_image(tmp_path / "logo1.svg")
+    c = auto.tidy({"logo": "logo1.svg"}, tmp_path, [], "atelier", None, {"name": "Shop"})
+    assert c["logo"] == ""

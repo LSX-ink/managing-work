@@ -123,6 +123,16 @@ async def write_config(client, model: str, folder: Path, layout: str, fonts: str
     return tidy(c, folder, photos, layout, fonts, facts)
 
 
+def usable_image(path: Path) -> bool:
+    from PIL import Image
+    try:
+        with Image.open(path) as im:
+            im.verify()
+        return True
+    except Exception:  # noqa: BLE001 - missing, SVG, broken: all mean "don't use it"
+        return False
+
+
 def tidy(c: dict, folder: Path, photos: list[str], layout: str, fonts: str | None, facts: dict) -> dict:
     """Google's facts back word for word, only real photo files and each one once, the chosen layout and fonts."""
     c.update({k: v for k, v in facts.items() if v})  # Google's own words win
@@ -137,8 +147,8 @@ def tidy(c: dict, folder: Path, photos: list[str], layout: str, fonts: str | Non
     c["gallery"] = fresh(c.get("gallery"))
     if len(c["gallery"]) < 6:  # top it up with photos not used yet
         c["gallery"] += fresh([p for p in photos if p not in used])[:6 - len(c["gallery"])]
-    if c.get("logo") and not (folder / c["logo"]).exists():
-        c["logo"] = ""
+    if c.get("logo") and not usable_image(folder / c["logo"]):
+        c["logo"] = ""  # missing, or a format the page builder can't read (an SVG logo, say)
     if layout != "atelier":
         c["layout"] = layout
     if fonts:
