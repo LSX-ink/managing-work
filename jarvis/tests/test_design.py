@@ -44,7 +44,7 @@ def guide(args):
 
 def test_guide_list_and_read():
     listing = guide({})
-    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 69
+    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 102
     assert "Taste Skill guides:" in listing and "taste-skill:" in listing
     assert guide({"guide": "taste-skill"}).startswith("taste-skill/SKILL.md")
     out = guide({"guide": "animate", "file": "RECIPES.md"})
@@ -81,3 +81,4 @@ def test_the_website_playbook_lists_every_website_skill_installed():
     listing = design.guide({"guide": "website"})
     assert "use ALL of these" in listing and "[not installed]" not in listing
     assert "impeccable" in listing and "web-design-guidelines" in listing and "copywriting" in listing
+    assert "threejs-webgl" in listing and "lightweight-3d-effects" in listing  # 3D too

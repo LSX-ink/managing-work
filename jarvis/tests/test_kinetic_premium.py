@@ -100,8 +100,8 @@ async def test_design_review_uses_every_website_skill_and_never_touches_facts(tm
     reviewer = _Reviewer(answer)
     new, notes = await auto.review(reviewer, "m", tmp_path, tmp_path / "index.html", c, "atelier", {"name": "Shop", "phone": "0114"})
     assert "OUR DESIGN SKILLS" in reviewer.system
-    for name, _, _, _ in design.WEBSITE_SKILLS:
-        assert f"=== {name}/" in reviewer.system  # every website skill is in the review
+    for name, _, _, size in design.WEBSITE_SKILLS:
+        assert (f"=== {name}/" in reviewer.system) == bool(size)  # every review skill; the 3D ones are for hand builds
     assert new["h1"] == ["Sharp.", "Clean.", "Yours."] and new["phone"] == "0114" and "special" not in new
     assert [g["group"] for g in new["services"]] == ["Cuts", "Fades"]  # regrouped, prices kept
     assert new["hero"] == ["g/02.jpg"] and notes == ["tighter headline (copywriting)"]

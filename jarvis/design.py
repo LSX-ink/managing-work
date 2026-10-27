@@ -29,6 +29,13 @@ order, and website_pack() hands excerpts of all of them to the mock-up builder's
 skills/superpowers holds five of Jesse Vincent's Superpowers (MIT, from github.com/obra/superpowers, written guides
 only): systematic-debugging, verification-before-completion, test-driven-development, writing-plans and
 receiving-code-review. skills/anthropic also holds mcp-builder and webapp-testing (guides only, their scripts left out).
+3D for the web: skills/threejs holds the OpenAEC Three.js Skill Package (MIT, from
+github.com/OpenAEC-Foundation/Three.js-Claude-Skill-Package, 22 guides: renderer, scene graph, lighting, shadows,
+materials, shaders, post-processing, animation, loaders, controls, WebGPU, React Three Fiber, performance and
+rendering fixes, a scene builder and a model optimiser) and skills/web3d holds freshtechbro's claudedesignskills (MIT,
+written guides only): threejs-webgl, lightweight-3d-effects, web3d-integration-patterns, gsap-scrolltrigger,
+spline-interactive, blender-web-pipeline, modern-web-design, scroll-reveal-libraries, lottie-animations, animejs and
+react-three-fiber.
 
 Any other folder dropped into skills/ with */SKILL.md guides is picked up too, named after its folder. skillscan checks
 every library first: blocked ones are refused, and a new or changed one is scanned the first time guides are listed
@@ -48,7 +55,8 @@ SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
 GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic",
                    "business": "Business", "marketing": "Marketing Skills", "impeccable": "Impeccable",
-                   "vercel": "Vercel", "superpowers": "Superpowers"}  # labels
+                   "vercel": "Vercel", "superpowers": "Superpowers", "threejs": "Three.js",
+                   "web3d": "3D and motion for the web"}  # labels
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -120,6 +128,17 @@ WEBSITE_SKILLS = [
     ("taste-skill", "SKILL.md", "no AI-looking pages: layout, type and colour taste", 9000),
     ("redesign-skill", "SKILL.md", "redesigning a business's existing site", 3000),
     ("emil-design-eng", "SKILL.md", "polish and motion that feels right", 5000),
+    ("modern-web-design", "SKILL.md", "what a current, motion-rich site looks like", 3000),
+    # 3D (owner, 27 Oct 2026: "include the skills best suited for 3d web designs"). 0: read when building by hand; the
+    # automatic review only changes words, colours and photos, so it can't add 3D and doesn't need them.
+    ("lightweight-3d-effects", "SKILL.md", "tasteful 3D touches (tilt, depth, a floating object) that stay fast", 0),
+    ("threejs-webgl", "SKILL.md", "a full 3D scene with Three.js", 0),
+    ("web3d-integration-patterns", "SKILL.md", "putting 3D into a real page: loading, fallbacks, phones", 0),
+    ("threejs-agents-scene-builder", "SKILL.md", "planning and building a Three.js scene step by step", 0),
+    ("threejs-impl-lighting", "SKILL.md", "lighting that makes 3D look real", 0),
+    ("threejs-errors-performance", "SKILL.md", "keeping 3D smooth on a phone", 0),
+    ("gsap-scrolltrigger", "SKILL.md", "scroll-driven animation and 3D camera moves", 0),
+    ("spline-interactive", "SKILL.md", "ready-made interactive 3D from Spline", 0),
     ("web-design-guidelines", "references/rules.md", "accessibility, forms, motion, type and performance rules", 8300),
     ("copywriting", "SKILL.md", "every word on the page", 5000),
     ("cro", "SKILL.md", "turning visitors into bookings and calls", 4000),
@@ -150,7 +169,7 @@ def website_pack(settings: Settings | None = None) -> str:
     parts = []
     for name, file, why, size in WEBSITE_SKILLS:
         path = found.get(name)
-        if not path or not (path / file).exists() or skillscan.blocked_reason(settings, path.parent.name):
+        if not size or not path or not (path / file).exists() or skillscan.blocked_reason(settings, path.parent.name):
             continue
         text = (path / file).read_text(encoding="utf-8")
         parts.append(f"=== {name}/{file}: {why} ===\n{text[:size]}")
@@ -268,7 +287,10 @@ def tool_definitions() -> list[dict]:
                        "graphics. Superpowers (working like a pro on any job): "
                        "systematic-debugging (find the real cause before fixing anything), verification-before-completion "
                        "(prove it works before saying it's done), writing-plans, test-driven-development, "
-                       "receiving-code-review. Anthropic mcp-builder (new connectors) and webapp-testing (testing a web "
+                       "receiving-code-review. 3D websites: lightweight-3d-effects, threejs-webgl, "
+                       "web3d-integration-patterns, gsap-scrolltrigger, spline-interactive, blender-web-pipeline and "
+                       "the threejs-* guides (renderer, lighting, materials, shaders, post-processing, performance...). "
+                       "Anthropic mcp-builder (new connectors) and webapp-testing (testing a web "
                        "page with Playwright). New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
