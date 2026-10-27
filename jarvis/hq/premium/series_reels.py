@@ -34,7 +34,7 @@ async def record(b, n, title, tab, look, out: Path) -> Path:
     await pg.goto("https://kineticwebdesigns.co.uk/", wait_until="domcontentloaded"); await pg.wait_for_timeout(3000)
     await pg.evaluate("const g=document.getElementById('gate'); if(g) g.style.display='none'; document.body.style.overflow='auto'")
     await pg.evaluate(f"document.getElementById('sx-tab-{tab}').click()"); await pg.wait_for_timeout(1200)
-    await pg.evaluate(f"document.querySelector(\"#sx-panel [data-look='{look}']\").click()"); await pg.wait_for_timeout(1500)
+    await pg.evaluate(f"(()=>{{const l=document.querySelector(\"#sx-panel [data-look='{look}']\"); if(l) l.click()}})()"); await pg.wait_for_timeout(1500)  # some tabs have one design and no picker
     await pg.evaluate("(()=>{const b=[...document.querySelectorAll('#sx-panel button')].find(x=>x.textContent.trim()==='Phone'); if(b) b.click()})()")
     await pg.wait_for_timeout(800)
     # the phone frame fills the screen, everything else hidden
