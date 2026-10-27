@@ -1638,6 +1638,8 @@ class Brain:
                 await asyncio.to_thread(save_carry_over, self.settings, self.messages[start]["content"], reply)
                 remember = asyncio.to_thread(alfredmem.remember_turn, self.settings, self.messages[start]["content"], reply)
                 asyncio.get_running_loop().create_task(remember)  # in the background: never slows the reply
+                if self.settings.auto_learn and aboutyou.worth_learning(user_text):  # a rule, a client, a price...
+                    asyncio.get_running_loop().create_task(aboutyou.learn(self.settings, self.client, user_text, reply))
         except asyncio.CancelledError:  # you said cancel: forget the half-finished turn so history stays valid
             del self.messages[start:]
             raise
