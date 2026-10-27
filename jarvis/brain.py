@@ -1612,6 +1612,18 @@ class Brain:
             raise
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive
             print(f"[jarvis] Error: {exc!r}", flush=True)
+            # the free route broke part-way through a reply: rest it and answer this turn with Claude instead
+            client = self.client
+            if getattr(client, "last_route", "") == "OmniRoute" and hasattr(client, "rest") and not isinstance(exc, asyncio.CancelledError):
+                client.rest("OmniRoute", exc)
+                del self.messages[start + 1:]
+                try:
+                    await self._run(speak, turn_effort(self.settings, user_text), turn_model(self.settings, user_text, self.last_model))
+                    self.messages = trim_history(self.messages, keep=TRIMMED_TO)
+                    return
+                except Exception as exc2:  # Claude failed too: fall through and say why
+                    print(f"[jarvis] Claude after OmniRoute failed: {exc2!r}", flush=True)
+                    exc = exc2
             del self.messages[start:]
             # say what's wrong when it's something the user can fix (key, credit, network)
             key = error_key(exc)
@@ -1764,7 +1776,7 @@ class Brain:
             return r
 
         active = [c for c in calls if c.name not in computer.PASSIVE]
-        if active and not self._allow_all:
+        if active and not self._allow_all and not getattr(self.settings, "computer_auto_allow", False):
             steps = [computer.describe(c.name, dict(c.input)) for c in active]
             print(f"  asking: {steps}", flush=True)
             answer = await self.confirm(steps) if self.confirm else "deny"

@@ -9,3 +9,22 @@ frontend/custom.css
 memory/
 wishes.md
 alfred-mem/
+
+# never commit: secrets backups and local deploy state
+.env.backup
+.wrangler/
+# research photos, screenshots and generated media for mock-ups (large; rebuilt from config.json by the scripts)
+hq/stays/leads/
+hq/premium/leads/*/s/
+hq/premium/leads/*/g/
+hq/premium/leads/*/r/
+hq/premium/leads/*/*.jpg
+hq/premium/leads/*/*.png
+hq/premium/leads/*/*.svg
+hq/premium/leads/*.jpg
+hq/premium/shots/
+hq/premium/shots2/
+hq/premium/full_check.json
+hq/stays/_stays_build_run.py
+hq/stays/*_before_*.py
+hq/static/v4_before_*.html

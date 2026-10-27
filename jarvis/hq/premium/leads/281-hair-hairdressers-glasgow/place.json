@@ -1,0 +1,366 @@
+{
+ "id": "ChIJIeZoUSZEiEgRCwjjyM22lTE",
+ "nationalPhoneNumber": "0141 332 0707",
+ "internationalPhoneNumber": "+44 141 332 0707",
+ "formattedAddress": "1/2, First Floor, 281 Sauchiehall St, Glasgow G2 3HQ, UK",
+ "location": {
+  "latitude": 55.865308999999996,
+  "longitude": -4.2638038
+ },
+ "rating": 4.9,
+ "googleMapsUri": "https://maps.google.com/?cid=3572962874343229451&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+ "websiteUri": "http://281hair.co.uk/",
+ "regularOpeningHours": {
+  "openNow": true,
+  "periods": [
+   {
+    "open": {
+     "day": 0,
+     "hour": 12,
+     "minute": 0
+    },
+    "close": {
+     "day": 0,
+     "hour": 17,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 1,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 1,
+     "hour": 17,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 2,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 2,
+     "hour": 20,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 3,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 3,
+     "hour": 20,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 4,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 4,
+     "hour": 20,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 5,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 5,
+     "hour": 20,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 6,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 6,
+     "hour": 16,
+     "minute": 0
+    }
+   }
+  ],
+  "weekdayDescriptions": [
+   "Monday: 10:00 AM – 5:00 PM",
+   "Tuesday: 10:00 AM – 8:00 PM",
+   "Wednesday: 10:00 AM – 8:00 PM",
+   "Thursday: 10:00 AM – 8:00 PM",
+   "Friday: 10:00 AM – 8:00 PM",
+   "Saturday: 9:00 AM – 4:00 PM",
+   "Sunday: 12:00 – 5:00 PM"
+  ],
+  "nextCloseTime": "2026-10-26T17:00:00Z"
+ },
+ "userRatingCount": 1539,
+ "displayName": {
+  "text": "281 Hair - Hairdressers Glasgow",
+  "languageCode": "en"
+ },
+ "reviews": [
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/reviews/Ci9DQUlRQUNvZENodHljRjlvT2pOYWJrMUVWeTF6Um5SRU4zbEdOVkEyTUdsWFNGRRAB",
+   "relativePublishTimeDescription": "3 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I had such a wonderful experience at 281 Hair and left feeling completely satisfied and genuinely happy with the results.\n\nFrom the very beginning, Danni was fantastic. Even during the initial consultation and patch test, she was incredibly helpful, answer my questions, and recommend the best approach for achieving the look I wanted. Her knowledge and honesty immediately put me at ease, and I felt confident that I was in good hands.\n\nThroughout my appointment, Danni was friendly, professional, and highly skilled. She worked efficiently without ever making me feel rushed, and everything flowed so smoothly from start to finish. The colours I asked for and what she ended up creating together turned out beautifully, and both the cut and styling exceeded my expectations.\n\nMy hair turned out exactly as I had wanted—if not better. It’s quite rare to leave a salon feeling that your hair matches the picture you had in your head, but that’s exactly what happened.\n\nThank you, Danni, and everyone 281 Hair, for such a lovely experience. I would highly recommend 281 Hair to anyone looking for a talented stylist who listens, gives great advice, and delivers beautiful results.",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I had such a wonderful experience at 281 Hair and left feeling completely satisfied and genuinely happy with the results.\n\nFrom the very beginning, Danni was fantastic. Even during the initial consultation and patch test, she was incredibly helpful, answer my questions, and recommend the best approach for achieving the look I wanted. Her knowledge and honesty immediately put me at ease, and I felt confident that I was in good hands.\n\nThroughout my appointment, Danni was friendly, professional, and highly skilled. She worked efficiently without ever making me feel rushed, and everything flowed so smoothly from start to finish. The colours I asked for and what she ended up creating together turned out beautifully, and both the cut and styling exceeded my expectations.\n\nMy hair turned out exactly as I had wanted—if not better. It’s quite rare to leave a salon feeling that your hair matches the picture you had in your head, but that’s exactly what happened.\n\nThank you, Danni, and everyone 281 Hair, for such a lovely experience. I would highly recommend 281 Hair to anyone looking for a talented stylist who listens, gives great advice, and delivers beautiful results.",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Keshvi Mishra",
+    "uri": "https://www.google.com/maps/contrib/101659525681222670418/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVXiUkVwKPUSKDlr6XwvyOKqJdZmVmOqwWF2xtmP1JJgJDJLphzHw=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-07-12T17:35:32.120025089Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2pOYWJrMUVWeTF6Um5SRU4zbEdOVkEyTUdsWFNGRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2pOYWJrMUVWeTF6Um5SRU4zbEdOVkEyTUdsWFNGRRAB!2m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/reviews/Ci9DQUlRQUNvZENodHljRjlvT2psclpWbEtRamhQVEZkcFFXdDBWbHBvY25FNVZVRRAB",
+   "relativePublishTimeDescription": "3 months ago",
+   "rating": 5,
+   "text": {
+    "text": "Very happy with my first experience with this salon. Lesley spent the time getting to know what look it was I wanted to achieve & sat down with me to talk with me about what would suit my hair type & how i should care for it from now on to keep it in tip top condition.\nWas delighted with my results. I've had problematic, dry  brittle unruly hair all my life but now that ive had the professional touch I will be back as a regular.\nNever thought my hair could ever look this good.  Can't wait to go back for some more 'me' time.",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "Very happy with my first experience with this salon. Lesley spent the time getting to know what look it was I wanted to achieve & sat down with me to talk with me about what would suit my hair type & how i should care for it from now on to keep it in tip top condition.\nWas delighted with my results. I've had problematic, dry  brittle unruly hair all my life but now that ive had the professional touch I will be back as a regular.\nNever thought my hair could ever look this good.  Can't wait to go back for some more 'me' time.",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Louise Dirom",
+    "uri": "https://www.google.com/maps/contrib/106288841074295757245/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocK5dhSBbn_qIzWanfczt-kBneJFuRl-FS5W4QNxTOOJAeX_1mg=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-07-16T22:23:41.744983831Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2psclpWbEtRamhQVEZkcFFXdDBWbHBvY25FNVZVRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2psclpWbEtRamhQVEZkcFFXdDBWbHBvY25FNVZVRRAB!2m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/reviews/Ci9DQUlRQUNvZENodHljRjlvT2xoQ1JVdDBWbVk1WDNKMmFYUnVNVWhDZUU4M2JYYxAB",
+   "relativePublishTimeDescription": "11 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I would give this salon more than 5 stars if possible!! Best experience!! Everyone is absolutely sweet and welcoming. Book your appointment you won’t be disappointed!!\n\nI have never gotten my hair with permanent tint and had a consult with Beth prior to my appointment. She was extremely thorough and answered all my questions and concerns. I also had a very bold and drastic change I wanted to achieve: I’m a natural dark brunette and wanted a Cowboy copper tint. Not only did Beth manage to match the colors perfectly… we didn’t have to use bleach. Other salons said it would not be possible to achieve without bleaching my hair. There is nothing particularly wrong with hair bleaching but it was a concern of mine that I would have liked to avoid and we did. It did take two sessions to achieve the final look but, that most certainly can happen when dying hair especially when bleach isn’t used so it was not an obstacle at all!! Beth was super patient and made me feel extremely comfortable during the whole process. Beth is extremely knowledgeable and personable! I would recommend anyone in that salon but I personally got to work with Beth and I know she has me as a client for as long as I’m living here in Scotland. Thank you to the salon for the hospitality and for achieving the change I wanted! I am extremely happy with the results and can’t wait to keep this hair color for the next few years!!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I would give this salon more than 5 stars if possible!! Best experience!! Everyone is absolutely sweet and welcoming. Book your appointment you won’t be disappointed!!\n\nI have never gotten my hair with permanent tint and had a consult with Beth prior to my appointment. She was extremely thorough and answered all my questions and concerns. I also had a very bold and drastic change I wanted to achieve: I’m a natural dark brunette and wanted a Cowboy copper tint. Not only did Beth manage to match the colors perfectly… we didn’t have to use bleach. Other salons said it would not be possible to achieve without bleaching my hair. There is nothing particularly wrong with hair bleaching but it was a concern of mine that I would have liked to avoid and we did. It did take two sessions to achieve the final look but, that most certainly can happen when dying hair especially when bleach isn’t used so it was not an obstacle at all!! Beth was super patient and made me feel extremely comfortable during the whole process. Beth is extremely knowledgeable and personable! I would recommend anyone in that salon but I personally got to work with Beth and I know she has me as a client for as long as I’m living here in Scotland. Thank you to the salon for the hospitality and for achieving the change I wanted! I am extremely happy with the results and can’t wait to keep this hair color for the next few years!!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Melanie Quiroz-Vega",
+    "uri": "https://www.google.com/maps/contrib/105017937507904599558/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUy_WH-9adyVSy1fnETXaBqhp3ByaK3W5Lxkgz8IKovGZXZlZtr=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2025-11-20T08:19:12.119619143Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2xoQ1JVdDBWbVk1WDNKMmFYUnVNVWhDZUU4M2JYYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2xoQ1JVdDBWbVk1WDNKMmFYUnVNVWhDZUU4M2JYYxAB!2m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/reviews/Ci9DQUlRQUNvZENodHljRjlvT2xWU1J6WkljV2hCUkdWTWQwNXhhMFI2UmxwS1YzYxAB",
+   "relativePublishTimeDescription": "a week ago",
+   "rating": 5,
+   "text": {
+    "text": "I had the most amazing experience at 281 Hair. It was my first appointment and Lesley could not have been more amazing. She took time to talk me through everything she was doing to my hair and was so easy to chat to. She did a stunning job, would highly recommend!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I had the most amazing experience at 281 Hair. It was my first appointment and Lesley could not have been more amazing. She took time to talk me through everything she was doing to my hair and was so easy to chat to. She did a stunning job, would highly recommend!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Olivia MacCloy",
+    "uri": "https://www.google.com/maps/contrib/114513169555896634736/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocKcEf8YksQabBEWRmp9i8IhAnuZRB-_LnKeEVmApUMzsaWnRg=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-10-18T15:25:24.500960949Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2xWU1J6WkljV2hCUkdWTWQwNXhhMFI2UmxwS1YzYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2xWU1J6WkljV2hCUkdWTWQwNXhhMFI2UmxwS1YzYxAB!2m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/reviews/Ci9DQUlRQUNvZENodHljRjlvT25wWFEwOUJSMGt4TFZKMFJITkJWbGRCU1ROb1QxRRAB",
+   "relativePublishTimeDescription": "3 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I had the most wonderful experience at 281 Hair Salon two weeks ago and I’m still smiling every time I look in the mirror! ✨️😄 I went in for a balayage hair colour and a restyling cut, and Cheryl was absolutely fantastic from the moment I walked in.She was so friendly, warm, and genuinely welcoming. What I appreciated most was how understanding she was — I was really hesitant about colouring my hair and kept second-guessing myself. Cheryl listened patiently, gave me honest advice, and made the whole decision process feel easy and exciting instead of stressful. She perfectly understood what I wanted and suggested a beautiful balayage that looks so natural and glowing.The cut completely transformed my style too — it’s fresh, modern, and exactly what I needed. I feel so much more confident with my new look!Thank you Cheryl and the team at 281 Hair Salon! You’ve gained a very happy regular customer. Highly recommend booking with Cheryl if you want amazing results and a relaxing, positive experience 💕",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I had the most wonderful experience at 281 Hair Salon two weeks ago and I’m still smiling every time I look in the mirror! ✨️😄 I went in for a balayage hair colour and a restyling cut, and Cheryl was absolutely fantastic from the moment I walked in.She was so friendly, warm, and genuinely welcoming. What I appreciated most was how understanding she was — I was really hesitant about colouring my hair and kept second-guessing myself. Cheryl listened patiently, gave me honest advice, and made the whole decision process feel easy and exciting instead of stressful. She perfectly understood what I wanted and suggested a beautiful balayage that looks so natural and glowing.The cut completely transformed my style too — it’s fresh, modern, and exactly what I needed. I feel so much more confident with my new look!Thank you Cheryl and the team at 281 Hair Salon! You’ve gained a very happy regular customer. Highly recommend booking with Cheryl if you want amazing results and a relaxing, positive experience 💕",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Meron Beraki",
+    "uri": "https://www.google.com/maps/contrib/112733441342464042830/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocLwUMrU_Lkn66zGTcXA-7f9aPNs92_lSruz69ExvUmKqVOXFw=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-07-14T12:48:45.806012485Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT25wWFEwOUJSMGt4TFZKMFJITkJWbGRCU1ROb1QxRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT25wWFEwOUJSMGt4TFZKMFJITkJWbGRCU1ROb1QxRRAB!2m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  }
+ ],
+ "photos": [
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMa2JS7u1LXqS9fZLdy7WQ8-u14pGmLu7gAFOl3cz0G9u8Rb3nJdJIrw5_Xp52qTmw16LaDNU9A15USGOGcI312b7pIHY_wLbpGA1ztJ8rSAWfqvGS9DitXGG8vPA8Z_V0W1vZRa40V6wm1uoN2xr81ROTpBPWUuXPHvA3UzCARB2wFI_qyxWi3lyedfFcQbsN0u88banO305yNXNLbTWnLSQY-Z-SGq0kZttcDzdk9mtLel0VSXSy9fG-YS3laDP_Xbzm1rgtLa5gjj2215xbned4W22_hzT9dzsuuLY70kxBrSSGYIGpO_g_-EGeQxaqqrQzdiLn2nYorQq4INwWRkBiWV2GqCPxQZulTcvQ5VUK_kd1ddsRCGNZ2r2UBL2Q4zB2cpebK6kSjVeLiikJmnuo0",
+   "widthPx": 638,
+   "heightPx": 359,
+   "authorAttributions": [
+    {
+     "displayName": "281 Hair - Hairdressers Glasgow",
+     "uri": "https://maps.google.com/maps/contrib/106707740029235322991",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWH4yn0mOWemrRBslndXpuvlanVR_Ny1l-gVgI5iXbDGlYsRVn2=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIC6jNbWDw&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIC6jNbWDw!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMYj1oLWLCNhieaESkGrKTnAUVpfViGCtQQfrM-22gAw26yCHaeGH-djFElAvt8Ua8mqYBBe2Z_4ggDVBZ03ikpIgkMpaQjcA-UNI9Jtw3qtQ9srpRG2VqM9VVxv_XwNythTySnvm15cdl6K1KvxOvHkcFqsO4oe1Noqf4jrdmFXpZ2dYbhmeR03efXnGuC0zjEYUf5OdjDxbvPA2XyjfyWgEBEnyfQ2Lipgw9bPepNYbAdBuRppW58wmlh7D6B1ascU8pUrVK5-lor23NciPaJ44vUOS2BlAW6PlZWtkITuWZz0ydmAwmXFDrcGeOkmDxjcipaFr_9gm44yNAoMEpNKO2g6nqWK02mW7g7WIF2P0wsRlhkdoKpE5OefHcwT6AWhQEJaluIJUXv2xB2mN4FuqsL9d3c",
+   "widthPx": 2160,
+   "heightPx": 3840,
+   "authorAttributions": [
+    {
+     "displayName": "ela mosin",
+     "uri": "https://maps.google.com/maps/contrib/113047860201295331016",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjXHpSk2Bpb4zztV8BFPAb8nCYA2FWkAhzNx6j_IVECAIfuKbgc=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICawN7v5AE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICawN7v5AE!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMa1lbzMeE8el5Yxqhqy8rZ_Br4ztiYZp_OQDsnFe04-WDOBT4jRwCEGWJfcBoiWboTFTtog6csNvh7NrJE916h6y0mbgwIAHbm10UM0mU-VxjLksXWVZo3i3GzS9SIdNK1SmFLmM9X9pR4zWylwmvmveYK3iUcrJ_ryiILPxnTvMzIpCUES8d1PQXG0vXFR6qYDZetl3CdHZJORuDz7dqeV1ou5pjJ5AgnJI8oaZHWHwwHnyaxhWelU4qoOybV8u4vuGLsWFHchhfjiP6HGSURjiNyTXsZQ7r4h0uCHl9Jr2o7epqRkHEn7C1Ba3l2tR7wmnE5HL8KkKYGpaXKnJIkXYlWVysjJatyF0_PbMBo_VH7lhnwzv1-SQ8Kt68y38RG37pvQ8LhGvf8qdrh9Kq3kqosfonk",
+   "widthPx": 640,
+   "heightPx": 480,
+   "authorAttributions": [
+    {
+     "displayName": "281 Hair - Hairdressers Glasgow",
+     "uri": "https://maps.google.com/maps/contrib/106707740029235322991",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWH4yn0mOWemrRBslndXpuvlanVR_Ny1l-gVgI5iXbDGlYsRVn2=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgID84NeuvQE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgID84NeuvQE!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMamaHhRiOVLliTXw5YePe6nzJ_wSRVQZe7ZE4sKF-8Z0QHXy6GrzFftoUcwoshBzYSGX8SYmh2z3gM--yIwbkBNGA2ByeLEjxZXqm9vPa-T8A2-23RdbYF9tf8OoJIyhSSDQojxAEO8eMQUyUHcLHSR2I4LejaJR2LoCRWYxKorazkUXQ5tI8A75wGuatUGCHql6hS6ezP-NqN_MYmxMRXv26rGgG76vEpSUMEt2aF5k5DDggespytFayWbooBkXOqPwOSMYDYyZ11yLB-36zH-wN_m61v6ApJw15WcVG03b-g9CBKo2uldPETk-pQEhim4RBbEnJppmfXg4Z7Zrmv9-BTb6ZrVzkdApcOptYfTluvRtkB_XjXqYKp8wKhZ7O6Pz-O3iLV6b21scg21Vmd8fg",
+   "widthPx": 2048,
+   "heightPx": 2048,
+   "authorAttributions": [
+    {
+     "displayName": "Zara",
+     "uri": "https://maps.google.com/maps/contrib/103879816833909809050",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVz_23ep8Zlxj1PHHXss0ARctz7ijs_YhpW8TP19MqpFqEW4gjg=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICq6enxCA&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICq6enxCA!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMZ70SrdpAYtlPw0EJFGPw0vCO0F4o3PAhkXvC7nGbibnfC5RM21vM4Mee9DDuGV1r-M5QiL-xu4fE1KWEC0TxB8h5b87jTu0-6VkFZsWr5L2R6oi0RiVp44QKbpQjuFxFgk2hcEA3s92DwdGA_c0zha8QhV2tww5LI_3ZHegoL4aDOG3O8ADc6As9p-RAq8uFeMLyqiZr3oM1pKMWdVOKI3cCFVzxLDwmzrLcuBRG2n_DwKvpxDE0ZSPn2O7J0KBoy6wnq4hhIdx-AwL_uPnRYNVknl1ZE4KceuNsIh5qKJrLITOnZOZ6SQNmCiMtsRxKwKZ5qm_oJsYAHQlRhF2A8nu6x-HHD4g0FsS66pDnpkpxfhNoLSzE20EZIMy3jKVEOS7BUkhhtLYuhspwylcKqYljL5YrE",
+   "widthPx": 899,
+   "heightPx": 1022,
+   "authorAttributions": [
+    {
+     "displayName": "281 Hair - Hairdressers Glasgow",
+     "uri": "https://maps.google.com/maps/contrib/106707740029235322991",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWH4yn0mOWemrRBslndXpuvlanVR_Ny1l-gVgI5iXbDGlYsRVn2=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgID84O-evQE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgID84O-evQE!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMablSvm7s_S9MOmtKbOfS70RnTIPqZB7bgWr_QSP51xDy35prZEJuE2MvE5lDzlH2Ws6PjIUf3gxI1C2zTnsNNS0Gar7asEHVQihrvISOy41HqQwmamoUo9VcO41w0HKKn1Xy1tmI7suH063WELEZNIg5bBRsMSpOHYPs3Y0X9xGxOZKR-_YR3_oHLJDKLjMk2ho0SQysvb9QZ5gPXfkv-BFg-grPCMIDulKJjzCzTo07QiUjeKprObyGI-qziXDt1BdB__xmeEWnGrs0JbfaRsTibrocsOHVwKCUDWyl5Fiu4fLxPIU3vwII-GUXjXnmFYQLatm8lsUd2pXHwnd5bLOyfjWi7NRCTfdf8MXBkWN_h_Y0-QQGYqSHR6cjonMVwKj_rg7fALYhGj7rEO_nMF5jub",
+   "widthPx": 2048,
+   "heightPx": 1300,
+   "authorAttributions": [
+    {
+     "displayName": "281 Hair - Hairdressers Glasgow",
+     "uri": "https://maps.google.com/maps/contrib/106707740029235322991",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWH4yn0mOWemrRBslndXpuvlanVR_Ny1l-gVgI5iXbDGlYsRVn2=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgID84O-e8QE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgID84O-e8QE!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMZ9cqz2-C11577wT2btyDEtQeU92konSrrgq4ndaXT2U4VSeLjRPUM-AwW47At5udxe_j4Zvcxij0njvHdFqJ0HF6c813ezDTgzsQjPO7BgmGstVljRt2YO50MMl0UFRJikAsQGNU2QU7xY39fwMZ_lIgr6OVELACcxqXwCu2hExysps2UlFhLE41t-e92AnqP99YcrNjEOJmKurqUHYSzsNa_ETiLlNV_jovEfYp_0poSw6AcoWe7bKTsqDkWPEu7lb6bbg_BKK17k-HHF5sS4bAR-bLV4n05TQ9h03qbrQ4E_-_jKwFiGavn8qXTcQzzbGLAgo5oz-vRuMighBxCA88IkMTnWn5P4nUjFGwo1n8o3uKgmDRQ1QjzTfJmQLyHf_hPkH8jtou9hqa6l0nh7OsbSAAhpZMEusRdqPx97KQ",
+   "widthPx": 3600,
+   "heightPx": 4800,
+   "authorAttributions": [
+    {
+     "displayName": "Neelofar",
+     "uri": "https://maps.google.com/maps/contrib/116590027269262606401",
+     "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocKicRxDNCXKzSictMdVoH5EibtGXNbFJJS5UQKWcZTptc61Ag=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhBhJ9ij4H3tXM_nPIaUH_Wk&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhBhJ9ij4H3tXM_nPIaUH_Wk!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMZWEiMaTBkiNUwytAsihmpmMSjLGGj7yV7AHQngrHmrr2-7zt6a4No64BgalY0W5Eps1PJ_prqgKJKYJsET4q3XCHG5gdCCRfqFECrPaRtxu0bS4oftDwfLx1n_8HZiDpi0JD56dya6MYVDWfZkrPPNCMYV9j8Kbr4xK551wTtamWgDZ-EGVMTCPVNG4wQe2zaiqmCm3yxqqYUkyi0JkLDffj3ct0uTE7aNV25iSw64PyefMJ5fW9gob7HYyjarridPir-WAzs_ep78nM1i3iGPpebl8Y2ohkR7U_uYEa7UURIyWYRufynb1gObsRJDg7UkWaMGT3D1uuTrgM6JfFfK_k5Wr_3p0UssSP5-vMqiYqmtf-uqgtbF7pLM9-ZfkbZ_2zkPlfaGxm_k1DB2ZEqAHVyd2j4",
+   "widthPx": 640,
+   "heightPx": 480,
+   "authorAttributions": [
+    {
+     "displayName": "281 Hair - Hairdressers Glasgow",
+     "uri": "https://maps.google.com/maps/contrib/106707740029235322991",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWH4yn0mOWemrRBslndXpuvlanVR_Ny1l-gVgI5iXbDGlYsRVn2=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgID84O-e3QE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgID84O-e3QE!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMaQZ1xOhGoTPc0q7d9DzLoY3xEiSzJpziOvL-uPqeSnksB6uTru2xFAJOhclWolxBo7aT0-EgbLJUqu1GPi9BGyY0_iERRHn3FZJU6bnOSlGxdbyuH4e83v1EZaCMO_hlgHL1pYYCY6eRtSKP1JWKRVrNXQ3gdP9Rcxt--y67TdghMDKUoYQFceZWPhUHoRQcsmTHVcOrEYln_8CVriIKL8Gh-QXNkeLhDkgy7tdmWA8wqqj2RzEZv9r8Gxs90-yZqIG1yPLqV2v-AtFsjUVw9Kb3zxPGTPmOLFGLZ-EoN3OyS6vDIl2FKB-6aOUhvjpOyIgVjA2-CjSWdQmw3gb4pdWZsEzmvZIxMWMcs6LOPj9P6F0dd8seeYFPh94t9VWsnNw-orNqL7ytqn5P96yedaHSq2wuw",
+   "widthPx": 2268,
+   "heightPx": 4032,
+   "authorAttributions": [
+    {
+     "displayName": "Mona Patel",
+     "uri": "https://maps.google.com/maps/contrib/110806484567237546420",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUT9239OGFQqVBc-ViEE2T5KIJ5T89RkPxneM2gwd3pEw9pBWHw=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDGor708wE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDGor708wE!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  },
+  {
+   "name": "places/ChIJIeZoUSZEiEgRCwjjyM22lTE/photos/Aa-ngMYko7rz3yJU8SKa8GXj_WrlWAyODkkLSV8-sKeAuWqEH-YVHNcX4rghI8HODVTEEfe1824Ax40euiwyPOdxib20Iv_C6IoRBsnOgigSWzp4-46MKCcGAsporyZPxfHMT-lOoBubA388uAdJ77JPl9G29iM39xsogfAO-DBxbEFXnmYRlXuZeZfT4SXkNtc8-XZcBTjdT-ZdADK3eRjmNPPlO8eDROrjMsfgUPTHvbED7Zwd3Rxap_9nAJoOxnMHo94CnUDbxCAPsjCFmsEh7I0xtcL3qs-Ct0yIzzgye2HseNh8QrDoWMBWTXRjHqBN2Ki0T8ln4Je9pwXH0UPZ7FF6pWxN3x1TLMeg_DzJUP4hb4V-xziRF9F-om3Q5OO24fhogEGbRGS4pvbJRWuoM7rEZ1M",
+   "widthPx": 1080,
+   "heightPx": 2280,
+   "authorAttributions": [
+    {
+     "displayName": "281 Hair - Hairdressers Glasgow",
+     "uri": "https://maps.google.com/maps/contrib/106707740029235322991",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWH4yn0mOWemrRBslndXpuvlanVR_Ny1l-gVgI5iXbDGlYsRVn2=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICBrZ_7Tg&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICBrZ_7Tg!2e10!4m2!3m1!1s0x488844265168e621:0x3195b6cdc8e3080b"
+  }
+ ]
+}

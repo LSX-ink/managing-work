@@ -129,8 +129,8 @@ class _Messages:
         """After the first route failed: True to try the other one (and skip this one for a while)."""
         if name == "Claude" and not should_switch(exc):
             return False
-        if name == "OmniRoute" and not isinstance(exc, anthropic.APIError):
-            return False
+        # the free route failing in ANY way (busy, timeout, a bad reply) hands the turn to Claude: Alfred has credit
+        # for exactly this (owner, 24 Oct 2026: "even if his free AI is failing he has credits")
         self._owner.rest(name, exc)
         return True
 

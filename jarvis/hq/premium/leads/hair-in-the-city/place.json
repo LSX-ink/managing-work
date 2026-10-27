@@ -1,0 +1,354 @@
+{
+ "id": "ChIJFdq6qaZGiEgR_6iXeJty8Ks",
+ "nationalPhoneNumber": "0141 552 2848",
+ "internationalPhoneNumber": "+44 141 552 2848",
+ "formattedAddress": "14 High St, Glasgow G1 1NL, UK",
+ "location": {
+  "latitude": 55.8569768,
+  "longitude": -4.2431695
+ },
+ "rating": 4.9,
+ "googleMapsUri": "https://maps.google.com/?cid=12389528586964936959&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+ "websiteUri": "https://www.hairinthecity.co.uk/",
+ "regularOpeningHours": {
+  "openNow": true,
+  "periods": [
+   {
+    "open": {
+     "day": 1,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 1,
+     "hour": 16,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 2,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 2,
+     "hour": 16,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 3,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 3,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 4,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 4,
+     "hour": 20,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 5,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 5,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 6,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 6,
+     "hour": 17,
+     "minute": 0
+    }
+   }
+  ],
+  "weekdayDescriptions": [
+   "Monday: 10:00 AM – 4:00 PM",
+   "Tuesday: 10:00 AM – 4:00 PM",
+   "Wednesday: 10:00 AM – 6:00 PM",
+   "Thursday: 10:00 AM – 8:00 PM",
+   "Friday: 10:00 AM – 6:00 PM",
+   "Saturday: 9:00 AM – 5:00 PM",
+   "Sunday: Closed"
+  ],
+  "nextCloseTime": "2026-10-26T16:00:00Z"
+ },
+ "userRatingCount": 687,
+ "displayName": {
+  "text": "Hair In The City",
+  "languageCode": "en"
+ },
+ "reviews": [
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/reviews/Ci9DQUlRQUNvZENodHljRjlvT2xSMlpYVk9Oa0pTYmswMVJFSk9WR1l6YkhaMWNVRRAB",
+   "relativePublishTimeDescription": "a month ago",
+   "rating": 5,
+   "text": {
+    "text": "I’ve been coming to Hair in the City for 10+ years and wouldn’t trust anyone else with my hair. The salon is professional and friendly. You can clearly see the care each of the stylists has for their clients and they always go the extra mile to make sure they are happy. I’m always impressed by the knowledge of the science behind colouring decisions. I always feel like I’m in safe hands when trying anything new, because I’ll know that the staff would never put the integrity of a clients hair at risk. I’ll continue to trust Louise and her stylists to cut and colour my hair for the foreseeable future.",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I’ve been coming to Hair in the City for 10+ years and wouldn’t trust anyone else with my hair. The salon is professional and friendly. You can clearly see the care each of the stylists has for their clients and they always go the extra mile to make sure they are happy. I’m always impressed by the knowledge of the science behind colouring decisions. I always feel like I’m in safe hands when trying anything new, because I’ll know that the staff would never put the integrity of a clients hair at risk. I’ll continue to trust Louise and her stylists to cut and colour my hair for the foreseeable future.",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Amanda Ramage",
+    "uri": "https://www.google.com/maps/contrib/115421423840807034519/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjXbZlpbk2AK20TJo_zGZgN4XDzKtTmNTpLQgjSbnUcptqfDd5dm=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-08-27T17:13:51.237369605Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2xSMlpYVk9Oa0pTYmswMVJFSk9WR1l6YkhaMWNVRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2xSMlpYVk9Oa0pTYmswMVJFSk9WR1l6YkhaMWNVRRAB!2m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/reviews/Ci9DQUlRQUNvZENodHljRjlvT21KUFVITm1XVkJKUzNwSVRHWnlVMDlXZWxoWU5YYxAB",
+   "relativePublishTimeDescription": "5 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I’ve been coming here regularly for highlights and always have such a great experience. Everyone at the salon is so welcoming and friendly, and Louise is absolutely amazing. She really listens to what I want and consistently gets my hair exactly right every time. I always leave feeling so happy and confident with my hair. Highly recommend both Louise and the salon!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I’ve been coming here regularly for highlights and always have such a great experience. Everyone at the salon is so welcoming and friendly, and Louise is absolutely amazing. She really listens to what I want and consistently gets my hair exactly right every time. I always leave feeling so happy and confident with my hair. Highly recommend both Louise and the salon!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Emily Anderson",
+    "uri": "https://www.google.com/maps/contrib/104392282751769232302/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocIgQnOA-RH68hDrLxjVVwDboq4AA9rNImfqzlalNyh5YpDy_Q=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-05-29T11:19:37.349887601Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT21KUFVITm1XVkJKUzNwSVRHWnlVMDlXZWxoWU5YYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT21KUFVITm1XVkJKUzNwSVRHWnlVMDlXZWxoWU5YYxAB!2m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/reviews/Ci9DQUlRQUNvZENodHljRjlvT2pWdlRtRklNVFl4YTNkNlYxVkJNR2w0U2sxcmMyYxAB",
+   "relativePublishTimeDescription": "4 months ago",
+   "rating": 5,
+   "text": {
+    "text": "It’s always such a pleasure coming to Hair in the City, but tonight was the first time I had the privilege of a restyle by Louise. I had a particular style in mind, and she absolutely nailed it. Louise is a truly talented stylist, so welcoming and friendly, and together with the rest of the team she creates such a lovely atmosphere in the salon.\nI left the salon absolutely loving my hair. I couldn’t recommend Hair in the City more highly 😊",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "It’s always such a pleasure coming to Hair in the City, but tonight was the first time I had the privilege of a restyle by Louise. I had a particular style in mind, and she absolutely nailed it. Louise is a truly talented stylist, so welcoming and friendly, and together with the rest of the team she creates such a lovely atmosphere in the salon.\nI left the salon absolutely loving my hair. I couldn’t recommend Hair in the City more highly 😊",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Wendy Brown",
+    "uri": "https://www.google.com/maps/contrib/108315763498715851317/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocJM_3ylAU-tAn3HZnGtEju9vDI4xJ6uaWjvNIdPf0gY7eH9KA=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-06-04T22:40:30.121932620Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2pWdlRtRklNVFl4YTNkNlYxVkJNR2w0U2sxcmMyYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2pWdlRtRklNVFl4YTNkNlYxVkJNR2w0U2sxcmMyYxAB!2m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/reviews/Ci9DQUlRQUNvZENodHljRjlvT21kVk1XNXRUbkkwVmt4a2FGVnRiMmxCTWxJd1JVRRAB",
+   "relativePublishTimeDescription": "2 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I've been going to Hair in the City for a long time now and I always leave feeling great. Louise and her team give honest advice about styles and also help advise how to style your hair at home (this involved teaching me how to blow dry my hair). Thank you, I always leave feeling confident and loving my hair!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I've been going to Hair in the City for a long time now and I always leave feeling great. Louise and her team give honest advice about styles and also help advise how to style your hair at home (this involved teaching me how to blow dry my hair). Thank you, I always leave feeling confident and loving my hair!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Heather Wallace",
+    "uri": "https://www.google.com/maps/contrib/117167942736635270986/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWJVihibKlS0Qmi0beo8I0rjEl1OYtZJgtifI6m8FB-oIEuZ-Q=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-08-21T20:51:02.725200509Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT21kVk1XNXRUbkkwVmt4a2FGVnRiMmxCTWxJd1JVRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT21kVk1XNXRUbkkwVmt4a2FGVnRiMmxCTWxJd1JVRRAB!2m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/reviews/Ci9DQUlRQUNvZENodHljRjlvT2pocWFERk9iMUU1Y0hkblJFOUlUemszTlROblFVRRAB",
+   "relativePublishTimeDescription": "2 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I had my first haircut with Louise today and had a really great experience. She listened carefully to what I wanted and checked in with me throughout the haircut to make sure everything felt right. I left very happy with the result. Highly recommended!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I had my first haircut with Louise today and had a really great experience. She listened carefully to what I wanted and checked in with me throughout the haircut to make sure everything felt right. I left very happy with the result. Highly recommended!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Keren Arbel",
+    "uri": "https://www.google.com/maps/contrib/109286312081655855602/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWwR3GFLTvwiadpAtJIDLlQgQa4kW2pr3MLr8nhfejfDq40aC-J=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-08-26T17:56:25.014530333Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2pocWFERk9iMUU1Y0hkblJFOUlUemszTlROblFVRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2pocWFERk9iMUU1Y0hkblJFOUlUemszTlROblFVRRAB!2m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  }
+ ],
+ "photos": [
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMaq35rMiUux5HnIpR4k87dZif5_te8LzOILKFzfFrS0DFHWdbxwHcfuLPJaBqbZGcO5Mm6C30FRQ1K6ub0iOvJp22W2Z_-MSkyZf_BPBdbVcFLCDxu1Yc36CJpfd5_qdCBsrp8qGMoegYutkBqeOp5aVIPBZ2Z5T7SivQVslWyZTpgspctPdIpWOlJ6RVzQRSY4h-AmCdZbPshxJ9oJxHJxvEw9op_fWP-xBtWrQXj1yAnO6Y1lHWe1-dCQmN9pq-_VveLlKVPTr8vdlMS8xegtrRguu6rZG6fycOCbXk3wy0f7PgdkoyTT40bpFYOmwOaaN4yWFi7ApvPsxhdyHdPnOW7qiy4-f8_buLEUHO2AHrW96T4lAQ9NHC7GJU3eWLbwLOaPeTg6k5_v1ocA9crfgg",
+   "widthPx": 4800,
+   "heightPx": 2700,
+   "authorAttributions": [
+    {
+     "displayName": "Hair In The City",
+     "uri": "https://maps.google.com/maps/contrib/108806177778225024709",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVoh-Ir3Z2CtmuaoyNVOJHzwva-aODz9fWEttt_yrO6Jp7x_bKC=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICZy5_-fA&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICZy5_-fA!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMZu02V-8X8XPSXERvvqyQcxhgJql3bKgH4O2MoBSL3S9OdIO9fU3XapHLmlF8Ghgrh6wg6oI7kAT660EevW6LMUBNH7PvD9sImA2-YKvuTWVacs5J8qba1c2b2qxCLWHBnqwLgrzB8JPU8UrZwUZ1nJGIp4Ik7Cw2XGkrYqpCFjb78YOoCGkR89XfC7aBfXJXM4ioK6Ac-3ZAwpX8gqeBkGsF-NNLTwl6smqeSR3CsG3zTGGoHd2-mOzX-IYMHjRxW4KD3yyhdl7BacpBKIkUNxHAsj_04PpBc2ErQoPGiQDa8AVAgyWr_vzXDBUuMhSCiVlg-RFRMhsZkTPxgNMV5IsVlg0Nnd2czAbLTbG3DZrXTuo404Cl6ybnNUu1sU5Q6CCDL4tuc_Z62Qen1m429uREaQ3UBycZWmVqKd5Tq7NQ",
+   "widthPx": 2014,
+   "heightPx": 2048,
+   "authorAttributions": [
+    {
+     "displayName": "Hair In The City",
+     "uri": "https://maps.google.com/maps/contrib/108806177778225024709",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVoh-Ir3Z2CtmuaoyNVOJHzwva-aODz9fWEttt_yrO6Jp7x_bKC=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhA3y4t315rrTTck-yBs6wVl&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhA3y4t315rrTTck-yBs6wVl!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMYewTRVJ81Mib10HEVmePTbhK7Qjkd8ykOCz_oecO4xygj9HRb38mfMo8TitAn3mOhu_GD5JReu74VJ13xn8_iYUqRwVQl2y_RSBh-inoRZQ_DQBo3-qmI6iO2qE86ijf1zqNRkcAm2x0sQF70gCkiiOnAKbeqOgebELwuMlXTa9BXn_HT9vctxtkv4HIReOdLUyLLtcjcKKBO_noBT1tt8w_qM2uGTeZHvaY5AVLyebuX-32FVxxC9V9SYTXYc-SZCHvW1LEA6toAuWc-E_TVmTzRmtLah83VuVzHcH0SijQu7P_l_aKtXCtt39FjlT8UI7IyTvBgZZ98EtV7zjMZuZbxip5QOV2_0cHGSeri7njBsoBTlPcdc_Qsw8fO6mREdnXGQs9LFosNCuPUDP6GDoOuP",
+   "widthPx": 4245,
+   "heightPx": 2388,
+   "authorAttributions": [
+    {
+     "displayName": "Hair In The City",
+     "uri": "https://maps.google.com/maps/contrib/108806177778225024709",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVoh-Ir3Z2CtmuaoyNVOJHzwva-aODz9fWEttt_yrO6Jp7x_bKC=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDHzdWQxgE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDHzdWQxgE!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMY1F8ZG3HOXuqJzZuB31zwRClGHDyLM4cPJG3PhGq8TIz9_Iz5oTDkbJlfFffbfpR5UCeyH3lR-Q04OlpaYrDqajud8SUuOCP2yrAmaSE2S0lrWuCkTLPPpHv-dP95Wfoh_vxnE1299nnk81J7xuq7l63yZyLTzrPAOir6I2k4bqMfsMXRcwf2xbPpU_UTs1gkmOxtcEjj4OHmbaDcu0k4zSuBD6qBKk4DmSxTQ9FEHwNB3R3DXOFM8PoWQrmviU-A0xob4WfH_phrpsPVy_Au9-D4zQ6r9jxWrMycnxM0BIreLntF6BN-cbca5uxXCssSVK1Xq_OWdFE0jndYfe9FeHFst_xt19N9LiwKX8QX5e8zvzWJMb-WDgNz32X36orr6DcBEEpo2dFPALCiiVbV5rO6vJLql3rU5ggqdl80bLQ",
+   "widthPx": 3600,
+   "heightPx": 4800,
+   "authorAttributions": [
+    {
+     "displayName": "Hair In The City",
+     "uri": "https://maps.google.com/maps/contrib/108806177778225024709",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVoh-Ir3Z2CtmuaoyNVOJHzwva-aODz9fWEttt_yrO6Jp7x_bKC=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhBpSU89f7ri4_XJ8AC7OUqp&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhBpSU89f7ri4_XJ8AC7OUqp!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMarrD9N84gN586Sk2i8tmYlyQzg-tv1FXk-NLxqPTRNkIouIbtz7vL9Z_qXlY8WvEVE4e45ptYD3gOIN8FpGXmp0Vl3wdkQBlRPq1Xw_EY6_-P8vBkcAS1hU_agtj_wECPEaEXhgAlJjoPqULshocpMmlJ1uVCO_05CJVl51rW8BH8KRVTZ8oby4kQHMaahRrDH-RMUDOOmEdqKkG2_7x-fYpaCqCpXn6jHCNV9U2NJEOb2mkblz8iBj-ErQemu34LtWmKh5Su4JcBwq5VUpdePOquyfH27xck7CuQC4a7qP1ZDbm3kWPNfQdBjCk568qbsBqY51MDZp7oAJquQi3Bgsv6NpzLoaVxOiT1uaBGCTHbWyywjkIUjcqhyAQ9HJvTavzkTpYtme_KGpg6PqYowTO0qriuHI1yWnWd9vtwF8A",
+   "widthPx": 1170,
+   "heightPx": 1285,
+   "authorAttributions": [
+    {
+     "displayName": "Katie Reid",
+     "uri": "https://maps.google.com/maps/contrib/116637363405913733740",
+     "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocI0kxw2TL3C-Ut383E8qwwWFwQhnSPXZ0oF4DyefcvXGLVgDQ=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhBfqypUHSPLbP4jZ7wnzHdN&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhBfqypUHSPLbP4jZ7wnzHdN!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMZTdRWTTqJzH46choqZDGEYi12OAvzurQ_Or5egnc_XFDeGjt1dU_Vc6Fo9M82n260l49KwjQ3oomYrmofcejJ8aOkiSuJcy2L014dXDm87F4pHWHNV8OLMwc0HN596-AOnwRLczb8qIbTeH26dVE-KIwLr58hX07UfrfhOcJ2Nb6fXPCZ4jyE0vsKNyb518qKq4DmNha2rq2mN4tWgNEdGO7YI5uFwCre-15mX0xB9p9XJPtpoY_MiIHkX7orF3q5xN7VWyFAKQCzUiuC2JmsVwPis5AXS7QV1kv2nHzqbxGCS3OIJDZc6W81CTOyQOowKE1p1AkhvrzKz__EnN2Ixbb6VhJlX9x8uZxxyi66e36HebB5o1nQn9MI5ZsAw9GTr0FVySkOY0mN4AhwRLqJy_Ru_5UY",
+   "widthPx": 4800,
+   "heightPx": 3033,
+   "authorAttributions": [
+    {
+     "displayName": "Hair In The City",
+     "uri": "https://maps.google.com/maps/contrib/108806177778225024709",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVoh-Ir3Z2CtmuaoyNVOJHzwva-aODz9fWEttt_yrO6Jp7x_bKC=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDvuZD-1AE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDvuZD-1AE!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMah61KSkYc3uwtbwIiXrdZWI7RjkqXHKoAOqH0jmr2ZYbF7Y3NA7ZU-4ROqQOsJpH2LAddvgbSZWJJL_3FhmqD8UkMxhYbM1tR6UWdn__KNGOJxNJ98mpiR6sV043FspSbn4rPJXjksDcM3FHMv4xR0dOonvLiC54k0K9CXxERwwn65C1V31MkKX9y5ZmlN1XFGScos9NqcxX7uS3baQm34gwCAqciOTE0ijdBVHXdhhv7nqexblPOHBRLES3zWtCWccSXzBiKUE51xAaCsMNL94lNbJaiRdKWaHDrwSsoLFO7C43wDaypKo4ezhCrdJEwuXh3LOAJbQtkmFBgyPSyboKdW2gqDjqATLMhkDtd0KMaz67iZmKiUNpFq1SzdS4YzijnhvUKCdiKkIjXp9v5vCcIQ",
+   "widthPx": 1080,
+   "heightPx": 1920,
+   "authorAttributions": [
+    {
+     "displayName": "Ali Irfan",
+     "uri": "https://maps.google.com/maps/contrib/116940124977281883389",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWQLhs9_YvOfXL9pwk69FXVVUaKIK-dFXLMjgYL2P1zHHR1RWp9=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICZq7iy6gE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICZq7iy6gE!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMb4qBHbDR5Ty17SQuDR5hdQP5mmtcJ1DnYrltrRXZA2NshJaBd_W71VbHBxfhLinKEZFc1qdxC05jG_IdqvMPEEgvWQffSHuhMypsNQHYSy-9uHawKxeAdIDhwGdtlerVWJ-bIytcc313-yZkYiUmjOEKqOkqJs11wEgFo8ZX8CEAkrq3D9QwosvTcSyrckYDXG1Dci9gJKo8zTACEOU6GHC_UThig6VW8eDUoc7GwIbwrZpRaMzUGVbcxNcRDCAUPxt7IeQQaJjBO1mX74-W2zg9DtA0CULi7bky5FS80K11EOce7abWw3vlA1TBIO6t3bQTroPDnjfTO7yTUOubvzY8hSzCbVA43dHcmJueNTQmW9tZxM4KGnd6proD8H-u0BODEJp8iCays2ZvgINd0xZe8",
+   "widthPx": 2549,
+   "heightPx": 3588,
+   "authorAttributions": [
+    {
+     "displayName": "Hair In The City",
+     "uri": "https://maps.google.com/maps/contrib/108806177778225024709",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVoh-Ir3Z2CtmuaoyNVOJHzwva-aODz9fWEttt_yrO6Jp7x_bKC=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDRtvLjfg&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDRtvLjfg!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMZAzA91TeOUuG_5IZZUe72G1_bDdcz7LLs5rzbYmZzkjkcAcKVm0C4sBghk3S14PVPn87VtjVUph3lOCV00feeTWfX1OyQkLYe1sH8Xo6sf1K9iEkkpifdDYDl_yPGOlNq0-G5e5PiAGfjfZ7ReTnJsm7GJO8vGs4CoGFHUGHiqDEEFXThoLiIpHxnBlk_Li1gcKvT3_3vc8-_0SLgxlY4GLvvVkt8BzoHWxDzJfHzMRAuEdTNii7gfBJ1oXxLtIEhMMREXN1sKO9aOXwBkOBXAwdQLLBX2xG0cXEBTXp39wVCbl4X4Y8djNlyoQd0As9cvPC5oL5elYiO7luj1WCyK2y5O2-7Sjxu16iuZX1RfITXNEdrkP6-JsJPZrU7heM-BdNSZay4aJ1NUeqItYTd7pdAGgRoXMbKAKxJ3kEfQBg",
+   "widthPx": 1200,
+   "heightPx": 900,
+   "authorAttributions": [
+    {
+     "displayName": "Hair In The City",
+     "uri": "https://maps.google.com/maps/contrib/108806177778225024709",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVoh-Ir3Z2CtmuaoyNVOJHzwva-aODz9fWEttt_yrO6Jp7x_bKC=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhBmjPXYNvog5NrYS4z6utI_&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhBmjPXYNvog5NrYS4z6utI_!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  },
+  {
+   "name": "places/ChIJFdq6qaZGiEgR_6iXeJty8Ks/photos/Aa-ngMZyC26rcivABBnIwXo27-RNIFE7nTn5tVUbggepYGsgA6yqGVi6f5vpP_BJCx58l4faeyrNv1rUc7G8EbffvUpM8avEWM6tIMtajLSsHq4engHYYI7EtE2eihmKzKQEEB_SoYEtYC-LMhzr_8wmXp_IClKodh8cGAfBITlojHHvMpvymI44daWeoRE5GUeOCesLp-CsLQsFsrC1LZ88Mm0I7rnBZmSUTUTQkkLktm_RlCFO4xrOdqSfKK2YvxGgrRF84OW-WerDZAnqbdIbYfNoezDTwVNIFIkhCOSym765u-6LUajovoC1B_jMExywBg-HkB4TG6je5cSm0g6QTyQTjiwuovSkhod2AsyWofBvaKEsgMNfCCntqQHvXQ-OMEoissiO5zAwWDgOtqPwU9KO4lE",
+   "widthPx": 3024,
+   "heightPx": 4032,
+   "authorAttributions": [
+    {
+     "displayName": "Hair In The City",
+     "uri": "https://maps.google.com/maps/contrib/108806177778225024709",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVoh-Ir3Z2CtmuaoyNVOJHzwva-aODz9fWEttt_yrO6Jp7x_bKC=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDRtvLLJg&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDRtvLLJg!2e10!4m2!3m1!1s0x488846a6a9bada15:0xabf0729b7897a8ff"
+  }
+ ]
+}

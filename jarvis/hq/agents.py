@@ -242,6 +242,14 @@ async def dm_list(ctx: Ctx, n: int) -> int:
         if not handle:  # the owner needs an @name to find them (asked 23 Oct 2026): only shops that give one
             b.set(f"ig.none.{p['id']}", True)
             continue
+        ok = b.get(f"ig.ok.{handle.lower()}")
+        if ok is None:  # never put a dead @name on the owner's list (26 Oct 2026): check it's a real, live profile
+            ok = await outbox.instagram_exists(handle)
+            b.set(f"ig.ok.{handle.lower()}", ok)
+        if not ok:
+            b.log("closer", f"skipped {p['name']}: @{handle} isn't a live Instagram profile", "warn")
+            b.set(f"ig.none.{p['id']}", True)
+            continue
         if b.get(f"ig.dm.{handle.lower()}"):
             await asyncio.to_thread(tracker.drafted, s, p["name"], p, "dm", p.get("country") or world.HOME, mockup=False)
             continue  # another branch already got a DM on this account: one message per inbox
@@ -291,6 +299,7 @@ async def dm_list(ctx: Ctx, n: int) -> int:
 async def designer(ctx: Ctx) -> str:
     """Iris: upgrades every mock-up already sent out to the latest design (hq/mockup.VERSION), three a run,
     re-checking each, so every link we've given anyone shows our best work and gets every new feature."""
+    return "paused: links already sent stay exactly as the owner sent them (owner, 26 Oct 2026)"
     import kinetic_store as st
     from hq import mockup, outbox
     s, b = ctx.settings, ctx.brain
@@ -395,7 +404,7 @@ async def warden(ctx: Ctx) -> str:
             continue
         await asyncio.to_thread(outbox.deploy_site)
         b.set(f"mockup.{p['name'].lower()}", link)
-        subject, body = outbox.first_email(s, p, link)
+        subject, body = outbox.first_email(s, p, link, b)
         return await _vet_and_send(ctx, p, p["name"], to, subject, body, link, first=True)
     return "no fresh leads with an email address right now (Hawk will find more)"
 

@@ -32,6 +32,15 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 .orders { left: 18px; bottom: 18px; width: 360px; max-height: 220px; overflow: auto; white-space: pre-wrap; font-size: 12.5px; }
 .kpis { left: calc(42vw + 10px); bottom: 18px; display: flex; gap: 18px; }
 .kpis div b { display: block; font: 700 22px "Space Grotesk"; color: #fff; } .kpis div span { font-size: 10.5px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+/* phones: the glass tower fills the screen, the live feed sits underneath */
+@media (max-width: 760px) { #tower { width: 100vw !important; top: 64px !important; height: calc(100vh - 64px - 30vh) !important; }
+  #net, #netlabels, .orders { display: none !important; }
+  .feed { left: 10px !important; right: 10px !important; bottom: 10px !important; width: auto !important; height: calc(30vh - 16px) !important; }
+  .kpis { left: 10px !important; right: 10px !important; top: 64px !important; bottom: auto !important; height: auto !important; max-height: 66px !important; gap: 14px !important; overflow-x: auto !important; overflow-y: hidden !important; padding: 8px 12px !important; background: rgba(18,18,22,.6) !important; }
+  #tower { top: 136px !important; height: calc(100vh - 136px - 30vh) !important; }
+  .kpis div b { font-size: 17px !important; } .kpis div span { font-size: 9px !important; }
+  .bar { left: 8px !important; right: 8px !important; top: 8px !important; gap: 6px !important; padding: 0 10px !important; } .bar .pill:not(.on) { display: none !important; } .bar .pill { font-size: 11px !important; padding: 4px 8px !important; }
+  .fl span { display: none !important; } .fl b { font-size: 10px !important; } }
 </style>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 </head>
@@ -51,13 +60,24 @@ const $ = s => document.querySelector(s);
 
 /* ---------------- the tower: one glass floor per agent, lit warm, glowing in the agent's colour while it works */
 const host = $("#tower"), W = () => host.clientWidth, H = () => host.clientHeight;
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(W(), H());
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.shadowMap.enabled = true; host.appendChild(renderer.domElement);
+// some screens (phones, app windows, older graphics) can't do the glow effect or WebGL at all: fall back instead of going blank
+let renderer = null;
+try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); } catch (e) {
+  host.innerHTML = '<p style="position:absolute;left:24px;top:90px;color:#8d8a80;max-width:30ch">The 3D tower needs graphics acceleration, which is switched off in this window. Open LSX HQ in Chrome or Edge to see it.</p>'; }
+if (renderer) { renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(W(), H());
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.shadowMap.enabled = true; host.appendChild(renderer.domElement); }
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(32, W() / H(), .1, 300); camera.position.set(26, 16, 44); camera.lookAt(0, 8.2, 0);
-const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(W(), H()), .7, .55, .55));
-scene.add(new THREE.HemisphereLight(0xffeedd, 0x111015, .35));
+// keep the whole tower in frame, however many floors and whatever the screen shape
+function frame() { const n = (state.agents || []).length || 8, h = n * 2.1 + 2.5, ty = h / 2 - .6, phone = innerWidth <= 760;
+  const vt = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), ht = vt * camera.aspect;
+  const dist = Math.max((h * .58) / vt, (phone ? 6.2 : 7.5) / ht) * (phone ? 1.0 : 1.05);
+  const dir = new THREE.Vector3(26, 9, 44).normalize(); camera.position.copy(dir.multiplyScalar(dist)).add(new THREE.Vector3(0, ty, 0)); camera.lookAt(0, ty, 0); }
+const canGlow = renderer && renderer.capabilities.isWebGL2 && (renderer.extensions.has("EXT_color_buffer_float") || renderer.extensions.has("EXT_color_buffer_half_float"));
+let composer = null;
+if (canGlow) { try { composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(W(), H()), .7, .55, .55)); } catch (e) { composer = null; } }
+scene.add(new THREE.HemisphereLight(0xffeedd, 0x111015, composer ? .35 : .9));
 const tower = new THREE.Group(); scene.add(tower);
 const FH = 2.1, floors = {};
 const mat = { slab: new THREE.MeshStandardMaterial({ color: 0x15151a, metalness: .6, roughness: .35 }), frame: new THREE.MeshStandardMaterial({ color: 0x0c0c0f, metalness: .8, roughness: .3 }),
@@ -91,7 +111,7 @@ function floorLabels() {
   state.agents.forEach(a => { const fl = floors[a.key]; if (!fl) return;
     v.set(4.2, fl.y + FH / 2, 3).applyMatrix4(tower.matrixWorld).project(camera);
     const x = rect.left + (v.x + 1) / 2 * rect.width, y = (1 - v.y) / 2 * rect.height;
-    h += `<div class="fl ${a.status === "working" ? "on" : ""}" data-k="${a.key}" style="--c:${a.colour};left:${Math.min(x, rect.width - 10)}px;top:${y}px"><i></i><b>${a.emoji} ${esc(a.title)}</b><span>${esc(a.status === "working" ? "working…" : (a.last ? a.last.result : a.job)).slice(0, 38)}</span></div>`; });
+    h += `<div class="fl ${a.status === "working" ? "on" : ""}" data-k="${a.key}" style="--c:${a.colour};left:${Math.min(x, rect.width - 10)}px;top:${rect.top + y}px"><i></i><b>${a.emoji} ${esc(a.title)}</b><span>${esc(a.status === "working" ? "working…" : (a.last ? a.last.result : a.job)).slice(0, 38)}</span></div>`; });
   $("#floors").innerHTML = h; $("#floors").querySelectorAll(".fl").forEach(e => e.onclick = () => openAgent(e.dataset.k));
 }
 
@@ -140,13 +160,13 @@ function loop(t) {
   state.agents.forEach(a => { const fl = floors[a.key]; if (!fl) return; const on = a.status === "working";
     fl.lamp.color.set(on ? a.colour : 0xffd9a0); fl.lamp.intensity = on ? 14 + Math.sin(t / 180) * 3 : 6;
     fl.people.forEach(({ p, scr }, k) => { p.position.y = .75 + (on ? Math.abs(Math.sin(t / 160 + k)) * .05 : 0); scr.material.emissiveIntensity = on ? 1.4 + Math.sin(t / 90 + k) * .4 : .35; }); });
-  composer.render(); drawNet(t);
+  if (composer) composer.render(); else if (renderer) renderer.render(scene, camera); drawNet(t);
   if (t - lastL > 120) { lastL = t; floorLabels(); netLabels(); }
   requestAnimationFrame(loop);
 }
-addEventListener("resize", () => { camera.aspect = W() / H(); camera.updateProjectionMatrix(); renderer.setSize(W(), H()); composer.setSize(W(), H()); sizeNet(); });
+addEventListener("resize", () => { camera.aspect = W() / H(); camera.updateProjectionMatrix(); frame(); if (renderer) renderer.setSize(W(), H()); if (composer) composer.setSize(W(), H()); sizeNet(); });
 on("state", s => {
-  if (!built && s.agents.length) { buildTower(s.agents); placeHubs(); built = true; requestAnimationFrame(loop); }
+  if (!built && s.agents.length) { buildTower(s.agents); placeHubs(); frame(); built = true; requestAnimationFrame(loop); }
   $("#clock").textContent = s.time; $("#liveN").textContent = working(); $("#div").textContent = (s.divisions || [])[0] || "Kinetic Web Designs";
   $("#orders").textContent = s.brain.priorities || "Atlas sets the orders at 07:55.";
   const n = numbers();

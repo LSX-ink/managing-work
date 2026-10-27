@@ -267,6 +267,24 @@ IG_NOT_A_NAME = {"p", "reel", "reels", "explore", "accounts", "stories", "tv", "
                  "sharer", "share", "invites", "direct", "web", "embed"}
 
 
+async def instagram_exists(handle: str) -> bool:
+    """True only when instagram.com/<handle> is a real, live profile (owner, 26 Oct 2026: a dead @name went on the DM
+    list; "you should have checked this before sending it to me"). Logged-out Instagram says "Profile isn't available"
+    for names that don't exist; a real one shows "<Name> (@handle)" in the title."""
+    from playwright.async_api import async_playwright
+    try:
+        async with async_playwright() as pw:
+            b = await pw.chromium.launch(channel="msedge")
+            pg = await (await b.new_context(locale="en-GB")).new_page()
+            await pg.goto(f"https://www.instagram.com/{handle.strip('@')}/", wait_until="domcontentloaded", timeout=30000)
+            await pg.wait_for_timeout(3000)
+            title = await pg.title()
+            await b.close()
+        return f"(@{handle.strip('@').lower()})" in title.lower()
+    except Exception:
+        return False
+
+
 async def instagram_handle(http, p: dict) -> str:
     """The business's Instagram name, read off the Instagram link on their website ("" when there isn't one)."""
     site = p.get("website") or ""
@@ -302,11 +320,26 @@ def plain(problem: str) -> str:
     return text[0].lower() + text[1:] if text[:1].isupper() and not text.startswith("Google") else text
 
 
-def dm_text(settings, p: dict, link: str, brain=None) -> str:
-    """The Instagram DM the owner sends by hand (asked 23 Oct 2026 for "a nice message" with the link): warm, about
-    them first (their real Google rating), their one biggest website problem, then the mock-up made from their own
-    photos and reviews, the no-risk terms, and an easy way to say no."""
-    name = _base_name(p)
+BUSY = 150  # Google reviews: past this a shop is usually fully booked, so "more customers" isn't the pitch
+
+
+STAY = re.compile(r"guest ?house|lodge|villa|\bstay|apartment|b&b|bed and breakfast|cottage|self.catering|airbnb|holiday|retreat|"
+                  r"wine estate|wine farm|safari|game reserve|boutique hotel|manor house", re.I)
+
+
+def stay(p: dict) -> bool:
+    """A short-let host (guesthouse, lodge, villa, Airbnb): their pitch is direct bookings, not more customers."""
+    return bool(STAY.search(f"{p.get('kind', '')} {p.get('name', '')}"))
+
+
+def busy(p: dict) -> bool:
+    return int(p.get("reviews") or 0) >= BUSY and float(p.get("rating") or 0) >= 4.6
+
+
+def praise_and_gap(p: dict, brain=None) -> tuple[str, str]:
+    """About them first (their real Google rating), then their one biggest website problem, said plainly. A busy,
+    well-rated shop hears what a site saves them (no-shows, phone time, cheap prices) instead of "more customers":
+    Exposure Men Studio replied "fully booked, no need" to the old pitch (24 Oct 2026)."""
     rating, reviews = p.get("rating"), int(p.get("reviews") or 0)
     praise = (f"{float(rating):.1f}★ from {reviews:,} Google reviews is seriously impressive, your customers clearly "
               "love you." if rating and reviews >= 25 else "your customers clearly rate you.")
@@ -324,12 +357,67 @@ def dm_text(settings, p: dict, link: str, brain=None) -> str:
         problem = "y" + problem[1:]
     if isinstance(speed, int) and speed < 50:
         problem = (problem + " " if problem else "") + f"Google also scores your site just {speed}/100 for speed on phones."
-    gap = (f"One thing I spotted: {problem}" if problem else
-           ("Your website doesn't show off how good you are yet." if p.get("website") else
-            "You don't have a website yet, so people who find you on Google can't see your work or book easily."))
+    if stay(p) and p.get("website") and not re.search(r"airbnb|booking\.com|facebook|instagram", p["website"], re.I):
+        # they already have a site (owner, 25 Oct 2026: show the before and after): sell the upgrade, not "get a website"
+        gap = ("A lot of your guests probably still book through Booking.com and the like, and they take a big cut of "
+               "every stay. Your website is the one place guests book you directly, so it should sell the stay as well "
+               "as you do: every room, the views and the real layout, synced with your calendars.")
+        if problem:
+            gap = f"One thing I spotted: {problem} " + gap
+    elif stay(p):
+        gap = ("Right now most of your guests probably book through Airbnb or Booking.com, and they take a big cut of "
+               "every stay. Your own website, synced with those calendars, lets guests book you directly, see every "
+               "room before they choose, and come back without the middleman.")
+        if problem:
+            gap = f"One thing I spotted: {problem} " + gap
+    elif busy(p):
+        gap = ("A business this busy doesn't need more walk-ins. What a great website does for you is take bookings "
+               "and deposits while you're cutting, so no-shows stop costing you and the phone stops interrupting, "
+               "and it lets your work and reviews justify premium prices.")
+        if problem:
+            gap = f"One thing I spotted: {problem} " + gap
+    else:
+        gap = (f"One thing I spotted: {problem}" if problem else
+               ("Your website doesn't show off how good you are yet." if p.get("website") else
+                "You don't have a website yet, so people who find you on Google can't see your work or book easily."))
+    return praise, gap
+
+
+def dm_text(settings, p: dict, link: str, brain=None) -> str:
+    """The Instagram DM the owner sends by hand. Short (owner, 26 Oct 2026: "the message as an integrity can't be long"):
+    their rating, the concept in their own colours, that it's only a mock-up, our website, an easy reply. Stays also say
+    the model and drone flight are representative and more photos make it exactly their place."""
+    name = _base_name(p)
+    rating, reviews = p.get("rating"), int(p.get("reviews") or 0)
+    hello = (f"{float(rating):.1f}★ from {reviews:,} Google reviews, that's seriously impressive. " if rating and reviews >= 25 else "")
+    if stay(p):
+        made = (f"We made you a free concept website from your own photos and reviews (the model and drone flight are "
+                f"representative):\n{link}\n\nIt's only a mock-up. Send us more photos and we'll make it exactly your place, "
+                "even better. Our work: kineticwebdesigns.co.uk")
+    else:
+        made = (f"We made you a free concept website in your own colours, with your own photos and reviews:\n{link}\n\n"
+                "It's only a quick mock-up. Have a look at kineticwebdesigns.co.uk and we'll have your full site looking like that.")
+    # yes or no, ask for a follow (owner, 26 Oct 2026: "so that if they change their mind they can always come back")
+    return (f"Hi {name} team \U0001F44B\n\n{hello}{made}\n\nInterested? Just reply here and give us a follow so we can stay in "
+            "touch. Not for you right now? No problem at all, give us a follow anyway, so you can always come back if you "
+            "change your mind.\n\nKinetic Web Designs")
+
+
+def dm_text_long(settings, p: dict, link: str, brain=None) -> str:
+    """The older long DM (kept for reference; owner asked for short ones on 26 Oct 2026): warm, about
+    them first, their one biggest website problem, then the mock-up made from their own photos and reviews, the
+    no-risk terms, and an easy way to say no."""
+    name = _base_name(p)
+    praise, gap = praise_and_gap(p, brain)
     return (f"Hi {name} team! \U0001F44B\n\nI came across you on Google, and {praise}\n\n{gap} So I put together a free "
             f"concept of what your website could look like, using your own photos and reviews:\n{link}\n\n"
-            "It's yours to look at, no catch. If you love it, we can make it real, and you only pay half when we "
+            + ("Your current homepage and the new design are side by side on the page, so you can compare.\n\n"
+               if stay(p) and (Path(LIVE) / "m" / link.rstrip("/").rsplit("/", 1)[-1] / "before.jpg").exists() else "")
+            # owner, 26 Oct 2026: say the concept uses representative imagery, and more photos make it exactly their place
+            + ("We built it from the photos you already have online, plus some representative imagery (like the model "
+               "and the drone fly-in) to show what's possible. If you send us more photos of your place, we'll make the "
+               "site look exactly like it, and even better, all done professionally.\n\n" if stay(p) else "")
+            + "It's yours to look at, no catch. If you love it, we can make it real, and you only pay half when we "
             "start and half once it's finished.\n\nWould love to hear what you think!\nKinetic Web Designs\n\n"
             "(If it's not for you, just say and I won't message again.)")
 
@@ -350,20 +438,27 @@ def split_subject(body: str) -> tuple[str, str]:
     return (m.group(1).strip(), body[m.end():]) if m else ("", body)
 
 
-def first_email(settings, p: dict, link: str) -> tuple[str, str]:
+def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
+    """Vera's first email, written like the DM: about them first, their one problem (or, for a busy shop, what a
+    site saves them), the free concept link, the price and terms, then an easy yes. Price, sign-off, contact
+    details and opt-out come from the sales draft, so the country rules still apply."""
     d = sales.outreach_draft(settings, {"client": p["id"]}, "email")
-    subject, body = split_subject(d["body"])
-    file = sales.store_mockup_file(p["name"]) if d.get("store") else sales.mockup_file(p["name"])
-    body = re.sub(r"It's attached \(" + re.escape(file) + r"\), so you can open it on your phone\.",
-                  f"You can open it on your phone here: {link}", body)
-    # the opening already names their biggest problem: don't repeat it as the first suggestion
-    opening = body.split("\n\n")[1].lower() if body.count("\n\n") > 1 else ""
-    lines = body.split("\n")
-    keep = [ln for ln in lines if not (ln.startswith("- ") and ln[2:].split(":")[0].lower() in opening)]
-    if any(ln.startswith("- ") for ln in keep):
-        body = "\n".join(keep)
-    if body.count("\n- ") == 1:
-        body = body.replace("A couple of things I'd suggest:", "One thing I'd also suggest:")
+    _, old = split_subject(d["body"])
+    name = _base_name(p)
+    praise, gap = praise_and_gap(p, brain)
+    price = re.search(r"(Websites start from [^\n]+?\.|A Shopify store redesign is [^\n]+)", old)
+    tail = old[old.index("Thanks,"):] if "Thanks," in old else ""
+    rating, reviews = p.get("rating"), int(p.get("reviews") or 0)
+    subject = (f"A free website idea for {name} ({float(rating):.1f}★ on Google)" if rating and reviews >= 25
+               else f"A free website idea for {name}")
+    ask = ("Would it help if I showed you how online booking with deposits would work for you? Just reply 'yes' "
+           "and I'll send it over." if busy(p) else
+           "Just reply 'yes' if you'd like to talk it through, it only takes 10 minutes.")
+    body = (f"Hi {name} team,\n\nI came across you on Google, and {praise}\n\n{gap}\n\n"
+            "So I put together a free concept of what your website could look like, using your own photos and "
+            f"reviews. You can open it on your phone here: {link}\n\n{st.PREVIEW}\n\n"
+            + (f"If you like it, {price.group(1)[0].lower() + price.group(1)[1:]} If not, no problem at all.\n\n" if price else "")
+            + f"{ask}\n\n{tail}")
     return subject, body
 
 
