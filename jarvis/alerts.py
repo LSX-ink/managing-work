@@ -330,7 +330,7 @@ async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.
 
 PUSH_FILE = ROOT / ".phone-push-topic"  # the private address Alfred posts to; git ignores it
 PUSH_TITLES = {"briefing": "Morning briefing", "instagram": "Instagram reply", "email": "New email",
-               "sales": "Follow-ups due", "health": "Alfred health check", "weekly": "Weekly report"}
+               "sales": "Follow-ups due", "mockup": "Mock-up ready", "health": "Alfred health check", "weekly": "Weekly report"}
 PUSH_MAX_CHARS = 3500  # ntfy keeps messages up to 4,096 bytes
 
 
