@@ -20,7 +20,12 @@ Haines's Marketing Skills (MIT, from github.com/coreyhaines31/marketingskills, w
 copy-editing, cold-email, prospecting, cro, offers, social, seo-audit, ai-seo, schema, site-architecture,
 marketing-psychology, lead-magnets, pricing, ad-creative, video, emails, content-strategy, referrals and more; each
 can have extra files in references/. skills/anthropic also holds canvas-design (Apache 2.0, from
-github.com/anthropics/skills): posters and still graphics from a design philosophy.
+github.com/anthropics/skills): posters and still graphics from a design philosophy. skills/impeccable holds Paul
+Bakaus's Impeccable (Apache 2.0, from github.com/pbakaus/impeccable, written guides only, no launcher): a design
+director's playbook with critique, audit, polish, bolder, typeset, layout and more in reference/. skills/vercel holds
+Vercel's web-design-guidelines (the Web Interface Guidelines rules saved in references/rules.md) and
+writing-guidelines (MIT, from github.com/vercel-labs). guide "website" lists every skill to use for a website, in
+order, and website_pack() hands excerpts of all of them to the mock-up builder's design review.
 
 Any other folder dropped into skills/ with */SKILL.md guides is picked up too, named after its folder. skillscan checks
 every library first: blocked ones are refused, and a new or changed one is scanned the first time guides are listed
@@ -39,7 +44,8 @@ from config import Settings
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
 GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic",
-                   "business": "Business", "marketing": "Marketing Skills"}  # labels
+                   "business": "Business", "marketing": "Marketing Skills", "impeccable": "Impeccable",
+                   "vercel": "Vercel"}  # labels
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -100,6 +106,54 @@ def summary(path: Path) -> str:
     return ""
 
 
+# Every website, every skill (owner, 27 Oct 2026: "when making websites always use all the skills so you get the best
+# version"). In reading order: (guide, file, what it brings, characters used in an automatic design review).
+WEBSITE_SKILLS = [
+    ("client-websites", "SKILL.md", "Kinetic's own rules: a page structure that sells, 21st.dev components, the quality check", 4200),
+    ("frontend-design", "SKILL.md", "pick a bold, specific aesthetic direction before anything else", 6000),
+    ("impeccable", "SKILL.md", "work like a design director: the Persuade mode for sales pages", 5000),
+    ("impeccable", "reference/mode-persuade.md", "what a landing page must do", 3700),
+    ("impeccable", "reference/craft-floor.md", "the quality floor and the absolute bans", 4600),
+    ("taste-skill", "SKILL.md", "no AI-looking pages: layout, type and colour taste", 9000),
+    ("redesign-skill", "SKILL.md", "redesigning a business's existing site", 3000),
+    ("emil-design-eng", "SKILL.md", "polish and motion that feels right", 5000),
+    ("web-design-guidelines", "references/rules.md", "accessibility, forms, motion, type and performance rules", 8300),
+    ("copywriting", "SKILL.md", "every word on the page", 5000),
+    ("cro", "SKILL.md", "turning visitors into bookings and calls", 4000),
+    ("offers", "SKILL.md", "an offer worth acting on (only a real one)", 2500),
+    ("marketing-psychology", "SKILL.md", "why people act, used honestly", 2500),
+    ("writing-guidelines", "SKILL.md", "interface words: buttons, labels, errors", 2500),
+    ("impeccable", "reference/polish.md", "the final pass before it ships", 4000),
+]
+
+
+def website_list() -> str:
+    """The reading list for making or changing any website or mock-up: every skill, in order."""
+    found = guides()
+    lines = ["Making or changing a website or mock-up: use ALL of these, in this order (call design_guide with each "
+             "guide and file). Also use design_advice (UI UX Pro Max) for the palette, fonts and style, and run the "
+             "web-design-guidelines rules as the final check.", ""]
+    for i, (name, file, why, _) in enumerate(WEBSITE_SKILLS, 1):
+        here = name in found and (found[name] / file).exists()
+        lines.append(f"{i}. {name}" + (f" (file '{file}')" if file != "SKILL.md" else "") + f": {why}"
+                     + ("" if here else " [not installed]"))
+    return "\n".join(lines)
+
+
+def website_pack(settings: Settings | None = None) -> str:
+    """Excerpts of every website skill, for an automatic design review (skipping any library the skill check blocked)."""
+    found = guides()
+    settings = settings or Settings()
+    parts = []
+    for name, file, why, size in WEBSITE_SKILLS:
+        path = found.get(name)
+        if not path or not (path / file).exists() or skillscan.blocked_reason(settings, path.parent.name):
+            continue
+        text = (path / file).read_text(encoding="utf-8")
+        parts.append(f"=== {name}/{file}: {why} ===\n{text[:size]}")
+    return "\n\n".join(parts)
+
+
 def guide_libraries() -> list[str]:
     """Folders in skills/ with */SKILL.md guides: the named ones first, then any others."""
     found = [lib for lib in skillscan.libraries() if any((SKILLS / lib).glob("*/SKILL.md"))]
@@ -120,6 +174,8 @@ def guide(args: dict, settings: Settings | None = None) -> str:
     checked, fresh = skillscan.check(settings, guide_libraries())
     news = skillscan.news(checked, fresh)
     name = (args.get("guide") or "").strip().lower()
+    if name in ("website", "websites", "all"):
+        return (news + "\n\n" if news else "") + website_list()
     if not name:
         out = [news] if news else []
         for lib in guide_libraries():
@@ -182,7 +238,8 @@ def tool_definitions() -> list[dict]:
     }, {
         "name": "design_guide",
         "description": "Written design guides to read and follow when designing, animating, redesigning or "
-                       "reviewing UI, then answer in plain words. Emil Kowalski (polish and motion): emil-design-eng "
+                       "reviewing UI, then answer in plain words. Before making or changing ANY website, landing page or mock-up, "
+                       "call it with guide 'website' and use EVERY skill it lists, in order (the owner's rule). Emil Kowalski (polish and motion): emil-design-eng "
                        "(his whole philosophy), animate, animate-expo, animation-vocabulary (names for a motion "
                        "effect), apple-design, review-animations, improve-animations, find-animation-opportunities, "
                        "mobile-native, break-ui, prototype, pick-ui-library, ask-sonner, write-swift. Taste Skill "

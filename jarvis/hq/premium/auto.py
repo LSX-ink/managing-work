@@ -120,6 +120,11 @@ async def write_config(client, model: str, folder: Path, layout: str, fonts: str
                                      messages=[{"role": "user", "content": content}])
     text = "".join(getattr(b, "text", "") for b in r.content)
     c = json.loads(text[text.index("{"): text.rindex("}") + 1])
+    return tidy(c, folder, photos, layout, fonts, facts)
+
+
+def tidy(c: dict, folder: Path, photos: list[str], layout: str, fonts: str | None, facts: dict) -> dict:
+    """Google's facts back word for word, only real photo files and each one once, the chosen layout and fonts."""
     c.update({k: v for k, v in facts.items() if v})  # Google's own words win
     c["short"] = c.get("short") or facts["name"]
     used: set[str] = set()
@@ -139,6 +144,87 @@ async def write_config(client, model: str, folder: Path, layout: str, fonts: str
     if fonts:
         c["fonts"] = fonts
     return c
+
+
+REVIEW_PROMPT = """You are the design director at Kinetic Web Designs, reviewing a concept website before it goes to the
+business. You have every one of our design skills below: use ALL of them. Look at the screenshots (desktop top, desktop
+further down, phone) and the config that made the page, then improve the config.
+
+You may change only these keys: kicker, h1, lead, colours, experience (title, text, photos), hero, gallery, fonts,
+logo_light, motif, currency_note, services (group names and service names, never prices), special (only to remove it).
+Keep every fact true: never invent prices, offers, awards or claims. Photos only from the list given. Fonts only from
+the presets given. Colours must still match the business's brand.
+
+Answer with JSON only: {"changes": {key: new value, ...}, "notes": ["what you changed and which skill said so", ...]}.
+Return {"changes": {}, "notes": [...]} when it is already excellent."""
+REVIEW_KEYS = {"kicker", "h1", "lead", "colours", "experience", "hero", "gallery", "fonts", "logo_light", "motif",
+               "currency_note", "services", "special"}
+
+
+async def page_shots(page: Path) -> list[bytes]:
+    """The built page as a customer first sees it: desktop top, desktop further down, phone top."""
+    from playwright.async_api import async_playwright
+    shots = []
+    async with async_playwright() as pw:
+        b = await pw.chromium.launch(channel="msedge", args=["--use-angle=d3d11"])
+        try:
+            for view, mobile in (({"width": 1280, "height": 800}, False), ({"width": 390, "height": 800}, True)):
+                pg = await b.new_page(viewport=view, is_mobile=mobile, has_touch=mobile)
+                await pg.goto(page.as_uri(), wait_until="domcontentloaded", timeout=45000)
+                await pg.wait_for_timeout(5000)
+                shots.append(await pg.screenshot(type="jpeg", quality=60))
+                if not mobile:
+                    h = await pg.evaluate("document.body.scrollHeight")
+                    for y in range(0, int(h * .4), 500):  # scroll so sections reveal themselves
+                        await pg.evaluate(f"scrollTo(0,{y})")
+                        await pg.wait_for_timeout(120)
+                    await pg.wait_for_timeout(1500)
+                    shots.append(await pg.screenshot(type="jpeg", quality=60))
+                await pg.close()
+        finally:
+            await b.close()
+    return shots
+
+
+async def review(client, model: str, folder: Path, page: Path, c: dict, layout: str, facts: dict) -> tuple[dict, list[str]]:
+    """The design review with every website skill (owner, 27 Oct 2026: "always use all the skills so you get the best
+    version"). Returns the improved config and the notes; on any failure, the config as it was."""
+    import design  # noqa: E402 - Alfred's skills library
+    import layouts  # noqa: E402
+    photos = sorted(str(p.relative_to(folder)).replace("\\", "/") for p in [*folder.glob("s/*.jpg"), *folder.glob("g/*.jpg")])
+    try:
+        shots = await page_shots(page)
+        shown = {k: v for k, v in c.items() if k not in ("reviews", "hours", "loc", "audit")}
+        content = [{"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+                                                "data": base64.b64encode(s).decode()}} for s in shots]
+        content.append({"type": "text", "text": f"Layout: {layout}. Font presets: {sorted(layouts.FONTS)}.\nPhoto "
+                        f"files: {photos}\n\nConfig:\n{json.dumps(shown, ensure_ascii=False)}"})
+        r = await client.messages.create(model=model, max_tokens=8000,
+                                         system=REVIEW_PROMPT + "\n\nOUR DESIGN SKILLS:\n\n" + design.website_pack(),
+                                         messages=[{"role": "user", "content": content}])
+        text = "".join(getattr(b, "text", "") for b in r.content)
+        out = json.loads(text[text.index("{"): text.rindex("}") + 1])
+    except Exception as exc:  # noqa: BLE001 - the page as written is still good to go
+        return c, [f"design review skipped ({type(exc).__name__}: {str(exc)[:120]})"]
+    changes = {k: v for k, v in (out.get("changes") or {}).items() if k in REVIEW_KEYS}
+    if "special" in changes and changes["special"]:
+        del changes["special"]  # it may only take an offer away, never add one
+    if "services" in changes and not same_prices(c.get("services"), changes["services"]):
+        del changes["services"]  # prices are facts: a rename that moves or changes them is dropped
+    if changes.get("fonts") not in (None, *layouts.FONTS):
+        del changes["fonts"]
+    new = {**c, **changes}
+    if "special" in changes:
+        new.pop("special", None)
+    return tidy(new, folder, photos, layout, new.get("fonts"), facts), [str(n) for n in out.get("notes") or []]
+
+
+def same_prices(old, new) -> bool:
+    """True when every price is unchanged and in the same order (names may differ, groups may be split or joined)."""
+    try:
+        return [str(i[1]) for g in old or [] for i in g["items"]] == [str(i[1]) for g in new or [] for i in g["items"]]
+    except (KeyError, IndexError, TypeError):
+        return False
 
 
 async def phone_shots(their_url: str, ours: Path, folder: Path) -> bool:
@@ -192,9 +278,16 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     progress(f"Writing the {layout} design…")
     model = getattr(settings, "big_model", "") or "claude-opus-5"
     writer = getattr(client, "direct", client)  # the design needs Claude's eyes on the photos, not the free route
-    c = await write_config(writer, model, folder, layout, fonts, audit, listing_facts(place, instagram, website))
+    facts = listing_facts(place, instagram, website)
+    c = await write_config(writer, model, folder, layout, fonts, audit, facts)
     json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     out = outbox.LIVE / "m" / slug
+    await asyncio.to_thread(premium_page.build, folder, out)
+    progress("Reviewing the design with every one of our design skills…")
+    c, notes = await review(writer, model, folder, out / "index.html", c, layout, facts)
+    (folder / "review.md").write_text("# Design review (every website skill)\n\n" + "".join(f"- {n}\n" for n in notes),
+                                      encoding="utf-8")
+    json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     await asyncio.to_thread(premium_page.build, folder, out)
     if website and "instagram.com" not in website and await phone_shots(website, out / "index.html", folder):
         await asyncio.to_thread(premium_page.build, folder, out)  # again, now with the before/after
@@ -207,7 +300,7 @@ async def make(business: str, settings, client, website: str = "", instagram: st
         issues = await check_live(slug)
     ig_ok = bool(instagram) and await outbox.instagram_exists(instagram)
     return {"slug": slug, "name": p["name"], "link": link, "layout": layout, "issues": issues, "instagram": instagram,
-            "instagram_ok": ig_ok, "dm": outbox.dm_text(settings, p, link)}
+            "instagram_ok": ig_ok, "dm": outbox.dm_text(settings, p, link), "review": notes}
 
 
 async def check_live(slug: str) -> list[str]:

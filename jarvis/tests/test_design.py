@@ -44,7 +44,7 @@ def guide(args):
 
 def test_guide_list_and_read():
     listing = guide({})
-    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 59
+    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 62
     assert "Taste Skill guides:" in listing and "taste-skill:" in listing
     assert guide({"guide": "taste-skill"}).startswith("taste-skill/SKILL.md")
     out = guide({"guide": "animate", "file": "RECIPES.md"})
@@ -74,3 +74,10 @@ def test_marketing_skills_are_readable_with_their_reference_files():
     import design
     text = design.guide({"guide": "copywriting", "file": "references/copy-frameworks.md"})
     assert "references/copy-frameworks.md" in text and "cold-email" in design.guides()
+
+
+def test_the_website_playbook_lists_every_website_skill_installed():
+    import design
+    listing = design.guide({"guide": "website"})
+    assert "use ALL of these" in listing and "[not installed]" not in listing
+    assert "impeccable" in listing and "web-design-guidelines" in listing and "copywriting" in listing
