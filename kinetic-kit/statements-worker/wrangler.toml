@@ -12,7 +12,7 @@ crons = ["0 7 1 * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "kinetic-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "2af23fc8-7fa2-49dd-b896-d3240bc1f1aa"
 
 [vars]
 SITE_NAME = "Kinetic Web Designs"
