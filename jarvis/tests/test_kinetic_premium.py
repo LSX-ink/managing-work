@@ -108,3 +108,31 @@ async def test_design_review_uses_every_website_skill_and_never_touches_facts(tm
     moved = json.dumps({"changes": {"services": [{"group": "All", "items": [["Cut", "£8"], ["Fade", "£12"]]}]}})
     new2, _ = await auto.review(_Reviewer(moved), "m", tmp_path, tmp_path / "x", c, "atelier", {"name": "Shop"})
     assert new2["services"] == c["services"]  # a changed price is refused
+
+
+async def test_the_review_cannot_break_the_page_shape(tmp_path, monkeypatch):
+    (tmp_path / "g").mkdir()
+    for n in range(4):
+        (tmp_path / "g" / f"0{n}.jpg").write_bytes(b"x")
+
+    async def no_shots(page):
+        return [b"img"]
+    monkeypatch.setattr(auto, "page_shots", no_shots)
+    c = {"name": "Shop", "h1": ["a", "b", "c"], "kicker": "High St", "lead": "Cuts.",
+         "colours": {"bg": "#000000", "panel": "#111111", "ink": "#ffffff", "muted": "#999999", "gold": "#ffcc00"},
+         "experience": {"title": "T", "text": "X", "photos": ["g/01.jpg"]}, "hero": ["g/00.jpg"], "gallery": ["g/02.jpg"]}
+    answer = json.dumps({"changes": {"h1": ["Sharp fades.", "No nonsense."],  # two lines: the layouts need three
+                                     "colours": {"muted": "#a0a0a0"}, "experience": {"title": "Reciprocity"}}})
+    new, _ = await auto.review(_Reviewer(answer), "m", tmp_path, tmp_path / "x", c, "split", {"name": "Shop"})
+    assert new["h1"] == ["a", "b", "c"]
+    assert new["colours"]["muted"] == "#a0a0a0" and new["colours"]["gold"] == "#ffcc00"  # partial change merged
+    assert new["experience"]["title"] == "Reciprocity" and new["experience"]["text"] == "X"
+
+
+def test_a_logo_the_builder_cannot_read_is_left_out(tmp_path):
+    from PIL import Image
+    Image.new("RGB", (8, 8)).save(tmp_path / "logo0.png")
+    (tmp_path / "logo1.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg'/>")
+    assert auto.usable_image(tmp_path / "logo0.png") and not auto.usable_image(tmp_path / "logo1.svg")
+    c = auto.tidy({"logo": "logo1.svg"}, tmp_path, [], "atelier", None, {"name": "Shop"})
+    assert c["logo"] == ""

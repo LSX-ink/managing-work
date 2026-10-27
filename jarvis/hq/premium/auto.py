@@ -123,6 +123,16 @@ async def write_config(client, model: str, folder: Path, layout: str, fonts: str
     return tidy(c, folder, photos, layout, fonts, facts)
 
 
+def usable_image(path: Path) -> bool:
+    from PIL import Image
+    try:
+        with Image.open(path) as im:
+            im.verify()
+        return True
+    except Exception:  # noqa: BLE001 - missing, SVG, broken: all mean "don't use it"
+        return False
+
+
 def tidy(c: dict, folder: Path, photos: list[str], layout: str, fonts: str | None, facts: dict) -> dict:
     """Google's facts back word for word, only real photo files and each one once, the chosen layout and fonts."""
     c.update({k: v for k, v in facts.items() if v})  # Google's own words win
@@ -137,8 +147,8 @@ def tidy(c: dict, folder: Path, photos: list[str], layout: str, fonts: str | Non
     c["gallery"] = fresh(c.get("gallery"))
     if len(c["gallery"]) < 6:  # top it up with photos not used yet
         c["gallery"] += fresh([p for p in photos if p not in used])[:6 - len(c["gallery"])]
-    if c.get("logo") and not (folder / c["logo"]).exists():
-        c["logo"] = ""
+    if c.get("logo") and not usable_image(folder / c["logo"]):
+        c["logo"] = ""  # missing, or a format the page builder can't read (an SVG logo, say)
     if layout != "atelier":
         c["layout"] = layout
     if fonts:
@@ -153,10 +163,20 @@ further down, phone) and the config that made the page, then improve the config.
 You may change only these keys: kicker, h1, lead, colours, experience (title, text, photos), hero, gallery, fonts,
 logo_light, motif, currency_note, services (group names and service names, never prices), special (only to remove it).
 Keep every fact true: never invent prices, offers, awards or claims. Photos only from the list given. Fonts only from
-the presets given. Colours must still match the business's brand.
+the presets given. Colours must still match the business's brand. The layouts are fixed: h1 is always exactly three
+short lines (make each one count rather than dropping one), and kicker stays a short line.
 
 Answer with JSON only: {"changes": {key: new value, ...}, "notes": ["what you changed and which skill said so", ...]}.
 Return {"changes": {}, "notes": [...]} when it is already excellent."""
+SHAPES = {  # what the page layouts read: h1 is always three lines, the rest keeps its form
+    "h1": lambda v: isinstance(v, list) and len(v) == 3 and all(isinstance(x, str) and x.strip() for x in v),
+    "kicker": lambda v: isinstance(v, str), "lead": lambda v: isinstance(v, str) and v.strip(),
+    "colours": lambda v: isinstance(v, dict) and all(isinstance(v.get(k), str) and re.fullmatch(r"#[0-9a-fA-F]{6}", v[k])
+                                                     for k in ("bg", "panel", "ink", "muted", "gold")),
+    "experience": lambda v: isinstance(v, dict) and isinstance(v.get("title"), str) and isinstance(v.get("text"), str),
+    "hero": lambda v: isinstance(v, list) and len(v) >= 1, "gallery": lambda v: isinstance(v, list) and len(v) >= 3,
+    "services": lambda v: isinstance(v, list) and all(isinstance(g, dict) and isinstance(g.get("items"), list) for g in v),
+}
 REVIEW_KEYS = {"kicker", "h1", "lead", "colours", "experience", "hero", "gallery", "fonts", "logo_light", "motif",
                "currency_note", "services", "special"}
 
@@ -213,6 +233,12 @@ async def review(client, model: str, folder: Path, page: Path, c: dict, layout: 
         del changes["services"]  # prices are facts: a rename that moves or changes them is dropped
     if changes.get("fonts") not in (None, *layouts.FONTS):
         del changes["fonts"]
+    for key in ("colours", "experience"):  # a partial change keeps the rest
+        if isinstance(changes.get(key), dict) and isinstance(c.get(key), dict):
+            changes[key] = {**c[key], **changes[key]}
+    for key, ok in SHAPES.items():  # the layouts need these shapes: a review that changes one is kept out
+        if key in changes and not ok(changes[key]):
+            del changes[key]
     new = {**c, **changes}
     if "special" in changes:
         new.pop("special", None)
