@@ -6,6 +6,8 @@ os.environ["JARVIS_CALL_ALERTS"] = "false"
 os.environ["JARVIS_PHONE_PUSH"] = "false"
 # Nor check the real websites and dashboard every few minutes.
 os.environ["JARVIS_HEALTH_ALERTS"] = "false"
+# Nor send "now playing" song cards from this PC's music into the pages tests open.
+os.environ["JARVIS_NOW_PLAYING"] = "false"
 # Nor make TikTok videos in the background.
 os.environ["JARVIS_CREATOR_DAILY"] = "false"
 # Nor start Alfred's Claude Mem worker.
