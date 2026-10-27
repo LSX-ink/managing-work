@@ -26,6 +26,9 @@ director's playbook with critique, audit, polish, bolder, typeset, layout and mo
 Vercel's web-design-guidelines (the Web Interface Guidelines rules saved in references/rules.md) and
 writing-guidelines (MIT, from github.com/vercel-labs). guide "website" lists every skill to use for a website, in
 order, and website_pack() hands excerpts of all of them to the mock-up builder's design review.
+skills/superpowers holds five of Jesse Vincent's Superpowers (MIT, from github.com/obra/superpowers, written guides
+only): systematic-debugging, verification-before-completion, test-driven-development, writing-plans and
+receiving-code-review. skills/anthropic also holds mcp-builder and webapp-testing (guides only, their scripts left out).
 
 Any other folder dropped into skills/ with */SKILL.md guides is picked up too, named after its folder. skillscan checks
 every library first: blocked ones are refused, and a new or changed one is scanned the first time guides are listed
@@ -45,7 +48,7 @@ SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
 GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic",
                    "business": "Business", "marketing": "Marketing Skills", "impeccable": "Impeccable",
-                   "vercel": "Vercel"}  # labels
+                   "vercel": "Vercel", "superpowers": "Superpowers"}  # labels
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -262,7 +265,11 @@ def tool_definitions() -> list[dict]:
                        "social and video for Instagram and TikTok content; seo-audit, ai-seo, schema and site-architecture "
                        "for search; marketing-psychology, lead-magnets, emails, referrals, sales-enablement and more. Their "
                        "extra files are e.g. file 'references/copy-frameworks.md'. Anthropic canvas-design: posters and still "
-                       "graphics. New libraries dropped into skills/ appear here too. Call "
+                       "graphics. Superpowers (working like a pro on any job): "
+                       "systematic-debugging (find the real cause before fixing anything), verification-before-completion "
+                       "(prove it works before saying it's done), writing-plans, test-driven-development, "
+                       "receiving-code-review. Anthropic mcp-builder (new connectors) and webapp-testing (testing a web "
+                       "page with Playwright). New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",
