@@ -1,6 +1,8 @@
 import asyncio
+from dataclasses import replace
 import json
 
+import httpx
 import pytest
 
 import alerts
@@ -306,3 +308,22 @@ async def test_watch_email_says_a_problem_once(monkeypatch, capsys):
     with pytest.raises(asyncio.CancelledError):
         await asyncio.wait_for(alerts.watch_email(SETTINGS, None), 2)
     assert capsys.readouterr().out.count("Email check failed") == 1
+
+
+async def test_phone_push_sends_what_matters_to_a_private_address(tmp_path):
+    sent = []
+
+    def handler(request):
+        sent.append((str(request.url), request.headers["Title"], request.content.decode()))
+        return httpx.Response(200)
+
+    s = replace(Settings(), phone_push=True, ntfy_server="https://ntfy.example")
+    topic = tmp_path / "push"
+    assert alerts.pushes(s, "briefing") and alerts.pushes(s, "instagram") and not alerts.pushes(s, "timer")
+    assert not alerts.pushes(replace(s, phone_push=False), "briefing")
+    assert await alerts.push(s, "Good morning, sir.", "briefing", transport=httpx.MockTransport(handler), topic_file=topic)
+    url, title, body = sent[0]
+    assert url.startswith("https://ntfy.example/alfred-") and len(url) > 40 and url.endswith(topic.read_text().strip())
+    assert (title, body) == ("Morning briefing", "Good morning, sir.")
+    down = httpx.MockTransport(lambda r: httpx.Response(500))
+    assert not await alerts.push(s, "x", "health", transport=down, topic_file=topic)  # never raises

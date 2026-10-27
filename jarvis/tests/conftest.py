@@ -3,6 +3,7 @@ import tempfile
 
 # Tests must not reach ntfy.sh or write the phone address file.
 os.environ["JARVIS_CALL_ALERTS"] = "false"
+os.environ["JARVIS_PHONE_PUSH"] = "false"
 # Nor make TikTok videos in the background.
 os.environ["JARVIS_CREATOR_DAILY"] = "false"
 # Nor start Alfred's Claude Mem worker.

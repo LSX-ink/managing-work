@@ -149,6 +149,8 @@ async def announce(app: FastAPI, text: str, kind: str = "phone", shown: str | No
     shown, when given, is what the notification says instead (e.g. a longer briefing); text is still what's spoken."""
     item = {"id": next(app.state.alert_ids), "kind": kind, "text": shown or text, "at": time.strftime("%H:%M")}
     app.state.alerts = [*app.state.alerts, item][-MAX_ALERTS:]
+    if alerts.pushes(settings, kind):  # the ones that matter reach the phone too, in the background
+        asyncio.get_running_loop().create_task(alerts.push(settings, shown or text, kind))
     if not app.state.pages:
         print(f"  Jarvis (no page open): {text}", flush=True)
     for ws, speak, brain in list(app.state.pages.values()):

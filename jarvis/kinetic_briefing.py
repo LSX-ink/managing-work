@@ -20,6 +20,7 @@ isn't there, the website parts say so in a line and the rest of the briefing sti
 import asyncio
 from datetime import date, datetime, time, timedelta
 
+import alerts
 import kinetic_find
 import kinetic_invoices
 import kinetic_outreach
@@ -391,11 +392,11 @@ def daily(settings: Settings, now: datetime | None = None) -> tuple[str, str]:
 
 
 async def watch(settings: Settings, announce, someone_there) -> None:
-    """Give the briefing once a day from BRIEF_HOUR, waiting until a page is open."""
+    """Give the briefing once a day from BRIEF_HOUR, waiting until a page is open (unless it goes to the phone)."""
     await asyncio.sleep(FIRST_LOOK)
     while True:
         try:
-            if someone_there():
+            if someone_there() or alerts.pushes(settings, "briefing"):
                 spoken, shown = await asyncio.to_thread(daily, settings)
                 if spoken:
                     await announce(spoken, "briefing", shown)
