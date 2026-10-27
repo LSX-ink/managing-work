@@ -8,7 +8,9 @@ import computer
 from brain import Brain, request_options
 from config import Settings
 
-SETTINGS = Settings(model="claude-opus-5", tasks_file="", enable_screen=False, enable_computer=True)
+# These tests cover the ask-first card, so they turn auto-allow off (it is on by default).
+SETTINGS = Settings(model="claude-opus-5", tasks_file="", enable_screen=False, enable_computer=True,
+                    computer_auto_allow=False)
 
 
 def screen_call(name, id, **args):
@@ -193,3 +195,19 @@ def test_type_and_key():
     c.run("key", {"text": "ctrl+s", "repeat": 2})
     assert c.gui.calls[0][:2] == ("write", ("hello",))
     assert [call[1] for call in c.gui.calls[1:]] == [("ctrl", "s"), ("ctrl", "s")]
+
+
+async def test_auto_allow_runs_without_asking():
+    comp = FakeComputer()
+    asked = []
+
+    async def confirm(steps):
+        asked.append(steps)
+        return "deny"
+
+    client = FakeClient(reply("tool_use", screen_call("left_click", "t1", coordinate=[10, 20])),
+                        reply("end_turn", SimpleNamespace(type="text", text="Done.")))
+    b = Brain(replace(SETTINGS, computer_auto_allow=True), client, http=None, confirm=confirm, pc_control=comp)
+    await run(b)
+    assert asked == []
+    assert comp.ran == ["left_click"]
