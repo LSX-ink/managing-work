@@ -1237,6 +1237,37 @@ _LETTER_POS = re.compile(_NAME + r"(?:what (?:number|position) (?:letter )?is (?
                          r"|where (?:is|does) (?:the letter )?(?P<l2>[a-z])(?: come| sit)? in the alphabet)" + _END, re.I)
 
 
+_BACKWARDS = re.compile(_NAME + r"(?:(?:how do you |can you )?spell " + _WORD + r" backwards?|what(?:'s| is) " + _WORD.replace("word>", "word2>")
+                        + r" (?:backwards?|spelt backwards|spelled backwards))" + _END, re.I)
+_VOWELS = re.compile(_NAME + r"how many (?P<kind>vowels|consonants) (?:are )?(?:there )?(?:in|does) " + _WORD + r"(?: have)?" + _END, re.I)
+_PALINDROME = re.compile(_NAME + r"is " + _WORD + r" a palindrome" + _END, re.I)
+_END_LETTER = re.compile(_NAME + r"what(?:'s| is) the (?P<which>first|last) letter (?:of|in) " + _WORD + _END, re.I)
+
+
+def _word_answer(said: str) -> str | None:
+    """'Spell banana backwards', 'how many vowels in banana?', 'is level a palindrome?', 'what's the last letter of Tuesday?'"""
+    if m := _BACKWARDS.match(said):
+        word = (m.group("word") or m.group("word2")).lower()
+        if word in ("it", "that", "this", "them"):
+            return None  # "spell that backwards": Claude knows what "that" was
+        return f"{word.capitalize()} backwards is {_spelt(word[::-1])}."
+    if m := _VOWELS.match(said):
+        word, kind = m.group("word"), m.group("kind").lower()
+        letters = [c for c in word.lower() if c.isalpha()]
+        n = sum((c in "aeiou") == (kind == "vowels") for c in letters)
+        return f"{word.capitalize()} has {n} {kind if n != 1 else kind[:-1]}."
+    if m := _PALINDROME.match(said):
+        word = m.group("word")
+        letters = [c for c in word.lower() if c.isalpha()]
+        is_it = len(letters) > 1 and letters == letters[::-1]
+        return f"{'Yes' if is_it else 'No'}, {word.lower()} {'reads the same' if is_it else 'does not read the same'} backwards."
+    if m := _END_LETTER.match(said):
+        word = m.group("word")
+        letters = [c for c in word if c.isalpha()]
+        return f"The {m.group('which').lower()} letter of {word} is {(letters[0] if m.group('which').lower() == 'first' else letters[-1]).upper()}."
+    return None
+
+
 def _alphabet_answer(said: str) -> str | None:
     """'What letter comes after G?', 'what's the 5th letter of the alphabet?', 'what number letter is K?'"""
     if m := _LETTER_NEXT.match(said):
@@ -1396,7 +1427,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said)
             or _height_weight(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
-            or _alphabet_answer(said))
+            or _alphabet_answer(said) or _word_answer(said))
 
 
 def time_of_day(hour: int | None = None) -> str:

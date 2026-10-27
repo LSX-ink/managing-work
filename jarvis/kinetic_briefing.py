@@ -237,7 +237,7 @@ def contact_today(settings: Settings, limit: int = CONTACT_TODAY) -> list[dict]:
 
 
 def gather(settings: Settings, now: datetime | None = None) -> dict:
-    now = now or datetime.now()
+    now = now or datetime.combine(st.today(), datetime.now().time())  # st.today() so tests can pin the day
     today = now.date()
     invoices = [r for r in st.rows_of(settings, st.INVOICES) if r.get("status") == "unpaid"]
     late = [r for r in invoices if kinetic_invoices.state(r, today).startswith("overdue")]
