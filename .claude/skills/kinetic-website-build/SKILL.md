@@ -20,8 +20,9 @@ together with `guide: "website-kit"`.
 5. `emil-kowalski/emil-design-eng/SKILL.md`, `animate`, `apple-design`: polish and motion that feel right
 6. `ui-skills/baseline-ui`, `improve-ui`, `fixing-accessibility`, `fixing-motion-performance`, `fixing-metadata`
 7. `web-engineering/frontend-ui-engineering`, `performance-optimization`: fast, robust front-end
-8. `anthropic/brand-guidelines`, `anthropic/theme-factory`, `taste/redesign-skill`: brand fit and redesigning an existing site
-9. `ui-ux-pro-max`: run its search (`design_advice` with `design_system=true`) for palette, fonts and layout pattern
+8. `web-3d/auteur` (and its `reference-*.md`), `web-3d/threejs-r3f`, `web-3d/gsap`, `web-3d/motion-principles`, `web-3d/css-native`: 3D, scroll cinema and motion done properly, with fallbacks for slow phones and reduced motion
+9. `anthropic/brand-guidelines`, `anthropic/theme-factory`, `taste/redesign-skill`: brand fit and redesigning an existing site
+10. `ui-ux-pro-max`: run its search (`design_advice` with `design_system=true`) for palette, fonts and layout pattern
 
 ## While building
 

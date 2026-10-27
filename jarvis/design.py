@@ -35,13 +35,14 @@ SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
 GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic",
                    "business": "Business", "impeccable": "Impeccable", "ui-skills": "UI Skills",
-                   "web-engineering": "Web engineering"}  # labels
+                   "web-engineering": "Web engineering", "web-3d": "3D web"}  # labels
 # The owner (27 Oct 2026): "when making websites always use all the skills so you get the best version". Every
 # website and mock-up build reads the website kit: these guides, in this order, all applied.
 WEBSITE_KIT = ["client-websites", "frontend-design", "taste-skill", "impeccable", "emil-design-eng", "baseline-ui",
                "improve-ui", "fixing-accessibility", "fixing-motion-performance", "fixing-metadata",
                "frontend-ui-engineering", "performance-optimization", "brand-guidelines", "theme-factory",
-               "redesign-skill", "animate", "apple-design"]
+               "redesign-skill", "animate", "apple-design", "auteur", "threejs-r3f", "gsap", "motion-principles",
+               "css-native"]
 KIT_CHARS = 2500  # of each guide in the kit digest; the full guide is one design_guide call away
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
@@ -230,7 +231,9 @@ def tool_definitions() -> list[dict]:
                        "and polish; files like 'reference-layout.md'). UI Skills: baseline-ui, improve-ui, "
                        "fixing-accessibility, fixing-motion-performance, fixing-metadata, create-design-md. Web "
                        "engineering: frontend-ui-engineering, performance-optimization. More Anthropic: canvas-design, "
-                       "brand-guidelines, web-artifacts-builder. New libraries dropped into skills/ appear here too. Call "
+                       "brand-guidelines, web-artifacts-builder. 3D web: auteur (directs a site like a film: "
+                       "storyboard, scroll cinema, 3D scenes, verify), threejs-r3f, gsap, motion-principles, "
+                       "canvas-generative, css-native, framer-motion, genjutsu-cast. New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",

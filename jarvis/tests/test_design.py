@@ -44,7 +44,7 @@ def guide(args):
 
 def test_guide_list_and_read():
     listing = guide({})
-    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 45
+    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 53
     assert "Taste Skill guides:" in listing and "taste-skill:" in listing
     assert guide({"guide": "taste-skill"}).startswith("taste-skill/SKILL.md")
     out = guide({"guide": "animate", "file": "RECIPES.md"})
@@ -88,4 +88,5 @@ def test_website_kit_pages_on():
 def test_new_web_libraries_listed():
     listing = guide({})
     assert "Impeccable guides:" in listing and "UI Skills guides:" in listing and "Web engineering guides:" in listing
+    assert "3D web guides:" in listing and "threejs-r3f:" in listing
     assert guide({"guide": "impeccable", "file": "reference-layout.md"}).startswith("impeccable/reference-layout.md")
