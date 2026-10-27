@@ -15,7 +15,12 @@ brandkit...), read the same way. skills/anime holds anime-mj (MIT, from github.c
 an anime and manga prompt builder with manga artist and studio styles, and higgsfield-anime, the user's own prompt
 template for Higgsfield. skills/business holds pricing-strategy (MIT, from github.com/sickn33/antigravity-awesome-skills):
 pricing, tiers, value metrics and price rises for a product or service; and client-websites (ours): creative Kinetic
-client sites and mock-ups that sell, using 21st.dev components through the MCP bridge.
+client sites and mock-ups that sell, using 21st.dev components through the MCP bridge. skills/marketing holds Corey
+Haines's Marketing Skills (MIT, from github.com/coreyhaines31/marketingskills, written guides only): copywriting,
+copy-editing, cold-email, prospecting, cro, offers, social, seo-audit, ai-seo, schema, site-architecture,
+marketing-psychology, lead-magnets, pricing, ad-creative, video, emails, content-strategy, referrals and more; each
+can have extra files in references/. skills/anthropic also holds canvas-design (Apache 2.0, from
+github.com/anthropics/skills): posters and still graphics from a design philosophy.
 
 Any other folder dropped into skills/ with */SKILL.md guides is picked up too, named after its folder. skillscan checks
 every library first: blocked ones are refused, and a new or changed one is scanned the first time guides are listed
@@ -34,7 +39,7 @@ from config import Settings
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
 GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic",
-                   "business": "Business"}  # labels
+                   "business": "Business", "marketing": "Marketing Skills"}  # labels
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -132,7 +137,7 @@ def guide(args: dict, settings: Settings | None = None) -> str:
     if refusal:
         return (news + "\n" if news else "") + refusal
     part = (args.get("file") or "SKILL.md").strip()
-    files = sorted(p.name for p in folder.glob("*.md"))
+    files = sorted(p.relative_to(folder).as_posix() for p in folder.rglob("*.md"))  # references/*.md too
     if part not in files:
         raise ValueError(f"{name} has these files: {', '.join(files)}.")
     text = (folder / part).read_text(encoding="utf-8")
@@ -194,7 +199,13 @@ def tool_definitions() -> list[dict]:
                        "'midnight-galaxy.md'; or make a custom one). Business: pricing-strategy (setting or changing prices for a "
                        "product, service or website package: value-based pricing, tiers, value metric, free trial "
                        "or freemium, price rises; ends with a pricing plan) and client-websites (read before making a Kinetic "
-                       "client mock-up or site: 21st.dev components, a page structure that sells, a quality check). New libraries dropped into skills/ appear here too. Call "
+                       "client mock-up or site: 21st.dev components, a page structure that sells, a quality check). Marketing Skills: read "
+                       "copywriting (and copy-editing) before writing any website words, DMs, captions or ads; cold-email and "
+                       "prospecting before outreach or follow-ups; cro and offers for pages and packages that convert; "
+                       "social and video for Instagram and TikTok content; seo-audit, ai-seo, schema and site-architecture "
+                       "for search; marketing-psychology, lead-magnets, emails, referrals, sales-enablement and more. Their "
+                       "extra files are e.g. file 'references/copy-frameworks.md'. Anthropic canvas-design: posters and still "
+                       "graphics. New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",

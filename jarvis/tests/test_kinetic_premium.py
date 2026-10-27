@@ -64,3 +64,7 @@ def test_google_facts_are_kept_word_for_word():
     assert f["reviews"] == [["Great cut", "Sam"]]  # low ratings left out
     assert f["stats"] == [["4.7", "Google rating"], ["138", "Google reviews"]]
     assert (f["instagram"], f["book_label"], f["loc"]) == ("acut", "Call us", [53.3, -1.4])
+
+
+def test_mock_up_words_follow_the_copywriting_skill():
+    assert "copywriting guide" in auto.copy_guide() and len(auto.copy_guide()) > 1000

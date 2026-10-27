@@ -22,7 +22,8 @@ LAYOUTS = ["atelier", "editorial", "split", "bold", "cinema"]
 FONTS = {"atelier": [None], "editorial": ["editorial", "fashion", "vintage"], "split": ["split", "fashion", "script"],
          "bold": ["bold", "cinema"], "cinema": ["cinema", "vintage"]}
 EXAMPLE = LEADS / "vox-hairdressing" / "config.json"
-PAGE_TEXT = 14000  # characters of their website's words sent to Claude
+PAGE_TEXT = 14000
+COPY_GUIDE = 12000  # characters of the copywriting skill given to the writer  # characters of their website's words sent to Claude
 WRITE_PROMPT = """You design premium concept websites for Kinetic Web Designs. Write config.json for one business from
 its research: their website's words, their Google listing and a contact sheet of their photos (file names in red).
 
@@ -41,6 +42,17 @@ Rules, all strict:
 - "audit": {"title": "What <their domain> is costing you, and what this fixes.", "fixes": [[problem, fix], ...]}, from
   the audit problems only (2 to 4 pairs, plain English, fix said as what this design does), or {} with no website.
 Answer with the JSON object only, keys as in the example."""
+
+
+def copy_guide() -> str:
+    """The copywriting skill (skills/marketing/copywriting, MIT) for every word on the page, when it's there."""
+    guide = HERE.parent.parent / "skills" / "marketing" / "copywriting" / "SKILL.md"
+    try:
+        text = guide.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    return ("\n\nWrite every word by this copywriting guide (the rules above still win: their real facts only):\n\n"
+            + text[:COPY_GUIDE])
 
 
 def slugify(name: str) -> str:
@@ -104,7 +116,7 @@ async def write_config(client, model: str, folder: Path, layout: str, fonts: str
     if sheet.exists():
         content.insert(0, {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
                                                        "data": base64.b64encode(sheet.read_bytes()).decode()}})
-    r = await client.messages.create(model=model, max_tokens=8000, system=WRITE_PROMPT,
+    r = await client.messages.create(model=model, max_tokens=8000, system=WRITE_PROMPT + copy_guide(),
                                      messages=[{"role": "user", "content": content}])
     text = "".join(getattr(b, "text", "") for b in r.content)
     c = json.loads(text[text.index("{"): text.rindex("}") + 1])

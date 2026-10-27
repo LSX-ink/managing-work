@@ -44,7 +44,7 @@ def guide(args):
 
 def test_guide_list_and_read():
     listing = guide({})
-    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 33
+    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 59
     assert "Taste Skill guides:" in listing and "taste-skill:" in listing
     assert guide({"guide": "taste-skill"}).startswith("taste-skill/SKILL.md")
     out = guide({"guide": "animate", "file": "RECIPES.md"})
@@ -68,3 +68,9 @@ def test_guide_bad_names():
         design.guide({"guide": "nope"})
     with pytest.raises(ValueError):
         design.guide({"guide": "animate", "file": "../../config.py"})
+
+
+def test_marketing_skills_are_readable_with_their_reference_files():
+    import design
+    text = design.guide({"guide": "copywriting", "file": "references/copy-frameworks.md"})
+    assert "references/copy-frameworks.md" in text and "cold-email" in design.guides()
