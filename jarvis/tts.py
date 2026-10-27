@@ -112,19 +112,50 @@ def speaking_parts(text: str) -> list[str]:
     return [first, *split_sentences(rest)] if rest else ([first] if first else [])
 
 
+async def _free_voice(settings: Settings, part: str) -> bytes | None:
+    """Microsoft's free natural voice (edge-tts) for when ElevenLabs isn't set up or fails, so Alfred never falls
+    back to the robotic browser voice (owner, 27 Oct 2026: "this one sounds AI"). None if that fails too."""
+    voice = settings.alfred_free_voice
+    if not voice:
+        return None
+    key = ("edge", voice, part.strip().lower())
+    if key in _cache:
+        _cache.move_to_end(key)
+        return _cache[key]
+    try:
+        import edge_tts
+        audio = bytearray()
+        talk = edge_tts.Communicate(part, voice, rate=settings.alfred_free_rate, pitch=settings.alfred_free_pitch)
+        async for chunk in talk.stream():
+            if chunk["type"] == "audio":
+                audio += chunk["data"]
+    except Exception as exc:
+        print(f"[jarvis] free voice failed: {exc!r}", flush=True)
+        return None
+    if not audio:
+        return None
+    if len(part) <= CACHE_MAX_CHARS:
+        _cache[key] = bytes(audio)
+        while len(_cache) > CACHE_ITEMS:
+            _cache.popitem(last=False)
+    return bytes(audio)
+
+
 async def stream(http: httpx.AsyncClient, settings: Settings, text: str):
     """Yield (text, MP3 audio or None) part by part, as each is ready. None means the browser voice says it.
 
-    If ElevenLabs fails part-way, the rest is handed to the browser voice in one go rather than retried.
+    ElevenLabs first; without a key, or if it fails part-way, the free Microsoft voice carries on, and only if
+    that fails too does the browser voice take the rest in one go.
     """
     if not text.strip():
         return
-    if not settings.elevenlabs_api_key:
-        yield text, None
-        return
     parts = speaking_parts(text)
+    eleven = bool(settings.elevenlabs_api_key)
     for i, part in enumerate(parts):
-        audio = await _live_voice(http, settings, part)
+        audio = await _live_voice(http, settings, part) if eleven else None
+        if audio is None:
+            eleven = False
+            audio = await _free_voice(settings, part)
         if audio is None:
             yield " ".join(parts[i:]), None
             return
