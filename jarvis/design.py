@@ -34,7 +34,16 @@ from config import Settings
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
 GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic",
-                   "business": "Business"}  # labels
+                   "business": "Business", "impeccable": "Impeccable", "ui-skills": "UI Skills",
+                   "web-engineering": "Web engineering", "web-3d": "3D web"}  # labels
+# The owner (27 Oct 2026): "when making websites always use all the skills so you get the best version". Every
+# website and mock-up build reads the website kit: these guides, in this order, all applied.
+WEBSITE_KIT = ["client-websites", "frontend-design", "taste-skill", "impeccable", "emil-design-eng", "baseline-ui",
+               "improve-ui", "fixing-accessibility", "fixing-motion-performance", "fixing-metadata",
+               "frontend-ui-engineering", "performance-optimization", "brand-guidelines", "theme-factory",
+               "redesign-skill", "animate", "apple-design", "auteur", "threejs-r3f", "gsap", "motion-principles",
+               "css-native"]
+KIT_CHARS = 2500  # of each guide in the kit digest; the full guide is one design_guide call away
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
 STACKS = ["react", "nextjs", "vue", "svelte", "astro", "swiftui", "react-native", "flutter", "nuxtjs", "nuxt-ui",
@@ -115,6 +124,8 @@ def guide(args: dict, settings: Settings | None = None) -> str:
     checked, fresh = skillscan.check(settings, guide_libraries())
     news = skillscan.news(checked, fresh)
     name = (args.get("guide") or "").strip().lower()
+    if name == "website-kit":
+        return (news + "\n\n" if news else "") + website_kit(found, settings, int(args.get("offset") or 0))
     if not name:
         out = [news] if news else []
         for lib in guide_libraries():
@@ -142,6 +153,25 @@ def guide(args: dict, settings: Settings | None = None) -> str:
     if start + GUIDE_CHARS < len(text):
         chunk += f"\n... more: call again with offset {start + GUIDE_CHARS}"
     return head + chunk
+
+
+def website_kit(found: dict | None = None, settings: Settings | None = None, offset: int = 0) -> str:
+    """The opening of every guide in WEBSITE_KIT, one after another, so a website build applies all of them."""
+    found = found if found is not None else guides()
+    parts = ["Website kit: apply EVERY guide below to this site or mock-up, not just one. Read a guide in full with "
+             "design_guide when the part shown here isn't enough."]
+    for name in WEBSITE_KIT:
+        folder = found.get(name)
+        if not folder or (settings and skillscan.blocked_reason(settings, folder.parent.name)):
+            continue
+        text = (folder / "SKILL.md").read_text(encoding="utf-8")
+        parts.append(f"## {name} ({GUIDE_LIBRARIES.get(folder.parent.name, folder.parent.name)})\n"
+                     + text[:KIT_CHARS] + ("\n..." if len(text) > KIT_CHARS else ""))
+    text = "\n\n".join(parts)
+    chunk = text[offset:offset + GUIDE_CHARS]
+    if offset + GUIDE_CHARS < len(text):
+        chunk += f"\n... more: call again with guide 'website-kit' and offset {offset + GUIDE_CHARS}"
+    return chunk
 
 
 def tool_definitions() -> list[dict]:
@@ -177,7 +207,9 @@ def tool_definitions() -> list[dict]:
     }, {
         "name": "design_guide",
         "description": "Written design guides to read and follow when designing, animating, redesigning or "
-                       "reviewing UI, then answer in plain words. Emil Kowalski (polish and motion): emil-design-eng "
+                       "reviewing UI, then answer in plain words. Building or restyling ANY website, page or mock-up: first call "
+                       "with guide 'website-kit' and apply every guide in it (the owner's rule: all the skills, every "
+                       "time). Emil Kowalski (polish and motion): emil-design-eng "
                        "(his whole philosophy), animate, animate-expo, animation-vocabulary (names for a motion "
                        "effect), apple-design, review-animations, improve-animations, find-animation-opportunities, "
                        "mobile-native, break-ui, prototype, pick-ui-library, ask-sonner, write-swift. Taste Skill "
@@ -194,7 +226,14 @@ def tool_definitions() -> list[dict]:
                        "'midnight-galaxy.md'; or make a custom one). Business: pricing-strategy (setting or changing prices for a "
                        "product, service or website package: value-based pricing, tiers, value metric, free trial "
                        "or freemium, price rises; ends with a pricing plan) and client-websites (read before making a Kinetic "
-                       "client mock-up or site: 21st.dev components, a page structure that sells, a quality check). New libraries dropped into skills/ appear here too. Call "
+                       "client mock-up or site: 21st.dev components, a page structure that sells, a quality check). Impeccable: "
+                       "impeccable (a full design language with references for layout, colour, type, motion, critique "
+                       "and polish; files like 'reference-layout.md'). UI Skills: baseline-ui, improve-ui, "
+                       "fixing-accessibility, fixing-motion-performance, fixing-metadata, create-design-md. Web "
+                       "engineering: frontend-ui-engineering, performance-optimization. More Anthropic: canvas-design, "
+                       "brand-guidelines, web-artifacts-builder. 3D web: auteur (directs a site like a film: "
+                       "storyboard, scroll cinema, 3D scenes, verify), threejs-r3f, gsap, motion-principles, "
+                       "canvas-generative, css-native, framer-motion, genjutsu-cast. New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",
