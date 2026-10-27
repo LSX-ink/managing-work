@@ -41,6 +41,7 @@ class Settings:
     omniroute_key: str = os.getenv("JARVIS_OMNIROUTE_KEY", "").strip()
     omniroute_model: str = os.getenv("JARVIS_OMNIROUTE_MODEL", "auto").strip()
     alfred_mem: bool = _bool("JARVIS_ALFRED_MEM", True)  # Alfred's own long-term memory (Claude Mem)
+    auto_learn: bool = _bool("JARVIS_AUTO_LEARN", True)  # notes lasting rules, clients and prices by himself
     alfred_mem_port: int = int(os.getenv("JARVIS_ALFRED_MEM_PORT", "37778"))  # not 37777: that's Claude Code's
     omniroute_first: bool = _bool("JARVIS_OMNIROUTE_FIRST", False)  # on: OmniRoute first, Claude when it fails
     effort: str = os.getenv("JARVIS_EFFORT", "low")
@@ -105,6 +106,10 @@ class Settings:
     phone_relay: bool = _bool("JARVIS_CALL_ALERTS", True)
     ntfy_topic: str = os.getenv("JARVIS_NTFY_TOPIC", "").strip()  # empty: made up and kept in .phone-topic
     ntfy_server: str = os.getenv("JARVIS_NTFY_SERVER", "https://ntfy.sh").strip()
+    # And the other way: the alerts that matter go to your phone (the free ntfy app) on a second private topic
+    phone_push: bool = _bool("JARVIS_PHONE_PUSH", True)
+    health_alerts: bool = _bool("JARVIS_HEALTH_ALERTS", True)  # drive full, HQ or the website down (health.watch)
+    phone_push_kinds: str = os.getenv("JARVIS_PHONE_PUSH_KINDS", "briefing,instagram,email,sales,health,weekly")
     calendar_url: str = os.getenv("JARVIS_CALENDAR_URL", "").strip()  # private iCal (.ics) address, read-only
     # New abilities: requests Alfred can't handle go to Claude as GitHub issues on this repository
     github_repo: str = os.getenv("JARVIS_GITHUB_REPO", "LSX-ink/managing-work").strip()

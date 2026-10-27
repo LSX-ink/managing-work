@@ -1638,6 +1638,8 @@ class Brain:
                 await asyncio.to_thread(save_carry_over, self.settings, self.messages[start]["content"], reply)
                 remember = asyncio.to_thread(alfredmem.remember_turn, self.settings, self.messages[start]["content"], reply)
                 asyncio.get_running_loop().create_task(remember)  # in the background: never slows the reply
+                if self.settings.auto_learn and aboutyou.worth_learning(user_text):  # a rule, a client, a price...
+                    asyncio.get_running_loop().create_task(aboutyou.learn(self.settings, self.client, user_text, reply))
         except asyncio.CancelledError:  # you said cancel: forget the half-finished turn so history stays valid
             del self.messages[start:]
             raise
@@ -1782,6 +1784,9 @@ class Brain:
 
     async def _tool_result(self, call) -> dict:
         print(f"  tool: {call.name} {call.input}", flush=True)
+        if call.name == omniroute.FIND_TOOL:  # the free route's stand-in for Claude's tool search
+            found = omniroute.find_tools(str(call.input.get("query", "")), tools.client_tool_definitions(self.settings))
+            return {"type": "tool_result", "tool_use_id": call.id, "content": found}
         try:
             content = await tools.run_tool(call.name, dict(call.input), self.settings, self.http, self.page)
             return {"type": "tool_result", "tool_use_id": call.id, "content": content}

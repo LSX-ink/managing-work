@@ -128,7 +128,24 @@ def test_backup_request_drops_claude_only_extras():
     request = omniroute.gateway_request(OPTS, "auto")
     assert request["model"] == "auto" and "betas" not in request and "thinking" not in request
     assert request["system"] == "You are Alfred."
-    assert request["tools"] == [{"name": "get_time", "description": "Time", "input_schema": {"type": "object"}}]
+    assert [t["name"] for t in request["tools"]] == ["get_time", omniroute.FIND_TOOL]  # "rare" waits to be found
+    assert request["tools"][0] == {"name": "get_time", "description": "Time", "input_schema": {"type": "object"}}
+
+
+def test_free_route_finds_and_loads_deferred_tools():
+    """The free AI can't use Claude's tool search, so find_tool stands in and what it finds is sent from then on."""
+    every = OPTS["tools"] + [{"name": "pc_system", "description": "Screen brightness, volume and Wi-Fi",
+                              "input_schema": {"type": "object"}, "defer_loading": True}]
+    found = omniroute.find_tools("turn the brightness down", every)
+    assert found.startswith("Loaded: pc_system.")
+    assert omniroute.find_tools("zebra", every).startswith("No tool matched")
+    messages = [{"role": "user", "content": "dim it"},
+                {"role": "assistant", "content": [{"type": "tool_use", "id": "f1", "name": "find_tool", "input": {"query": "brightness"}}]},
+                {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "f1", "content": found}]}]
+    request = omniroute.gateway_request({**OPTS, "tools": every, "messages": messages,
+                                         "system": "search with tool_search_tool_bm25"}, "auto")
+    assert [t["name"] for t in request["tools"]] == ["get_time", "pc_system", omniroute.FIND_TOOL]
+    assert request["system"] == "search with find_tool"
 
 
 def test_backup_request_trims_the_conversation():

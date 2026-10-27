@@ -6,6 +6,8 @@
   announces incoming calls and delivery-app notifications.
 - Phone over the internet: an app on your phone (e.g. MacroDroid) posts calls to a private
   ntfy.sh address that Jarvis makes up, and Jarvis listens there. No cable or Bluetooth needed.
+- To your phone: the heads-ups that matter (morning briefing, replies, health) are pushed to a second private
+  ntfy address; subscribe to it in the free ntfy app and they arrive wherever you are.
 """
 
 import asyncio
@@ -324,6 +326,50 @@ async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.
             except (httpx.HTTPError, ValueError) as exc:
                 print(f"[jarvis] Phone alert connection dropped ({exc}); retrying.", flush=True)
             await asyncio.sleep(retry)
+
+
+PUSH_FILE = ROOT / ".phone-push-topic"  # the private address Alfred posts to; git ignores it
+PUSH_TITLES = {"briefing": "Morning briefing", "instagram": "Instagram reply", "email": "New email",
+               "sales": "Follow-ups due", "mockup": "Mock-up ready", "health": "Alfred health check", "weekly": "Weekly report"}
+PUSH_MAX_CHARS = 3500  # ntfy keeps messages up to 4,096 bytes
+
+
+def push_url(settings: Settings, topic_file: Path | None = None) -> str:
+    """The private address Alfred pushes alerts to, made up on first use. Empty when phone push is off."""
+    if not settings.phone_push:
+        return ""
+    topic_file = topic_file or PUSH_FILE
+    try:
+        topic = topic_file.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        topic = ""
+    if not topic:
+        topic = "alfred-" + secrets.token_hex(12)
+        topic_file.write_text(topic + "\n", encoding="utf-8")
+    return f"{settings.ntfy_server.rstrip('/')}/{topic}"
+
+
+def pushes(settings: Settings, kind: str) -> bool:
+    """True for the kinds of heads-up that go to the phone too."""
+    return settings.phone_push and kind in {k.strip() for k in settings.phone_push_kinds.split(",")}
+
+
+async def push(settings: Settings, text: str, kind: str, transport=None, topic_file: Path | None = None) -> bool:
+    """Send one heads-up to the phone. Never raises: a phone that can't be reached mustn't stop anything."""
+    url = push_url(settings, topic_file)
+    if not url:
+        return False
+    headers = {"Title": PUSH_TITLES.get(kind, "Alfred"), "Tags": "tophat"}
+    if kind in ("instagram", "health"):
+        headers["Priority"] = "high"
+    try:
+        async with httpx.AsyncClient(timeout=15, transport=transport) as http:
+            r = await http.post(url, content=text[:PUSH_MAX_CHARS].encode("utf-8"), headers=headers)
+            r.raise_for_status()
+        return True
+    except httpx.HTTPError as exc:
+        print(f"[jarvis] Couldn't push to the phone ({exc!r}).", flush=True)
+        return False
 
 
 def start(settings: Settings, announce: Announce) -> list[asyncio.Task]:

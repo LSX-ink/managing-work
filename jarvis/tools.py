@@ -115,6 +115,7 @@ import design_gradient
 import design_mockup
 import instagram_dms
 import kinetic_briefing
+import kinetic_premium
 import kinetic_calendar
 import kinetic_find
 import kinetic_invoices
@@ -376,6 +377,7 @@ ABILITIES += [alfred_mail, alfred_replies]  # Alfred's own email account and rep
 ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, track outreach, invoice
 ABILITIES += [kinetic_briefing, kinetic_calendar]  # Kinetic: morning money briefing, content calendar
+ABILITIES += [kinetic_premium]  # Kinetic end to end: a premium mock-up by voice, today's DMs to the phone
 ABILITIES += [kinetic_reach]  # Kinetic: trade of the week and its base mock-up, walk-in routes, mock-up videos
 ABILITIES += [instagram_dms]  # Kinetic: replies to Instagram DMs from people who message first
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)

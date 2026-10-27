@@ -15,6 +15,7 @@ the request is trimmed to plain text, pictures and Alfred's own loaded tools bef
 """
 
 import contextlib
+import re
 import time
 
 import anthropic
@@ -98,19 +99,65 @@ def _trim_messages(messages) -> list[dict]:
     return trimmed
 
 
+# Claude's tool search runs on Anthropic's side, so the free route gets its own: find_tool loads tools by key words.
+FIND_TOOL = "find_tool"
+_FIND_TOOL_DEF = {"name": FIND_TOOL, "description": "Load more of your tools by a few plain key words (e.g. 'bins', "
+                  "'quiz', 'brightness'). The matching tools are ready to call straight after.",
+                  "input_schema": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}
+_LOADED = re.compile(r"^Loaded: (.+?)\. ", re.M)
+
+
+def find_tools(query: str, every: list[dict], limit: int = 5) -> str:
+    """The free route's tool search: the deferred tools whose name and description share most words with the query."""
+    words = {w for w in re.findall(r"[a-z0-9]+", query.lower()) if len(w) > 2}
+    scored = []
+    for t in every:
+        if not t.get("defer_loading"):
+            continue
+        name = t["name"].lower()
+        text = set(re.findall(r"[a-z0-9]+", f"{name.replace('_', ' ')} {t.get('description', '')}".lower()))
+        score = sum(3 if w in name else 1 for w in words if w in text or w in name)
+        if score:
+            scored.append((-score, t["name"]))
+    names = [n for _, n in sorted(scored)[:limit]]
+    if not names:
+        return "No tool matched those words. Try one or two different words, or answer without a tool."
+    return f"Loaded: {', '.join(names)}. Call the one that fits now."
+
+
+def _found(messages: list[dict]) -> set[str]:
+    """Tool names find_tool has loaded earlier in this conversation."""
+    found = set()
+    for message in messages:
+        for block in message["content"] if isinstance(message["content"], list) else []:
+            if block.get("type") == "tool_result":
+                content = block.get("content")
+                text = content if isinstance(content, str) else " ".join(
+                    b.get("text", "") for b in content or [] if isinstance(b, dict))
+                for m in _LOADED.finditer(text or ""):
+                    found.update(n.strip() for n in m.group(1).split(","))
+    return found
+
+
 def gateway_request(opts: dict, model: str) -> dict:
-    """The request as it goes to OmniRoute: Alfred's own tools that are already loaded, no Claude-only extras."""
+    """The request as it goes to OmniRoute: Alfred's own tools that are already loaded (plus find_tool and whatever
+    it has loaded, in place of Claude's tool search), no Claude-only extras."""
     request = {k: v for k, v in opts.items() if k in _GATEWAY_KEEP}
     request["model"] = model
     request["messages"] = _trim_messages(request.get("messages", []))
-    tools = [{k: t[k] for k in _TOOL_KEYS if k in t} for t in request.pop("tools", None) or []
-             if isinstance(t, dict) and "input_schema" in t and not t.get("defer_loading")]
+    every = [t for t in request.pop("tools", None) or [] if isinstance(t, dict) and "input_schema" in t]
+    found = _found(request["messages"])
+    tools = [{k: t[k] for k in _TOOL_KEYS if k in t} for t in every if not t.get("defer_loading") or t["name"] in found]
+    if any(t.get("defer_loading") for t in every):
+        tools.append(_FIND_TOOL_DEF)
     if tools:
         request["tools"] = tools
     else:
         request.pop("tool_choice", None)
     if isinstance(request.get("system"), list):
         request["system"] = "\n\n".join(b.get("text", "") for b in map(_plain, request["system"]) if b.get("text"))
+    if isinstance(request.get("system"), str):
+        request["system"] = request["system"].replace("tool_search_tool_bm25", FIND_TOOL)
     return request
 
 

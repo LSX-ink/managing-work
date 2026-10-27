@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 frontend/custom.css
 .phone-topic
+.phone-push-topic
 .phone-linked
 memory/
 wishes.md

@@ -1,8 +1,17 @@
-"""How the PC is doing (CPU, memory, disk, battery) and which of Jarvis's features are set up."""
+"""How the PC is doing (CPU, memory, disk, battery) and which of Jarvis's features are set up.
 
+watch() also keeps an eye on things by itself every few minutes: the drive filling up, memory staying full, the
+Kinetic HQ dashboard and the website going down (HQ is restarted once by itself first). Each problem is said once
+(and pushed to the phone), again after a few hours if it's still there, and "all clear" when it's fixed."""
+
+import asyncio
+import os
 import shutil
+import subprocess
+import time
 from pathlib import Path
 
+import httpx
 import psutil
 
 import agenda
@@ -26,6 +35,84 @@ def pc_health() -> str:
                                  ("the CPU is very busy", cpu > 90)) if bad]
     return ("; ".join(parts) + f". Using the most memory: {names}."
             + (f" Warning: {', '.join(warnings)}." if warnings else " All looks healthy."))
+
+
+HEALTH_EVERY = 600  # seconds between checks
+HEALTH_FIRST = 120  # after a start, so a quick restart never alerts
+HEALTH_REPEAT = 6 * 3600  # a problem that stays is said again after this long
+LOW_DISK_GB = 10
+FULL_MEMORY = 92  # percent, two checks in a row
+STARTUP = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+SITES = {"hq": ("The Kinetic HQ dashboard", "http://127.0.0.1:8341/", "Kinetic HQ (hidden).vbs"),
+         "site": ("kineticwebdesigns.co.uk", "https://kineticwebdesigns.co.uk/", "")}
+
+
+async def _up(http: httpx.AsyncClient, url: str) -> bool:
+    try:
+        return (await http.get(url, timeout=20, follow_redirects=True)).status_code < 500
+    except httpx.HTTPError:
+        return False
+
+
+def _restart(script: str) -> bool:
+    path = STARTUP / script
+    if not script or not path.exists():
+        return False
+    subprocess.Popen(["wscript.exe", str(path)])
+    return True
+
+
+async def problems(http: httpx.AsyncClient, state: dict, sites=None, restart=_restart, wait: float = 20) -> dict[str, str]:
+    """What's wrong right now, by key -> a sentence. `state` carries memory readings between checks."""
+    found = {}
+    disk = shutil.disk_usage(Path.home().anchor or "/")
+    if disk.free < LOW_DISK_GB * 2**30:
+        found["disk"] = f"the main drive is nearly full, only {disk.free / 2**30:.0f} GB left"
+    mem = psutil.virtual_memory().percent
+    if mem > FULL_MEMORY and state.get("mem_high"):
+        found["memory"] = f"memory has stayed {mem:.0f}% full, so things will be slow"
+    state["mem_high"] = mem > FULL_MEMORY
+    for key, (name, url, script) in (SITES if sites is None else sites).items():
+        if await _up(http, url):
+            continue
+        if restart(script):
+            await asyncio.sleep(wait)
+            if await _up(http, url):
+                print(f"[jarvis] {name} was down; restarted it.", flush=True)
+                continue
+        found[key] = f"{name} isn't answering" + (" even after a restart" if script else "")
+    return found
+
+
+def health_news(found: dict[str, str], said: dict[str, float], now: float, address: str = "sir") -> str:
+    """The sentence to say for this check (new or long-standing problems, and fixes), updating `said`."""
+    new = [found[k] for k in found if now - said.get(k, -HEALTH_REPEAT) >= HEALTH_REPEAT]
+    fixed = [k for k in said if k not in found]
+    for k in fixed:
+        del said[k]
+    for k in found:
+        if now - said.get(k, -HEALTH_REPEAT) >= HEALTH_REPEAT:
+            said[k] = now
+    parts = []
+    if new:
+        parts.append(f"{address.capitalize()}, a health check: " + "; ".join(new) + ".")
+    if fixed and not new:
+        parts.append(f"All clear, {address}: " + ("that's fixed now." if len(fixed) == 1 else "those are fixed now."))
+    return " ".join(parts)
+
+
+async def watch(settings: Settings, announce) -> None:
+    """Check every HEALTH_EVERY seconds and say what's gone wrong (or right again)."""
+    await asyncio.sleep(HEALTH_FIRST)
+    state, said = {}, {}
+    async with httpx.AsyncClient(headers={"User-Agent": "Alfred health check"}) as http:
+        while True:
+            try:
+                if text := health_news(await problems(http, state), said, time.time(), settings.user_address):
+                    await announce(text, "health")
+            except Exception as exc:  # a check that breaks must not stop the watcher
+                print(f"[jarvis] Health check: {exc!r}", flush=True)
+            await asyncio.sleep(HEALTH_EVERY)
 
 
 def status(settings: Settings) -> str:
