@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* One live page for the owner: the business today (DMs to send, replies, follow-ups, the week's numbers) and what
+   Claude is doing. Same look as LSX HQ: deep night, cyan for live things, gold for money and wins. */
+:root { --bg: #01030a; --panel: rgba(8,14,30,.86); --edge: rgba(79,209,255,.16); --cyan: #4fd1ff; --gold: #ffc24b;
+        --green: #4be3a0; --red: #ff6b6b; --text: #e6efff; --muted: #8291b0; --mono: "JetBrains Mono", ui-monospace, monospace;
+        --sans: Sora, system-ui, sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(1200px 600px at 80% -10%, rgba(79,209,255,.08), transparent 60%), var(--bg);
+       color: var(--text); font: 400 15px/1.5 var(--sans); min-height: 100vh; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-block: max(16px, env(safe-area-inset-top)) 64px;
+        padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+h1 { margin: 0; font: 800 24px/1.1 var(--sans); letter-spacing: .02em; } h1 b { color: var(--cyan); }
+.clock { font: 700 12px var(--mono); letter-spacing: .16em; color: var(--muted); }
+.tabs { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--edge); border-radius: 999px; padding: 4px; }
+.tabs button { border: 0; background: none; color: var(--muted); font: 700 13px var(--sans); padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--cyan); color: #00121c; }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+.card { grid-column: span 12; background: var(--panel); border: 1px solid var(--edge); border-radius: 16px; padding: 14px 16px; min-width: 0; }
+.half { grid-column: span 6; } .third { grid-column: span 4; }
+@media (max-width: 760px) { .half, .third { grid-column: span 12; } }
+h2 { margin: 0 0 10px; font: 700 11px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+     display: flex; justify-content: space-between; gap: 8px; }
+h2 b { color: var(--gold); }
+.empty { color: var(--muted); font-size: 14px; margin: 4px 0; }
+.dm { border-top: 1px solid var(--edge); padding: 12px 0; display: grid; gap: 8px; }
+.dm:first-of-type { border-top: 0; padding-top: 2px; }
+.dm .top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.dm .who { font-weight: 700; } .dm .who small { color: var(--muted); font-weight: 400; }
+.dm.sent .who { color: var(--muted); text-decoration: line-through; }
+.tag { font: 700 10px var(--mono); letter-spacing: .14em; padding: 3px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.tag.done { color: var(--green); } .tag.todo { color: var(--gold); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { appearance: none; border: 1px solid var(--edge); background: rgba(79,209,255,.08); color: var(--text); font: 600 13px var(--sans);
+       padding: 9px 14px; border-radius: 10px; cursor: pointer; text-decoration: none; min-height: 40px; display: inline-flex; align-items: center; }
+.btn.go { background: var(--cyan); color: #00121c; border-color: var(--cyan); }
+.btn.win { background: var(--green); color: #00150c; border-color: var(--green); }
+.btn:disabled { opacity: .45; cursor: default; }
+details summary { color: var(--muted); font-size: 13px; cursor: pointer; }
+pre { white-space: pre-wrap; word-break: break-word; margin: 8px 0 0; font: 400 13px/1.5 var(--sans); background: rgba(0,0,0,.3);
+      border-radius: 10px; padding: 10px 12px; max-height: 260px; overflow: auto; }
+ul.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+ul.list li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 14px; min-width: 0; }
+ul.list li span { min-width: 0; overflow-wrap: anywhere; } ul.list li em { color: var(--muted); font-style: normal; font: 500 12px var(--mono); white-space: nowrap; }
+a { color: var(--cyan); }
+.funnel { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 110px 1fr 70px; gap: 10px; align-items: center; font-size: 13px; }
+.bar { height: 10px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--gold)); border-radius: 99px; }
+.row b { font: 700 13px var(--mono); text-align: right; }
+.big { font: 800 34px/1 var(--sans); color: var(--gold); } .big small { font: 600 12px var(--mono); color: var(--muted); letter-spacing: .1em; }
+.health { display: flex; gap: 10px; flex-wrap: wrap; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; background: var(--green); }
+.dot.bad { background: var(--red); }
+.now { display: grid; gap: 6px; } .now .t { font-size: 18px; font-weight: 700; } .pulse { color: var(--cyan); font: 700 11px var(--mono); letter-spacing: .2em; }
+.pulse::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); margin-right: 8px;
+                 animation: p 1.6s ease-in-out infinite; }
+@keyframes p { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .pulse::before { animation: none; } }
+.toast { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--green);
+         color: #00150c; font-weight: 700; padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.on { opacity: 1; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>LSX <b>Dashboard</b></h1><div class="clock" id="clock">LOADING…</div></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="t-biz" aria-selected="true">Business</button>
+      <button role="tab" id="t-claude" aria-selected="false">Claude</button>
+    </div>
+  </header>
+
+  <main id="biz" class="grid">
+    <section class="card"><h2>Instagram DMs to send today <b id="dm-count"></b></h2><div id="dms"></div></section>
+    <section class="card half"><h2>Needs you <b id="needs-count"></b></h2><ul class="list" id="needs"></ul></section>
+    <section class="card half"><h2>Follow-ups due <b id="due-count"></b></h2><ul class="list" id="due"></ul></section>
+    <section class="card half"><h2>This week <b>target 100 · 10 · 3 · 1</b></h2><div class="funnel" id="funnel"></div></section>
+    <section class="card half"><h2>Mock-ups made today <b id="mk-count"></b></h2><ul class="list" id="mockups"></ul></section>
+    <section class="card"><h2>Health</h2><div class="health" id="health"></div></section>
+  </main>
+
+  <main id="claude" class="grid" hidden>
+    <section class="card"><h2>Working on now</h2><div class="now" id="now"></div></section>
+    <section class="card half"><h2>Waiting for you <b id="wait-count"></b></h2><ul class="list" id="waiting"></ul></section>
+    <section class="card half"><h2>Finished</h2><ul class="list" id="done"></ul></section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const link = (url, text) => url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text)}</a>` : esc(text);
+let data = null;
+
+function toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 1800); }
+
+function tab(which) {
+  $('biz').hidden = which !== 'biz'; $('claude').hidden = which !== 'claude';
+  $('t-biz').setAttribute('aria-selected', which === 'biz'); $('t-claude').setAttribute('aria-selected', which === 'claude');
+  try { localStorage.setItem('dash.tab', which); } catch (e) { /* private window */ }
+}
+$('t-biz').onclick = () => tab('biz'); $('t-claude').onclick = () => tab('claude');
+try { if (localStorage.getItem('dash.tab') === 'claude' || location.hash === '#claude') tab('claude'); } catch (e) { /* ignore */ }
+
+function list(el, items, row, empty) {
+  $(el).innerHTML = items.length ? items.map(row).join('') : `<li class="empty">${esc(empty)}</li>`;
+}
+
+function renderBiz(b) {
+  const open = new Set([...document.querySelectorAll('#dms details[open]')].map((d) => d.dataset.name));
+  const left = b.dms.filter((d) => !d.sent).length;
+  $('dm-count').textContent = b.dms.length ? `${b.dms.length - left} of ${b.dms.length} sent` : '';
+  $('dms').innerHTML = b.dms.length ? b.dms.map((d, i) => `
+    <div class="dm ${d.sent ? 'sent' : ''}">
+      <div class="top"><span class="who">${esc(d.name)} <small>${esc(d.town)}${d.instagram ? ' · @' + esc(d.instagram) : ''}</small></span>
+        <span class="tag ${d.sent ? 'done' : 'todo'}">${d.sent ? 'SENT' : 'TO SEND'}</span></div>
+      <div class="btns">
+        <button class="btn go" data-copy="${i}">Copy DM</button>
+        ${d.instagram ? `<a class="btn" href="https://instagram.com/${encodeURIComponent(d.instagram)}" target="_blank" rel="noopener">Open @${esc(d.instagram)}</a>` : ''}
+        ${d.link ? `<a class="btn" href="${esc(d.link)}" target="_blank" rel="noopener">See mock-up</a>` : ''}
+        <button class="btn win" data-sent="${i}" ${d.sent ? 'disabled' : ''}>${d.sent ? 'Sent ✓' : 'I sent it'}</button>
+      </div>
+      <details data-name="${esc(d.name)}" ${open.has(d.name) ? 'open' : ''}><summary>Read the message</summary><pre>${esc(d.dm)}</pre></details>
+    </div>`).join('') : '<p class="empty">No DM list for today yet. It arrives in the morning (and on your phone).</p>';
+  document.querySelectorAll('[data-copy]').forEach((btn) => btn.onclick = () => copy(b.dms[+btn.dataset.copy].dm));
+  document.querySelectorAll('[data-sent]').forEach((btn) => btn.onclick = () => sent(b.dms[+btn.dataset.sent], btn));
+
+  $('needs-count').textContent = b.needs_you.length || '';
+  list('needs', b.needs_you, (n) => `<li><span><b>@${esc(n.username)}</b>: ${esc(n.text).slice(0, 140)}</span><em>${esc(n.reason || '')}</em></li>`,
+       'Nobody is waiting on you on Instagram.');
+  $('due-count').textContent = b.follow_ups.length || '';
+  list('due', b.follow_ups.slice(0, 12), (r) => `<li><span>${esc(r.name)}</span><em>${esc(r.channel || '')} · ${r.messages} sent</em></li>`,
+       'No follow-ups due today.');
+  $('mk-count').textContent = b.mockups.length || '';
+  list('mockups', b.mockups.slice(0, 12), (m) => `<li><span>${link(m.link, m.name)}</span><em>${esc(m.at)}</em></li>`, 'None yet today.');
+
+  const w = (b.numbers && b.numbers.this) || {}, t = b.target || {};
+  const rows = [['Messages', w.messages, t.messages], ['Mock-ups', w.mockups, t.messages], ['Replies', w.replies, t.replies],
+                ['Briefs', w.briefs, t.briefs], ['Payments', w.payments, t.payments]];
+  $('funnel').innerHTML = rows.map(([label, n, goal]) => {
+    const pct = n == null || !goal ? 0 : Math.min(100, Math.round(100 * n / goal));
+    return `<div class="row"><span>${label}</span><div class="bar"><i style="width:${pct}%"></i></div><b>${n == null ? '?' : n}${goal ? ' / ' + goal : ''}</b></div>`;
+  }).join('');
+  $('health').innerHTML = b.health.map((h) => `<span><span class="dot ${h.ok ? '' : 'bad'}"></span>${esc(h.name)}: ${esc(h.text)}</span>`).join('');
+}
+
+function renderClaude(c) {
+  const n = c.now || {};
+  $('now').innerHTML = n.title ? `<span class="pulse">LIVE · SINCE ${esc(n.since || '')}</span><span class="t">${esc(n.title)}</span>${n.detail ? `<span class="empty">${esc(n.detail)}</span>` : ''}`
+                               : '<p class="empty">Nothing running right now. Ask in the project chat and it shows here.</p>';
+  $('wait-count').textContent = (c.waiting || []).length || '';
+  list('waiting', c.waiting || [], (x) => `<li><span>${link(x.link, x.title)}${x.detail ? `<br><small class="empty">${esc(x.detail)}</small>` : ''}</span><em>${esc(x.since || '')}</em></li>`,
+       'Nothing needs you.');
+  list('done', (c.done || []).slice(0, 25), (x) => `<li><span>${link(x.link, x.title)}</span><em>${esc(x.at || '')}</em></li>`, 'Nothing yet.');
+}
+
+async function copy(text) {
+  try { await navigator.clipboard.writeText(text); toast('Copied: paste it in Instagram'); }
+  catch (e) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+              try { document.execCommand('copy'); toast('Copied'); } catch (e2) { toast('Hold to copy from "Read the message"'); } ta.remove(); }
+}
+
+async function sent(d, btn) {
+  btn.disabled = true;
+  const r = await fetch('api/dm/sent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: d.name }) });
+  if (r.ok) { toast(`${d.name}: marked sent, follow-ups tracked`); load(); } else { btn.disabled = false; toast("Couldn't mark it: try again"); }
+}
+
+async function load() {
+  try {
+    const r = await fetch('api/dashboard', { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    data = await r.json();
+    $('clock').textContent = `LIVE · ${data.time} · UPDATES EVERY 30 S`;
+    renderBiz(data.business); renderClaude(data.claude);
+  } catch (e) { $('clock').textContent = "CAN'T REACH HQ · RETRYING"; }
+}
+load(); setInterval(load, 30000);
+</script>
+</body>
+</html>

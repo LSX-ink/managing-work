@@ -298,6 +298,27 @@ async def index():
     return FileResponse(FRONTEND / "index.html")
 
 
+# The dashboard from LSX HQ (127.0.0.1:8341), passed through here so it works on the phone too, behind Alfred's own
+# login (owner, 27 Oct 2026). Only the dashboard: the HQ controls (run, pause, settings) stay on the PC.
+HQ_URL = "http://127.0.0.1:8341/"
+HQ_PATHS = {("GET", "dashboard"), ("GET", "api/dashboard"), ("POST", "api/dm/sent")}
+
+
+@app.api_route("/hq/{path:path}", methods=["GET", "POST"])
+async def hq_dashboard(path: str, request: Request):
+    if (request.method, path) not in HQ_PATHS:
+        return Response("Not here.", status_code=404)
+    try:
+        r = await app.state.http.request(request.method, HQ_URL + path, content=await request.body(),
+                                         headers={"content-type": request.headers.get("content-type", "application/json")},
+                                         timeout=60)
+    except httpx.HTTPError:
+        return Response("LSX HQ isn't answering on the PC just now. It starts with Windows; try again in a minute.",
+                        status_code=503)
+    return Response(r.content, status_code=r.status_code, media_type=r.headers.get("content-type"),
+                    headers={"Cache-Control": "no-store"})
+
+
 @app.get("/config")
 async def client_config():
     return {
