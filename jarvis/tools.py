@@ -112,6 +112,7 @@ import design_layout
 import design_audit
 import design_components
 import design_gradient
+import design_mockup
 import instagram_dms
 import kinetic_briefing
 import kinetic_calendar
@@ -369,7 +370,7 @@ ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, 
 ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [design, design_extract, design_contrast, design_palette, design_type, design_motion, design_kit, design_logo, design_social,
-              design_layout, design_audit, design_components, design_gradient,
+              design_layout, design_audit, design_components, design_gradient, design_mockup,
               skillscan]  # design tools
 ABILITIES += [alfred_mail, alfred_replies]  # Alfred's own email account and reply drafts for new mail
 ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
