@@ -856,9 +856,15 @@ function stopListening() {
 
 // ---- Controls ---------------------------------------------------------------
 
-// Reloaded after an update while awake: carry on listening, without the greeting.
+// Hands-free: opened as /?listen (the "Alfred (hands-free)" shortcut), he listens straight away for his name, no click.
+function handsFree(search) {
+    return /(?:^|[?&])listen(?:=|&|$)/.test(search || '');
+}
+if (handsFree(location.search)) setWakeOnly(true);
+
+// Reloaded after an update while awake, or opened hands-free: carry on listening, without the greeting.
 try {
-    if (sessionStorage.getItem('jarvis-resume')) {
+    if (sessionStorage.getItem('jarvis-resume') || handsFree(location.search)) {
         sessionStorage.removeItem('jarvis-resume');
         setTimeout(() => {
             if (started) return;

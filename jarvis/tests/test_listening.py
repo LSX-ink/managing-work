@@ -158,3 +158,19 @@ def test_saying_his_name_and_a_new_question_cuts_in():
     run = subprocess.run(["node", "-e", BARGE_SCRIPT, str(MAIN), json.dumps(texts)],
                          capture_output=True, text=True, check=True)
     assert json.loads(run.stdout) == [True, True, False, False, False, False]
+
+
+HANDS_FREE_SCRIPT = """
+const src = require('fs').readFileSync(process.argv[1], 'utf8').replace(/\\r\\n/g, '\\n');
+const a = src.indexOf('function handsFree(search)'), b = src.indexOf('\\n}\\n', a) + 3;
+eval(src.slice(a, b) + ';globalThis.f = handsFree;');
+console.log(JSON.stringify(JSON.parse(process.argv[2]).map((s) => f(s))));
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs Node.js")
+def test_opening_with_listen_starts_hands_free():
+    cases = ["?listen", "?listen=1", "?a=1&listen", "", "?listener=1", "?glisten"]
+    out = subprocess.run(["node", "-e", HANDS_FREE_SCRIPT, str(MAIN), json.dumps(cases)], capture_output=True,
+                         text=True, check=True).stdout
+    assert json.loads(out) == [True, True, True, False, False, False]

@@ -11,6 +11,7 @@ import hmac
 import html
 import ipaddress
 import itertools
+import re
 import time
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, urlparse
@@ -205,14 +206,16 @@ input, button { padding: 12px 14px; border-radius: 8px; border: 1px solid #2a354
 button { background: #16202e; cursor: pointer; }
 p { margin: 0; color: #ff7a7a; min-height: 1.2em; }
 </style></head>
-<body><form method="post" action="/login">
+<body><form method="post" action="/loginNEXT">
 <input type="password" name="password" placeholder="Password" autofocus required>
 <button type="submit">Unlock</button><p>ERROR</p>
 </form></body></html>"""
 
 
-def login_page(error: str = "", status: int = 200) -> HTMLResponse:
-    return HTMLResponse(LOGIN_PAGE.replace("ERROR", error), status_code=status)
+def login_page(error: str = "", status: int = 200, query: str = "") -> HTMLResponse:
+    """The password page. `query` (e.g. "listen", from the hands-free shortcut) is kept through the login."""
+    keep = "?" + query if re.fullmatch(r"[A-Za-z0-9_=&-]{1,100}", query or "") else ""
+    return HTMLResponse(LOGIN_PAGE.replace("ERROR", error).replace("NEXT", keep), status_code=status)
 
 
 PHONE_NEEDS_PASSWORD = """<!DOCTYPE html>
@@ -236,7 +239,7 @@ async def require_password(request: Request, call_next):
     if logged_in(request.cookies) or request.url.path == "/login":
         return await call_next(request)
     if request.url.path == "/":
-        return login_page()
+        return login_page(query=request.url.query)
     return Response("Log in first.", status_code=401)
 
 
@@ -274,15 +277,16 @@ def login_locked(address: str, now: float) -> int:
 async def login(request: Request):
     address = login_address(request)
     if wait := login_locked(address, time.time()):
-        return login_page(f"Too many wrong passwords. Try again in {wait // 60 + 1} minutes.", status=429)
+        return login_page(f"Too many wrong passwords. Try again in {wait // 60 + 1} minutes.", status=429, query=request.url.query)
     password = parse_qs((await request.body()).decode(errors="replace")).get("password", [""])[0]
     if not settings.password or not hmac.compare_digest(password.encode(), settings.password.encode()):
         _login_fails.setdefault(address, []).append(time.time())
         print(f"[jarvis] Wrong password from {address}", flush=True)
         await asyncio.sleep(1)  # slows down guessing
-        return login_page("Wrong password.", status=401)
+        return login_page("Wrong password.", status=401, query=request.url.query)
     _login_fails.pop(address, None)
-    response = RedirectResponse("/", status_code=303)
+    query = request.url.query if re.fullmatch(r"[A-Za-z0-9_=&-]{1,100}", request.url.query or "") else ""
+    response = RedirectResponse("/?" + query if query else "/", status_code=303)
     https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
     response.set_cookie(SESSION_COOKIE, session_token(), max_age=SESSION_DAYS * 86400,
                         httponly=True, samesite="strict", secure=https)
