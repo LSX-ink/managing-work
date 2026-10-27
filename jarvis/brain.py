@@ -1782,6 +1782,9 @@ class Brain:
 
     async def _tool_result(self, call) -> dict:
         print(f"  tool: {call.name} {call.input}", flush=True)
+        if call.name == omniroute.FIND_TOOL:  # the free route's stand-in for Claude's tool search
+            found = omniroute.find_tools(str(call.input.get("query", "")), tools.client_tool_definitions(self.settings))
+            return {"type": "tool_result", "tool_use_id": call.id, "content": found}
         try:
             content = await tools.run_tool(call.name, dict(call.input), self.settings, self.http, self.page)
             return {"type": "tool_result", "tool_use_id": call.id, "content": content}
