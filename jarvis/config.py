@@ -113,10 +113,6 @@ class Settings:
     creator_daily: bool = _bool("JARVIS_CREATOR_DAILY", True)
     creator_hour: int = int(os.getenv("JARVIS_CREATOR_HOUR", "7"))  # start making the day's videos from this hour
     creator_voice: str = os.getenv("JARVIS_CREATOR_VOICE", "en-GB-RyanNeural").strip()  # free Microsoft voice
-    # Alfred's voice when ElevenLabs isn't set up (free Microsoft voice; "" = the browser's own voice)
-    alfred_free_voice: str = os.getenv("ALFRED_FREE_VOICE", "en-GB-ThomasNeural").strip()
-    alfred_free_rate: str = os.getenv("ALFRED_FREE_RATE", "-6%").strip()
-    alfred_free_pitch: str = os.getenv("ALFRED_FREE_PITCH", "-4Hz").strip()
     tiktok_client_key: str = os.getenv("TIKTOK_CLIENT_KEY", "").strip()
     tiktok_client_secret: str = os.getenv("TIKTOK_CLIENT_SECRET", "").strip()
     tiktok_mode: str = os.getenv("JARVIS_TIKTOK_MODE", "draft").strip().lower()  # draft (your inbox) or direct
