@@ -15,7 +15,27 @@ brandkit...), read the same way. skills/anime holds anime-mj (MIT, from github.c
 an anime and manga prompt builder with manga artist and studio styles, and higgsfield-anime, the user's own prompt
 template for Higgsfield. skills/business holds pricing-strategy (MIT, from github.com/sickn33/antigravity-awesome-skills):
 pricing, tiers, value metrics and price rises for a product or service; and client-websites (ours): creative Kinetic
-client sites and mock-ups that sell, using 21st.dev components through the MCP bridge.
+client sites and mock-ups that sell, using 21st.dev components through the MCP bridge. skills/marketing holds Corey
+Haines's Marketing Skills (MIT, from github.com/coreyhaines31/marketingskills, written guides only): copywriting,
+copy-editing, cold-email, prospecting, cro, offers, social, seo-audit, ai-seo, schema, site-architecture,
+marketing-psychology, lead-magnets, pricing, ad-creative, video, emails, content-strategy, referrals and more; each
+can have extra files in references/. skills/anthropic also holds canvas-design (Apache 2.0, from
+github.com/anthropics/skills): posters and still graphics from a design philosophy. skills/impeccable holds Paul
+Bakaus's Impeccable (Apache 2.0, from github.com/pbakaus/impeccable, written guides only, no launcher): a design
+director's playbook with critique, audit, polish, bolder, typeset, layout and more in reference/. skills/vercel holds
+Vercel's web-design-guidelines (the Web Interface Guidelines rules saved in references/rules.md) and
+writing-guidelines (MIT, from github.com/vercel-labs). guide "website" lists every skill to use for a website, in
+order, and website_pack() hands excerpts of all of them to the mock-up builder's design review.
+skills/superpowers holds five of Jesse Vincent's Superpowers (MIT, from github.com/obra/superpowers, written guides
+only): systematic-debugging, verification-before-completion, test-driven-development, writing-plans and
+receiving-code-review. skills/anthropic also holds mcp-builder and webapp-testing (guides only, their scripts left out).
+3D for the web: skills/threejs holds the OpenAEC Three.js Skill Package (MIT, from
+github.com/OpenAEC-Foundation/Three.js-Claude-Skill-Package, 22 guides: renderer, scene graph, lighting, shadows,
+materials, shaders, post-processing, animation, loaders, controls, WebGPU, React Three Fiber, performance and
+rendering fixes, a scene builder and a model optimiser) and skills/web3d holds freshtechbro's claudedesignskills (MIT,
+written guides only): threejs-webgl, lightweight-3d-effects, web3d-integration-patterns, gsap-scrolltrigger,
+spline-interactive, blender-web-pipeline, modern-web-design, scroll-reveal-libraries, lottie-animations, animejs and
+react-three-fiber.
 
 Any other folder dropped into skills/ with */SKILL.md guides is picked up too, named after its folder. skillscan checks
 every library first: blocked ones are refused, and a new or changed one is scanned the first time guides are listed
@@ -34,7 +54,9 @@ from config import Settings
 SKILLS = Path(__file__).resolve().parent / "skills"
 SCRIPTS = SKILLS / "ui-ux-pro-max" / "scripts"
 GUIDE_LIBRARIES = {"emil-kowalski": "Emil Kowalski", "taste": "Taste Skill", "anime": "Anime prompt", "anthropic": "Anthropic",
-                   "business": "Business", "impeccable": "Impeccable", "ui-skills": "UI Skills",
+                   "business": "Business", "marketing": "Marketing Skills", "impeccable": "Impeccable",
+                   "vercel": "Vercel", "superpowers": "Superpowers", "threejs": "Three.js",
+                   "web3d": "3D and motion for the web", "ui-skills": "UI Skills",
                    "web-engineering": "Web engineering", "web-3d": "3D web"}  # labels
 # The owner (27 Oct 2026): "when making websites always use all the skills so you get the best version". Every
 # website and mock-up build reads the website kit: these guides, in this order, all applied.
@@ -104,6 +126,65 @@ def summary(path: Path) -> str:
     return ""
 
 
+# Every website, every skill (owner, 27 Oct 2026: "when making websites always use all the skills so you get the best
+# version"). In reading order: (guide, file, what it brings, characters used in an automatic design review).
+WEBSITE_SKILLS = [
+    ("client-websites", "SKILL.md", "Kinetic's own rules: a page structure that sells, 21st.dev components, the quality check", 4200),
+    ("frontend-design", "SKILL.md", "pick a bold, specific aesthetic direction before anything else", 6000),
+    ("impeccable", "SKILL.md", "work like a design director: the Persuade mode for sales pages", 5000),
+    ("impeccable", "reference/mode-persuade.md", "what a landing page must do", 3700),
+    ("impeccable", "reference/craft-floor.md", "the quality floor and the absolute bans", 4600),
+    ("taste-skill", "SKILL.md", "no AI-looking pages: layout, type and colour taste", 9000),
+    ("redesign-skill", "SKILL.md", "redesigning a business's existing site", 3000),
+    ("emil-design-eng", "SKILL.md", "polish and motion that feels right", 5000),
+    ("modern-web-design", "SKILL.md", "what a current, motion-rich site looks like", 3000),
+    # 3D (owner, 27 Oct 2026: "include the skills best suited for 3d web designs"). 0: read when building by hand; the
+    # automatic review only changes words, colours and photos, so it can't add 3D and doesn't need them.
+    ("lightweight-3d-effects", "SKILL.md", "tasteful 3D touches (tilt, depth, a floating object) that stay fast", 0),
+    ("threejs-webgl", "SKILL.md", "a full 3D scene with Three.js", 0),
+    ("web3d-integration-patterns", "SKILL.md", "putting 3D into a real page: loading, fallbacks, phones", 0),
+    ("threejs-agents-scene-builder", "SKILL.md", "planning and building a Three.js scene step by step", 0),
+    ("threejs-impl-lighting", "SKILL.md", "lighting that makes 3D look real", 0),
+    ("threejs-errors-performance", "SKILL.md", "keeping 3D smooth on a phone", 0),
+    ("gsap-scrolltrigger", "SKILL.md", "scroll-driven animation and 3D camera moves", 0),
+    ("spline-interactive", "SKILL.md", "ready-made interactive 3D from Spline", 0),
+    ("web-design-guidelines", "references/rules.md", "accessibility, forms, motion, type and performance rules", 8300),
+    ("copywriting", "SKILL.md", "every word on the page", 5000),
+    ("cro", "SKILL.md", "turning visitors into bookings and calls", 4000),
+    ("offers", "SKILL.md", "an offer worth acting on (only a real one)", 2500),
+    ("marketing-psychology", "SKILL.md", "why people act, used honestly", 2500),
+    ("writing-guidelines", "SKILL.md", "interface words: buttons, labels, errors", 2500),
+    ("impeccable", "reference/polish.md", "the final pass before it ships", 4000),
+]
+
+
+def website_list() -> str:
+    """The reading list for making or changing any website or mock-up: every skill, in order."""
+    found = guides()
+    lines = ["Making or changing a website or mock-up: use ALL of these, in this order (call design_guide with each "
+             "guide and file). Also use design_advice (UI UX Pro Max) for the palette, fonts and style, and run the "
+             "web-design-guidelines rules as the final check.", ""]
+    for i, (name, file, why, _) in enumerate(WEBSITE_SKILLS, 1):
+        here = name in found and (found[name] / file).exists()
+        lines.append(f"{i}. {name}" + (f" (file '{file}')" if file != "SKILL.md" else "") + f": {why}"
+                     + ("" if here else " [not installed]"))
+    return "\n".join(lines)
+
+
+def website_pack(settings: Settings | None = None) -> str:
+    """Excerpts of every website skill, for an automatic design review (skipping any library the skill check blocked)."""
+    found = guides()
+    settings = settings or Settings()
+    parts = []
+    for name, file, why, size in WEBSITE_SKILLS:
+        path = found.get(name)
+        if not size or not path or not (path / file).exists() or skillscan.blocked_reason(settings, path.parent.name):
+            continue
+        text = (path / file).read_text(encoding="utf-8")
+        parts.append(f"=== {name}/{file}: {why} ===\n{text[:size]}")
+    return "\n\n".join(parts)
+
+
 def guide_libraries() -> list[str]:
     """Folders in skills/ with */SKILL.md guides: the named ones first, then any others."""
     found = [lib for lib in skillscan.libraries() if any((SKILLS / lib).glob("*/SKILL.md"))]
@@ -124,6 +205,8 @@ def guide(args: dict, settings: Settings | None = None) -> str:
     checked, fresh = skillscan.check(settings, guide_libraries())
     news = skillscan.news(checked, fresh)
     name = (args.get("guide") or "").strip().lower()
+    if name in ("website", "websites", "all"):
+        return (news + "\n\n" if news else "") + website_list()
     if name == "website-kit":
         return (news + "\n\n" if news else "") + website_kit(found, settings, int(args.get("offset") or 0))
     if not name:
@@ -143,7 +226,7 @@ def guide(args: dict, settings: Settings | None = None) -> str:
     if refusal:
         return (news + "\n" if news else "") + refusal
     part = (args.get("file") or "SKILL.md").strip()
-    files = sorted(p.name for p in folder.glob("*.md"))
+    files = sorted(p.relative_to(folder).as_posix() for p in folder.rglob("*.md"))  # references/*.md too
     if part not in files:
         raise ValueError(f"{name} has these files: {', '.join(files)}.")
     text = (folder / part).read_text(encoding="utf-8")
@@ -207,9 +290,9 @@ def tool_definitions() -> list[dict]:
     }, {
         "name": "design_guide",
         "description": "Written design guides to read and follow when designing, animating, redesigning or "
-                       "reviewing UI, then answer in plain words. Building or restyling ANY website, page or mock-up: first call "
-                       "with guide 'website-kit' and apply every guide in it (the owner's rule: all the skills, every "
-                       "time). Emil Kowalski (polish and motion): emil-design-eng "
+                       "reviewing UI, then answer in plain words. Before making or changing ANY website, landing page or mock-up, "
+                       "call it with guide 'website' (the playbook) and guide 'website-kit' (every kit guide in one read), and use "
+                       "EVERY skill, in order (the owner's rule: all the skills, every time). Emil Kowalski (polish and motion): emil-design-eng "
                        "(his whole philosophy), animate, animate-expo, animation-vocabulary (names for a motion "
                        "effect), apple-design, review-animations, improve-animations, find-animation-opportunities, "
                        "mobile-native, break-ui, prototype, pick-ui-library, ask-sonner, write-swift. Taste Skill "
@@ -226,9 +309,21 @@ def tool_definitions() -> list[dict]:
                        "'midnight-galaxy.md'; or make a custom one). Business: pricing-strategy (setting or changing prices for a "
                        "product, service or website package: value-based pricing, tiers, value metric, free trial "
                        "or freemium, price rises; ends with a pricing plan) and client-websites (read before making a Kinetic "
-                       "client mock-up or site: 21st.dev components, a page structure that sells, a quality check). Impeccable: "
-                       "impeccable (a full design language with references for layout, colour, type, motion, critique "
-                       "and polish; files like 'reference-layout.md'). UI Skills: baseline-ui, improve-ui, "
+                       "client mock-up or site: 21st.dev components, a page structure that sells, a quality check). Marketing Skills: read "
+                       "copywriting (and copy-editing) before writing any website words, DMs, captions or ads; cold-email and "
+                       "prospecting before outreach or follow-ups; cro and offers for pages and packages that convert; "
+                       "social and video for Instagram and TikTok content; seo-audit, ai-seo, schema and site-architecture "
+                       "for search; marketing-psychology, lead-magnets, emails, referrals, sales-enablement and more. Their "
+                       "extra files are e.g. file 'references/copy-frameworks.md'. Anthropic canvas-design: posters and still "
+                       "graphics. Superpowers (working like a pro on any job): "
+                       "systematic-debugging (find the real cause before fixing anything), verification-before-completion "
+                       "(prove it works before saying it's done), writing-plans, test-driven-development, "
+                       "receiving-code-review. 3D websites: lightweight-3d-effects, threejs-webgl, "
+                       "web3d-integration-patterns, gsap-scrolltrigger, spline-interactive, blender-web-pipeline and "
+                       "the threejs-* guides (renderer, lighting, materials, shaders, post-processing, performance...). "
+                       "Anthropic mcp-builder (new connectors) and webapp-testing (testing a web "
+                       "page with Playwright). Impeccable: impeccable (a full design language with references for "
+                       "layout, colour, type, motion, critique and polish). UI Skills: baseline-ui, improve-ui, "
                        "fixing-accessibility, fixing-motion-performance, fixing-metadata, create-design-md. Web "
                        "engineering: frontend-ui-engineering, performance-optimization. More Anthropic: canvas-design, "
                        "brand-guidelines, web-artifacts-builder. 3D web: auteur (directs a site like a film: "

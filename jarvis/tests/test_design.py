@@ -44,7 +44,7 @@ def guide(args):
 
 def test_guide_list_and_read():
     listing = guide({})
-    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 53
+    assert "emil-design-eng:" in listing and "review-animations:" in listing and len(design.guides()) == 120
     assert "Taste Skill guides:" in listing and "taste-skill:" in listing
     assert guide({"guide": "taste-skill"}).startswith("taste-skill/SKILL.md")
     out = guide({"guide": "animate", "file": "RECIPES.md"})
@@ -68,6 +68,20 @@ def test_guide_bad_names():
         design.guide({"guide": "nope"})
     with pytest.raises(ValueError):
         design.guide({"guide": "animate", "file": "../../config.py"})
+
+
+def test_marketing_skills_are_readable_with_their_reference_files():
+    import design
+    text = design.guide({"guide": "copywriting", "file": "references/copy-frameworks.md"})
+    assert "references/copy-frameworks.md" in text and "cold-email" in design.guides()
+
+
+def test_the_website_playbook_lists_every_website_skill_installed():
+    import design
+    listing = design.guide({"guide": "website"})
+    assert "use ALL of these" in listing and "[not installed]" not in listing
+    assert "impeccable" in listing and "web-design-guidelines" in listing and "copywriting" in listing
+    assert "threejs-webgl" in listing and "lightweight-3d-effects" in listing  # 3D too
 
 
 def test_website_kit_covers_every_listed_guide():

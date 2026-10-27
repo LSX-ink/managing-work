@@ -13,9 +13,12 @@
 import asyncio
 import email.utils
 import imaplib
+import os
 import json
 import re
 import secrets
+import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -330,7 +333,7 @@ async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.
 
 PUSH_FILE = ROOT / ".phone-push-topic"  # the private address Alfred posts to; git ignores it
 PUSH_TITLES = {"briefing": "Morning briefing", "instagram": "Instagram reply", "email": "New email",
-               "sales": "Follow-ups due", "mockup": "Mock-up ready", "health": "Alfred health check", "weekly": "Weekly report"}
+               "sales": "Follow-ups due", "mockup": "Mock-up ready", "dms": "Today's Instagram DMs", "dm": "Instagram DM to send", "health": "Alfred health check", "weekly": "Weekly report"}
 PUSH_MAX_CHARS = 3500  # ntfy keeps messages up to 4,096 bytes
 
 
@@ -349,6 +352,26 @@ def push_url(settings: Settings, topic_file: Path | None = None) -> str:
     return f"{settings.ntfy_server.rstrip('/')}/{topic}"
 
 
+_dashboard: list[str] = []  # worked out once
+
+
+def dashboard_url() -> str:
+    """Where a tapped phone notification goes: Alfred on the phone link with the dashboard open
+    (https://<this PC's Tailscale name>/?dash). JARVIS_DASHBOARD_URL overrides it; empty when there's no phone link."""
+    if not _dashboard:
+        url = os.getenv("JARVIS_DASHBOARD_URL", "").strip()
+        if not url:
+            try:
+                exe = shutil.which("tailscale") or r"C:\Program Files\Tailscale\tailscale.exe"
+                out = subprocess.run([exe, "status", "--json"], capture_output=True, text=True, timeout=10)
+                name = json.loads(out.stdout).get("Self", {}).get("DNSName", "").rstrip(".")
+                url = f"https://{name}/?dash" if name else ""
+            except (OSError, ValueError, subprocess.SubprocessError):
+                url = ""
+        _dashboard.append(url)
+    return _dashboard[0]
+
+
 def pushes(settings: Settings, kind: str) -> bool:
     """True for the kinds of heads-up that go to the phone too."""
     return settings.phone_push and kind in {k.strip() for k in settings.phone_push_kinds.split(",")}
@@ -362,6 +385,8 @@ async def push(settings: Settings, text: str, kind: str, transport=None, topic_f
     headers = {"Title": PUSH_TITLES.get(kind, "Alfred"), "Tags": "tophat"}
     if kind in ("instagram", "health"):
         headers["Priority"] = "high"
+    if transport is None and (click := await asyncio.to_thread(dashboard_url)):
+        headers["Click"] = click  # tapping it opens the dashboard
     try:
         async with httpx.AsyncClient(timeout=15, transport=transport) as http:
             r = await http.post(url, content=text[:PUSH_MAX_CHARS].encode("utf-8"), headers=headers)

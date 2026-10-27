@@ -327,3 +327,19 @@ async def test_phone_push_sends_what_matters_to_a_private_address(tmp_path):
     assert (title, body) == ("Morning briefing", "Good morning, sir.")
     down = httpx.MockTransport(lambda r: httpx.Response(500))
     assert not await alerts.push(s, "x", "health", transport=down, topic_file=topic)  # never raises
+
+
+async def test_the_days_dms_reach_the_phone_one_by_one(monkeypatch):
+    from hq import agents
+    sent = []
+
+    async def fake_push(settings, text, kind, **kw):
+        sent.append((kind, text))
+        return True
+    monkeypatch.setattr(alerts, "push", fake_push)
+    items = [({"name": "Kamo Barbers"}, "kamo", "https://k/m/kamo/", "Hi Kamo team"),
+             ({"name": "No Handle Cuts"}, "", "https://k/m/nh/", "Hi team")]
+    await agents.push_dms(Settings(), items)
+    assert sent[0][0] == "dms" and "2 Instagram DMs" in sent[0][1] and "Kamo Barbers, No Handle Cuts" in sent[0][1]
+    assert sent[1] == ("dm", "Send to @kamo (Kamo Barbers):\n\nHi Kamo team")
+    assert sent[2][1].startswith('Send to search "No Handle Cuts" on Instagram')

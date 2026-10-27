@@ -202,6 +202,35 @@ async def settings(body: dict):
     return {"ok": True}
 
 
+@app.get("/dashboard")
+async def dashboard_page():
+    """The dashboard: Business and Claude tabs (also on the phone through Alfred's link at /hq/dashboard)."""
+    return FileResponse(STATIC / "dashboard.html")
+
+
+@app.get("/api/dashboard")
+async def dashboard_data():
+    from hq import dashboard
+    biz = await asyncio.to_thread(dashboard.business, SETTINGS)
+    return JSONResponse({"business": biz, "claude": dashboard.load_work(HQ_DIR), "time": datetime.now().strftime("%H:%M")},
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/dm/sent")
+async def dm_sent(body: dict):
+    """The dashboard's Sent button: marks the lead as messaged by DM today (nothing is sent from here)."""
+    from hq import dashboard
+    name = str(body.get("name") or "").strip()[:120]
+    if not name:
+        raise HTTPException(400, "Which business?")
+    try:
+        note = await asyncio.to_thread(dashboard.mark_sent, SETTINGS, name)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    BRAIN.log("closer", f"you sent the DM to {name}", "win", {"lead": name, "type": "dm-sent"})
+    return {"ok": True, "note": note}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")

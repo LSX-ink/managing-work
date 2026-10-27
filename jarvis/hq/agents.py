@@ -293,7 +293,20 @@ async def dm_list(ctx: Ctx, n: int) -> int:
     file.write_text(text_all, encoding="utf-8")
     b.set(f"closer.dms.{today}", str(file))
     b.set("closer.dms.latest", text_all)
+    await push_dms(s, items)
     return len(items)
+
+
+async def push_dms(s: Settings, items: list) -> None:
+    """The day's DMs on the owner's phone, so the list never sits unseen on the Desktop (owner, 27 Oct 2026: "you didnt
+    send me a notification"): one heads-up with the names, then one notification per DM to copy and send."""
+    import alerts
+    names = ", ".join(p["name"] for p, *_ in items)
+    await alerts.push(s, f"{len(items)} Instagram DMs are ready to send today: {names}. Each one follows as its own "
+                         "notification: copy it, find the @name on Instagram, paste and send.", "dms")
+    for p, handle, link, text in items:
+        where = f"@{handle}" if handle else f"search \"{p['name']}\" on Instagram"
+        await alerts.push(s, f"Send to {where} ({p['name']}):\n\n{text}", "dm")
 
 
 async def designer(ctx: Ctx) -> str:

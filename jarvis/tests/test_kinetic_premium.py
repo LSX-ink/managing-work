@@ -64,3 +64,47 @@ def test_google_facts_are_kept_word_for_word():
     assert f["reviews"] == [["Great cut", "Sam"]]  # low ratings left out
     assert f["stats"] == [["4.7", "Google rating"], ["138", "Google reviews"]]
     assert (f["instagram"], f["book_label"], f["loc"]) == ("acut", "Call us", [53.3, -1.4])
+
+
+def test_mock_up_words_follow_the_copywriting_skill():
+    assert "copywriting guide" in auto.copy_guide() and len(auto.copy_guide()) > 1000
+
+
+class _Reviewer:
+    def __init__(self, answer):
+        self.answer = answer
+        self.messages = self
+        self.system = ""
+
+    async def create(self, **kw):
+        self.system = kw["system"]
+        return type("R", (), {"content": [type("B", (), {"text": self.answer})()]})()
+
+
+async def test_design_review_uses_every_website_skill_and_never_touches_facts(tmp_path, monkeypatch):
+    import design
+    (tmp_path / "g").mkdir()
+    for n in range(4):
+        (tmp_path / "g" / f"0{n}.jpg").write_bytes(b"x")
+
+    async def no_shots(page):
+        return [b"img"]
+    monkeypatch.setattr(auto, "page_shots", no_shots)
+    c = {"name": "Shop", "h1": ["a", "b", "c"], "services": [{"group": "All", "items": [["Cut", "£10"], ["Fade", "£12"]]}],
+         "hero": ["g/00.jpg"], "gallery": ["g/01.jpg"], "experience": {"photos": []}, "phone": "0114"}
+    answer = json.dumps({"changes": {
+        "h1": ["Sharp.", "Clean.", "Yours."], "phone": "999",  # phone isn't allowed: it's a fact
+        "special": {"title": "50% off!"},  # may not add an offer
+        "services": [{"group": "Cuts", "items": [["Cut", "£10"]]}, {"group": "Fades", "items": [["Skin fade", "£12"]]}],
+        "hero": ["g/02.jpg", "g/02.jpg", "nope.jpg"]}, "notes": ["tighter headline (copywriting)"]})
+    reviewer = _Reviewer(answer)
+    new, notes = await auto.review(reviewer, "m", tmp_path, tmp_path / "index.html", c, "atelier", {"name": "Shop", "phone": "0114"})
+    assert "OUR DESIGN SKILLS" in reviewer.system
+    for name, _, _, size in design.WEBSITE_SKILLS:
+        assert (f"=== {name}/" in reviewer.system) == bool(size)  # every review skill; the 3D ones are for hand builds
+    assert new["h1"] == ["Sharp.", "Clean.", "Yours."] and new["phone"] == "0114" and "special" not in new
+    assert [g["group"] for g in new["services"]] == ["Cuts", "Fades"]  # regrouped, prices kept
+    assert new["hero"] == ["g/02.jpg"] and notes == ["tighter headline (copywriting)"]
+    moved = json.dumps({"changes": {"services": [{"group": "All", "items": [["Cut", "£8"], ["Fade", "£12"]]}]}})
+    new2, _ = await auto.review(_Reviewer(moved), "m", tmp_path, tmp_path / "x", c, "atelier", {"name": "Shop"})
+    assert new2["services"] == c["services"]  # a changed price is refused
