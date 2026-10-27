@@ -621,6 +621,20 @@ def test_heights_and_weights_the_british_way_are_instant():
     assert instant_answer("what's 30 mph in km/h?", en) == "30 mph is 48.2803 km/h."
 
 
+def test_word_tools_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("spell banana backwards", s) == "Banana backwards is A, N, A, N, A, B."
+    assert instant_answer("what's hello backwards?", s) == "Hello backwards is O, double L, E, H."
+    assert instant_answer("spell it backwards", s) is None
+    assert instant_answer("Alfred, how many vowels in banana?", s) == "Banana has 3 vowels."
+    assert instant_answer("how many consonants are there in strength", s) == "Strength has 7 consonants."
+    assert instant_answer("is Racecar a palindrome", s) == "Yes, racecar reads the same backwards."
+    assert instant_answer("is hello a palindrome?", s) == "No, hello does not read the same backwards."
+    assert instant_answer("what's the first letter of Tuesday", s) == "The first letter of Tuesday is T."
+    assert instant_answer("what is the last letter in apple", s) == "The last letter of apple is E."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
