@@ -1,0 +1,220 @@
+{
+ "name": "Prestige Hair & Beauty",
+ "short": "Prestige",
+ "kicker": "22 London Road · West Croydon",
+ "h1": [
+  "Brows, lashes,",
+  "nails and hair.",
+  "Make it Prestige."
+ ],
+ "lead": "A family-run South London salon for more than 10 years. Threading, lashes, facials, nails and hair, all done by highly trained specialists.",
+ "colours": {
+  "bg": "#170e1d",
+  "panel": "#21162a",
+  "ink": "#f6eff4",
+  "muted": "#b3a2b9",
+  "gold": "#e8cd95",
+  "second": "#a487b4"
+ },
+ "motif": "classic",
+ "logo": "logo.png",
+ "hero": [
+  "s/10.jpg",
+  "s/02.jpg",
+  "g/02.jpg",
+  "s/21.jpg"
+ ],
+ "experience": {
+  "title": "Everyone is beautiful in their own way",
+  "text": "We celebrate diversity and inclusivity, with a team of warm and inviting specialists here for all of your beauty needs. From a simple, subtle manicure to a glamorous blow-dry, we've got you covered, so you leave feeling Prestige.",
+  "photos": [
+   "s/01.jpg",
+   "g/03.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Brows & threading",
+   "items": [
+    [
+     "Eyebrow threading",
+     "from £6"
+    ],
+    [
+     "Upper lip",
+     "from £4"
+    ],
+    [
+     "Full face (includes eyebrows)",
+     "from £22"
+    ],
+    [
+     "Henna brows",
+     "£30"
+    ],
+    [
+     "HD brows",
+     "£42"
+    ]
+   ]
+  },
+  {
+   "group": "Lashes",
+   "items": [
+    [
+     "Eyelash lift",
+     "from £35"
+    ],
+    [
+     "Pro lash extensions, natural",
+     "from £35"
+    ],
+    [
+     "Mink lashes",
+     "from £60"
+    ],
+    [
+     "Russian lashes",
+     "from £80"
+    ]
+   ]
+  },
+  {
+   "group": "Facials",
+   "items": [
+    [
+     "Deep cleansing facial",
+     "from £35"
+    ],
+    [
+     "Gold facial",
+     "from £50"
+    ],
+    [
+     "LED facial",
+     "from £80"
+    ],
+    [
+     "BB Glow facial, face & neck",
+     "from £150"
+    ]
+   ]
+  }
+ ],
+ "currency_note": "Prices for the 22 London Road branch. Also in Thornton Heath and Kingston.",
+ "special": {
+  "kicker": "Since 2014",
+  "title": "Family-run, South London proud",
+  "text": "For more than 10 years we've been a trusted choice in the South London community, now in Croydon, Thornton Heath and Kingston, with the latest technology and highly specialised staff.",
+  "cta": "Book your visit"
+ },
+ "gallery": [
+  "g/03.jpg",
+  "g/05.jpg",
+  "g/06.jpg",
+  "s/17.jpg",
+  "s/04.jpg",
+  "g/04.jpg",
+  "s/19.jpg",
+  "g/09.jpg",
+  "g/02.jpg"
+ ],
+ "reviews": [
+  [
+   "Finding a salon that nails every service is rare, but Prestige Hair and Beauty in West Croydon is officially my new go-to! I visited recently for a full \"glow up\"—nails, lashes, and henna brows—and I couldn't be happier with the 5-star experience. Nails: My nail technician was a perfectionist.",
+   "Irene"
+  ],
+  [
+   "Absolutely love my eyebrows every single time 🤍 Ankush at Prestige Beauty is the only person I trust with my brows! She did my henna brows with an ombré style and they came out perfect. She’s so patient, takes her time, and really perfects her work down to every detail.",
+   "brook rowe"
+  ],
+  [
+   "Prestige beauty & nails is far one of the best salon I have visited from the moment I walked in, I was welcomed with reception people salon is beautifully maintained spotless has a relaxing atmosphere. Team is incredibly talented and knowledgeable.",
+   "MABEL ANTWI BOASIAKO"
+  ],
+  [
+   "\"I had an absolutely fantastic experience at Prestige Hair, Beauty & Nails! From the moment I walked in, I was greeted by a warm and professional team who made me feel completely relaxed. The salon is spotlessly clean, and they truly pay attention to every detail.",
+   "Riddhi Parmar"
+  ]
+ ],
+ "stats": [
+  [
+   "4.8",
+   "Google rating"
+  ],
+  [
+   "2,539",
+   "Google reviews"
+  ],
+  [
+   "3",
+   "South London salons"
+  ],
+  [
+   "7",
+   "days a week"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "9:30 AM – 7:30 PM"
+  ],
+  [
+   "Tuesday",
+   "9:30 AM – 7:30 PM"
+  ],
+  [
+   "Wednesday",
+   "9:30 AM – 7:30 PM"
+  ],
+  [
+   "Thursday",
+   "9:30 AM – 7:30 PM"
+  ],
+  [
+   "Friday",
+   "9:30 AM – 7:30 PM"
+  ],
+  [
+   "Saturday",
+   "9:30 AM – 7:30 PM"
+  ],
+  [
+   "Sunday",
+   "10:00 AM – 6:00 PM"
+  ]
+ ],
+ "address": "22 London Road, Croydon CR0 2TA",
+ "phone": "020 8667 0066",
+ "book_url": "https://www.prestigehairandbeauty.co.uk/price-list",
+ "book_label": "Book online",
+ "loc": [
+  51.378811,
+  -0.103235
+ ],
+ "instagram": "",
+ "layout": "bold",
+ "fonts": "bold",
+ "audit": {
+  "title": "What prestigehairandbeauty.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Weak page title.",
+    "Set up so Google shows your hours, rating and location properly."
+   ],
+   [
+    "Phone number isn't tap-to-call.",
+    "One tap to call you, on every page."
+   ],
+   [
+    "Google can't read the business details.",
+    "Opening hours on the page, always up to date."
+   ]
+  ],
+  "speed": [
+   53,
+   79
+  ]
+ }
+}

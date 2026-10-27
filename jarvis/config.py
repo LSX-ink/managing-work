@@ -65,6 +65,9 @@ class Settings:
     tool_search: bool = _bool("JARVIS_TOOL_SEARCH", True)  # load most abilities only when needed
     enable_pc: bool = _bool("JARVIS_ENABLE_PC", True)  # open apps/folders/files, media keys, read files
     enable_computer: bool = _bool("JARVIS_ENABLE_COMPUTER", False)  # mouse + keyboard, each action confirmed
+    # mouse + keyboard without the Allow/Deny card: when you tell Alfred to do something he just does it (owner,
+    # 25 Oct 2026). Set JARVIS_COMPUTER_AUTO_ALLOW=0 to bring the card back. Slam the mouse into a corner to stop him.
+    computer_auto_allow: bool = _bool("JARVIS_COMPUTER_AUTO_ALLOW", True)
     host: str = os.getenv("JARVIS_HOST", "127.0.0.1")
     port: int = int(os.getenv("JARVIS_PORT", "8340"))
     password: str = os.getenv("JARVIS_PASSWORD", "")  # empty: no login page

@@ -1,0 +1,190 @@
+{
+ "name": "The Dandy Gent",
+ "short": "The Dandy Gent",
+ "kicker": "5 Heathcoat Street · Hockley, Nottingham",
+ "h1": [
+  "Traditional",
+  "barbershop.",
+  "Handmade in Britain."
+ ],
+ "lead": "A relaxed, second-to-none barbershop experience and the makers of handmade beard oils, moustache wax, colognes and wet-shave goods, chosen by barbers across the UK.",
+ "colours": {
+  "bg": "#101411",
+  "panel": "#171d18",
+  "ink": "#f2efe6",
+  "muted": "#a3a693",
+  "gold": "#8a2f2a",
+  "second": "#c0453f",
+  "paper": "#efe6d2",
+  "text": "#1f1a14",
+  "soft": "#665a48",
+  "rule": "#d6c8a8"
+ },
+ "motif": "classic",
+ "logo": "logo0.png",
+ "logo_light": true,
+ "hero": [
+  "g/09.jpg",
+  "g/03.jpg",
+  "g/02.jpg"
+ ],
+ "experience": {
+  "title": "Our barbershop heritage",
+  "text": "At just 10 years old, Shane O'Shaughnessy began his barber apprenticeship under his beloved grandad, David Keithley. Today the quality of our barbers and our relaxed experience earn 5-star ratings at all three of our East Midlands shops.",
+  "photos": [
+   "g/03.jpg",
+   "g/00.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Barbering",
+   "items": [
+    [
+     "Haircuts",
+     ""
+    ],
+    [
+     "Low fades",
+     ""
+    ],
+    [
+     "Beard grooming",
+     ""
+    ],
+    [
+     "Traditional wet shave",
+     ""
+    ]
+   ]
+  },
+  {
+   "group": "Our products",
+   "items": [
+    [
+     "Beard oils & balms",
+     ""
+    ],
+    [
+     "Moustache wax",
+     "from £8.99"
+    ],
+    [
+     "Colognes & aftershaves",
+     ""
+    ],
+    [
+     "Wet-shave essentials",
+     ""
+    ]
+   ]
+  }
+ ],
+ "currency_note": "Book online in seconds. Free UK delivery on product orders over £25.",
+ "special": {
+  "kicker": "Made by barbers",
+  "title": "Handmade in Britain",
+  "text": "UK-sourced ingredients only. Our ever-expanding range of handmade grooming products is THE choice of barbers across the UK and beyond.",
+  "cta": "Book your chair"
+ },
+ "gallery": [
+  "g/02.jpg",
+  "g/03.jpg",
+  "g/00.jpg",
+  "g/06.jpg",
+  "g/07.jpg",
+  "g/04.jpg",
+  "g/05.jpg",
+  "g/01.jpg"
+ ],
+ "reviews": [
+  [
+   "I’ve been going to the same barber for years, so I was honestly quite anxious about trying someone new—but I couldn’t be happier with my experience with Josh. From the start, he really took the time to listen to everything I said about my hair, especially regarding my head shape and how I like my fade done.",
+   "James Russell"
+  ],
+  [
+   "It was my 1st visit to The Dandy Gent for a High Skin Fade, and I must say Josh is very friendly and polite, and his standard level of work is exceptional. I will definitely be going back again.",
+   "Matt Mahjouri"
+  ],
+  [
+   "Wonderful. Was anxious before because I had the same barber for 10 years and he had to move.",
+   "Vean 99"
+  ],
+  [
+   "Charlie was a pleasure to have cut my hair. .",
+   "Owen Morris"
+  ]
+ ],
+ "stats": [
+  [
+   "5.0",
+   "Google rating"
+  ],
+  [
+   "631",
+   "Google reviews"
+  ],
+  [
+   "3",
+   "East Midlands shops"
+  ],
+  [
+   "Handmade",
+   "in Britain"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "10:30 AM – 6:00 PM"
+  ],
+  [
+   "Tuesday",
+   "10:00 AM – 6:00 PM"
+  ],
+  [
+   "Wednesday",
+   "10:00 AM – 6:00 PM"
+  ],
+  [
+   "Thursday",
+   "10:00 AM – 6:00 PM"
+  ],
+  [
+   "Friday",
+   "10:00 AM – 6:00 PM"
+  ],
+  [
+   "Saturday",
+   "10:00 AM – 5:00 PM"
+  ],
+  [
+   "Sunday",
+   "Closed"
+  ]
+ ],
+ "address": "5 Heathcoat Street, Hockley, Nottingham NG1 3AF",
+ "phone": "0115 958 3999",
+ "book_url": "https://thedandygent.co.uk/book-services-33-w.asp",
+ "book_label": "Book online",
+ "loc": [
+  52.953983199999996,
+  -1.1435691000000001
+ ],
+ "instagram": "thedandygentuk",
+ "layout": "editorial",
+ "fonts": "vintage",
+ "audit": {
+  "title": "What thedandygent.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "No main heading.",
+    "Set up so Google shows your hours, rating and location properly."
+   ]
+  ],
+  "speed": [
+   35,
+   79
+  ]
+ }
+}

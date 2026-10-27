@@ -1,0 +1,213 @@
+{
+ "name": "281 Hair",
+ "short": "281 Hair",
+ "kicker": "Sauchiehall Street · Glasgow city centre",
+ "h1": [
+  "Fabulous colour.",
+  "Fantastic styles.",
+  "Feel transformed."
+ ],
+ "lead": "A Glasgow city-centre salon for cuts, blow-drys and bespoke colour, with colour correction as our speciality. L'Oréal Professionnel, Olaplex, Milkshake and Wella.",
+ "colours": {
+  "bg": "#110f0d",
+  "panel": "#1a1714",
+  "ink": "#f4efe6",
+  "muted": "#a99c88",
+  "gold": "#a97c22",
+  "second": "#b65a43",
+  "paper": "#f7f1e6",
+  "text": "#1c1813",
+  "soft": "#6b6153",
+  "rule": "#e0d4bf"
+ },
+ "motif": "classic",
+ "logo": "logo.png",
+ "hero": [
+  "g/00.jpg",
+  "g/02.jpg",
+  "s/03.jpg",
+  "g/01.jpg"
+ ],
+ "experience": {
+  "title": "Total care for your hair",
+  "text": "Our experienced stylists offer everything from cuts and blow-drys to full-scale bespoke colour. Every new look starts with a free consultation, so the treatment suits you, and we go the extra mile to get you what you really want.",
+  "photos": [
+   "g/00.jpg",
+   "g/04.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Colour",
+   "items": [
+    [
+     "Root tint & blow dry",
+     "from £80"
+    ],
+    [
+     "Full head tint with partial foils & blow dry",
+     "£110"
+    ],
+    [
+     "Vivid or fashion colour add-on",
+     "£35"
+    ]
+   ]
+  },
+  {
+   "group": "Blonde & bleach",
+   "items": [
+    [
+     "Bleach roots, tone & blow dry",
+     "from £100"
+    ],
+    [
+     "Roots at 6–8 weeks",
+     "from £115"
+    ],
+    [
+     "Short hair or pixie, full head bleach & tone",
+     "from £125"
+    ],
+    [
+     "Global full head bleach & tone",
+     "from £160"
+    ]
+   ]
+  },
+  {
+   "group": "Treatments",
+   "items": [
+    [
+     "Goldwell deep conditioning mask (add-on)",
+     "£16.50"
+    ],
+    [
+     "Olaplex treatment (add-on)",
+     "£30"
+    ]
+   ]
+  }
+ ],
+ "currency_note": "10% student discount on selected services. Prices may vary with length and thickness; colour starts with a free consultation.",
+ "special": {
+  "kicker": "Our speciality",
+  "title": "Colour correction",
+  "text": "Bespoke colour and colour correction are what we do best. Book a free consultation and we'll work out exactly what your hair needs before we start.",
+  "cta": "Book a free consultation"
+ },
+ "gallery": [
+  "g/09.jpg",
+  "g/08.jpg",
+  "g/06.jpg",
+  "g/04.jpg",
+  "g/00.jpg",
+  "s/03.jpg",
+  "g/01.jpg"
+ ],
+ "reviews": [
+  [
+   "I had such a wonderful experience at 281 Hair and left feeling completely satisfied and genuinely happy with the results.  From the very beginning, Danni was fantastic.",
+   "Keshvi Mishra"
+  ],
+  [
+   "Very happy with my first experience with this salon. Lesley spent the time getting to know what look it was I wanted to achieve & sat down with me to talk with me about what would suit my hair type & how i should care for it from now on to keep it in tip top condition.",
+   "Louise Dirom"
+  ],
+  [
+   "I would give this salon more than 5 stars if possible!! Best experience!! Everyone is absolutely sweet and welcoming. Book your appointment you won’t be disappointed!!  I have never gotten my hair with permanent tint and had a consult with Beth prior to my appointment.",
+   "Melanie Quiroz-Vega"
+  ],
+  [
+   "I had the most amazing experience at 281 Hair. It was my first appointment and Lesley could not have been more amazing.",
+   "Olivia MacCloy"
+  ]
+ ],
+ "stats": [
+  [
+   "4.9",
+   "Google rating"
+  ],
+  [
+   "1,539",
+   "Google reviews"
+  ],
+  [
+   "Free",
+   "consultations"
+  ],
+  [
+   "7",
+   "days a week"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "10:00 AM – 5:00 PM"
+  ],
+  [
+   "Tuesday",
+   "10:00 AM – 8:00 PM"
+  ],
+  [
+   "Wednesday",
+   "10:00 AM – 8:00 PM"
+  ],
+  [
+   "Thursday",
+   "10:00 AM – 8:00 PM"
+  ],
+  [
+   "Friday",
+   "10:00 AM – 8:00 PM"
+  ],
+  [
+   "Saturday",
+   "9:00 AM – 4:00 PM"
+  ],
+  [
+   "Sunday",
+   "12:00 – 5:00 PM"
+  ]
+ ],
+ "address": "First Floor, 281 Sauchiehall Street, Glasgow G2 3HQ",
+ "phone": "0141 332 0707",
+ "book_url": "https://281hair.co.uk/book/",
+ "book_label": "Book online",
+ "loc": [
+  55.865308999999996,
+  -4.2638038
+ ],
+ "instagram": "281hair",
+ "brand_text": false,
+ "layout": "editorial",
+ "fonts": "editorial",
+ "audit": {
+  "title": "What 281hair.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Built with very old tech.",
+    "A fresh, modern look that shows you're open, busy and worth the visit."
+   ],
+   [
+    "Phone number isn't tap-to-call.",
+    "One tap to call you, on every page."
+   ],
+   [
+    "No main heading.",
+    "Set up so Google shows your hours, rating and location properly."
+   ],
+   [
+    "No share preview.",
+    "A proper preview card when your link is shared on WhatsApp or Instagram."
+   ],
+   [
+    "Google can't read the business details.",
+    "Opening hours on the page, always up to date."
+   ]
+  ],
+  "speed": null
+ },
+ "no_compare": true
+}

@@ -1,0 +1,235 @@
+{
+ "name": "Moroccan Barber Johannesburg",
+ "short": "Moroccan Barber",
+ "kicker": "Trinity Village · Randpark Ridge, Johannesburg",
+ "h1": [
+  "You want it,",
+  "we cut it",
+  "for you."
+ ],
+ "lead": "Walk-in haircuts, hot towel shaves and gentlemen's facials in Randburg, where comfort meets style and grooming becomes an experience.",
+ "colours": {
+  "bg": "#0e0c0a",
+  "panel": "#16130f",
+  "ink": "#f3ece0",
+  "muted": "#a89b86",
+  "gold": "#d2c0a1",
+  "second": "#2ea3f2"
+ },
+ "motif": "moroccan",
+ "logo": "logo.png",
+ "hero": [
+  "g/02.jpg",
+  "s/12.jpg",
+  "s/02.jpg",
+  "g/01.jpg"
+ ],
+ "experience": {
+  "title": "The Moroccan Barber experience",
+  "text": "Step in and you're transported to a world where your appearance is the top priority. Signature hot towel shaves, contemporary styling and luxurious gentlemen's facials, all without compromising on time or quality. And a great coffee while you wait.",
+  "photos": [
+   "g/02.jpg",
+   "s/02.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Cuts & hair",
+   "items": [
+    [
+     "Haircut, gents",
+     "R150"
+    ],
+    [
+     "Scissor cut, flat top or fade",
+     "R200"
+    ],
+    [
+     "Clipper cut",
+     "R130"
+    ],
+    [
+     "Pensioners",
+     "R130"
+    ],
+    [
+     "Kids & students",
+     "R130"
+    ],
+    [
+     "Hair relaxer",
+     "R300"
+    ],
+    [
+     "Colour, short",
+     "R300"
+    ],
+    [
+     "Highlights, short",
+     "R400"
+    ]
+   ]
+  },
+  {
+   "group": "Beards & shaves",
+   "items": [
+    [
+     "Beard trim",
+     "R50"
+    ],
+    [
+     "Hot towel shave",
+     "R150"
+    ],
+    [
+     "Beard treatment",
+     "R150"
+    ],
+    [
+     "Beard colouring",
+     "R200"
+    ]
+   ]
+  },
+  {
+   "group": "Treatments",
+   "items": [
+    [
+     "Nose & ear wax",
+     "R50"
+    ],
+    [
+     "Eyebrow wax",
+     "R100"
+    ],
+    [
+     "Facial cleanse",
+     "R150"
+    ],
+    [
+     "Full facial wax",
+     "R200"
+    ],
+    [
+     "Moroccan full facial",
+     "R300"
+    ],
+    [
+     "Vintage Special",
+     "R300"
+    ],
+    [
+     "Executive Special",
+     "R500"
+    ],
+    [
+     "Black Pearl Special",
+     "R700"
+    ]
+   ]
+  }
+ ],
+ "currency_note": "Walk-ins welcome. Cash, debit and credit cards accepted.",
+ "special": {
+  "kicker": "Special occasions",
+  "title": "Your VIP grooming experience",
+  "text": "Celebrate your wedding day with an exclusive package for grooms and groomsmen. The groom enjoys a complimentary VIP service: haircut, shave or beard groom, and a full facial. Relax with drinks and shisha, and create lasting memories with a private photoshoot.",
+  "cta": "Book your date"
+ },
+ "gallery": [
+  "s/12.jpg",
+  "g/02.jpg",
+  "s/00.jpg",
+  "s/06.jpg",
+  "g/07.jpg",
+  "g/05.jpg",
+  "g/06.jpg",
+  "g/03.jpg",
+  "g/01.jpg"
+ ],
+ "reviews": [
+  [
+   "I’ve been cutting my hair here for years and have no complaints. The barbers are highly skilled.",
+   "Dale Ray Scheepers"
+  ],
+  [
+   "Quade was amazing, not only an excellent Barber but an amazing human being. Took instruction from Dylan and was meticulous in executing the instruction - well done Quade and Dylan.",
+   "Karl-Heinz van Vught"
+  ],
+  [
+   "Vino is hands down the best barber I’ve been to. Every haircut is clean, precise, and exactly how I ask for it.",
+   "Jayden Todd"
+  ],
+  [
+   "Great coffee while you wait for your barber, and friendly staff.",
+   "Deidre Vosloo"
+  ],
+  [
+   "Quade was extremely helpful. Very good cut, very nice conversation. Will be back again.",
+   "Dylan Solomon"
+  ],
+  [
+   "Amin is great, I enjoy the barber.",
+   "Kyle Volschenk"
+  ]
+ ],
+ "stats": [
+  [
+   "4.9",
+   "Google rating"
+  ],
+  [
+   "1,718",
+   "Google reviews"
+  ],
+  [
+   "R50",
+   "beard trims from"
+  ],
+  [
+   "7",
+   "days a week"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday – Thursday",
+   "08:00 – 19:00"
+  ],
+  [
+   "Friday",
+   "08:00 – 19:00 (closed 12–2)"
+  ],
+  [
+   "Saturday",
+   "08:00 – 17:00"
+  ],
+  [
+   "Sunday",
+   "08:00 – 14:00"
+  ]
+ ],
+ "address": "Trinity Village, Knoppiesdoring Street, Randpark Ridge, Johannesburg",
+ "phone": "011 794 4830",
+ "whatsapp": "27664022777",
+ "email": "info@moroccanbarberjhb.co.za",
+ "loc": [
+  -26.092097799999998,
+  27.9381056
+ ],
+ "instagram": "moroccan_barber_jhb",
+ "audit": {
+  "title": "What moroccanbarberjhb.co.za is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "No main heading.",
+    "Set up so Google shows your hours, rating and location properly."
+   ],
+   [
+    "Google can't read the business details.",
+    "Opening hours on the page, always up to date."
+   ]
+  ],
+  "speed": null
+ }
+}

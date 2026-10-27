@@ -1,0 +1,200 @@
+{
+ "name": "Melissa Timperley Salons",
+ "short": "Melissa Timperley",
+ "kicker": "67 Tib Street · Manchester city centre",
+ "h1": [
+  "Best Salon",
+  "in the UK.",
+  "Twice."
+ ],
+ "lead": "A stylish three-floor salon in Manchester city centre, renowned for exceptional client experiences and led by some of the UK's best stylists.",
+ "colours": {
+  "bg": "#0f1724",
+  "panel": "#162033",
+  "ink": "#f3f6fa",
+  "muted": "#9fadc2",
+  "gold": "#5fc9c1",
+  "second": "#eab3c2"
+ },
+ "motif": "classic",
+ "logo": "logo10.png",
+ "brand_text": true,
+ "hero": [
+  "s/00.jpg",
+  "s/13.jpg",
+  "s/24.jpg"
+ ],
+ "experience": {
+  "title": "Exceptional, for everyone",
+  "text": "A super-precise cut and styling that complements your features. Afro and curly hair specialists, a hijab-friendly private space, an LGBTQ+ friendly salon, and discreet appointments for high-profile clients.",
+  "photos": [
+   "s/31.jpg",
+   "s/02.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Cut & style",
+   "items": [
+    [
+     "Precision cut & style",
+     ""
+    ],
+    [
+     "Men's hair",
+     ""
+    ],
+    [
+     "Curly hair",
+     ""
+    ],
+    [
+     "Afro hair",
+     ""
+    ]
+   ]
+  },
+  {
+   "group": "Colour",
+   "items": [
+    [
+     "Colour",
+     ""
+    ],
+    [
+     "Balayage",
+     ""
+    ],
+    [
+     "Highlights",
+     ""
+    ],
+    [
+     "Grey blending",
+     ""
+    ]
+   ]
+  },
+  {
+   "group": "Treatments",
+   "items": [
+    [
+     "Fabriq smoothing treatment",
+     ""
+    ],
+    [
+     "K18 treatment",
+     ""
+    ]
+   ]
+  }
+ ],
+ "currency_note": "See the full price list and book online.",
+ "special": {
+  "kicker": "Multi-award-winning",
+  "title": "Best Salon in the UK, 2021 & 2023",
+  "text": "British Hairdressing Business Awards. Plus Best Customer Service, Best Client Experience, Best Salon Team of the Year, Afro Hairdresser of the Year and Independent Salon of the Year.",
+  "cta": "Book an appointment"
+ },
+ "gallery": [
+  "s/46.jpg",
+  "s/40.jpg",
+  "s/45.jpg",
+  "s/56.jpg",
+  "s/51.jpg",
+  "s/35.jpg",
+  "s/05.jpg",
+  "s/39.jpg",
+  "s/49.jpg"
+ ],
+ "reviews": [
+  [
+   "I was at the Melissa Timperley salon for seven hours yesterday. The team there are great, really friendly and very supportive.",
+   "Kerry Levene"
+  ],
+  [
+   "I’m absolutely delighted with my visit to the salon. The atmosphere was so warm, welcoming, and friendly, and I’m especially thrilled with my transformation by Dawid.",
+   "Paulina Feter"
+  ],
+  [
+   "I hadn't been to a salon in years after getting used to cutting my own hair during covid... I then went to Melissa Timperley Hair Salon last week for a wash, styling cut and dry, and my experience was genuinely amazing!  Millie was my stylist and did a fantastic job, she used a shampoo specific to my hair needs, and explained all of the products which were used.",
+   "Amelia M"
+  ],
+  [
+   "I came to Melissa feeling completely fed up with my hair. I was stuck in that awkward growing out stage after many disappointing haircuts and I didn’t even know what I wanted - I just knew it wasn’t the horrid mushroom cut I had.",
+   "Melissa Cooper"
+  ]
+ ],
+ "stats": [
+  [
+   "4.9",
+   "Google rating"
+  ],
+  [
+   "674",
+   "Google reviews"
+  ],
+  [
+   "3",
+   "floors of salon"
+  ],
+  [
+   "2×",
+   "Best Salon in the UK"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "9:00 AM – 5:00 PM"
+  ],
+  [
+   "Tuesday",
+   "9:00 AM – 5:00 PM"
+  ],
+  [
+   "Wednesday",
+   "9:00 AM – 8:00 PM"
+  ],
+  [
+   "Thursday",
+   "9:00 AM – 8:00 PM"
+  ],
+  [
+   "Friday",
+   "9:30 AM – 5:30 PM"
+  ],
+  [
+   "Saturday",
+   "8:30 AM – 4:30 PM"
+  ],
+  [
+   "Sunday",
+   "Closed"
+  ]
+ ],
+ "address": "67 Tib Street, Manchester M4 1LS",
+ "phone": "0161 834 5945",
+ "book_url": "https://www.melissa-salons.com/",
+ "book_label": "Book online",
+ "loc": [
+  53.484644499999995,
+  -2.2337237
+ ],
+ "instagram": "melissasalons",
+ "layout": "split",
+ "fonts": "fashion",
+ "audit": {
+  "title": "What melissa-salons.com is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Google can't read the business details.",
+    "Set up so Google shows your hours, rating and location properly."
+   ]
+  ],
+  "speed": [
+   38,
+   79
+  ]
+ }
+}
