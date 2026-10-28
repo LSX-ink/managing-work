@@ -165,6 +165,17 @@ def test_3d_only_on_pages_that_ask_for_it(tmp_path):
     assert depth3d.add(page, c, tmp_path) == page  # sent mock-ups never change
     (tmp_path / "logo.png").write_bytes(b"x")
     out = depth3d.add(page, {**c, "depth3d": True}, tmp_path)
-    assert '<canvas id="d3"' in out and "three@0.160.0" in out and '"logo": "logo.png"' in out
-    assert '"layout": "split"' in out and '"initials": "K"' in out and out.endswith("</body></html>")
-    assert depth3d.initials("Gents & Rascals BarberShop") == "GR"
+    assert '<canvas id="d3"' in out and "three@0.160.0" in out and '"piece": "pole"' in out  # a barber's first piece
+    assert '"layout": "split"' in out and out.endswith("</body></html>")
+
+
+def test_each_mock_up_gets_its_own_3d_piece_for_its_trade(tmp_path):
+    import depth3d
+    assert depth3d.pieces_for("Kamo Barbers")[0] == "pole" and depth3d.pieces_for("Treat Hair & Beauty")[0] == "dryer"
+    assert auto.next_piece("Kamo Barbers", leads=tmp_path) == "pole"
+    for i, pc in enumerate(["pole", "scissors"]):
+        (tmp_path / str(i)).mkdir()
+        (tmp_path / str(i) / "config.json").write_text(json.dumps({"piece": pc}))
+    assert auto.next_piece("Kamo Barbers", leads=tmp_path) == "razor"  # the least used barber piece next
+    page = depth3d.add("<body></body>", {"name": "Kamo", "depth3d": True, "piece": "razor", "colours": {"gold": "#e3262f"}}, tmp_path)
+    assert '"piece": "razor"' in page and "logo.png" not in page  # their tool, not a logo coin

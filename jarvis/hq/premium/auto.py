@@ -68,6 +68,15 @@ def free_slug(base: str, live: Path) -> str:
     return slug
 
 
+def next_piece(name: str, types=(), leads: Path = LEADS) -> str:
+    """The 3D piece for a new mock-up: one that fits the trade, the least used so far (owner, 28 Oct 2026: "why is the
+    3d the same for every website thats terrible marketing"), so neighbouring mock-ups never share one."""
+    import depth3d
+    order = depth3d.pieces_for(name, types)
+    used = Counter(json.load(open(f, encoding="utf-8")).get("piece") for f in leads.glob("*/config.json"))
+    return min(order, key=lambda pc: (used[pc], order.index(pc)))
+
+
 def next_layout(leads: Path = LEADS) -> str:
     """The layout used least so far, newest-used last among ties, so each mock-up looks different."""
     configs = sorted(leads.glob("*/config.json"), key=lambda f: f.stat().st_mtime)
@@ -284,8 +293,8 @@ async def review(client, model: str, folder: Path, page: Path, c: dict, layout: 
         del changes["special"]  # it may only take an offer away, never add one
     if "services" in changes and not same_prices(c.get("services"), changes["services"]):
         del changes["services"]  # prices are facts: a rename that moves or changes them is dropped
-    if changes.get("fonts") not in (None, *layouts.FONTS):
-        del changes["fonts"]
+    if "fonts" in changes and changes["fonts"] not in [f for f in FONTS.get(layout, []) if f]:
+        del changes["fonts"]  # only the type made for this layout (vintage on the bold layout came out messy, 28 Oct)
     for key in ("colours", "experience"):  # a partial change keeps the rest
         if isinstance(changes.get(key), dict) and isinstance(c.get(key), dict):
             changes[key] = {**c[key], **changes[key]}
@@ -359,7 +368,8 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     writer = getattr(client, "direct", client)  # the design needs Claude's eyes on the photos, not the free route
     facts = listing_facts(place, instagram, website)
     c = await write_config(writer, model, folder, layout, fonts, audit, facts)
-    c["depth3d"] = True  # their logo on a 3D medallion over the first screen (depth3d.py; owner, 28 Oct 2026)
+    c["depth3d"] = True  # a 3D piece of their trade over the first screen (depth3d.py; owner, 28 Oct 2026)
+    c["piece"] = next_piece(p["name"], place.get("types") or ())
     json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     out = outbox.LIVE / "m" / slug
     await asyncio.to_thread(premium_page.build, folder, out)
