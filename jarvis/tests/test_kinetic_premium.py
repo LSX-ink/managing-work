@@ -136,3 +136,22 @@ def test_a_logo_the_builder_cannot_read_is_left_out(tmp_path):
     assert auto.usable_image(tmp_path / "logo0.png") and not auto.usable_image(tmp_path / "logo1.svg")
     c = auto.tidy({"logo": "logo1.svg"}, tmp_path, [], "atelier", None, {"name": "Shop"})
     assert c["logo"] == ""
+
+
+async def test_a_garbled_review_is_asked_for_again(tmp_path, monkeypatch):
+    async def no_shots(page):
+        return [b"img"]
+    monkeypatch.setattr(auto, "page_shots", no_shots)
+
+    class Twice(_Reviewer):
+        def __init__(self):
+            super().__init__("")
+            self.calls = 0
+
+        async def create(self, **kw):
+            self.calls += 1
+            self.answer = '{"changes": {"kicker": "x" "y"}}' if self.calls == 1 else '{"changes": {"kicker": "High St"}, "notes": ["ok"]}'
+            return await super().create(**kw)
+    r = Twice()
+    new, notes = await auto.review(r, "m", tmp_path, tmp_path / "x", {"name": "S", "kicker": "a"}, "atelier", {"name": "S"})
+    assert r.calls == 2 and new["kicker"] == "High St" and notes == ["ok"]

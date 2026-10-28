@@ -223,6 +223,7 @@ SHAPES = {  # what the page layouts read: h1 is always three lines, the rest kee
     "hero": lambda v: isinstance(v, list) and len(v) >= 1, "gallery": lambda v: isinstance(v, list) and len(v) >= 3,
     "services": lambda v: isinstance(v, list) and all(isinstance(g, dict) and isinstance(g.get("items"), list) for g in v),
 }
+REVIEW_TRIES = 3
 REVIEW_KEYS = {"kicker", "h1", "lead", "colours", "experience", "hero", "gallery", "fonts", "logo_light", "motif",
                "currency_note", "services", "special"}
 
@@ -265,11 +266,17 @@ async def review(client, model: str, folder: Path, page: Path, c: dict, layout: 
                                                 "data": base64.b64encode(s).decode()}} for s in shots]
         content.append({"type": "text", "text": f"Layout: {layout}. Font presets: {sorted(layouts.FONTS)}.\nPhoto "
                         f"files: {photos}\n\nConfig:\n{json.dumps(shown, ensure_ascii=False)}"})
-        r = await client.messages.create(model=model, max_tokens=8000,
-                                         system=REVIEW_PROMPT + "\n\nOUR DESIGN SKILLS:\n\n" + design.website_pack(),
-                                         messages=[{"role": "user", "content": content}])
-        text = "".join(getattr(b, "text", "") for b in r.content)
-        out = json.loads(text[text.index("{"): text.rindex("}") + 1])
+        system = REVIEW_PROMPT + "\n\nOUR DESIGN SKILLS:\n\n" + design.website_pack()
+        for attempt in range(REVIEW_TRIES):  # a reply that isn't clean JSON is asked for again (Capello, 27 Oct 2026)
+            r = await client.messages.create(model=model, max_tokens=8000, system=system,
+                                             messages=[{"role": "user", "content": content}])
+            text = "".join(getattr(b, "text", "") for b in r.content)
+            try:
+                out = json.loads(text[text.index("{"): text.rindex("}") + 1])
+                break
+            except ValueError:
+                if attempt == REVIEW_TRIES - 1:
+                    raise
     except Exception as exc:  # noqa: BLE001 - the page as written is still good to go
         return c, [f"design review skipped ({type(exc).__name__}: {str(exc)[:120]})"]
     changes = {k: v for k, v in (out.get("changes") or {}).items() if k in REVIEW_KEYS}
