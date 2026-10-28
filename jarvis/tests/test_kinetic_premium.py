@@ -136,3 +136,8 @@ def test_a_logo_the_builder_cannot_read_is_left_out(tmp_path):
     assert auto.usable_image(tmp_path / "logo0.png") and not auto.usable_image(tmp_path / "logo1.svg")
     c = auto.tidy({"logo": "logo1.svg"}, tmp_path, [], "atelier", None, {"name": "Shop"})
     assert c["logo"] == ""
+
+
+def test_mock_ups_use_the_cheaper_claude_by_default(monkeypatch):
+    assert Settings().mockup_model == "claude-sonnet-5-5"
+    assert "opus" not in Settings().mockup_model
