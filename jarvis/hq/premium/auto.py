@@ -43,8 +43,12 @@ Rules, all strict:
   offer coffee), whisky (a dram / whisky), cocktail (drinks or cocktails), banter (chat, community, good times), mirror
   (a full grooming or beauty service), bottle (their own product range; set "piece_text" to the brand name for the
   label), pole (a traditional barber's), scissors (precision cutting), razor (wet or straight-razor shaves), clipper
-  (fades), comb (classic cuts), brush (styling, blow-dries), dryer (salon styling). Never one of the recent pieces
-  listed below, so no two mock-ups look the same. "piece_text": the word to show, only for neon or bottle.
+  (fades), comb (classic cuts), brush (styling, blow-dries), dryer (salon styling), diamond (a name about excellence or
+  luxury), braid (braids), trophy (award-winning), crown (kings, royal), lipstick (make-up), polish (nails), spray
+  (styling products), towels (hot towels, spa), tie (smart city clients), moka (Italian), eiffel (Paris or French),
+  bolt (energy, a loud brand), leaf (natural products), flower (beauty, florals). Pick what THIS business is about,
+  never one of the pieces already used (listed below), so no two mock-ups are ever the same. "piece_text": the word
+  to show, only for neon or bottle.
 - Words: warm, confident, short. h1 is three short lines, the third the most striking. "kicker" is the street and area.
 - "audit": {"title": "What <their domain> is costing you, and what this fixes.", "fixes": [[problem, fix], ...]}, from
   the audit problems only (2 to 4 pairs, plain English, fix said as what this design does), or {} with no website.
@@ -80,6 +84,7 @@ def next_piece(name: str, types=(), leads: Path = LEADS) -> str:
     3d the same for every website thats terrible marketing"), so neighbouring mock-ups never share one."""
     import depth3d
     order = depth3d.pieces_for(name, types)
+    order = order + [pc for pc in depth3d.STORY_PIECES if pc not in order]   # then every other idea: never a repeat
     used = Counter(json.load(open(f, encoding="utf-8")).get("piece") for f in leads.glob("*/config.json"))
     return min(order, key=lambda pc: (used[pc], order.index(pc)))
 
@@ -111,8 +116,9 @@ def listing_facts(place: dict, instagram: str, website: str) -> dict:
             "book_url": website, "book_label": "Book now" if website else "Call us"}
 
 
-def recent_pieces(n: int = 8, leads: Path = LEADS) -> list[str]:
-    """The 3D ideas the last few mock-ups used: a new one may not repeat them."""
+def recent_pieces(n: int = 30, leads: Path = LEADS) -> list[str]:
+    """The 3D ideas the mock-ups already use: a new one may not repeat any of them (owner, 28 Oct 2026: "no repeats at
+    all ... every site different")."""
     configs = sorted(leads.glob("*/config.json"), key=lambda f: f.stat().st_mtime)[-n:]
     return [pc for pc in (json.load(open(f, encoding="utf-8")).get("piece") for f in configs) if pc]
 

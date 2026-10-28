@@ -21,7 +21,8 @@ THREE = "https://cdn.jsdelivr.net/npm/three@0.160.0/"
 BARBER_PIECES = ["pole", "scissors", "razor", "clipper", "comb", "brush", "bottle", "dryer", "mirror", "coffee", "banter"]
 SALON_PIECES = ["dryer", "brush", "bottle", "scissors", "comb", "mirror", "coffee", "banter", "clipper", "razor", "pole"]
 # ideas taken from a business's own story: their name in neon, the coffee or the dram they offer, the banter they promise
-STORY_PIECES = ["neon", "coffee", "whisky", "cocktail", "banter", "mirror"]
+STORY_PIECES = ["neon", "coffee", "whisky", "cocktail", "banter", "mirror", "diamond", "braid", "trophy", "crown", "lipstick",
+                "polish", "spray", "towels", "tie", "moka", "eiffel", "bolt", "leaf", "flower"]
 PIECES = sorted(set(BARBER_PIECES + SALON_PIECES + STORY_PIECES))
 
 
@@ -242,6 +243,135 @@ const P = {
     const dots = [-0.55, 0, 0.55].map((x) => part(new THREE.SphereGeometry(0.15, 24, 16), new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.3, clearcoat: 1 }), -0.4 + x, 0.55, 0.42));
     idle = (t) => { dots.forEach((d, i) => { d.position.y = d.userData.home.y + Math.max(0, Math.sin(t * 5 - i * 0.7)) * 0.18; });
       piece.rotation.y = Math.sin(t * 0.5) * 0.35; };
+  },
+  diamond() {   // a brilliant-cut diamond turning in the light (PARAGON: a paragon is a flawless diamond)
+    const prof = [[0, -1.5], [1.25, 0.1], [1.25, 0.25], [0.7, 0.8], [0, 0.8]].map(([x, y]) => new THREE.Vector2(x, y));
+    const gem = part(new THREE.LatheGeometry(prof, 10), new THREE.MeshPhysicalMaterial({ color: new THREE.Color(O.gold).lerp(new THREE.Color(0xffffff), 0.25),
+      transmission: 0.55, metalness: 0.15, specularIntensity: 1, emissive: new THREE.Color(O.gold), emissiveIntensity: 0.18, thickness: 1.5, roughness: 0, ior: 2.4, dispersion: 4, iridescence: 0.6, clearcoat: 1, flatShading: true, transparent: true, envMapIntensity: 3 }));
+    gem.geometry.computeVertexNormals();
+    const glint = new THREE.PointLight(0xffffff, 0, 6); glint.position.set(1, 1, 2); piece.add(glint);
+    idle = (t) => { piece.rotation.y = t * 0.6; piece.rotation.x = 0.25 + Math.sin(t * 0.5) * 0.08; glint.intensity = 8 * Math.max(0, Math.sin(t * 2.4)) ** 6; };
+  },
+  braid() {   // a three-strand braid in their colours (Fade Inn: braids are their speciality)
+    const mats = [accent, second, dark];
+    [0, 1, 2].forEach((i) => { const pts = [];
+      for (let k = 0; k <= 60; k++) { const y = -2 + k * (4 / 60), a = k * 0.42 + i * (Math.PI * 2 / 3);
+        pts.push(new THREE.Vector3(Math.sin(a) * 0.42, y, Math.cos(a * 2) * 0.18)); }
+      part(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 160, 0.17, 14), mats[i]); });
+    part(new THREE.TorusGeometry(0.28, 0.09, 12, 32), accent, 0, -2.05).rotation.x = Math.PI / 2; settle(parts[parts.length - 1]);
+    idle = (t) => { piece.rotation.y = t * 0.4; piece.rotation.z = Math.sin(t * 0.6) * 0.08; };
+  },
+  trophy() {   // a trophy cup (award-winning shops)
+    part(new THREE.LatheGeometry([[0, 0.1], [0.9, 0.4], [1.0, 1.4], [0.95, 1.45], [0.85, 0.5], [0, 0.25]].map(([x, y]) => new THREE.Vector2(x, y)), 48), accent);
+    [-1, 1].forEach((sd) => { const h = part(new THREE.TorusGeometry(0.42, 0.08, 12, 32, Math.PI), accent, sd * 1.0, 0.9); h.rotation.z = sd > 0 ? -Math.PI / 2 : Math.PI / 2; settle(h); });
+    part(new THREE.CylinderGeometry(0.12, 0.18, 0.9, 24), accent, 0, -0.35);
+    part(new THREE.BoxGeometry(1.3, 0.5, 1.3), dark, 0, -1.05);
+    part(new THREE.BoxGeometry(0.9, 0.12, 0.02), second, 0, -1.05, 0.66);
+    idle = (t) => { piece.rotation.y = Math.sin(t * 0.5) * 0.7; };
+  },
+  crown() {   // a crown (kings of the fade, royal service)
+    part(new THREE.CylinderGeometry(1.1, 1.1, 0.7, 48, 1, true), accent, 0, -0.5);
+    for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2;
+      part(new THREE.ConeGeometry(0.28, 0.9, 16), accent, Math.sin(a) * 1.0, 0.25, Math.cos(a) * 1.0);
+      part(new THREE.SphereGeometry(0.14, 16, 12), second, Math.sin(a) * 1.0, 0.75, Math.cos(a) * 1.0);
+      part(new THREE.OctahedronGeometry(0.14), second, Math.sin(a + 0.63) * 1.12, -0.5, Math.cos(a + 0.63) * 1.12); }
+    piece.rotation.x = 0.3;
+    idle = (t) => { piece.rotation.y = t * 0.35; };
+  },
+  lipstick() {   // a lipstick, cap off
+    part(new THREE.CylinderGeometry(0.42, 0.42, 1.6, 40), dark, 0, -0.9);
+    part(new THREE.CylinderGeometry(0.44, 0.44, 0.25, 40), accent, 0, -0.05);
+    part(new THREE.CylinderGeometry(0.3, 0.3, 0.8, 40), accent, 0, 0.45);
+    const bullet = part(new THREE.CylinderGeometry(0.26, 0.26, 0.9, 40), new THREE.MeshPhysicalMaterial({ color: new THREE.Color(O.second), roughness: 0.3, clearcoat: 1 }), 0, 1.2);
+    const tip = part(new THREE.SphereGeometry(0.26, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), bullet.material, 0, 1.62); tip.scale.y = 1.4; tip.rotation.z = 0.5; settle(tip);
+    idle = (t) => { piece.rotation.y = Math.sin(t * 0.5) * 0.6; piece.rotation.z = -0.2; };
+  },
+  polish() {   // a bottle of nail polish
+    const body = part(new THREE.BoxGeometry(1.3, 1.4, 0.9, 4, 4, 4), new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.95, thickness: 0.8, roughness: 0.03, clearcoat: 1, transparent: true }));
+    part(new THREE.BoxGeometry(1.12, 1.15, 0.72), new THREE.MeshPhysicalMaterial({ color: new THREE.Color(O.second), roughness: 0.15, clearcoat: 1 }), 0, -0.08);
+    part(new THREE.CylinderGeometry(0.22, 0.22, 0.3, 24), accent, 0, 0.85);
+    part(new THREE.CylinderGeometry(0.28, 0.28, 1.3, 32), dark, 0, 1.6);
+    idle = (t) => { piece.rotation.y = Math.sin(t * 0.5) * 0.7; };
+  },
+  spray() {   // a can of hairspray with a puff of mist
+    part(new THREE.CylinderGeometry(0.55, 0.55, 2.6, 40), accent, 0, -0.4);
+    part(new THREE.CylinderGeometry(0.5, 0.55, 0.15, 40), chrome, 0, 0.95);
+    part(new THREE.SphereGeometry(0.42, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), second, 0, 1.0);
+    part(new THREE.BoxGeometry(0.2, 0.2, 0.2), dark, 0.1, 1.45);
+    const mist = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(240 * 3), 3)),
+      new THREE.PointsMaterial({ color: 0xffffff, size: 0.05, transparent: true, opacity: 0.6 }));
+    piece.add(mist); const seeds = Array.from({ length: 240 }, () => [Math.random(), (Math.random() - .5), (Math.random() - .5)]);
+    idle = (t) => { const a = mist.geometry.attributes.position.array;
+      seeds.forEach(([k0, y, z], i) => { const k = (t * 0.5 + k0) % 1; a[i * 3] = 0.3 + k * 2.4; a[i * 3 + 1] = 1.45 + y * k * 1.2; a[i * 3 + 2] = z * k * 1.2; });
+      mist.geometry.attributes.position.needsUpdate = true; mist.material.opacity = 0.5; piece.rotation.y = -0.3 + Math.sin(t * 0.4) * 0.3; };
+  },
+  towels() {   // rolled hot towels, steaming (hot-towel shaves)
+    [[-0.62, -0.5, 0], [0.62, -0.5, 0], [0, 0.15, 0]].forEach(([x, y, z], i) => {
+      const r = part(new THREE.CylinderGeometry(0.42, 0.42, 1.8, 40), new THREE.MeshPhysicalMaterial({ color: i === 2 ? new THREE.Color(O.second) : new THREE.Color(0xf4f1ea), roughness: 0.95, sheen: 1 }), x, y, z);
+      r.rotation.x = Math.PI / 2; settle(r);
+      const b = part(new THREE.TorusGeometry(0.43, 0.04, 8, 40), accent, x, y, z + 0.5); settle(b); });
+    const steam = [0, 1, 2].map((i) => { const pts = []; for (let k = 0; k <= 20; k++) pts.push(new THREE.Vector3(Math.sin(k * 0.6 + i * 2) * 0.12, k * 0.08, 0));
+      const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.03, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
+      m.position.set(-0.4 + i * 0.4, 0.6, 0); piece.add(m); return m; });
+    idle = (t) => { steam.forEach((m, i) => { const k = (t * 0.3 + i / 3) % 1; m.position.y = 0.6 + k; m.material.opacity = 0.5 * Math.sin(k * Math.PI); });
+      piece.rotation.y = Math.sin(t * 0.4) * 0.5; };
+  },
+  tie() {   // a tie in their colours (a grooming shop for city workers)
+    const c = document.createElement('canvas'); c.width = 128; c.height = 512; const g = c.getContext('2d');
+    g.fillStyle = O.second; g.fillRect(0, 0, 128, 512); g.strokeStyle = O.gold; g.lineWidth = 16;
+    for (let y = -128; y < 640; y += 64) { g.beginPath(); g.moveTo(0, y); g.lineTo(128, y + 64); g.stroke(); }
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const blade = new THREE.Shape(); blade.moveTo(-0.22, 1.2); blade.lineTo(0.22, 1.2); blade.lineTo(0.62, -1.6); blade.lineTo(0, -2.1); blade.lineTo(-0.62, -1.6); blade.lineTo(-0.22, 1.2);
+    const bg = new THREE.ExtrudeGeometry(blade, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03 });
+    const uv = bg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) + 0.7) / 1.4, (uv.getY(i) + 2.1) / 3.3);
+    part(bg, new THREE.MeshPhysicalMaterial({ map: tex, roughness: 0.5, sheen: 1 }));
+    const knot = new THREE.Shape(); knot.moveTo(-0.38, 1.85); knot.lineTo(0.38, 1.85); knot.lineTo(0.24, 1.2); knot.lineTo(-0.24, 1.2); knot.lineTo(-0.38, 1.85);
+    part(new THREE.ExtrudeGeometry(knot, { depth: 0.18, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04 }), accent, 0, 0, -0.02);
+    idle = (t) => { piece.rotation.y = Math.sin(t * 0.5) * 0.5; piece.rotation.z = Math.sin(t * 0.8) * 0.05; };
+  },
+  moka() {   // an Italian moka pot, steaming (Italian barbers)
+    part(new THREE.CylinderGeometry(0.62, 0.85, 1.2, 8), chrome, 0, -0.8);
+    part(new THREE.CylinderGeometry(0.85, 0.62, 0.14, 8), dark, 0, -0.15);
+    part(new THREE.CylinderGeometry(0.55, 0.8, 1.3, 8), chrome, 0, 0.55);
+    part(new THREE.ConeGeometry(0.56, 0.35, 8), chrome, 0, 1.38);
+    part(new THREE.SphereGeometry(0.12, 16, 12), dark, 0, 1.6);
+    const h = part(new THREE.BoxGeometry(0.22, 1.1, 0.18), dark, -1.0, 0.55); h.rotation.z = 0.15; settle(h);
+    part(new THREE.ConeGeometry(0.14, 0.35, 8), chrome, 0.78, 1.0).rotation.z = -0.9; settle(parts[parts.length - 1]);
+    const steam = [0, 1].map((i) => { const pts = []; for (let k = 0; k <= 20; k++) pts.push(new THREE.Vector3(Math.sin(k * 0.6 + i * 2) * 0.1, k * 0.07, 0));
+      const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.03, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
+      m.position.set(0.9 + i * 0.15, 1.15, 0); piece.add(m); return m; });
+    idle = (t) => { steam.forEach((m, i) => { const k = (t * 0.35 + i / 2) % 1; m.position.y = 1.15 + k * 0.9; m.material.opacity = 0.5 * Math.sin(k * Math.PI); });
+      piece.rotation.y = Math.sin(t * 0.45) * 0.5; };
+  },
+  eiffel() {   // the Eiffel Tower in their metal (Paris barbers)
+    [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([x, z]) => { const leg = part(new THREE.CylinderGeometry(0.06, 0.16, 2.0, 6), accent, x * 0.55, -1.2, z * 0.55);
+      leg.rotation.set(-z * 0.28, 0, x * 0.28); settle(leg); });   // feet wide, meeting at the top
+    part(new THREE.TorusGeometry(0.62, 0.05, 6, 4), accent, 0, -1.9).rotation.set(Math.PI / 2, 0, Math.PI / 4); settle(parts[parts.length - 1]);
+    part(new THREE.BoxGeometry(0.95, 0.1, 0.95), accent, 0, -0.25);
+    part(new THREE.CylinderGeometry(0.08, 0.3, 1.6, 4), accent, 0, 0.55);
+    part(new THREE.BoxGeometry(0.42, 0.08, 0.42), accent, 0, 1.35);
+    part(new THREE.CylinderGeometry(0.02, 0.08, 0.9, 4), accent, 0, 1.85);
+    idle = (t) => { piece.rotation.y = t * 0.3; };
+  },
+  bolt() {   // a lightning bolt, crackling (energy, a loud brand)
+    const sh = new THREE.Shape(); sh.moveTo(0.2, 2); sh.lineTo(-0.9, -0.1); sh.lineTo(-0.1, -0.1); sh.lineTo(-0.5, -2); sh.lineTo(0.9, 0.35); sh.lineTo(0.1, 0.35); sh.lineTo(0.2, 2);
+    const glowM = new THREE.MeshBasicMaterial({ color: new THREE.Color(O.gold), toneMapped: false });
+    part(new THREE.ExtrudeGeometry(sh, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06 }), glowM);
+    idle = (t) => { const f = Math.random() < 0.04 ? 1.6 : 1; glowM.color.set(O.gold).multiplyScalar(f); piece.rotation.y = Math.sin(t * 0.6) * 0.5; };
+  },
+  leaf() {   // a leaf (natural, plant-based products)
+    const sh = new THREE.Shape(); sh.moveTo(0, -1.8); sh.quadraticCurveTo(1.4, -0.6, 0, 1.9); sh.quadraticCurveTo(-1.4, -0.6, 0, -1.8);
+    part(new THREE.ExtrudeGeometry(sh, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 3 }),
+      new THREE.MeshPhysicalMaterial({ color: new THREE.Color(O.second), roughness: 0.4, clearcoat: 0.5, sheen: 1 }));
+    part(new THREE.CylinderGeometry(0.03, 0.05, 3.6, 8), accent, 0, 0, 0.12);
+    idle = (t) => { piece.rotation.y = Math.sin(t * 0.6) * 0.6; piece.rotation.z = Math.sin(t * 0.9) * 0.12; };
+  },
+  flower() {   // a flower opening (beauty, florals)
+    for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2;
+      const pe = part(new THREE.SphereGeometry(0.55, 24, 16), new THREE.MeshPhysicalMaterial({ color: new THREE.Color(O.second), roughness: 0.35, sheen: 1, clearcoat: 0.4 }),
+        Math.cos(a) * 0.62, Math.sin(a) * 0.62, 0); pe.scale.set(1, 0.45, 0.25); pe.rotation.z = a; settle(pe); }
+    part(new THREE.SphereGeometry(0.32, 24, 16), accent, 0, 0, 0.12);
+    idle = (t) => { piece.rotation.z = t * 0.25; piece.rotation.y = Math.sin(t * 0.5) * 0.4; };
   },
   mirror() {   // a lit salon mirror (Jacks & Buckley: hair, beard, brows and skin, all under one roof)
     part(new THREE.TorusGeometry(1.45, 0.14, 20, 80), accent);
