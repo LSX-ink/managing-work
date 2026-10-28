@@ -18,6 +18,7 @@ import re
 
 import alfred_mail
 import kinetic_store as st
+import omniroute
 import screen
 from config import Settings
 
@@ -143,7 +144,7 @@ async def write_reply(settings: Settings, msg) -> str:
                            subject=alfred_mail._header(msg["Subject"])[:200],
                            text=alfred_mail.body_text(msg)[:4000])
     try:
-        reply = await helpers._client.messages.create(model=settings.model, max_tokens=800,
+        reply = await omniroute.background(helpers._client, settings).messages.create(model=settings.model, max_tokens=800,
                                                       messages=[{"role": "user", "content": prompt}])
         text = "\n".join(b.text for b in reply.content if getattr(b, "type", "") == "text").strip()
     except Exception:  # any API trouble: a holding reply still stands

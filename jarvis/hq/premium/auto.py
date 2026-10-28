@@ -303,7 +303,8 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     fonts = FONTS[layout][len(list(LEADS.glob("*/config.json"))) % len(FONTS[layout])]
     progress(f"Writing the {layout} design…")
     model = getattr(settings, "big_model", "") or "claude-opus-5"
-    writer = getattr(client, "direct", client)  # the design needs Claude's eyes on the photos, not the free route
+    import omniroute  # jarvis/ is on the path above
+    writer = omniroute.background(client, settings)  # free route only unless JARVIS_BACKGROUND_CLAUDE is on
     facts = listing_facts(place, instagram, website)
     c = await write_config(writer, model, folder, layout, fonts, audit, facts)
     json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)

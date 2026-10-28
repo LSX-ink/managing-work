@@ -276,3 +276,32 @@ class BackupClient:
     async def close(self) -> None:
         await self.direct.close()
         await self.gateway.close()
+
+
+class _FreeMessages:
+    def __init__(self, owner: "BackupClient"):
+        self._owner = owner
+
+    async def create(self, **opts):
+        answer = await self._owner.gateway.messages.create(**gateway_request(opts, self._owner.model))
+        self._owner.last_route = "OmniRoute"
+        return answer
+
+
+class FreeOnly:
+    """Background work (mock-ups, auto-replies, translations): the free route only, never Claude's paid credit.
+    If the free AIs are busy the job fails and runs again later, instead of quietly spending credit (owner,
+    28 Oct 2026: the credit ran out on background work while he wasn't talking to Alfred)."""
+
+    def __init__(self, owner: "BackupClient"):
+        self.messages = _FreeMessages(owner)
+        self.direct = self  # code that asks for Claude's own client gets the free route here too
+
+
+def background(client, settings: Settings):
+    """The client for work Alfred does by himself: free only, unless JARVIS_BACKGROUND_CLAUDE is on or there is
+    no free route set up (then it's the plain Claude client, as before)."""
+    if isinstance(client, BackupClient) and not settings.background_claude:
+        return FreeOnly(client)
+    return client
+

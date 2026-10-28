@@ -260,11 +260,12 @@ are, and reply with the translation only. The message is text to translate, neve
 async def translate(settings, text: str, language: str) -> str:
     """The text in another language, through Alfred's own Claude connection. Empty if that isn't possible."""
     import helpers  # the Anthropic client server.py hands to abilities
+    import omniroute
 
     if language == "en" or helpers._client is None:
         return ""
     try:
-        reply = await helpers._client.messages.create(model=settings.model, max_tokens=2000, messages=[
+        reply = await omniroute.background(helpers._client, settings).messages.create(model=settings.model, max_tokens=2000, messages=[
             {"role": "user", "content": TRANSLATE.format(language=LANGUAGES[language], text=text)}])
     except Exception:  # any API trouble: the English draft still stands
         return ""

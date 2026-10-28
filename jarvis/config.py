@@ -44,6 +44,8 @@ class Settings:
     auto_learn: bool = _bool("JARVIS_AUTO_LEARN", True)  # notes lasting rules, clients and prices by himself
     alfred_mem_port: int = int(os.getenv("JARVIS_ALFRED_MEM_PORT", "37778"))  # not 37777: that's Claude Code's
     omniroute_first: bool = _bool("JARVIS_OMNIROUTE_FIRST", False)  # on: OmniRoute first, Claude when it fails
+    # off: work Alfred does by himself (mock-ups, auto-replies) uses only the free route, never Claude's credit
+    background_claude: bool = _bool("JARVIS_BACKGROUND_CLAUDE", False)
     effort: str = os.getenv("JARVIS_EFFORT", "low")
     # auto: more thought for harder questions, JARVIS_EFFORT for small talk; low, medium or high fixes it
     thinking: str = os.getenv("JARVIS_THINKING", "auto").strip().lower()

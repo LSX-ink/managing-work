@@ -238,3 +238,25 @@ async def test_the_route_that_answered_is_remembered():
     client.direct.beta.messages.error = None
     await client.beta.messages.create(**OPTS)
     assert client.last_route == "Claude"
+
+
+async def test_background_work_never_touches_claude():
+    client, direct, gateway = backup()
+    free = omniroute.background(client, replace(Settings(), background_claude=False))
+    assert await free.messages.create(**OPTS) == "backup"
+    assert await free.direct.messages.create(**OPTS) == "backup"
+    assert direct.messages.calls == [] and gateway.messages.calls[0]["model"] == "alfred"
+
+
+async def test_background_free_failure_raises_instead_of_spending_credit():
+    client, direct, _ = backup(gateway_error=status(anthropic.InternalServerError, 500))
+    with pytest.raises(anthropic.InternalServerError):
+        await omniroute.background(client, Settings()).messages.create(**OPTS)
+    assert direct.messages.calls == []
+
+
+def test_background_claude_setting_or_no_free_route_keeps_the_client():
+    client, _, _ = backup()
+    assert omniroute.background(client, replace(Settings(), background_claude=True)) is client
+    plain = FakeClient("claude")
+    assert omniroute.background(plain, Settings()) is plain
