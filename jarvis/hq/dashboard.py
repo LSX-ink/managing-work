@@ -28,8 +28,9 @@ MAX_DONE = 40
 # ---- business --------------------------------------------------------------------------------------
 
 def dm_file(day: date, folder: Path = DM_FOLDER) -> Path | None:
-    """Today's DM list: the rebuilt "(new designs)" one when there is one, else the morning list."""
-    for name in (f"Instagram DMs {day.isoformat()} (new designs).md", f"Instagram DMs {day.isoformat()}.md"):
+    """Today's DM list: the newest rebuild ("everything + 3D", then "new designs") when there is one, else the morning list."""
+    for name in (f"Instagram DMs {day.isoformat()} (everything + 3D).md", f"Instagram DMs {day.isoformat()} (new designs).md",
+                 f"Instagram DMs {day.isoformat()}.md"):
         if (folder / name).exists():
             return folder / name
     return None
