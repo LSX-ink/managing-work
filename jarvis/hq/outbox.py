@@ -287,10 +287,21 @@ IG_NOT_A_NAME = {"p", "reel", "reels", "explore", "accounts", "stories", "tv", "
                  "sharer", "share", "invites", "direct", "web", "embed"}
 
 
-async def instagram_exists(handle: str) -> bool:
+def same_business(title: str, handle: str, name: str) -> bool:
+    """The profile belongs to the business: its display name or @handle shares a real word with the business's name.
+    Owner, 28 Oct 2026: Fade Inn Salon's website linked a staff member's own account (@gabi_6987), not @fade_inn_salon."""
+    stop = {"the", "and", "barber", "barbers", "barbershop", "shop", "salon", "hair", "beauty", "studio", "of", "ltd", "co"}
+    words = {w for w in re.findall(r"[a-z0-9]+", name.lower()) if len(w) > 2 and w not in stop}
+    seen = re.sub(r"[^a-z0-9]+", " ", f"{title} {handle}".lower())
+    squashed = seen.replace(" ", "")
+    return not words or any(w in seen.split() or w in squashed for w in words)
+
+
+async def instagram_exists(handle: str, name: str = "") -> bool:
     """True only when instagram.com/<handle> is a real, live profile (owner, 26 Oct 2026: a dead @name went on the DM
     list; "you should have checked this before sending it to me"). Logged-out Instagram says "Profile isn't available"
-    for names that don't exist; a real one shows "<Name> (@handle)" in the title."""
+    for names that don't exist; a real one shows "<Name> (@handle)" in the title. With the business's name, the profile
+    must also be theirs (same_business), not someone else's account their website happens to link."""
     from playwright.async_api import async_playwright
     try:
         async with async_playwright() as pw:
@@ -300,7 +311,8 @@ async def instagram_exists(handle: str) -> bool:
             await pg.wait_for_timeout(3000)
             title = await pg.title()
             await b.close()
-        return f"(@{handle.strip('@').lower()})" in title.lower()
+        live = f"(@{handle.strip('@').lower()})" in title.lower()
+        return live and (not name or same_business(title, handle, name))
     except Exception:
         return False
 

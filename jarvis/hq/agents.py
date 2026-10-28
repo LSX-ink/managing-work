@@ -244,7 +244,7 @@ async def dm_list(ctx: Ctx, n: int) -> int:
             continue
         ok = b.get(f"ig.ok.{handle.lower()}")
         if ok is None:  # never put a dead @name on the owner's list (26 Oct 2026): check it's a real, live profile
-            ok = await outbox.instagram_exists(handle)
+            ok = await outbox.instagram_exists(handle, p["name"])   # live AND theirs
             b.set(f"ig.ok.{handle.lower()}", ok)
         if not ok:
             b.log("closer", f"skipped {p['name']}: @{handle} isn't a live Instagram profile", "warn")

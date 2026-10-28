@@ -413,7 +413,7 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     if any("folder missing" in i for i in issues):  # Cloudflare sometimes needs a second push before new files show
         await asyncio.to_thread(outbox.deploy_site)
         issues = await check_live(slug)
-    ig_ok = bool(instagram) and await outbox.instagram_exists(instagram)
+    ig_ok = bool(instagram) and await outbox.instagram_exists(instagram, p["name"])   # live AND theirs
     return {"slug": slug, "name": p["name"], "link": link, "layout": layout, "issues": issues, "instagram": instagram,
             "instagram_ok": ig_ok, "dm": outbox.dm_text(settings, p, link), "review": notes,
             "audit": {k: audit.get(k) for k in ("score", "grade") if isinstance(audit, dict)}}

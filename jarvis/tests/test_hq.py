@@ -88,3 +88,11 @@ async def test_the_morning_list_uses_the_premium_designer(monkeypatch, tmp_path)
     assert await outbox.make_mockup(Ctx(), p) == "https://k.test/m/kamo-v3/"
     assert asked == [("Kamo Barbers, Newcastle", "https://kamo.test", "kamo")]
     assert Ctx.brain.get("strong_site.7") is True  # their own site already rates well: Blade puts them last
+
+
+def test_an_instagram_profile_must_belong_to_the_business():
+    from hq import outbox
+    assert outbox.same_business("Fade Inn Salon (@fade_inn_salon) • Instagram", "fade_inn_salon", "FADE INN SALON")
+    assert not outbox.same_business("Gabi (@gabi_6987) • Instagram photos and videos", "gabi_6987", "FADE INN SALON")
+    assert outbox.same_business("KAMO (@kamo.barbersnewcastle)", "kamo.barbersnewcastle", "Kamo Barbers Newcastle")
+    assert outbox.same_business("Capello Barbers (@capellobarbers)", "CAPELLOBARBERS", "Capello Barbershop Whitchurch Road")
