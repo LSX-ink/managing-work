@@ -6,10 +6,10 @@ live, not interested, opted out), the channel and date of each message the user 
 kinetic_sales records "drafted" by itself when it writes a first message, refuses to draft for anyone who opted out or
 said no, and warns instead of drafting when a lead has already been messaged, so nobody gets the same pitch twice.
 
-follow_ups lists leads who haven't replied and are due a follow-up: the first FOLLOW_UP_DAYS (3) days after the first
-message, the second and last LAST_FOLLOW_UP_DAYS (7) days after the first message. That's three messages at most, then
-Alfred leaves them be. follow_up drafts the next one in the lead's language with the English underneath and the same
-opt-out line as the first message: a polite nudge with the payment terms first, then a short last-chance note.
+follow_ups lists leads who haven't replied and are due a follow-up: FOLLOW_UP_SCHEDULE days (3, 7, 14 and 21) after
+the first message. That's four follow-ups (five messages) at most, then Alfred leaves them be; a reply or a "no" stops
+them at once (owner, 28 Oct 2026). follow_up drafts the next one in the lead's language with the English underneath and
+the same opt-out line as the first message: polite nudges with the payment terms, then a short last-chance note.
 
 review_request: for a client marked won or live, a Google review request (with the user's review link from
 JARVIS_KINETIC_REVIEW_LINK) and a referral note (recommend a business: when they go live you get a free month of
@@ -39,9 +39,11 @@ FINDER_STATUS = {"contacted": "contacted", "won": "client", "live": "client", "n
                  "opted out": "not interested"}  # what the client finder's own status becomes
 SUMMARY_GROUPS = {"New": ("new",), "Drafted": ("drafted",), "Contacted": ("contacted",),
                   "Replied": ("replied", "interested"), "Won": CLIENTS, "No": CLOSED}  # cards show 8 columns at most
-FOLLOW_UP_DAYS = 3  # the first follow-up: 3 days after the first message
-LAST_FOLLOW_UP_DAYS = 7  # the second and last: 7 days after the first message
-MAX_MESSAGES = 3  # the first message and two follow-ups, then stop
+FOLLOW_UP_SCHEDULE = (3, 7, 14, 21)  # days after the first message; owner, 28 Oct 2026: stop only at the 4th
+FOLLOW_UP_DAYS = FOLLOW_UP_SCHEDULE[0]  # the first follow-up
+LAST_FOLLOW_UP_DAYS = FOLLOW_UP_SCHEDULE[-1]  # the fourth and last
+FOLLOW_UPS = len(FOLLOW_UP_SCHEDULE)
+MAX_MESSAGES = FOLLOW_UPS + 1  # the first message and four follow-ups, then stop
 REVIEW_BATCH = 5
 REMINDED = "kinetic-outreach-reminded.json"
 REMIND_HOUR = 9
@@ -100,11 +102,15 @@ def first_sent(row: dict) -> date | None:
 
 
 def next_due(row: dict) -> date | None:
-    """When the next follow-up is due (3 days after the first message, then 7), or None when there isn't one."""
+    """When the next follow-up is due (3, 7, 14 and 21 days after the first message), or None when there isn't one."""
     first, n = first_sent(row), row.get("messages", 0)
     if not first or not 1 <= n < MAX_MESSAGES:
         return None
-    return first + timedelta(days=FOLLOW_UP_DAYS if n == 1 else LAST_FOLLOW_UP_DAYS)
+    return first + timedelta(days=FOLLOW_UP_SCHEDULE[n - 1])
+
+
+def days_text() -> str:
+    return ", ".join(map(str, FOLLOW_UP_SCHEDULE[:-1])) + f" and {FOLLOW_UP_SCHEDULE[-1]}"
 
 
 def is_last(row: dict) -> bool:
@@ -190,15 +196,16 @@ def track(settings: Settings, name: str, prospect: dict | None, status: str, cha
             first = first_sent(row)
             if row["messages"] == 1:
                 note = (f" If they haven't replied by {st.short(first + timedelta(days=FOLLOW_UP_DAYS))}, I'll remind "
-                        "you about a polite follow-up, and about a last short one on "
+                        f"you about a polite follow-up; {FOLLOW_UPS} in all, the last on "
                         f"{st.short(first + timedelta(days=LAST_FOLLOW_UP_DAYS))}.")
-            elif row["messages"] == MAX_MESSAGES - 1:
-                note = (" That's their first follow-up. If they still haven't replied by "
-                        f"{st.short(first + timedelta(days=LAST_FOLLOW_UP_DAYS))}, I'll remind you about one last "
-                        "short note.")
+            elif row["messages"] < MAX_MESSAGES:
+                n = row["messages"] - 1
+                note = (f" That's follow-up {n} of {FOLLOW_UPS}. If they still haven't replied by "
+                        f"{st.short(next_due(row))}, I'll remind you about "
+                        f"{'one last short note' if is_last(row) else 'the next one'}.")
             elif row["messages"] == MAX_MESSAGES:
-                note = (" That's their last follow-up: three messages in all. If they don't reply, I'll leave them "
-                        "be.")
+                note = (f" That's their last follow-up: {MAX_MESSAGES} messages in all. If they don't reply, I'll "
+                        "leave them be.")
             elif not same:
                 note = f" That's {row['messages']} messages now; best to leave them be unless they reply."
     else:
@@ -311,14 +318,14 @@ def due_name(r: dict) -> str:
 def follow_ups(settings: Settings, args: dict) -> screen.Shown | str:
     due = due_rows(settings)
     if not due:
-        return (f"Nobody is due a follow-up. A lead who hasn't replied gets a polite follow-up {FOLLOW_UP_DAYS} days "
-                f"after your first message and a last short one at {LAST_FOLLOW_UP_DAYS} days, then I leave them be.")
-    rows = [[r["name"], "Last" if is_last(r) else "First", where_(r), r.get("channel") or "-",
+        return (f"Nobody is due a follow-up. A lead who hasn't replied gets follow-ups on days "
+                f"{days_text()} after your first message, the last a short one, then I leave them be.")
+    rows = [[r["name"], f"{r.get('messages', 1)} of {FOLLOW_UPS}" + (" (last)" if is_last(r) else ""), where_(r), r.get("channel") or "-",
              st.short(first_sent(r)), f"{(st.today() - first_sent(r)).days} days"] for r in due]
     n = len(due)
     return st.table(f"{n} lead{'s are' if n != 1 else ' is'} due a follow-up: " + ", ".join(due_name(r) for r in due[:5])
-                    + (" and more" if n > 5 else "") + f". Two follow-ups at most: day {FOLLOW_UP_DAYS} and day "
-                    f"{LAST_FOLLOW_UP_DAYS}. I'll draft them, you send them.", "Due a follow-up",
+                    + (" and more" if n > 5 else "") + f". {FOLLOW_UPS} follow-ups at most: days {days_text()}. "
+                    "I'll draft them, you send them.", "Due a follow-up",
                     ["Lead", "Follow-up", "Country", "Channel", "First message", "Since"], rows,
                     [{"label": "Draft follow-up", "say": f"Draft a follow-up for {due[0]['name']}."}])
 
@@ -360,7 +367,7 @@ def follow_up_draft(settings: Settings, args: dict) -> dict:
                         "the first message."}
     if row.get("messages", 0) >= MAX_MESSAGES:
         return {"stop": f"{name} has had {row['messages']} messages with no reply, so I'll leave them be. "
-                        "Two follow-ups is the limit."}
+                        f"{FOLLOW_UPS} follow-ups is the limit."}
     sent = first_sent(row) or st.today()
     last = is_last(row)
     due = next_due(row) or st.today()
@@ -398,6 +405,11 @@ def follow_up_draft(settings: Settings, args: dict) -> dict:
                  "If you'd ever like a few free ideas for it, just reply \"yes\".")
         price = ""
         bow_out = "If I don't hear back, I'll take it that now isn't the right time, and I won't message again."
+    elif row.get("messages", 0) >= 2:  # the 2nd and 3rd follow-ups: a different opening each time
+        nudge = (f"I'm checking in once more about {name}'s website, in case my earlier {first}s got buried."
+                 if row.get("messages", 0) == 2 else
+                 f"A quick note about {name}'s website, as I know my earlier {first}s may have landed at a busy time.")
+        bow_out = "If now isn't the right time, that's absolutely fine."
     else:
         nudge = f"I'm just following up on my {first} from {st.short(sent)} about {name}'s website. I know how busy " \
                 "running a business is, so I'll keep this short."
@@ -455,8 +467,8 @@ async def follow_up(settings: Settings, args: dict) -> screen.Shown | str:
             st.save(settings, st.OUTREACH, rows)
     await asyncio.to_thread(keep)
     which = ("It's their last follow-up; once you've sent it, tell me and I'll leave them be unless they reply."
-             if d["last"] else f"It's the first of two follow-ups; once you've sent it, tell me, and if they still "
-                               f"don't reply I'll remind you about a last short note on day {LAST_FOLLOW_UP_DAYS}.")
+             if d["last"] else f"It's one of {FOLLOW_UPS} follow-ups; once you've sent it, tell me, and if they still "
+                               f"don't reply I'll remind you about the next (the last on day {LAST_FOLLOW_UP_DAYS}).")
     kind = "a short last follow-up" if d["last"] else "a polite follow-up"
     return st.text_card(f"I drafted {kind} {channel} for {name}{said} and saved it in "
                         f"{st.where(settings, path)}. {st.NOT_SENT} {which}", f"Follow-up: {name}", body, [
@@ -609,9 +621,9 @@ def tool_definitions() -> list[dict]:
                        "interested, or opted out (\"they said no thanks\"); founding true for a founding client. "
                        "Drafting a first message with web_design_sales outreach records "
                        "drafted by itself. leads: the list (filter by status or country). follow_ups: leads due a "
-                       f"follow-up: the first {FOLLOW_UP_DAYS} days after the first message, the last "
-                       f"{LAST_FOLLOW_UP_DAYS} days after it. follow_up: the next follow-up draft in their language "
-                       "(a polite nudge, then a short last-chance note); three messages in all, then stop. summary: "
+                       f"follow-up: days {days_text()} after the first message. follow_up: the next follow-up "
+                       "draft in their language (polite nudges, then a short last-chance note); "
+                       f"{FOLLOW_UPS} follow-ups at most, then stop; a reply or a no stops them. summary: "
                        "counts per status and per country. review_request: for a won or live client, a Google review "
                        "request (founding clients: phrased around their £100-off-for-a-review agreement) and a "
                        "referral note (a free month of hosting and care when a business they recommend goes live). "

@@ -507,7 +507,7 @@ def test_drafts_are_recorded_and_nobody_is_messaged_twice(s):
     assert row["prospect"] == st.find_prospect(st.rows_of(s, st.PROSPECTS), "Joe's Barbers")["id"]
     said = track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")
     assert said.startswith("Noted: you messaged Joe's Barbers by email.") and "a polite follow-up" in said
-    assert "a last short one on" in said
+    assert "4 in all, the last on" in said
     assert lead(s, "Joe's Barbers")["messages"] == 1
     track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")  # said twice: one message
     assert lead(s, "Joe's Barbers")["messages"] == 1
@@ -544,7 +544,8 @@ def test_finder_mark_keeps_the_tracker_in_step(s):
     assert st.find_prospect(st.rows_of(s, st.PROSPECTS), "Joe's Barbers")["status"] == "client"
 
 
-def test_two_follow_ups_at_three_and_seven_days_then_stop(s):
+def test_four_follow_ups_at_3_7_14_and_21_days_then_stop(s):
+    # owner, 28 Oct 2026: follow-ups only stop at the 4th, or when they reply or say no
     finder(s, action="find", town="Stockport")
     sales(s, action="my_details", owner="Lee")
     sales(s, action="outreach", client="Joe's Barbers", contact_name="Joe")
@@ -552,13 +553,13 @@ def test_two_follow_ups_at_three_and_seven_days_then_stop(s):
     track(s, action="mark", business="Sal's Cafe", status="contacted", channel="phone", date=ago(2))
     due = track(s, action="follow_ups")
     assert "1 lead is due a follow-up: Joe's Barbers." in due and [r[0] for r in due.card["rows"]] == ["Joe's Barbers"]
-    assert due.card["rows"][0][1] == "First" and "day 3 and day 7" in due
+    assert due.card["rows"][0][1] == "1 of 4" and "days 3, 7, 14 and 21" in due
     assert "Give them until" in track(s, action="follow_up", business="Sal's Cafe")
     assert "haven't told me you've messaged Bloom" in track(s, action="follow_up", business="Bloom")
     out = track(s, action="follow_up", business="Joe's Barbers")
     body = out.card["text"]
     assert out.card["title"] == "Follow-up: Joe's Barbers" and "Nothing has been sent" in out
-    assert "a polite follow-up" in out and "first of two follow-ups" in out
+    assert "a polite follow-up" in out and "one of 4 follow-ups" in out
     assert body.startswith("Subject: Following up: Joe's Barbers's website") and "Hi Joe," in body
     assert "following up on my email from" in body and "Alfred, Kinetic Web Designs" in body and "Lee" not in body
     assert "half when we start building, half once everything's complete" in body and body.endswith(world.OPT_OUT)
@@ -568,27 +569,46 @@ def test_two_follow_ups_at_three_and_seven_days_then_stop(s):
     plain = track(s, action="follow_up", business="Joe's Barbers", channel="dm", price=False).card["text"]
     assert "Websites start from" not in plain and plain.endswith(world.OPT_OUT)
     said = track(s, action="mark", business="Joe's Barbers", status="contacted", channel="email")
-    assert "That's their first follow-up" in said and lead(s, "Joe's Barbers")["messages"] == 2
-    assert "Nobody is due a follow-up" in track(s, action="follow_ups")  # the last one waits for day 7
-    wait = track(s, action="follow_up", business="Joe's Barbers")
-    assert "Give them until" in wait and "their last follow-up" in wait
+    assert "That's follow-up 1 of 4" in said and lead(s, "Joe's Barbers")["messages"] == 2
+    assert "Nobody is due a follow-up" in track(s, action="follow_ups")  # the next waits for day 7
+    assert "Give them until" in track(s, action="follow_up", business="Joe's Barbers")
     assert lead(s, "Joe's Barbers")["contacted"] == ago(3)  # the first message's date
+
+    def days_on(n: int, channel: str) -> str:  # move the first message back n days, then send the due follow-up
+        rows = st.rows_of(s, st.OUTREACH)
+        row = next(r for r in rows if r["name"] == "Joe's Barbers")
+        row["contacted"], row["last_contacted"] = ago(n), ago(1)
+        st.save(s, st.OUTREACH, rows)
+        return track(s, action="mark", business="Joe's Barbers", status="contacted", channel=channel)
+
     rows = st.rows_of(s, st.OUTREACH)
-    next(r for r in rows if r["name"] == "Joe's Barbers")["contacted"] = ago(7)  # four days on
+    next(r for r in rows if r["name"] == "Joe's Barbers")["contacted"] = ago(7)
+    st.save(s, st.OUTREACH, rows)
+    second = track(s, action="follow_up", business="Joe's Barbers").card["text"]
+    assert "checking in once more" in second and "Websites start from" in second
+    assert "That's follow-up 2 of 4" in days_on(7, "dm")
+    assert "Nobody is due a follow-up" in track(s, action="follow_ups")
+    rows = st.rows_of(s, st.OUTREACH)
+    next(r for r in rows if r["name"] == "Joe's Barbers")["contacted"] = ago(14)
+    st.save(s, st.OUTREACH, rows)
+    assert "may have landed at a busy time" in track(s, action="follow_up", business="Joe's Barbers").card["text"]
+    assert "That's follow-up 3 of 4" in days_on(14, "email")
+    rows = st.rows_of(s, st.OUTREACH)
+    next(r for r in rows if r["name"] == "Joe's Barbers")["contacted"] = ago(21)
     st.save(s, st.OUTREACH, rows)
     due = track(s, action="follow_ups")
-    assert "Joe's Barbers (last one)" in due and due.card["rows"][0][1] == "Last"
+    assert "Joe's Barbers (last one)" in due and due.card["rows"][0][1] == "4 of 4 (last)"
     last = track(s, action="follow_up", business="Joe's Barbers")
     body = last.card["text"]
     assert "short last follow-up" in last and "It's their last follow-up" in last
     assert body.startswith("Subject: Last note: Joe's Barbers's website") and "One last note from me" in body
     assert "mock-up I made for you is still yours" in body and "won't message again" in body
     assert "Websites start from" not in body and body.endswith(world.OPT_OUT) and "Lee" not in body
-    said = track(s, action="mark", business="Joe's Barbers", status="contacted", channel="dm")  # not the same message
-    assert "three messages in all" in said and lead(s, "Joe's Barbers")["messages"] == 3 == ko.MAX_MESSAGES
+    said = days_on(21, "dm")
+    assert "5 messages in all" in said and lead(s, "Joe's Barbers")["messages"] == 5 == ko.MAX_MESSAGES
     assert "Nobody is due a follow-up" in track(s, action="follow_ups")
-    assert "Two follow-ups is the limit" in track(s, action="follow_up", business="Joe's Barbers")
-    assert "3 messages already" in sales(s, action="outreach", client="Joe's Barbers")
+    assert "4 follow-ups is the limit" in track(s, action="follow_up", business="Joe's Barbers")
+    assert "5 messages already" in sales(s, action="outreach", client="Joe's Barbers")
     track(s, action="mark", business="Joe's Barbers", status="replied")
     assert "already replied" in track(s, action="follow_up", business="Joe's Barbers")
     track(s, action="mark", business="Joe's Barbers", status="opted out")
@@ -596,15 +616,23 @@ def test_two_follow_ups_at_three_and_seven_days_then_stop(s):
         track(s, action="follow_up", business="Joe's Barbers")
 
 
+def test_a_no_stops_the_follow_ups_before_the_fourth(s):
+    rows = [{"name": "N", "status": "not interested", "messages": 2, "contacted": ago(7), "last_contacted": ago(4)},
+            {"name": "R", "status": "replied", "messages": 3, "contacted": ago(14), "last_contacted": ago(7)},
+            {"name": "Y", "status": "contacted", "messages": 3, "contacted": ago(14), "last_contacted": ago(7)}]
+    st.save(s, st.OUTREACH, [{"id": i, **r} for i, r in enumerate(rows, 1)])
+    assert [r["name"] for r in ko.due_rows(s)] == ["Y"]  # only the one who hasn't answered gets their 3rd
+
+
 def test_follow_up_due_dates_count_from_the_first_message(s):
     rows = [{"name": "A", "status": "contacted", "messages": 1, "contacted": ago(2), "last_contacted": ago(2)},
             {"name": "B", "status": "contacted", "messages": 1, "contacted": ago(3), "last_contacted": ago(3)},
             {"name": "C", "status": "contacted", "messages": 2, "contacted": ago(6), "last_contacted": ago(1)},
             {"name": "D", "status": "contacted", "messages": 2, "contacted": ago(7), "last_contacted": ago(4)},
-            {"name": "E", "status": "contacted", "messages": 3, "contacted": ago(20), "last_contacted": ago(13)},
+            {"name": "E", "status": "contacted", "messages": 5, "contacted": ago(30), "last_contacted": ago(9)},
             {"name": "F", "status": "replied", "messages": 1, "contacted": ago(9), "last_contacted": ago(9)}]
     st.save(s, st.OUTREACH, [{"id": i, **r} for i, r in enumerate(rows, 1)])
-    assert [r["name"] for r in ko.due_rows(s)] == ["B", "D"]  # B's first (day 3) and D's last (day 7) are due today
+    assert [r["name"] for r in ko.due_rows(s)] == ["B", "D"]  # B's first (day 3) and D's second (day 7) are due today
     assert ko.next_due(rows[0]) == st.today() + timedelta(days=1) and ko.next_due(rows[4]) is None
     assert [r["name"] for r in ko.due_rows(s, st.today() + timedelta(days=1))] == ["B", "D", "A", "C"]
 

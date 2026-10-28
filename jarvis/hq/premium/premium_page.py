@@ -54,7 +54,9 @@ def build(src: Path, out: Path) -> None:
         if c.get("logo_light"):  # a dark logo on a dark page: knock out a white background, then paint it in the ink colour
             tone = col.get("text", col["ink"]) if c.get("layout") == "editorial" else col["ink"]  # dark logo on the light editorial page
             ink = tuple(int(tone[i:i + 2], 16) for i in (1, 3, 5))
-            white_bg = im.getpixel((1, 1))[3] > 200 and min(im.getpixel((1, 1))[:3]) > 235
+            w, h = im.size  # judge the background by the whole border, not one corner (a thin dark frame fooled it)
+            edge = [im.getpixel((x, y)) for x in range(w) for y in (0, h - 1)] + [im.getpixel((x, y)) for y in range(h) for x in (0, w - 1)]
+            white_bg = sum(1 for r, g, b, a in edge if a > 200 and min(r, g, b) > 235) > len(edge) * .5
             px = [(*ink, 0 if (white_bg and r > 235 and g > 235 and b > 235) else a) for r, g, b, a in im.getdata()]
             im.putdata(px)
         im = im.crop(im.getbbox() or (0, 0, *im.size)); im.save(out / "logo.png"); logo = "logo.png"
@@ -82,6 +84,7 @@ def build(src: Path, out: Path) -> None:
         html = LAYOUTS[c["layout"]]({"c": c, "col": col, "logo": logo, "hero": hero, "exp": exp, "gal": gal, "book": book, "book_label": book_label,
                                        "lat": lat, "lng": lng, "fonts": FONTS[c.get("fonts", c["layout"])]})
         from compare import add as add_compare; html = add_compare(html, c, src, out)
+        from depth3d import add as add_3d; html = add_3d(html, c, out)  # only when the config asks for it
         (out / "index.html").write_text(html, encoding="utf-8")
         print("written", c["layout"], len(html) // 1024, "KB,", len(photos), "photos")
         return
@@ -92,7 +95,7 @@ def build(src: Path, out: Path) -> None:
 <style>
 :root{{--bg:{col['bg']};--panel:{col['panel']};--ink:{col['ink']};--muted:{col['muted']};--gold:{col['gold']};--two:{col.get('second', col['gold'])};--line:color-mix(in srgb,var(--gold) 22%,transparent);
 --head:"Cinzel",Georgia,serif;--serif:"Cormorant Garamond",Georgia,serif;--body:"Manrope",system-ui,sans-serif}}
-*{{box-sizing:border-box}}html{{scroll-behavior:smooth}}body{{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 var(--body);overflow-x:hidden}}
+*{{box-sizing:border-box}}html{{scroll-behavior:smooth}}html{{overflow-x:clip}}body{{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 var(--body);overflow-x:clip}}
 body::before{{content:"";position:fixed;inset:0;background-image:{pattern};pointer-events:none;z-index:0}}
 img{{max-width:100%;display:block}}a{{color:inherit}}.wrap{{width:min(1180px,100% - 40px);margin:0 auto;position:relative;z-index:1}}
 .kick{{font:600 .72rem var(--body);letter-spacing:.34em;text-transform:uppercase;color:var(--two);margin:0 0 14px}}
@@ -204,6 +207,7 @@ const cv=document.getElementById('dust'),cx=cv.getContext('2d');let W,H,P=[];fun
 const gc=getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(),g2=getComputedStyle(document.documentElement).getPropertyValue('--two').trim();(function d(){{cx.clearRect(0,0,W,H);P.forEach((p,i)=>{{cx.fillStyle=i%3?gc:g2;p.y-=p.s;p.x+=Math.sin(p.y/60)*.2;if(p.y<-5){{p.y=H+5;p.x=Math.random()*W}}cx.globalAlpha=p.o*(.5+.5*Math.sin(p.y/40));cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fill()}});requestAnimationFrame(d)}})();
 </script></body></html>"""
     from compare import add as add_compare; html = add_compare(html, c, src, out)
+    from depth3d import add as add_3d; html = add_3d(html, c, out)  # only when the config asks for it
     (out / "index.html").write_text(html, encoding="utf-8")
     print("written", len(html) // 1024, "KB,", len(photos), "photos")
 

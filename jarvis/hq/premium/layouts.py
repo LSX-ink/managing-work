@@ -28,7 +28,7 @@ document.querySelectorAll('.wr').forEach(h=>{h.innerHTML=h.textContent.split(' '
 """
 
 BASE_CSS = """
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 var(--body);overflow-x:hidden}
+*{box-sizing:border-box}html{scroll-behavior:smooth;overflow-x:clip}body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 var(--body);overflow-x:clip}
 img{max-width:100%;display:block}a{color:inherit}.wrap{width:min(1200px,100% - 40px);margin:0 auto;position:relative}
 .rv{opacity:0;transform:translateY(36px);transition:opacity 1s,transform 1s cubic-bezier(.2,.8,.2,1)}.rv.in{opacity:1;transform:none}
 .wr span{display:inline-block;overflow:hidden;vertical-align:top}.wr i{display:inline-block;font-style:inherit;transform:translateY(105%);transition:transform .9s cubic-bezier(.2,.8,.2,1)}.wr.in i{transform:none}
@@ -166,7 +166,7 @@ p.l{color:var(--muted);max-width:520px;font-size:1.05rem}
 .map{height:300px;margin-top:20px}footer{padding:40px 7vw;color:var(--muted);font-size:.8rem}
 .cur{position:fixed;width:12px;height:12px;border-radius:50%;background:var(--gold);pointer-events:none;z-index:99;transform:translate(-50%,-50%);transition:width .3s,height .3s,opacity .3s;mix-blend-mode:difference;left:-40px}
 @media (max-width:900px){.media{position:relative;width:100%;height:62svh}.media::after{background:linear-gradient(180deg,transparent 50%,var(--bg))}main{margin:0}main>section{min-height:auto;padding:80px 22px}
-.top{top:auto;bottom:16px;right:16px}.brandmark{position:absolute}.cur{display:none}.thumbs{grid-template-columns:repeat(2,1fr)}}
+.top{top:auto;bottom:16px;right:16px;transform:translateY(170%);transition:transform .5s cubic-bezier(.2,.8,.2,1)}.top.on{transform:none}.top{}.brandmark{position:absolute}.cur{display:none}.thumbs{grid-template-columns:repeat(2,1fr)}}
 """
 SPLIT_JS = """
 const imgs=[...document.querySelectorAll('.media img')],tag=document.querySelector('.media .tag'),bar=document.querySelector('.media .bar'),secs=[...document.querySelectorAll('main>section')];
@@ -175,6 +175,7 @@ secs.forEach(s=>so2.observe(s));addEventListener('scroll',()=>{bar.style.height=
 const cu=document.querySelector('.cur');addEventListener('pointermove',ev=>{cu.style.left=ev.clientX+'px';cu.style.top=ev.clientY+'px'});
 document.querySelectorAll('a,summary,button').forEach(x=>{x.addEventListener('pointerenter',()=>{cu.style.width=cu.style.height='54px'});x.addEventListener('pointerleave',()=>{cu.style.width=cu.style.height='12px'})});
 document.querySelector('.acc details').open=true;
+const tp=document.querySelector('.top'),tpOn=()=>tp&&tp.classList.toggle('on',scrollY>innerHeight*.6);addEventListener('scroll',tpOn,{passive:true});tpOn();
 """
 
 
@@ -212,7 +213,7 @@ nav img{height:34px;width:auto}nav .nm{font:800 1.1rem var(--head)}nav .ln{displ
 .go{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:999px;background:var(--gold);color:var(--bg);font:700 .85rem var(--body);text-decoration:none;transition:transform .2s}.go:hover{transform:scale(1.05)}
 .go.alt{background:var(--ink);color:var(--bg)}
 .hero{min-height:100svh;padding:130px 22px 40px;display:grid;align-content:center;position:relative;overflow:hidden}
-.hero h1{font:800 clamp(2.8rem,var(--h1s,13vw),13rem)/.88 var(--head);max-width:72%;margin:0;letter-spacing:-.04em;text-transform:uppercase}.hero h1 .o{-webkit-text-stroke:2px var(--ink);color:transparent}.hero h1 .c{color:var(--gold)}
+.hero h1{font:800 clamp(2.8rem,var(--h1s,13vw),13rem)/.88 var(--head);max-width:72%;margin:0;letter-spacing:-.04em;text-transform:uppercase}@media (max-width:900px){.hero h1{font-size:min(clamp(2.2rem,var(--h1s,13vw),13rem),var(--h1p,13vw))}}/* on a phone the longest word sets the size, so none runs off the screen (Paris Barber, 28 Oct 2026) */.hero h1 .o{-webkit-text-stroke:2px var(--ink);color:transparent}.hero h1 .c{color:var(--gold)}
 .hero .row{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:end;margin-top:36px}.hero p{max-width:480px;color:var(--muted);font-size:1.1rem;margin:0}
 .hero .ph{position:absolute;right:6vw;top:18vh;width:min(30vw,380px);aspect-ratio:3/4;border-radius:24px;overflow:hidden;transform:rotate(6deg);box-shadow:0 30px 80px rgba(0,0,0,.4);z-index:-1}
 .hero .ph img{width:100%;height:100%;object-fit:cover}
@@ -255,7 +256,7 @@ def bold(a):
     circ = e((c["book_label"] if c.get("book_label") else "Book now").upper() + " • " + c["short"].upper() + " • ")
     return (head(a) + "}" + BASE_CSS + BOLD_CSS + "</style></head><body>"
             f'<nav><a href="#top">{logo}</a><span class="ln"><a href="#services">Services</a><a href="#work">Work</a><a href="#reviews">Reviews</a><a href="#visit">Visit</a></span><a class="go" href="{e(a["book"])}">{e(a["book_label"])}</a></nav>'
-            f'<header class="hero" id="top" style="--h1s:{min(13, round(125 / max(len(x) for x in h1), 1))}vw"><div class="ph"><img src="{a["hero"][0]}" alt=""></div><h1><span class="wr">{e(h1[0])}</span><br><span class="o">{e(h1[1])}</span><br><span class="c">{e(h1[2])}</span></h1>'
+            f'<header class="hero" id="top" style="--h1s:{min(13, round(125 / max(len(x) for x in h1), 1))}vw;--h1p:{min(13, round(88 / max(len(w) for x in h1 for w in x.split()), 1))}vw"><div class="ph"><img src="{a["hero"][0]}" alt=""></div><h1><span class="wr">{e(h1[0])}</span><br><span class="o">{e(h1[1])}</span><br><span class="c">{e(h1[2])}</span></h1>'
             f'<div class="row"><p class="rv">{e(c["lead"])}</p><div class="rv" style="display:flex;gap:10px;flex-wrap:wrap"><a class="go" href="{e(a["book"])}">{e(a["book_label"])}</a><a class="go alt" href="#services">Services</a></div></div>'
             f'<svg class="spin" viewBox="0 0 140 140"><defs><path id="cp" d="M70,70 m-55,0 a55,55 0 1,1 110,0 a55,55 0 1,1 -110,0"/></defs><text><textPath href="#cp">{circ}</textPath></text></svg><span></span></header>'
             f'<div class="mq"><div><span>{words}</span><span>{words}</span></div></div>'

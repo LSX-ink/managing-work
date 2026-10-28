@@ -7,18 +7,21 @@ Guard rails, all enforced here, before anything is sent:
 - only where a cold email is allowed: kinetic_world.cold_email_ok (UK PECR: limited companies only; never in the
   countries where cold email needs consent)
 - never to anyone opted out, not interested, already talking to us, or already emailed today
-- at most settings.send_per_day emails a day (default 15), one per run, only Monday to Saturday 09:00 to 17:30 UK
+- settings.send_per_day emails a day (default 15): one per run, more when behind the day's pace so the limit is
+  always reached; leads with no email don't count; only Monday to Saturday 09:00 to 17:30 UK
 - every email: the business's real problem, the free mock-up as a link, "See your design before you pay anything",
   half when we start building and half once complete, signed Alfred, an opt-out line, no placeholders, no Klarna
 - then the free AI reads it as a strict editor and must answer APPROVE
 - replies are watched: an opt-out ("no thanks", "unsubscribe", "stop") marks them opted out for good; any other
   reply marks them replied (no more follow-ups) and puts them on the owner's list
-Sent emails go from Alfred's own address and are recorded in the outreach tracker, so follow-ups come at day 3 and 7.
+Sent emails go from Alfred's own address and are recorded in the outreach tracker, so follow-ups come at days 3, 7, 14
+and 21 (four, then stop; a reply or a no stops them sooner).
 """
 
 import asyncio
 import email.utils
 import json
+import math
 import re
 import subprocess
 from datetime import datetime
@@ -58,6 +61,12 @@ def uk_now() -> datetime:
 
 def in_hours(now: datetime) -> bool:
     return now.weekday() < 6 and (9, 0) <= (now.hour, now.minute) <= (17, 30)
+
+
+def on_pace(cap: int, now: datetime) -> int:
+    """How many emails should be out by now for the day's cap to be reached by 17:00, spread evenly from 9:00."""
+    done = (now.hour * 60 + now.minute - 9 * 60) / (8 * 60)
+    return max(1, math.ceil(cap * min(1.0, max(0.0, done))))
 
 
 # ---- finding who to email ------------------------------------------------------------------------
@@ -248,10 +257,30 @@ async def make_mockup(ctx, p: dict) -> str:
     from hq import designer
     if mockup.trade_for(p) == "business" and sales.store_lead(p):
         return await asyncio.to_thread(publish_mockup, ctx.settings, p, False)
+    if ctx.brain.get("settings.premium_mockups", True):  # owner, 27-28 Oct 2026: every mock-up uses all the skills
+        return await premium_mockup(ctx, p)
     ok, _ = await designer.build(ctx, p, LIVE / "m" / slug(p["name"]), st.business(ctx.settings)["name"])
     if ok:
         ctx.brain.set(f"iris.{p['id']}", mockup.VERSION)
     return f"{SITE}/m/{slug(p['name'])}/" if ok else ""
+
+
+async def premium_mockup(ctx, p: dict) -> str:
+    """The premium designer (hq/premium/auto.py) for the morning list: research, every design skill and the website kit,
+    the design review, 3D, before/after, online and checked. Its link, or "" when a check failed. A lead whose own site
+    already rates well is marked strong_site, as Iris did, so Blade puts them last."""
+    import sys
+    import omniroute
+    sys.path.insert(0, str(Path(__file__).parent / "premium"))
+    import auto
+    r = await auto.make(f"{p['name']}, {p.get('town') or p.get('address') or ''}".strip(", "), ctx.settings,
+                        omniroute.make_client(ctx.settings), p.get("website") or "", (p.get("instagram") or "").lstrip("@"))
+    if (r.get("audit") or {}).get("grade") == "good":
+        ctx.brain.set(f"strong_site.{p['id']}", True)
+    if r["issues"]:
+        ctx.brain.log("closer", f"{p['name']}: mock-up held back, checks found {'; '.join(r['issues'][:3])}", "warn")
+        return ""
+    return r["link"]
 
 
 def deploy_site() -> None:
@@ -267,10 +296,21 @@ IG_NOT_A_NAME = {"p", "reel", "reels", "explore", "accounts", "stories", "tv", "
                  "sharer", "share", "invites", "direct", "web", "embed"}
 
 
-async def instagram_exists(handle: str) -> bool:
+def same_business(title: str, handle: str, name: str) -> bool:
+    """The profile belongs to the business: its display name or @handle shares a real word with the business's name.
+    Owner, 28 Oct 2026: Fade Inn Salon's website linked a staff member's own account (@gabi_6987), not @fade_inn_salon."""
+    stop = {"the", "and", "barber", "barbers", "barbershop", "shop", "salon", "hair", "beauty", "studio", "of", "ltd", "co"}
+    words = {w for w in re.findall(r"[a-z0-9]+", name.lower()) if len(w) > 2 and w not in stop}
+    seen = re.sub(r"[^a-z0-9]+", " ", f"{title} {handle}".lower())
+    squashed = seen.replace(" ", "")
+    return not words or any(w in seen.split() or w in squashed for w in words)
+
+
+async def instagram_exists(handle: str, name: str = "") -> bool:
     """True only when instagram.com/<handle> is a real, live profile (owner, 26 Oct 2026: a dead @name went on the DM
     list; "you should have checked this before sending it to me"). Logged-out Instagram says "Profile isn't available"
-    for names that don't exist; a real one shows "<Name> (@handle)" in the title."""
+    for names that don't exist; a real one shows "<Name> (@handle)" in the title. With the business's name, the profile
+    must also be theirs (same_business), not someone else's account their website happens to link."""
     from playwright.async_api import async_playwright
     try:
         async with async_playwright() as pw:
@@ -280,7 +320,8 @@ async def instagram_exists(handle: str) -> bool:
             await pg.wait_for_timeout(3000)
             title = await pg.title()
             await b.close()
-        return f"(@{handle.strip('@').lower()})" in title.lower()
+        live = f"(@{handle.strip('@').lower()})" in title.lower()
+        return live and (not name or same_business(title, handle, name))
     except Exception:
         return False
 
@@ -495,8 +536,10 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "it is polite, professional, honest and specific; British English; no made-up facts, prices or "
               "promises beyond: websites from £395 (or the local equivalent), half when we start building and half "
               "once complete, a free home page mock-up, 'see your design before you pay anything'; it is signed by "
-              "Alfred; it has an opt-out line. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
-              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews')})}\n\n"
+              "Alfred; it has an opt-out line. A price in the business's own currency (e.g. $499 or €459) is the "
+              "local equivalent of £395 and is fine. For a follow-up, the date of our first email is in the facts "
+              "(first_email_sent) and is real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
+              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far') if p.get(k) not in (None, '')})}\n\n"
               f"Subject: {subject}\n\n{body}")
     try:
         text = await ctx.ask_ai(prompt, 2500)

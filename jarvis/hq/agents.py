@@ -244,7 +244,7 @@ async def dm_list(ctx: Ctx, n: int) -> int:
             continue
         ok = b.get(f"ig.ok.{handle.lower()}")
         if ok is None:  # never put a dead @name on the owner's list (26 Oct 2026): check it's a real, live profile
-            ok = await outbox.instagram_exists(handle)
+            ok = await outbox.instagram_exists(handle, p["name"])   # live AND theirs
             b.set(f"ig.ok.{handle.lower()}", ok)
         if not ok:
             b.log("closer", f"skipped {p['name']}: @{handle} isn't a live Instagram profile", "warn")
@@ -385,24 +385,48 @@ async def warden(ctx: Ctx) -> str:
     if not outbox.in_hours(outbox.uk_now()):
         return "outside sending hours (Mon to Sat, 9:00 to 17:30)"
     cap = int(b.get("settings.send_per_day", 15))
-    if outbox.sent_today(ctx) >= cap:
+    sent = outbox.sent_today(ctx)
+    if sent >= cap:
         return f"today's limit reached ({cap} emails)"
+    # owner, 28 Oct 2026: always hit the daily limit. One email a run, more when behind the day's pace; an email that's
+    # held back no longer blocks the queue (one stuck follow-up held everything back all day on 28 Oct)
+    want = min(cap - sent, max(1, min(3, outbox.on_pace(cap, outbox.uk_now()) - sent)))
+    done = []
+    while len(done) < want:
+        said = await _send_one(ctx)
+        if not said.startswith("sent"):
+            return "; ".join(done + [said])
+        done.append(said)
+    return "; ".join(done)
+
+
+async def _send_one(ctx: Ctx) -> str:
+    """The next email that passes: a due follow-up first, then a first email to a fresh lead. Held-back ones are
+    noted and passed over, so the next lead gets its turn in the same run."""
+    from hq import outbox
+    s, b = ctx.settings, ctx.brain
+    today = outbox.uk_now().date().isoformat()
     for row in _due_by_email(s):  # 1. an email follow-up that's due
+        if b.get(f"held.{row['email'].lower()}") == today:  # held back today: try again tomorrow
+            continue
         link = b.get(f"mockup.{row['name'].lower()}", "")
         made = outbox.follow_up_email(s, row["name"], link)
         if made:
-            return await _vet_and_send(ctx, None, row["name"], row["email"], *made, link, first=False)
+            said = await _vet_and_send(ctx, None, row["name"], row["email"], *made, link, first=False, row=row)
+            if said.startswith("sent"):
+                return said
+            b.set(f"held.{row['email'].lower()}", today)
     looked = 0
     await outbox.check_companies(ctx)  # UK leads that are limited companies can be emailed too (PECR)
     for p in outbox.candidates(s, outbox.limited_companies(b)):  # 2. a first email to the best fresh lead we can email
         if b.get(f"skip.{p['id']}"):
             continue
         looked += 1
+        if looked > 40:  # leads with no email don't count towards the limit: keep looking, next run carries on
+            break
         to = await outbox.email_for(ctx, p)
         if not to:
             b.set(f"skip.{p['id']}", "no email address found")
-            if looked >= 15:  # most small businesses list no email, so look further each run
-                break
             continue
         twin = outbox.already_emailed(s, to)
         if twin:
@@ -418,7 +442,9 @@ async def warden(ctx: Ctx) -> str:
         await asyncio.to_thread(outbox.deploy_site)
         b.set(f"mockup.{p['name'].lower()}", link)
         subject, body = outbox.first_email(s, p, link, b)
-        return await _vet_and_send(ctx, p, p["name"], to, subject, body, link, first=True)
+        said = await _vet_and_send(ctx, p, p["name"], to, subject, body, link, first=True)
+        if said.startswith("sent"):
+            return said
     return "no fresh leads with an email address right now (Hawk will find more)"
 
 
@@ -433,7 +459,7 @@ def _due_by_email(s) -> list[dict]:
 
 
 async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: str, body: str, link: str,
-                        first: bool) -> str:
+                        first: bool, row: dict | None = None) -> str:
     from hq import outbox
     b = ctx.brain
     # US and Canadian law (CAN-SPAM, CASL) need a postal address; Alfred's template only asks for it there
@@ -446,7 +472,9 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
             b.set(f"skip.{p['id']}", "failed checks: " + ", ".join(problems))
         b.log("warden", f"held back the email to {name}: " + ", ".join(problems), "warn")
         return f"held back {name}"
-    ok, why = await outbox.ai_check(ctx, p or {"name": name}, subject, body)
+    facts = p or {"name": name, "country": (row or {}).get("country", ""),
+                  "first_email_sent": (row or {}).get("contacted", ""), "messages_so_far": (row or {}).get("messages", 0)}
+    ok, why = await outbox.ai_check(ctx, facts, subject, body)
     if not ok:
         if p:
             b.set(f"skip.{p['id']}", "editor said no: " + why)

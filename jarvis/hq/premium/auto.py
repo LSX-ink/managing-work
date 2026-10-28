@@ -38,6 +38,17 @@ Rules, all strict:
   "experience.photos": 2; "gallery": 6 to 9. Never pick logos, flyers, text-heavy images, blurry or tiny ones, or a
   photo twice. Prefer s/ (their site) over g/ (Google) when both are good.
 - "logo": the best logo file from the list, or "" if none is clean; "logo_light": true when it is dark on white.
+- "piece": the 3D idea for the first screen, taken from THIS business's own story (their headline, what they offer,
+  their shop, their brand): neon (their name as a neon sign, for a neon shopfront or a night-time vibe), coffee (they
+  offer coffee), whisky (a dram / whisky), cocktail (drinks or cocktails), banter (chat, community, good times), mirror
+  (a full grooming or beauty service), bottle (their own product range; set "piece_text" to the brand name for the
+  label), pole (a traditional barber's), scissors (precision cutting), razor (wet or straight-razor shaves), clipper
+  (fades), comb (classic cuts), brush (styling, blow-dries), dryer (salon styling), diamond (a name about excellence or
+  luxury), braid (braids), trophy (award-winning), crown (kings, royal), lipstick (make-up), polish (nails), spray
+  (styling products), towels (hot towels, spa), tie (smart city clients), moka (Italian), eiffel (Paris or French),
+  bolt (energy, a loud brand), leaf (natural products), flower (beauty, florals). Pick what THIS business is about,
+  never one of the pieces already used (listed below), so no two mock-ups are ever the same. "piece_text": the word
+  to show, only for neon or bottle.
 - Words: warm, confident, short. h1 is three short lines, the third the most striking. "kicker" is the street and area.
 - "audit": {"title": "What <their domain> is costing you, and what this fixes.", "fixes": [[problem, fix], ...]}, from
   the audit problems only (2 to 4 pairs, plain English, fix said as what this design does), or {} with no website.
@@ -68,6 +79,16 @@ def free_slug(base: str, live: Path) -> str:
     return slug
 
 
+def next_piece(name: str, types=(), leads: Path = LEADS) -> str:
+    """The 3D piece for a new mock-up: one that fits the trade, the least used so far (owner, 28 Oct 2026: "why is the
+    3d the same for every website thats terrible marketing"), so neighbouring mock-ups never share one."""
+    import depth3d
+    order = depth3d.pieces_for(name, types)
+    order = order + [pc for pc in depth3d.STORY_PIECES if pc not in order]   # then every other idea: never a repeat
+    used = Counter(json.load(open(f, encoding="utf-8")).get("piece") for f in leads.glob("*/config.json"))
+    return min(order, key=lambda pc: (used[pc], order.index(pc)))
+
+
 def next_layout(leads: Path = LEADS) -> str:
     """The layout used least so far, newest-used last among ties, so each mock-up looks different."""
     configs = sorted(leads.glob("*/config.json"), key=lambda f: f.stat().st_mtime)
@@ -95,7 +116,15 @@ def listing_facts(place: dict, instagram: str, website: str) -> dict:
             "book_url": website, "book_label": "Book now" if website else "Call us"}
 
 
-async def write_config(client, model: str, folder: Path, layout: str, fonts: str | None, audit: dict, facts: dict) -> dict:
+def recent_pieces(n: int = 30, leads: Path = LEADS) -> list[str]:
+    """The 3D ideas the mock-ups already use: a new one may not repeat any of them (owner, 28 Oct 2026: "no repeats at
+    all ... every site different")."""
+    configs = sorted(leads.glob("*/config.json"), key=lambda f: f.stat().st_mtime)[-n:]
+    return [pc for pc in (json.load(open(f, encoding="utf-8")).get("piece") for f in configs) if pc]
+
+
+async def write_config(client, model: str, folder: Path, layout: str, fonts: str | None, audit: dict, facts: dict,
+                       recent: list[str] | None = None) -> dict:
     """Claude writes config.json from the research; the Google facts are put back word for word afterwards."""
     site = json.load(open(folder / "site.json", encoding="utf-8"))
     words = "\n\n".join(f"[{u}]\n{t}" for u, t in site["pages"].items())[:PAGE_TEXT]
@@ -104,12 +133,14 @@ async def write_config(client, model: str, folder: Path, layout: str, fonts: str
     for k in ("audit", "layout", "fonts"):
         example.pop(k, None)
     light = layout == "editorial"
-    ask = (f"Layout: {layout}." + (" It is a LIGHT page: also give colours paper, text, soft, rule (and a darker gold "
-                                   "that reads on paper)." if light else "")
+    ask = (f"Layout: {layout}." + (" It is a LIGHT page: also give colours paper (the page), text (the words), soft "
+                                   "(secondary words: a mid grey that still reads on paper, 4.5:1), rule (thin lines) "
+                                   "and a darker gold that reads on paper." if light else "")
            + f"\n\nExample config (another business, for the format only):\n{json.dumps(example, ensure_ascii=False)[:6000]}"
            + f"\n\nTheir Google listing facts (used as they are): {json.dumps(facts, ensure_ascii=False)[:3000]}"
            + f"\n\nTheir website colours, most used first: {site['colours'][:10]}\nLogo files: {site['logos']}"
            + f"\nPhoto files: {photos}\n\nAudit of their current website: {json.dumps(audit, ensure_ascii=False)[:2000]}"
+           + f"\n\nRecent 3D pieces (don't repeat): {recent or []}"
            + f"\n\nTheir website's words:\n{words or '(no website)'}")
     content = [{"type": "text", "text": ask}]
     sheet = folder / "sheet.jpg"
@@ -133,8 +164,53 @@ def usable_image(path: Path) -> bool:
         return False
 
 
+def _lum(hex_: str) -> float:
+    rgb = [int(hex_[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    r, g, b = [x / 12.92 if x <= .03928 else ((x + .055) / 1.055) ** 2.4 for x in rgb]
+    return .2126 * r + .7152 * g + .0722 * b
+
+
+def contrast(a: str, b: str) -> float:
+    hi, lo = sorted((_lum(a), _lum(b)), reverse=True)
+    return (hi + .05) / (lo + .05)
+
+
+def _mix(a: str, b: str, t: float) -> str:
+    return "#" + "".join(f"{round(int(a[i:i + 2], 16) * (1 - t) + int(b[i:i + 2], 16) * t):02x}" for i in (1, 3, 5))
+
+
+def readable(fg: str, bg: str, strong: str, need: float = 4.5) -> str:
+    """fg, moved toward the strong text colour only as far as it takes to read on bg (web-design-guidelines: 4.5:1).
+    Owner, 27 Oct 2026: two editorial mock-ups came out with near-white words on a near-white page."""
+    for step in range(11):
+        c = _mix(fg, strong, step / 10)
+        if contrast(c, bg) >= need:
+            return c
+    return strong
+
+
+HEX = re.compile(r"#[0-9a-fA-F]{6}")
+
+
+def fix_contrast(col: dict, layout: str) -> dict:
+    col = dict(col)
+    if layout == "editorial":
+        paper, text = col.get("paper", "#f6f1ea"), col.get("text", "#1d1a17")
+        if HEX.fullmatch(paper) and HEX.fullmatch(text):
+            col["text"] = readable(text, paper, "#000000", 7)
+            col["soft"] = readable(col["soft"] if HEX.fullmatch(col.get("soft", "")) else "#6c645b", paper, col["text"])
+    for bg in ("bg", "panel"):
+        if all(HEX.fullmatch(col.get(k, "")) for k in (bg, "ink", "muted")):
+            col["ink"] = readable(col["ink"], col[bg], "#ffffff", 7)
+            col["muted"] = readable(col["muted"], col[bg], col["ink"])
+    return col
+
+
 def tidy(c: dict, folder: Path, photos: list[str], layout: str, fonts: str | None, facts: dict) -> dict:
-    """Google's facts back word for word, only real photo files and each one once, the chosen layout and fonts."""
+    """Google's facts back word for word, only real photo files and each one once, the chosen layout and fonts, and
+    text colours that read."""
+    if isinstance(c.get("colours"), dict):
+        c["colours"] = fix_contrast(c["colours"], layout)
     c.update({k: v for k, v in facts.items() if v})  # Google's own words win
     c["short"] = c.get("short") or facts["name"]
     used: set[str] = set()
@@ -177,6 +253,8 @@ SHAPES = {  # what the page layouts read: h1 is always three lines, the rest kee
     "hero": lambda v: isinstance(v, list) and len(v) >= 1, "gallery": lambda v: isinstance(v, list) and len(v) >= 3,
     "services": lambda v: isinstance(v, list) and all(isinstance(g, dict) and isinstance(g.get("items"), list) for g in v),
 }
+REVIEW_TRIES = 3
+USE_3D = False  # owner, 28 Oct 2026: "keep version one for the barbers, these 3d dont look good". depth3d.py stays for later
 REVIEW_KEYS = {"kicker", "h1", "lead", "colours", "experience", "hero", "gallery", "fonts", "logo_light", "motif",
                "currency_note", "services", "special"}
 
@@ -219,11 +297,17 @@ async def review(client, model: str, folder: Path, page: Path, c: dict, layout: 
                                                 "data": base64.b64encode(s).decode()}} for s in shots]
         content.append({"type": "text", "text": f"Layout: {layout}. Font presets: {sorted(layouts.FONTS)}.\nPhoto "
                         f"files: {photos}\n\nConfig:\n{json.dumps(shown, ensure_ascii=False)}"})
-        r = await client.messages.create(model=model, max_tokens=8000,
-                                         system=REVIEW_PROMPT + "\n\nOUR DESIGN SKILLS:\n\n" + design.website_pack(),
-                                         messages=[{"role": "user", "content": content}])
-        text = "".join(getattr(b, "text", "") for b in r.content)
-        out = json.loads(text[text.index("{"): text.rindex("}") + 1])
+        system = REVIEW_PROMPT + "\n\nOUR DESIGN SKILLS:\n\n" + design.website_pack()
+        for attempt in range(REVIEW_TRIES):  # a reply that isn't clean JSON is asked for again (Capello, 27 Oct 2026)
+            r = await client.messages.create(model=model, max_tokens=8000, system=system,
+                                             messages=[{"role": "user", "content": content}])
+            text = "".join(getattr(b, "text", "") for b in r.content)
+            try:
+                out = json.loads(text[text.index("{"): text.rindex("}") + 1])
+                break
+            except ValueError:
+                if attempt == REVIEW_TRIES - 1:
+                    raise
     except Exception as exc:  # noqa: BLE001 - the page as written is still good to go
         return c, [f"design review skipped ({type(exc).__name__}: {str(exc)[:120]})"]
     changes = {k: v for k, v in (out.get("changes") or {}).items() if k in REVIEW_KEYS}
@@ -231,8 +315,8 @@ async def review(client, model: str, folder: Path, page: Path, c: dict, layout: 
         del changes["special"]  # it may only take an offer away, never add one
     if "services" in changes and not same_prices(c.get("services"), changes["services"]):
         del changes["services"]  # prices are facts: a rename that moves or changes them is dropped
-    if changes.get("fonts") not in (None, *layouts.FONTS):
-        del changes["fonts"]
+    if "fonts" in changes and changes["fonts"] not in [f for f in FONTS.get(layout, []) if f]:
+        del changes["fonts"]  # only the type made for this layout (vintage on the bold layout came out messy, 28 Oct)
     for key in ("colours", "experience"):  # a partial change keeps the rest
         if isinstance(changes.get(key), dict) and isinstance(c.get(key), dict):
             changes[key] = {**c[key], **changes[key]}
@@ -281,7 +365,7 @@ async def phone_shots(their_url: str, ours: Path, folder: Path) -> bool:
 
 async def make(business: str, settings, client, website: str = "", instagram: str = "", progress=print) -> dict:
     """Build, check and put online one premium mock-up. Returns {slug, link, dm, issues, instagram_ok, ...}."""
-    import full_check, kinetic_find, outbox, premium_page, research  # noqa: E401 - heavy, so only when building
+    import depth3d, full_check, kinetic_find, outbox, premium_page, research  # noqa: E401 - heavy, so only when building
     base = slugify(re.split(r",| in ", business)[0])
     slug = free_slug(base, outbox.LIVE)
     folder = LEADS / slug
@@ -305,7 +389,12 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     model = getattr(settings, "mockup_model", "") or getattr(settings, "big_model", "") or "claude-opus-5"
     writer = getattr(client, "direct", client)  # the design needs Claude's eyes on the photos, not the free route
     facts = listing_facts(place, instagram, website)
-    c = await write_config(writer, model, folder, layout, fonts, audit, facts)
+    recent = recent_pieces()
+    c = await write_config(writer, model, folder, layout, fonts, audit, facts, recent)
+    c["depth3d"] = USE_3D  # off: the owner tried the 3D pieces and preferred the pages without (28 Oct 2026)
+    if c.get("piece") not in depth3d.PIECES or c["piece"] in recent:   # the writer's idea, unless it isn't new
+        c["piece"] = next_piece(p["name"], place.get("types") or ())
+        c.pop("piece_text", None)
     json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     out = outbox.LIVE / "m" / slug
     await asyncio.to_thread(premium_page.build, folder, out)
@@ -324,9 +413,10 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     if any("folder missing" in i for i in issues):  # Cloudflare sometimes needs a second push before new files show
         await asyncio.to_thread(outbox.deploy_site)
         issues = await check_live(slug)
-    ig_ok = bool(instagram) and await outbox.instagram_exists(instagram)
+    ig_ok = bool(instagram) and await outbox.instagram_exists(instagram, p["name"])   # live AND theirs
     return {"slug": slug, "name": p["name"], "link": link, "layout": layout, "issues": issues, "instagram": instagram,
-            "instagram_ok": ig_ok, "dm": outbox.dm_text(settings, p, link), "review": notes}
+            "instagram_ok": ig_ok, "dm": outbox.dm_text(settings, p, link), "review": notes,
+            "audit": {k: audit.get(k) for k in ("score", "grade") if isinstance(audit, dict)}}
 
 
 async def check_live(slug: str) -> list[str]:

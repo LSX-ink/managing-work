@@ -138,6 +138,63 @@ def test_a_logo_the_builder_cannot_read_is_left_out(tmp_path):
     assert c["logo"] == ""
 
 
+async def test_a_garbled_review_is_asked_for_again(tmp_path, monkeypatch):
+    async def no_shots(page):
+        return [b"img"]
+    monkeypatch.setattr(auto, "page_shots", no_shots)
+
+    class Twice(_Reviewer):
+        def __init__(self):
+            super().__init__("")
+            self.calls = 0
+
+        async def create(self, **kw):
+            self.calls += 1
+            self.answer = '{"changes": {"kicker": "x" "y"}}' if self.calls == 1 else '{"changes": {"kicker": "High St"}, "notes": ["ok"]}'
+            return await super().create(**kw)
+    r = Twice()
+    new, notes = await auto.review(r, "m", tmp_path, tmp_path / "x", {"name": "S", "kicker": "a"}, "atelier", {"name": "S"})
+    assert r.calls == 2 and new["kicker"] == "High St" and notes == ["ok"]
+
+
+def test_3d_only_on_pages_that_ask_for_it(tmp_path):
+    import depth3d
+    c = {"name": "Kamo Barbers", "short": "Kamo", "layout": "split",
+         "colours": {"gold": "#e3262f", "second": "#ffffff", "panel": "#141414"}}
+    page = "<html><body><h1>Hi</h1></body></html>"
+    assert depth3d.add(page, c, tmp_path) == page  # sent mock-ups never change
+    (tmp_path / "logo.png").write_bytes(b"x")
+    out = depth3d.add(page, {**c, "depth3d": True}, tmp_path)
+    assert '<canvas id="d3"' in out and "three@0.160.0" in out and '"piece": "pole"' in out  # a barber's first piece
+    assert '"layout": "split"' in out and out.endswith("</body></html>")
+
+
+def test_each_mock_up_gets_its_own_3d_piece_for_its_trade(tmp_path):
+    import depth3d
+    assert depth3d.pieces_for("Kamo Barbers")[0] == "pole" and depth3d.pieces_for("Treat Hair & Beauty")[0] == "dryer"
+    assert auto.next_piece("Kamo Barbers", leads=tmp_path) == "pole"
+    for i, pc in enumerate(["pole", "scissors"]):
+        (tmp_path / str(i)).mkdir()
+        (tmp_path / str(i) / "config.json").write_text(json.dumps({"piece": pc}))
+    assert auto.next_piece("Kamo Barbers", leads=tmp_path) == "razor"  # the least used barber piece next
+    page = depth3d.add("<body></body>", {"name": "Kamo", "depth3d": True, "piece": "razor", "colours": {"gold": "#e3262f"}}, tmp_path)
+    assert '"piece": "razor"' in page and "logo.png" not in page  # their tool, not a logo coin
+
+
+def test_each_business_gets_its_own_story_piece_never_a_recent_one(tmp_path):
+    import depth3d
+    assert {"neon", "coffee", "whisky", "cocktail", "banter", "mirror"} <= set(depth3d.PIECES)
+    for i, pc in enumerate(["neon", "coffee", "razor"]):
+        (tmp_path / str(i)).mkdir()
+        f = tmp_path / str(i) / "config.json"
+        f.write_text(json.dumps({"piece": pc}))
+        os.utime(f, (i, i))
+    assert auto.recent_pieces(leads=tmp_path) == ["neon", "coffee", "razor"]
+    page = depth3d.add("<body></body>", {"name": "Capello", "depth3d": True, "piece": "bottle", "piece_text": "CAPELLO",
+                                         "colours": {"gold": "#ffc700"}}, tmp_path)
+    assert '"text": "CAPELLO"' in page and '"labelled": true' in page  # their own product, labelled with their name
+
+
 def test_mock_ups_use_the_cheaper_claude_by_default(monkeypatch):
     assert Settings().mockup_model == "claude-sonnet-5-5"
     assert "opus" not in Settings().mockup_model
