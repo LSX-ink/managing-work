@@ -635,6 +635,19 @@ def test_word_tools_are_instant():
     assert instant_answer("what is the last letter in apple", s) == "The last letter of apple is E."
 
 
+def test_phonetic_spelling_and_anagrams_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("spell Smith phonetically", s) == "Smith: Sierra, Mike, India, Tango, Hotel."
+    assert instant_answer("Alfred, how do you spell Thato in the phonetic alphabet?", s) == "Thato: Tango, Hotel, Alpha, Tango, Oscar."
+    assert instant_answer("spell it phonetically", s) is None
+    assert instant_answer("what's B in the NATO alphabet?", s) == "B is Bravo."
+    assert instant_answer("are listen and silent anagrams?", s) == "Yes, listen and silent are anagrams."
+    assert instant_answer("is listen an anagram of silent", s) == "Yes, listen and silent are anagrams."
+    assert instant_answer("are cat and dog anagrams", s) == "No, cat and dog are not anagrams."
+    assert instant_answer("are you and me free tonight", s) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

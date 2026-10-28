@@ -64,7 +64,7 @@ WEBSITE_KIT = ["client-websites", "frontend-design", "taste-skill", "impeccable"
                "improve-ui", "fixing-accessibility", "fixing-motion-performance", "fixing-metadata",
                "frontend-ui-engineering", "performance-optimization", "brand-guidelines", "theme-factory",
                "redesign-skill", "animate", "apple-design", "auteur", "threejs-r3f", "gsap", "motion-principles",
-               "css-native"]
+               "css-native", "igloo-style-3d"]
 KIT_CHARS = 2500  # of each guide in the kit digest; the full guide is one design_guide call away
 DOMAINS = ["style", "color", "chart", "landing", "product", "ux", "typography", "icons", "gsap", "react", "web",
            "google-fonts"]
@@ -347,7 +347,7 @@ def tool_definitions() -> list[dict]:
                        "engineering: frontend-ui-engineering, performance-optimization. More Anthropic: canvas-design, "
                        "brand-guidelines, web-artifacts-builder. 3D web: auteur (directs a site like a film: "
                        "storyboard, scroll cinema, 3D scenes, verify), threejs-r3f, gsap, motion-principles, "
-                       "canvas-generative, css-native, framer-motion, genjutsu-cast. New libraries dropped into skills/ appear here too. Call "
+                       "canvas-generative, css-native, framer-motion, genjutsu-cast, igloo-style-3d (award-level immersive 3D: ice and glass objects, particle shapes, WebGL text, frost transitions, fast loading). New libraries dropped into skills/ appear here too. Call "
                        "with no guide to list them.",
         "input_schema": {
             "type": "object",

@@ -386,7 +386,7 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     layout = next_layout()
     fonts = FONTS[layout][len(list(LEADS.glob("*/config.json"))) % len(FONTS[layout])]
     progress(f"Writing the {layout} design…")
-    model = getattr(settings, "big_model", "") or "claude-opus-5"
+    model = getattr(settings, "mockup_model", "") or getattr(settings, "big_model", "") or "claude-opus-5"
     writer = getattr(client, "direct", client)  # the design needs Claude's eyes on the photos, not the free route
     facts = listing_facts(place, instagram, website)
     recent = recent_pieces()

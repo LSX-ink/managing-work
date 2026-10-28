@@ -35,6 +35,9 @@ class Settings:
     cost_saver: bool = _bool("JARVIS_COST_SAVER", True)
     cheap_model: str = os.getenv("JARVIS_CHEAP_MODEL", "claude-haiku-5-5").strip()
     smart_model: str = os.getenv("JARVIS_SMART_MODEL", "").strip()  # empty: JARVIS_MODEL
+    # the mock-up builder (hq/premium): a cheaper Claude than JARVIS_MODEL so a day of mock-ups doesn't empty the
+    # credit (owner, 28 Oct 2026: "Cheaper Claude"); empty: JARVIS_SMART_MODEL / JARVIS_MODEL as before
+    mockup_model: str = os.getenv("JARVIS_MOCKUP_MODEL", "claude-sonnet-5-5").strip()
     # Second route through OmniRoute: its address, its API key, and the model or combo it should use. Empty
     # address: Claude only. Normally the backup when Claude fails (limits, credit, outages).
     omniroute_url: str = os.getenv("JARVIS_OMNIROUTE_URL", "").strip()

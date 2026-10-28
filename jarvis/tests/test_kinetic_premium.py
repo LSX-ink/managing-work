@@ -193,3 +193,8 @@ def test_each_business_gets_its_own_story_piece_never_a_recent_one(tmp_path):
     page = depth3d.add("<body></body>", {"name": "Capello", "depth3d": True, "piece": "bottle", "piece_text": "CAPELLO",
                                          "colours": {"gold": "#ffc700"}}, tmp_path)
     assert '"text": "CAPELLO"' in page and '"labelled": true' in page  # their own product, labelled with their name
+
+
+def test_mock_ups_use_the_cheaper_claude_by_default(monkeypatch):
+    assert Settings().mockup_model == "claude-sonnet-5-5"
+    assert "opus" not in Settings().mockup_model
