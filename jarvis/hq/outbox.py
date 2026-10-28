@@ -248,10 +248,30 @@ async def make_mockup(ctx, p: dict) -> str:
     from hq import designer
     if mockup.trade_for(p) == "business" and sales.store_lead(p):
         return await asyncio.to_thread(publish_mockup, ctx.settings, p, False)
+    if ctx.brain.get("settings.premium_mockups", True):  # owner, 27-28 Oct 2026: every mock-up uses all the skills
+        return await premium_mockup(ctx, p)
     ok, _ = await designer.build(ctx, p, LIVE / "m" / slug(p["name"]), st.business(ctx.settings)["name"])
     if ok:
         ctx.brain.set(f"iris.{p['id']}", mockup.VERSION)
     return f"{SITE}/m/{slug(p['name'])}/" if ok else ""
+
+
+async def premium_mockup(ctx, p: dict) -> str:
+    """The premium designer (hq/premium/auto.py) for the morning list: research, every design skill and the website kit,
+    the design review, 3D, before/after, online and checked. Its link, or "" when a check failed. A lead whose own site
+    already rates well is marked strong_site, as Iris did, so Blade puts them last."""
+    import sys
+    import omniroute
+    sys.path.insert(0, str(Path(__file__).parent / "premium"))
+    import auto
+    r = await auto.make(f"{p['name']}, {p.get('town') or p.get('address') or ''}".strip(", "), ctx.settings,
+                        omniroute.make_client(ctx.settings), p.get("website") or "", (p.get("instagram") or "").lstrip("@"))
+    if (r.get("audit") or {}).get("grade") == "good":
+        ctx.brain.set(f"strong_site.{p['id']}", True)
+    if r["issues"]:
+        ctx.brain.log("closer", f"{p['name']}: mock-up held back, checks found {'; '.join(r['issues'][:3])}", "warn")
+        return ""
+    return r["link"]
 
 
 def deploy_site() -> None:

@@ -65,3 +65,26 @@ def test_vera_holds_back_bad_emails():
     assert outbox.pick_address(["noreply@shop.co.uk", "hello@shop.co.uk", "x@gmail.com"],
                                "https://www.shop.co.uk") == "hello@shop.co.uk"
     assert not outbox.good_address("logo@2x.png")
+
+
+async def test_the_morning_list_uses_the_premium_designer(monkeypatch, tmp_path):
+    import sys
+    from config import ROOT
+    from hq import outbox
+    from hq.brain import Brain
+    sys.path.insert(0, str(ROOT / "hq" / "premium"))
+    import auto
+    asked = []
+
+    async def fake_make(business, settings, client, website="", instagram="", progress=print):
+        asked.append((business, website, instagram))
+        return {"link": "https://k.test/m/kamo-v3/", "issues": [], "audit": {"grade": "good", "score": 91}}
+    monkeypatch.setattr(auto, "make", fake_make)
+
+    class Ctx:
+        settings = __import__("config").Settings()
+        brain = Brain(tmp_path / "b.db", journal_dir=tmp_path / "j")
+    p = {"id": 7, "name": "Kamo Barbers", "town": "Newcastle", "website": "https://kamo.test", "instagram": "@kamo"}
+    assert await outbox.make_mockup(Ctx(), p) == "https://k.test/m/kamo-v3/"
+    assert asked == [("Kamo Barbers, Newcastle", "https://kamo.test", "kamo")]
+    assert Ctx.brain.get("strong_site.7") is True  # their own site already rates well: Blade puts them last
