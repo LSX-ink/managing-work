@@ -38,6 +38,13 @@ Rules, all strict:
   "experience.photos": 2; "gallery": 6 to 9. Never pick logos, flyers, text-heavy images, blurry or tiny ones, or a
   photo twice. Prefer s/ (their site) over g/ (Google) when both are good.
 - "logo": the best logo file from the list, or "" if none is clean; "logo_light": true when it is dark on white.
+- "piece": the 3D idea for the first screen, taken from THIS business's own story (their headline, what they offer,
+  their shop, their brand): neon (their name as a neon sign, for a neon shopfront or a night-time vibe), coffee (they
+  offer coffee), whisky (a dram / whisky), cocktail (drinks or cocktails), banter (chat, community, good times), mirror
+  (a full grooming or beauty service), bottle (their own product range; set "piece_text" to the brand name for the
+  label), pole (a traditional barber's), scissors (precision cutting), razor (wet or straight-razor shaves), clipper
+  (fades), comb (classic cuts), brush (styling, blow-dries), dryer (salon styling). Never one of the recent pieces
+  listed below, so no two mock-ups look the same. "piece_text": the word to show, only for neon or bottle.
 - Words: warm, confident, short. h1 is three short lines, the third the most striking. "kicker" is the street and area.
 - "audit": {"title": "What <their domain> is costing you, and what this fixes.", "fixes": [[problem, fix], ...]}, from
   the audit problems only (2 to 4 pairs, plain English, fix said as what this design does), or {} with no website.
@@ -104,7 +111,14 @@ def listing_facts(place: dict, instagram: str, website: str) -> dict:
             "book_url": website, "book_label": "Book now" if website else "Call us"}
 
 
-async def write_config(client, model: str, folder: Path, layout: str, fonts: str | None, audit: dict, facts: dict) -> dict:
+def recent_pieces(n: int = 8, leads: Path = LEADS) -> list[str]:
+    """The 3D ideas the last few mock-ups used: a new one may not repeat them."""
+    configs = sorted(leads.glob("*/config.json"), key=lambda f: f.stat().st_mtime)[-n:]
+    return [pc for pc in (json.load(open(f, encoding="utf-8")).get("piece") for f in configs) if pc]
+
+
+async def write_config(client, model: str, folder: Path, layout: str, fonts: str | None, audit: dict, facts: dict,
+                       recent: list[str] | None = None) -> dict:
     """Claude writes config.json from the research; the Google facts are put back word for word afterwards."""
     site = json.load(open(folder / "site.json", encoding="utf-8"))
     words = "\n\n".join(f"[{u}]\n{t}" for u, t in site["pages"].items())[:PAGE_TEXT]
@@ -120,6 +134,7 @@ async def write_config(client, model: str, folder: Path, layout: str, fonts: str
            + f"\n\nTheir Google listing facts (used as they are): {json.dumps(facts, ensure_ascii=False)[:3000]}"
            + f"\n\nTheir website colours, most used first: {site['colours'][:10]}\nLogo files: {site['logos']}"
            + f"\nPhoto files: {photos}\n\nAudit of their current website: {json.dumps(audit, ensure_ascii=False)[:2000]}"
+           + f"\n\nRecent 3D pieces (don't repeat): {recent or []}"
            + f"\n\nTheir website's words:\n{words or '(no website)'}")
     content = [{"type": "text", "text": ask}]
     sheet = folder / "sheet.jpg"
@@ -343,7 +358,7 @@ async def phone_shots(their_url: str, ours: Path, folder: Path) -> bool:
 
 async def make(business: str, settings, client, website: str = "", instagram: str = "", progress=print) -> dict:
     """Build, check and put online one premium mock-up. Returns {slug, link, dm, issues, instagram_ok, ...}."""
-    import full_check, kinetic_find, outbox, premium_page, research  # noqa: E401 - heavy, so only when building
+    import depth3d, full_check, kinetic_find, outbox, premium_page, research  # noqa: E401 - heavy, so only when building
     base = slugify(re.split(r",| in ", business)[0])
     slug = free_slug(base, outbox.LIVE)
     folder = LEADS / slug
@@ -367,9 +382,12 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     model = getattr(settings, "big_model", "") or "claude-opus-5"
     writer = getattr(client, "direct", client)  # the design needs Claude's eyes on the photos, not the free route
     facts = listing_facts(place, instagram, website)
-    c = await write_config(writer, model, folder, layout, fonts, audit, facts)
+    recent = recent_pieces()
+    c = await write_config(writer, model, folder, layout, fonts, audit, facts, recent)
     c["depth3d"] = True  # a 3D piece of their trade over the first screen (depth3d.py; owner, 28 Oct 2026)
-    c["piece"] = next_piece(p["name"], place.get("types") or ())
+    if c.get("piece") not in depth3d.PIECES or c["piece"] in recent:   # the writer's idea, unless it isn't new
+        c["piece"] = next_piece(p["name"], place.get("types") or ())
+        c.pop("piece_text", None)
     json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     out = outbox.LIVE / "m" / slug
     await asyncio.to_thread(premium_page.build, folder, out)

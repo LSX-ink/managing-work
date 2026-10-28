@@ -18,9 +18,11 @@ import json
 from pathlib import Path
 
 THREE = "https://cdn.jsdelivr.net/npm/three@0.160.0/"
-BARBER_PIECES = ["pole", "scissors", "razor", "clipper", "comb", "brush", "bottle", "dryer"]   # best fit first
-SALON_PIECES = ["dryer", "brush", "bottle", "scissors", "comb", "clipper", "razor", "pole"]
-PIECES = sorted(set(BARBER_PIECES + SALON_PIECES))
+BARBER_PIECES = ["pole", "scissors", "razor", "clipper", "comb", "brush", "bottle", "dryer", "mirror", "coffee", "banter"]
+SALON_PIECES = ["dryer", "brush", "bottle", "scissors", "comb", "mirror", "coffee", "banter", "clipper", "razor", "pole"]
+# ideas taken from a business's own story: their name in neon, the coffee or the dram they offer, the banter they promise
+STORY_PIECES = ["neon", "coffee", "whisky", "cocktail", "banter", "mirror"]
+PIECES = sorted(set(BARBER_PIECES + SALON_PIECES + STORY_PIECES))
 
 
 def pieces_for(name: str, types=()) -> list[str]:
@@ -35,7 +37,8 @@ def add(html: str, c: dict, out: Path) -> str:
     col = c["colours"]
     piece = c.get("piece") if c.get("piece") in PIECES else pieces_for(c.get("name", ""))[0]
     opts = {"gold": col.get("gold", "#c9a227"), "second": col.get("second") or col.get("gold", "#c9a227"),
-            "dark": col.get("panel", "#141414"), "piece": piece, "layout": c.get("layout", "atelier")}
+            "dark": col.get("panel", "#141414"), "piece": piece, "layout": c.get("layout", "atelier"),
+            "text": str(c.get("piece_text") or c.get("short") or c.get("name", ""))[:14], "labelled": bool(c.get("piece_text"))}
     block = (
         '<canvas id="d3" aria-hidden="true"></canvas>'
         "<style>#d3{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:15;opacity:0;"
@@ -163,7 +166,93 @@ const P = {
     part(new THREE.CylinderGeometry(0.34, 0.34, 0.36, 32), accent, 0, 1.68);
     part(new THREE.CylinderGeometry(0.09, 0.09, 0.5, 16), accent, 0, 2.05);
     part(new THREE.BoxGeometry(0.7, 0.16, 0.2), accent, 0.22, 2.3);
-    idle = (t) => { piece.rotation.y = t * 0.35; };
+    if (O.labelled) {   // their name on the label when the bottle is their own product (Capello)
+      const c = document.createElement('canvas'); c.width = 512; c.height = 256; const g = c.getContext('2d');
+      g.fillStyle = O.dark; g.fillRect(0, 0, 512, 256); g.fillStyle = O.gold; g.font = '700 64px Georgia, serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(O.text.toUpperCase(), 256, 128);
+      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+      const lab = part(new THREE.CylinderGeometry(0.835, 0.835, 0.9, 48, 1, true, -Math.PI / 2, Math.PI),
+        new THREE.MeshPhysicalMaterial({ map: tex, roughness: 0.4, clearcoat: 0.6 }), 0, -0.45);
+      settle(lab);
+    }
+    idle = (t) => { piece.rotation.y = Math.sin(t * 0.5) * 0.6; };
+  },
+  neon() {   // their name as a neon sign, lighting up letter by letter (Kamo's shopfront is neon)
+    // kept out of tone mapping so the neon stays their exact colour instead of washing out to white (Kamo's red, 28 Oct)
+    const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color(O.gold), toneMapped: false });
+    part(new THREE.BoxGeometry(4.6, 1.9, 0.12), new THREE.MeshPhysicalMaterial({ color: 0x111111, roughness: 0.6, transparent: true, opacity: 0.55 }), 0, 0, -0.25);
+    const halo = new THREE.PointLight(new THREE.Color(O.gold), 0, 8); halo.position.set(0, 0, 1.2); piece.add(halo);
+    Promise.all([import('three/addons/loaders/FontLoader.js'), import('three/addons/geometries/TextGeometry.js')]).then(([{ FontLoader }, { TextGeometry }]) =>
+      new FontLoader().load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font) => {
+        const word = O.text.toUpperCase().slice(0, 8), size = Math.min(1.1, 4.0 / word.length);
+        let x = 0;
+        const geos = [...word].map((ch) => {
+          const g = new TextGeometry(ch, { font, size, height: 0.12, curveSegments: 6, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02 });
+          g.computeBoundingBox(); const w = g.boundingBox.max.x - g.boundingBox.min.x; const at = x; x += w + size * 0.12; return [g, at];
+        });
+        geos.forEach(([g, at]) => part(g, glow, at - x / 2, -size / 2, 0));
+      }));
+    idle = (t) => { const flick = Math.random() < 0.012 ? 0.4 : 1;   // the odd neon flicker
+      glow.color.set(O.gold).multiplyScalar((1.15 + Math.sin(t * 3) * 0.12) * flick); halo.intensity = 6 * flick; piece.rotation.y = Math.sin(t * 0.4) * 0.25; };
+  },
+  coffee() {   // a cup of coffee on its saucer, steam rising (Bears: "coffee on arrival")
+    const cup = [[0, -0.6], [0.55, -0.6], [0.72, -0.3], [0.8, 0.5], [0.82, 0.55], [0.74, 0.55], [0.7, 0.45], [0.62, -0.35], [0, -0.42]].map(([x, y]) => new THREE.Vector2(x, y));
+    part(new THREE.LatheGeometry(cup, 48), new THREE.MeshPhysicalMaterial({ color: 0xf6f2ea, roughness: 0.15, clearcoat: 1 }));
+    part(new THREE.CylinderGeometry(0.72, 0.72, 0.04, 48), new THREE.MeshPhysicalMaterial({ color: 0x3b2314, roughness: 0.2, clearcoat: 1 }), 0, 0.42);
+    const h = part(new THREE.TorusGeometry(0.28, 0.07, 12, 32, Math.PI * 1.3), accent, 0.86, 0.05); h.rotation.z = -Math.PI * 0.65; settle(h);
+    part(new THREE.CylinderGeometry(1.35, 1.2, 0.1, 48), accent, 0, -0.66);
+    const steam = [0, 1, 2].map((i) => {
+      const pts = []; for (let k = 0; k <= 20; k++) pts.push(new THREE.Vector3(Math.sin(k * 0.6 + i * 2) * 0.12, k * 0.08, 0));
+      const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.035, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
+      m.position.set(-0.3 + i * 0.3, 0.6, 0); piece.add(m); return m;
+    });
+    idle = (t) => { steam.forEach((m, i) => { const k = (t * 0.35 + i / 3) % 1; m.position.y = 0.6 + k * 0.9; m.material.opacity = 0.55 * Math.sin(k * Math.PI); });
+      piece.rotation.y = Math.sin(t * 0.4) * 0.5; };
+  },
+  whisky() {   // a dram in a heavy tumbler with ice (Brother: "a dram while you wait")
+    const tumbler = [[0, -0.9], [0.78, -0.9], [0.8, -0.6], [0.86, 0.8], [0.8, 0.8], [0.74, -0.55], [0, -0.6]].map(([x, y]) => new THREE.Vector2(x, y));
+    part(new THREE.LatheGeometry(tumbler, 48), new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 1, thickness: 0.8, roughness: 0.02, ior: 1.52, clearcoat: 1, transparent: true }));
+    part(new THREE.CylinderGeometry(0.72, 0.7, 0.55, 48), new THREE.MeshPhysicalMaterial({ color: 0x8a4510, roughness: 0.06, clearcoat: 1, emissive: 0x3d1803, emissiveIntensity: 0.5 }), 0, -0.3);
+    [[-0.2, -0.05, 0.1], [0.25, 0.05, -0.1], [0.05, 0.12, 0.25]].forEach(([x, y, z], i) => {
+      const ice = part(new THREE.BoxGeometry(0.42, 0.42, 0.42, 2, 2, 2), new THREE.MeshPhysicalMaterial({ color: 0xdff3ff, transmission: 0.7, roughness: 0.12, thickness: 0.4, transparent: true, clearcoat: 1 }), x, 0.32, z); ice.rotation.set(i * 0.6, i * 0.9, i * 0.3); settle(ice); });
+    piece.rotation.x = 0.38;   // seen a little from above: the rim, the dram's surface and the ice show
+    idle = (t) => { piece.rotation.y = t * 0.25; piece.rotation.z = Math.sin(t * 0.6) * 0.05; };
+  },
+  cocktail() {   // a coupe with a cocktail and a twist (ADAM: a complimentary cocktail)
+    const coupe = [[0, -1.6], [0.6, -1.6], [0.62, -1.55], [0.08, -1.45], [0.06, -0.1], [0.2, 0.0], [0.85, 0.35], [1.05, 0.75], [1.0, 0.76], [0.8, 0.4], [0.2, 0.08], [0, 0.06]]
+      .map(([x, y]) => new THREE.Vector2(x, y));
+    part(new THREE.LatheGeometry(coupe, 48), new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, thickness: 0.3, roughness: 0.05, ior: 1.5, clearcoat: 1, transparent: true, envMapIntensity: 2.5 }));
+    part(new THREE.LatheGeometry([[0, 0.1], [0.2, 0.12], [0.78, 0.42], [0.92, 0.62], [0, 0.62]].map(([x, y]) => new THREE.Vector2(x, y)), 48),
+      new THREE.MeshPhysicalMaterial({ color: new THREE.Color(O.gold), roughness: 0.08, clearcoat: 1, emissive: new THREE.Color(O.gold), emissiveIntensity: 0.35 }));
+    const twist = part(new THREE.TorusGeometry(0.22, 0.05, 10, 40, Math.PI * 1.6), new THREE.MeshPhysicalMaterial({ color: 0xf2a33a, roughness: 0.4, clearcoat: 0.6 }), 0.85, 0.8);
+    twist.rotation.set(0.4, 0.2, 0.8); settle(twist);
+    piece.position.y = 0.3;
+    idle = (t) => { piece.rotation.y = Math.sin(t * 0.45) * 0.7; };
+  },
+  banter() {   // two speech bubbles, the dots bouncing (Maloney's: "enjoy good banter")
+    const bubble = (w, h) => {
+      const sh = new THREE.Shape(), r = 0.35;
+      sh.moveTo(-w / 2 + r, -h / 2); sh.lineTo(-w / 2 + 0.5, -h / 2); sh.lineTo(-w / 2 + 0.2, -h / 2 - 0.45); sh.lineTo(-w / 2 + 0.95, -h / 2);
+      sh.lineTo(w / 2 - r, -h / 2); sh.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r); sh.lineTo(w / 2, h / 2 - r); sh.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+      sh.lineTo(-w / 2 + r, h / 2); sh.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r); sh.lineTo(-w / 2, -h / 2 + r); sh.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+      return new THREE.ExtrudeGeometry(sh, { depth: 0.25, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 3 });
+    };
+    part(bubble(2.6, 1.3), accent, -0.4, 0.55, 0);
+    const b2 = part(bubble(1.8, 0.95), second, 0.7, -0.9, 0.5); b2.rotation.y = Math.PI; settle(b2);
+    const dots = [-0.55, 0, 0.55].map((x) => part(new THREE.SphereGeometry(0.15, 24, 16), new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.3, clearcoat: 1 }), -0.4 + x, 0.55, 0.42));
+    idle = (t) => { dots.forEach((d, i) => { d.position.y = d.userData.home.y + Math.max(0, Math.sin(t * 5 - i * 0.7)) * 0.18; });
+      piece.rotation.y = Math.sin(t * 0.5) * 0.35; };
+  },
+  mirror() {   // a lit salon mirror (Jacks & Buckley: hair, beard, brows and skin, all under one roof)
+    part(new THREE.TorusGeometry(1.45, 0.14, 20, 80), accent);
+    part(new THREE.CircleGeometry(1.36, 64), new THREE.MeshPhysicalMaterial({ color: 0xcfdde6, metalness: 0.9, roughness: 0.14, envMapIntensity: 3.2, emissive: 0x2a3640, emissiveIntensity: 0.6 }), 0, 0, -0.02);
+    const bulbs = [];
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      bulbs.push(part(new THREE.SphereGeometry(0.11, 16, 12), new THREE.MeshStandardMaterial({ color: 0xfff1d0, emissive: 0xffd99a, emissiveIntensity: 1.6 }),
+        Math.cos(a) * 1.68, Math.sin(a) * 1.68, 0.05));
+    }
+    idle = (t) => { bulbs.forEach((b, i) => { b.material.emissiveIntensity = 1.3 + Math.sin(t * 2 + i * 0.5) * 0.4; }); piece.rotation.y = Math.sin(t * 0.4) * 0.45; };
   },
 };
 (P[O.piece] || P.scissors)();
@@ -180,8 +269,9 @@ function place() {
   if (w < 760) {
     const top = L === 'split' || L === 'bold';            // the photo sits at the top of the phone screen
     const corner = L === 'cinema';                        // its buttons fill the bottom: use the corner under the menu
-    holder.scale.setScalar(top ? 0.42 : 0.3);
-    holder.position.set(halfW - (top ? 1.45 : 1.0), top ? halfH - 3.1 : corner ? halfH - 2.35 : -halfH + 1.4, 0);
+    const wide = O.piece === 'neon';                      // a whole word: smaller, tucked against the right edge
+    holder.scale.setScalar(wide ? 0.26 : top ? 0.42 : 0.3);
+    holder.position.set(halfW - (wide ? 0.75 : top ? 1.45 : 1.0), top ? halfH - 3.1 : corner ? halfH - 1.75 : -halfH + 1.4, 0);
   } else {
     holder.scale.setScalar(Math.min(1, w / 1500));
     holder.position.set(L === 'split' ? -halfW * 0.5 : halfW * (L === 'atelier' ? 0.74 : L === 'cinema' ? 0.68 : 0.52), 0.2, 0);

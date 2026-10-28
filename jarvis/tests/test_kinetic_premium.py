@@ -179,3 +179,17 @@ def test_each_mock_up_gets_its_own_3d_piece_for_its_trade(tmp_path):
     assert auto.next_piece("Kamo Barbers", leads=tmp_path) == "razor"  # the least used barber piece next
     page = depth3d.add("<body></body>", {"name": "Kamo", "depth3d": True, "piece": "razor", "colours": {"gold": "#e3262f"}}, tmp_path)
     assert '"piece": "razor"' in page and "logo.png" not in page  # their tool, not a logo coin
+
+
+def test_each_business_gets_its_own_story_piece_never_a_recent_one(tmp_path):
+    import depth3d
+    assert {"neon", "coffee", "whisky", "cocktail", "banter", "mirror"} <= set(depth3d.PIECES)
+    for i, pc in enumerate(["neon", "coffee", "razor"]):
+        (tmp_path / str(i)).mkdir()
+        f = tmp_path / str(i) / "config.json"
+        f.write_text(json.dumps({"piece": pc}))
+        os.utime(f, (i, i))
+    assert auto.recent_pieces(leads=tmp_path) == ["neon", "coffee", "razor"]
+    page = depth3d.add("<body></body>", {"name": "Capello", "depth3d": True, "piece": "bottle", "piece_text": "CAPELLO",
+                                         "colours": {"gold": "#ffc700"}}, tmp_path)
+    assert '"text": "CAPELLO"' in page and '"labelled": true' in page  # their own product, labelled with their name
