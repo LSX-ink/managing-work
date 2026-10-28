@@ -84,6 +84,7 @@ def build(src: Path, out: Path) -> None:
         html = LAYOUTS[c["layout"]]({"c": c, "col": col, "logo": logo, "hero": hero, "exp": exp, "gal": gal, "book": book, "book_label": book_label,
                                        "lat": lat, "lng": lng, "fonts": FONTS[c.get("fonts", c["layout"])]})
         from compare import add as add_compare; html = add_compare(html, c, src, out)
+        from depth3d import add as add_3d; html = add_3d(html, c, out)  # only when the config asks for it
         (out / "index.html").write_text(html, encoding="utf-8")
         print("written", c["layout"], len(html) // 1024, "KB,", len(photos), "photos")
         return
@@ -206,6 +207,7 @@ const cv=document.getElementById('dust'),cx=cv.getContext('2d');let W,H,P=[];fun
 const gc=getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(),g2=getComputedStyle(document.documentElement).getPropertyValue('--two').trim();(function d(){{cx.clearRect(0,0,W,H);P.forEach((p,i)=>{{cx.fillStyle=i%3?gc:g2;p.y-=p.s;p.x+=Math.sin(p.y/60)*.2;if(p.y<-5){{p.y=H+5;p.x=Math.random()*W}}cx.globalAlpha=p.o*(.5+.5*Math.sin(p.y/40));cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fill()}});requestAnimationFrame(d)}})();
 </script></body></html>"""
     from compare import add as add_compare; html = add_compare(html, c, src, out)
+    from depth3d import add as add_3d; html = add_3d(html, c, out)  # only when the config asks for it
     (out / "index.html").write_text(html, encoding="utf-8")
     print("written", len(html) // 1024, "KB,", len(photos), "photos")
 

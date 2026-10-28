@@ -155,3 +155,16 @@ async def test_a_garbled_review_is_asked_for_again(tmp_path, monkeypatch):
     r = Twice()
     new, notes = await auto.review(r, "m", tmp_path, tmp_path / "x", {"name": "S", "kicker": "a"}, "atelier", {"name": "S"})
     assert r.calls == 2 and new["kicker"] == "High St" and notes == ["ok"]
+
+
+def test_3d_only_on_pages_that_ask_for_it(tmp_path):
+    import depth3d
+    c = {"name": "Kamo Barbers", "short": "Kamo", "layout": "split",
+         "colours": {"gold": "#e3262f", "second": "#ffffff", "panel": "#141414"}}
+    page = "<html><body><h1>Hi</h1></body></html>"
+    assert depth3d.add(page, c, tmp_path) == page  # sent mock-ups never change
+    (tmp_path / "logo.png").write_bytes(b"x")
+    out = depth3d.add(page, {**c, "depth3d": True}, tmp_path)
+    assert '<canvas id="d3"' in out and "three@0.160.0" in out and '"logo": "logo.png"' in out
+    assert '"layout": "split"' in out and '"initials": "K"' in out and out.endswith("</body></html>")
+    assert depth3d.initials("Gents & Rascals BarberShop") == "GR"

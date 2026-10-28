@@ -359,6 +359,7 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     writer = getattr(client, "direct", client)  # the design needs Claude's eyes on the photos, not the free route
     facts = listing_facts(place, instagram, website)
     c = await write_config(writer, model, folder, layout, fonts, audit, facts)
+    c["depth3d"] = True  # their logo on a 3D medallion over the first screen (depth3d.py; owner, 28 Oct 2026)
     json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     out = outbox.LIVE / "m" / slug
     await asyncio.to_thread(premium_page.build, folder, out)
