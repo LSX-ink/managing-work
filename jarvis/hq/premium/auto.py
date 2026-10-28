@@ -254,6 +254,7 @@ SHAPES = {  # what the page layouts read: h1 is always three lines, the rest kee
     "services": lambda v: isinstance(v, list) and all(isinstance(g, dict) and isinstance(g.get("items"), list) for g in v),
 }
 REVIEW_TRIES = 3
+USE_3D = False  # owner, 28 Oct 2026: "keep version one for the barbers, these 3d dont look good". depth3d.py stays for later
 REVIEW_KEYS = {"kicker", "h1", "lead", "colours", "experience", "hero", "gallery", "fonts", "logo_light", "motif",
                "currency_note", "services", "special"}
 
@@ -390,7 +391,7 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     facts = listing_facts(place, instagram, website)
     recent = recent_pieces()
     c = await write_config(writer, model, folder, layout, fonts, audit, facts, recent)
-    c["depth3d"] = True  # a 3D piece of their trade over the first screen (depth3d.py; owner, 28 Oct 2026)
+    c["depth3d"] = USE_3D  # off: the owner tried the 3D pieces and preferred the pages without (28 Oct 2026)
     if c.get("piece") not in depth3d.PIECES or c["piece"] in recent:   # the writer's idea, unless it isn't new
         c["piece"] = next_piece(p["name"], place.get("types") or ())
         c.pop("piece_text", None)
