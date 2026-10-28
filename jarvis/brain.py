@@ -1244,8 +1244,33 @@ _PALINDROME = re.compile(_NAME + r"is " + _WORD + r" a palindrome" + _END, re.I)
 _END_LETTER = re.compile(_NAME + r"what(?:'s| is) the (?P<which>first|last) letter (?:of|in) " + _WORD + _END, re.I)
 
 
+_PHONETIC = ("Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliett Kilo Lima Mike November Oscar Papa Quebec Romeo "
+             "Sierra Tango Uniform Victor Whiskey X-ray Yankee Zulu").split()
+_SPELL_PHONETIC = re.compile(_NAME + r"(?:(?:how do you |can you |please )?spell " + _WORD + r" (?:phonetically|in (?:the )?(?:nato|phonetic)(?: alphabet)?"
+                             r"|using the (?:nato|phonetic) alphabet))" + _END, re.I)
+_LETTER_PHONETIC = re.compile(_NAME + r"what(?:'s| is) (?:the letter )?[\"']?(?P<l>[a-z])[\"']? in (?:the )?(?:nato|phonetic)(?: alphabet)?" + _END, re.I)
+_ANAGRAM = re.compile(_NAME + r"(?:are [\"']?(?P<a>[a-z]{2,30})[\"']? and [\"']?(?P<b>[a-z]{2,30})[\"']? anagrams"
+                     r"|is [\"']?(?P<a2>[a-z]{2,30})[\"']? an anagram of [\"']?(?P<b2>[a-z]{2,30})[\"']?)" + _END, re.I)
+
+
+def _phonetic(word: str) -> str:
+    """'Smith' -> 'Sierra, Mike, India, Tango, Hotel': clear over a bad phone line."""
+    return ", ".join(_PHONETIC[ord(c) - 97] if c.isalpha() else c for c in word.lower() if c.isalpha() or c.isdigit())
+
+
 def _word_answer(said: str) -> str | None:
-    """'Spell banana backwards', 'how many vowels in banana?', 'is level a palindrome?', 'what's the last letter of Tuesday?'"""
+    """'Spell Smith phonetically', 'are listen and silent anagrams?', 'spell banana backwards', 'how many vowels in banana?', 'is level a palindrome?', 'what's the last letter of Tuesday?'"""
+    if m := _SPELL_PHONETIC.match(said):
+        word = m.group("word")
+        if word.lower() in ("it", "that", "this", "them"):
+            return None  # Claude knows what "that" was
+        return f"{word.capitalize()}: {_phonetic(word)}."
+    if m := _LETTER_PHONETIC.match(said):
+        return f"{m.group('l').upper()} is {_PHONETIC[ord(m.group('l').lower()) - 97]}."
+    if m := _ANAGRAM.match(said):
+        a, b = (m.group("a") or m.group("a2")).lower(), (m.group("b") or m.group("b2")).lower()
+        same = a != b and sorted(a) == sorted(b)
+        return f"{'Yes' if same else 'No'}, {a} and {b} {'are' if same else 'are not'} anagrams."
     if m := _BACKWARDS.match(said):
         word = (m.group("word") or m.group("word2")).lower()
         if word in ("it", "that", "this", "them"):
