@@ -95,7 +95,7 @@ def build(src: Path, out: Path) -> None:
 <style>
 :root{{--bg:{col['bg']};--panel:{col['panel']};--ink:{col['ink']};--muted:{col['muted']};--gold:{col['gold']};--two:{col.get('second', col['gold'])};--line:color-mix(in srgb,var(--gold) 22%,transparent);
 --head:"Cinzel",Georgia,serif;--serif:"Cormorant Garamond",Georgia,serif;--body:"Manrope",system-ui,sans-serif}}
-*{{box-sizing:border-box}}html{{scroll-behavior:smooth}}body{{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 var(--body);overflow-x:hidden}}
+*{{box-sizing:border-box}}html{{scroll-behavior:smooth}}html{{overflow-x:clip}}body{{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.65 var(--body);overflow-x:clip}}
 body::before{{content:"";position:fixed;inset:0;background-image:{pattern};pointer-events:none;z-index:0}}
 img{{max-width:100%;display:block}}a{{color:inherit}}.wrap{{width:min(1180px,100% - 40px);margin:0 auto;position:relative;z-index:1}}
 .kick{{font:600 .72rem var(--body);letter-spacing:.34em;text-transform:uppercase;color:var(--two);margin:0 0 14px}}

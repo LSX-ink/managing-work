@@ -65,7 +65,7 @@ async def check(b, http, slug):
                 if rr.status_code >= 400 or "video" not in rr.headers.get("content-type", ""):
                     issues.append(f"video broken: {v}")
         else:
-            if await pg.evaluate("document.documentElement.scrollWidth > innerWidth + 2"):
+            if await pg.evaluate("document.documentElement.scrollWidth > innerWidth + 2 || innerWidth > 392"):  # a too-wide part also widens the phone screen itself
                 issues.append("phone: page spills sideways")
         issues += [("phone: " if mobile else "") + x for x in bad]
         issues += [("phone: " if mobile else "") + "script error: " + x for x in errs]
