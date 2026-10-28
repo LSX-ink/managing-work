@@ -35,7 +35,7 @@ def add(html: str, c: dict, out: Path) -> str:
     block = (
         '<canvas id="d3" aria-hidden="true"></canvas>'
         "<style>#d3{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:15;opacity:0;"
-        "transition:opacity .9s cubic-bezier(.16,1,.3,1)}#d3.on{opacity:1}"
+        "transition:opacity .35s ease-out}#d3.on{opacity:1}"
         "@media (prefers-reduced-transparency:reduce){#d3{display:none}}</style>"
         f'<script type="importmap">{{"imports":{{"three":"{THREE}build/three.module.js","three/addons/":"{THREE}examples/jsm/"}}}}</script>'
         '<script type="module">' + SCENE_JS.replace("__OPTS__", json.dumps(opts)) + "</script>")
@@ -73,10 +73,23 @@ const faceTex = new THREE.CanvasTexture(face); faceTex.colorSpace = THREE.SRGBCo
 faceTex.center.set(0.5, 0.5); faceTex.rotation = Math.PI / 2;   // the cylinder's cap lies sideways: turn the logo upright
 paintFace(null);
 if (O.logo) { const im = new Image(); im.onload = () => paintFace(im); im.src = O.logo; }
-const metal = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(O.gold), metalness: 1, roughness: 0.28, clearcoat: 0.6 });
+const metal = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(O.gold), metalness: 1, roughness: 0.28, clearcoat: 0.6,
+  emissive: new THREE.Color(O.gold), emissiveIntensity: 0 });
 const faceMat = new THREE.MeshPhysicalMaterial({ map: faceTex, metalness: 0.25, roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.08 });
-const coin = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.22, 96), [metal, faceMat, faceMat]);
+// the medallion is built from wedge shards (igloo.inc's assemble-on-scroll idea, written here from scratch): they fly in
+// from all sides as the page opens, lock together with glowing seams, and drift apart again as the visitor scrolls.
+// Every wedge's cap uses the same disc mapping, so the logo lines up exactly when the shards meet.
+const SH = phone ? 9 : 14, coin = new THREE.Group(), shards = [];
+for (let i = 0; i < SH; i++) {
+  const a0 = (i / SH) * Math.PI * 2, da = Math.PI * 2 / SH, mid = a0 + da / 2;
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.22, Math.max(4, Math.round(96 / SH)), 1, false, a0, da), [metal, faceMat, faceMat]);
+  const r = 1.4 + Math.random() * 2.2;
+  m.userData = { off: new THREE.Vector3(Math.sin(mid) * r, (Math.random() - .5) * 3.2, Math.cos(mid) * r),
+                 rot: new THREE.Euler((Math.random() - .5) * 4, (Math.random() - .5) * 4, (Math.random() - .5) * 4), delay: Math.random() * 0.5 };
+  coin.add(m); shards.push(m);
+}
 coin.rotation.x = Math.PI / 2; const holder = new THREE.Group(); holder.add(coin); scene.add(holder);
+const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
 
 // glass shapes in the brand colours, drifting round it
 const glass = (c) => new THREE.MeshPhysicalMaterial({ color: new THREE.Color(c), transmission: 0.92, thickness: 1.2, roughness: 0.06, ior: 1.5,
@@ -111,8 +124,18 @@ let px = 0, py = 0;
 addEventListener('pointermove', (e) => { px = e.clientX / innerWidth - .5; py = e.clientY / innerHeight - .5; }, { passive: true });
 const clock = new THREE.Clock();
 function frame(t) {
-  const intro = Math.min(1, t / 2.2), ease = 1 - Math.pow(1 - intro, 3);
-  coin.rotation.z = -(1 - ease) * Math.PI * 2 + Math.sin(t * 0.5) * 0.35;   // one full spin as the page opens, then a slow sway
+  const sc = still ? 0 : Math.min(1, scrollY / (innerHeight * 0.75));   // read once per drawn frame, no scroll listener
+  let apart = 0;
+  shards.forEach((m) => {
+    const { off, rot, delay } = m.userData;
+    const k = (1 - ease((t - 0.2 - delay) / 1.8)) + sc * 0.85;            // flies in, locks, then drifts apart on scroll
+    m.position.copy(off).multiplyScalar(k);
+    m.rotation.set(rot.x * k, rot.y * k, rot.z * k);
+    apart = Math.max(apart, k);
+  });
+  metal.emissiveIntensity = Math.min(1.4, apart * 1.6) + (apart < 0.02 ? 0.25 * Math.max(0, 1 - (t - 2.2)) : 0);   // seams glow
+  coin.rotation.z = Math.sin(t * 0.5) * 0.35;   // a slow sway once it's whole
+  cv.style.opacity = inView ? Math.max(0, 1 - sc * 1.25).toFixed(3) : '0';   // gone before the next section's words arrive
   holder.rotation.x = py * 0.35; holder.rotation.y = px * 0.5;
   shapes.forEach((m) => { const { p, i } = m.userData; m.position.y = p[1] + Math.sin(t * 0.7 + i * 1.7) * 0.22;
     m.rotation.x = t * 0.3 + i; m.rotation.y = t * 0.4 + i; });

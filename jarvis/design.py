@@ -148,6 +148,7 @@ WEBSITE_SKILLS = [
     ("threejs-errors-performance", "SKILL.md", "keeping 3D smooth on a phone", 0),
     ("gsap-scrolltrigger", "SKILL.md", "scroll-driven animation and 3D camera moves", 0),
     ("spline-interactive", "SKILL.md", "ready-made interactive 3D from Spline", 0),
+    ("scroll-assembly-3d", "SKILL.md", "igloo.inc-style 3D: a hero that builds itself from pieces as you scroll", 0),
     # the website kit's guides (added 27 Oct 2026 by the project's assistant): the review applies the ones about the
     # look, words and access; the code-level ones (motion, speed, metadata, 3D) are for hand builds
     ("baseline-ui", "SKILL.md", "the interface quality baseline every page must meet", 3000),
