@@ -7,18 +7,21 @@ Guard rails, all enforced here, before anything is sent:
 - only where a cold email is allowed: kinetic_world.cold_email_ok (UK PECR: limited companies only; never in the
   countries where cold email needs consent)
 - never to anyone opted out, not interested, already talking to us, or already emailed today
-- at most settings.send_per_day emails a day (default 15), one per run, only Monday to Saturday 09:00 to 17:30 UK
+- settings.send_per_day emails a day (default 15): one per run, more when behind the day's pace so the limit is
+  always reached; leads with no email don't count; only Monday to Saturday 09:00 to 17:30 UK
 - every email: the business's real problem, the free mock-up as a link, "See your design before you pay anything",
   half when we start building and half once complete, signed Alfred, an opt-out line, no placeholders, no Klarna
 - then the free AI reads it as a strict editor and must answer APPROVE
 - replies are watched: an opt-out ("no thanks", "unsubscribe", "stop") marks them opted out for good; any other
   reply marks them replied (no more follow-ups) and puts them on the owner's list
-Sent emails go from Alfred's own address and are recorded in the outreach tracker, so follow-ups come at day 3 and 7.
+Sent emails go from Alfred's own address and are recorded in the outreach tracker, so follow-ups come at days 3, 7, 14
+and 21 (four, then stop; a reply or a no stops them sooner).
 """
 
 import asyncio
 import email.utils
 import json
+import math
 import re
 import subprocess
 from datetime import datetime
@@ -58,6 +61,12 @@ def uk_now() -> datetime:
 
 def in_hours(now: datetime) -> bool:
     return now.weekday() < 6 and (9, 0) <= (now.hour, now.minute) <= (17, 30)
+
+
+def on_pace(cap: int, now: datetime) -> int:
+    """How many emails should be out by now for the day's cap to be reached by 17:00, spread evenly from 9:00."""
+    done = (now.hour * 60 + now.minute - 9 * 60) / (8 * 60)
+    return max(1, math.ceil(cap * min(1.0, max(0.0, done))))
 
 
 # ---- finding who to email ------------------------------------------------------------------------
@@ -527,8 +536,10 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "it is polite, professional, honest and specific; British English; no made-up facts, prices or "
               "promises beyond: websites from £395 (or the local equivalent), half when we start building and half "
               "once complete, a free home page mock-up, 'see your design before you pay anything'; it is signed by "
-              "Alfred; it has an opt-out line. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
-              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews')})}\n\n"
+              "Alfred; it has an opt-out line. A price in the business's own currency (e.g. $499 or €459) is the "
+              "local equivalent of £395 and is fine. For a follow-up, the date of our first email is in the facts "
+              "(first_email_sent) and is real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
+              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far') if p.get(k) not in (None, '')})}\n\n"
               f"Subject: {subject}\n\n{body}")
     try:
         text = await ctx.ask_ai(prompt, 2500)

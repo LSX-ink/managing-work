@@ -96,3 +96,44 @@ def test_an_instagram_profile_must_belong_to_the_business():
     assert not outbox.same_business("Gabi (@gabi_6987) • Instagram photos and videos", "gabi_6987", "FADE INN SALON")
     assert outbox.same_business("KAMO (@kamo.barbersnewcastle)", "kamo.barbersnewcastle", "Kamo Barbers Newcastle")
     assert outbox.same_business("Capello Barbers (@capellobarbers)", "CAPELLOBARBERS", "Capello Barbershop Whitchurch Road")
+
+
+def test_emails_keep_pace_with_the_daily_limit():
+    from hq import outbox
+    day = datetime(2026, 10, 28)
+    assert outbox.on_pace(15, day.replace(hour=9, minute=0)) == 1
+    assert outbox.on_pace(15, day.replace(hour=13, minute=0)) == 8  # halfway through the day, half the emails
+    assert outbox.on_pace(15, day.replace(hour=17, minute=15)) == 15
+
+
+def test_a_held_back_follow_up_no_longer_blocks_the_rest(tmp_path, monkeypatch):
+    # 28 Oct 2026: one follow-up the editor kept holding back stopped every other email all day
+    import asyncio
+    from hq import agents, outbox
+    b = Brain(tmp_path / "brain.db")
+    ctx = agents.Ctx(None, b, None)
+    rows = [{"name": "Stuck", "email": "a@stuck.com"}, {"name": "Fine", "email": "b@fine.com"},
+            {"name": "Also", "email": "c@also.com"}]
+    sent = []
+    monkeypatch.setattr(outbox, "watch_replies", lambda c: [])
+    monkeypatch.setattr(outbox, "in_hours", lambda now: True)
+    monkeypatch.setattr(outbox, "uk_now", lambda: datetime(2026, 10, 28, 13, 0))
+    monkeypatch.setattr(outbox, "sent_today", lambda c: len(sent))
+    monkeypatch.setattr(agents, "_due_by_email", lambda s: [r for r in rows if r["name"] not in sent])
+    monkeypatch.setattr(outbox, "follow_up_email", lambda s, name, link: ("Following up", "body " + name))
+
+    async def vet(c, p, name, to, subject, body, link, first, row=None):
+        if name == "Stuck":
+            return f"held back {name}"
+        sent.append(name)
+        return f"sent the follow-up to {name}"
+    monkeypatch.setattr(agents, "_vet_and_send", vet)
+
+    async def no_leads(c):
+        return None
+    monkeypatch.setattr(outbox, "check_companies", no_leads)
+    monkeypatch.setattr(outbox, "candidates", lambda s, ltd: [])
+    monkeypatch.setattr(outbox, "limited_companies", lambda brain: set())
+    out = asyncio.run(agents.warden(ctx))
+    assert sent == ["Fine", "Also"] and "sent the follow-up to Fine" in out  # behind pace at 13:00: two in one run
+    assert b.get("held.a@stuck.com") == "2026-10-28"  # held for today, tried again tomorrow
