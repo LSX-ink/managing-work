@@ -894,3 +894,13 @@ def test_review_and_referral_requests_for_won_clients(s, monkeypatch):
         track(s, action="review_request", business="Bloom")
     for text in (body, out):
         assert "klarna" not in str(text).lower()
+
+
+def test_a_full_prospect_list_lets_the_least_promising_untouched_one_go(s):
+    import kinetic_find as kf
+    rows = [{"id": 1, "name": "Busy", "status": "new", "reviews": 400, "found": "2026-10-01"},
+            {"id": 2, "name": "Quiet", "status": "new", "reviews": 3, "found": "2026-10-02"},
+            {"id": 3, "name": "Messaged", "status": "contacted", "reviews": 0, "found": "2026-10-01"},
+            {"id": 4, "name": "On the DM list", "status": "new", "reviews": 0, "found": "2026-10-01"}]
+    st.save(s, st.OUTREACH, [{"id": 1, "name": "On the DM list", "prospect": 4, "status": "drafted"}])
+    assert kf.make_room(s, rows) and [r["name"] for r in rows] == ["Busy", "Messaged", "On the DM list"]

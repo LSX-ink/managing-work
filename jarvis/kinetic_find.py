@@ -879,6 +879,17 @@ def biggest_problem(p: dict) -> dict:
     return {}
 
 
+def make_room(settings: Settings, rows: list[dict]) -> bool:
+    """A full list (29 Oct 2026: it had sat at the limit, so nothing new was being added) lets the least promising
+    untouched prospect go: never messaged or drafted, fewest reviews, then the oldest found."""
+    tracked = {r.get("prospect") for r in st.rows_of(settings, st.OUTREACH)}
+    spare = [r for r in rows if r.get("status") == "new" and r.get("id") not in tracked]
+    if not spare:
+        return False
+    rows.remove(min(spare, key=lambda r: (r.get("reviews") or 0, r.get("found") or "")))
+    return True
+
+
 def merge(settings: Settings, found: list[dict]) -> list[dict]:
     """Add or refresh prospects in kinetic-prospects.json; returns the stored rows for found."""
     rows = st.rows_of(settings, st.PROSPECTS)
@@ -894,7 +905,7 @@ def merge(settings: Settings, found: list[dict]) -> list[dict]:
             if b.get("website") == "" and social_of(hit.get("website", "")):
                 split_social(hit)  # saved before social pages counted as no website
         else:
-            if len(rows) >= st.MAX_ROWS:
+            if len(rows) >= st.MAX_ROWS and not make_room(settings, rows):
                 break
             hit = {"id": st.next_id(rows), "status": "new", "found": st.today().isoformat(), **b}
             rows.append(hit)
@@ -988,6 +999,8 @@ async def find(settings: Settings, args: dict, http: httpx.AsyncClient) -> scree
     if unchecked:
         text += f" I didn't check {unchecked} other website{'s' if unchecked != 1 else ''}; ask me to audit any of them."
     text += f" The list is saved in {st.where(settings, path)}." + (" Found on Google Maps." if source != "OpenStreetMap" else "") + fell_back
+    if not rows:  # everything found here is already on the list
+        return text
     top = rows[0]
     return st.table(text, f"Prospects near {town}", COLUMNS, prospect_rows(rows[:60]), [
         {"label": "Outreach for #1", "say": f"Write an outreach message for prospect {top['id']}."},

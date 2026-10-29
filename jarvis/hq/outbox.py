@@ -132,6 +132,11 @@ def trade_group(p: dict) -> str:
         return "hair"
     if re.search(r"beauty|nail|lash|brow|spa|skin|tann|makeup|massage", k):
         return "beauty"
+    for word, group in (("restaurant", "restaurant"), ("cafe", "cafe"), ("coffee", "cafe"), ("gym", "fitness"),
+                        ("fitness", "fitness"), ("garage", "garage"), ("car ", "garage"), ("auto", "garage"),
+                        ("mechanic", "garage"), ("clinic", "health"), ("dent", "health"), ("physio", "health")):
+        if word in k + " ":
+            return group
     return k or "other"
 
 
