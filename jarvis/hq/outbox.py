@@ -107,6 +107,7 @@ def _fresh_busy(settings) -> list[dict]:
     by_name = {r["name"].lower(): r for r in st.rows_of(settings, st.OUTREACH)}
     out = [p for p in st.rows_of(settings, st.PROSPECTS)
            if not closed_or_busy(by_name.get(p["name"].lower())) and busy_score(p) > 0
+           and not NOT_A_LEAD.search(str(p.get("kind") or ""))
            and (by_name.get(p["name"].lower()) or {}).get("draft_channel") != "dm"]  # on the owner's DM list already
     return mix_trades(sorted(out, key=busy_score, reverse=True))
 
@@ -124,20 +125,20 @@ def mix_trades(rows: list[dict]) -> list[dict]:
     return out
 
 
+TRADE_GROUPS = (  # the trades that take turns on the DM list and in the emails (owner, 29 Oct 2026: "just trade mix")
+    ("barber", r"barber"), ("hair", r"hair"), ("beauty", r"beauty|nail|lash|brow|spa|skin|tann|makeup|massage|cosmetic"),
+    ("cafe", r"cafe|café|coffee|bakery|tea room"), ("restaurant", r"restaurant|steak|grill|pizza|bistro|diner|takeaway|bar|pub"),
+    ("garage", r"garage|car |auto|mechanic|tyre|mot"), ("fitness", r"gym|fitness|yoga|pilates|martial|boxing"),
+    ("health", r"clinic|dent|physio|doctor|medical|chiro|vet|optic|pharma"), ("cleaners", r"laundr|dry clean|clean"),
+    ("trades", r"plumb|electric|build|contractor|roof|paint|carpent|landscap|garden|tiler|plaster|locksmith|hvac"),
+    ("shop", r"store|shop|boutique|tailor|florist|butcher|jewel"))
+NOT_A_LEAD = re.compile(r"landmark|mall|museum|park|church|mosque|temple|school|attraction|institution|association|"
+                        r"government|university|venue|hotel chain", re.I)
+
+
 def trade_group(p: dict) -> str:
-    k = str(p.get("kind") or "").lower()
-    if "barber" in k:
-        return "barber"
-    if "hair" in k:
-        return "hair"
-    if re.search(r"beauty|nail|lash|brow|spa|skin|tann|makeup|massage", k):
-        return "beauty"
-    for word, group in (("restaurant", "restaurant"), ("cafe", "cafe"), ("coffee", "cafe"), ("gym", "fitness"),
-                        ("fitness", "fitness"), ("garage", "garage"), ("car ", "garage"), ("auto", "garage"),
-                        ("mechanic", "garage"), ("clinic", "health"), ("dent", "health"), ("physio", "health")):
-        if word in k + " ":
-            return group
-    return k or "other"
+    k = str(p.get("kind") or "").lower() + " "
+    return next((g for g, rx in TRADE_GROUPS if re.search(rx, k)), "other")
 
 
 def candidates(settings, ltd: set | None = None) -> list[dict]:
