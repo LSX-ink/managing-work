@@ -503,14 +503,35 @@ def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
     return subject, body
 
 
-def follow_up_email(settings, name: str, link: str) -> tuple[str, str] | None:
+def follow_up_email(settings, name: str, link: str, updated: bool = False) -> tuple[str, str] | None:
+    """updated: the link is a fresh mock-up made with the new designer, so the email says so (owner, 29 Oct 2026)."""
     d = tracker.follow_up_draft(settings, {"business": name, "channel": "email"})
     if d.get("stop"):
         return None
     subject, body = split_subject(d["body"])
-    if link:
+    if link and updated:
+        parts = body.split("\n\n")
+        parts.insert(2, f"Since my last email I've made you a new, updated design for {name}, free and with no "
+                        f"obligation: {link}")
+        body = "\n\n".join(parts)
+    elif link:
         body = body.replace("is still yours to see, with no obligation.", f"is still yours to see, with no obligation: {link}")
     return subject, body
+
+
+async def refresh_mockup(ctx, row: dict) -> str:
+    """A follow-up's lead gets one new mock-up from the premium designer (a new -v2 link; the sent one never changes),
+    made only when their follow-up is about to go, so credit is spent on emails that are sent. "" when it can't."""
+    b = ctx.brain
+    key = f"mockup_updated.{row['name'].lower()}"
+    if b.get(key):
+        return b.get(key)
+    p = st.find_prospect(st.rows_of(ctx.settings, st.PROSPECTS), row.get("prospect") or row["name"]) or {}
+    p = {**p, "name": row["name"]}
+    link = await premium_mockup(ctx, p)
+    if link:
+        b.set(key, link)
+    return link
 
 
 # ---- Vera's checks ----------------------------------------------------------------------------------
@@ -538,8 +559,8 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "once complete, a free home page mock-up, 'see your design before you pay anything'; it is signed by "
               "Alfred; it has an opt-out line. A price in the business's own currency (e.g. $499 or €459) is the "
               "local equivalent of £395 and is fine. For a follow-up, the date of our first email is in the facts "
-              "(first_email_sent) and is real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
-              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far') if p.get(k) not in (None, '')})}\n\n"
+              "(first_email_sent) and is real, and when made_them_an_updated_mockup is true the new design and its link are real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
+              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far', 'made_them_an_updated_mockup') if p.get(k) not in (None, '')})}\n\n"
               f"Subject: {subject}\n\n{body}")
     try:
         text = await ctx.ask_ai(prompt, 2500)

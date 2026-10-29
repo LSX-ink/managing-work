@@ -409,10 +409,19 @@ async def _send_one(ctx: Ctx) -> str:
     for row in _due_by_email(s):  # 1. an email follow-up that's due
         if b.get(f"held.{row['email'].lower()}") == today:  # held back today: try again tomorrow
             continue
-        link = b.get(f"mockup.{row['name'].lower()}", "")
-        made = outbox.follow_up_email(s, row["name"], link)
+        fresh = ""
+        if b.get(f"held_mockup.{row['email'].lower()}") != today:
+            try:  # owner, 29 Oct 2026: follow-ups carry a mock-up made with the new designer
+                fresh = await outbox.refresh_mockup(ctx, row)
+            except Exception as e:  # e.g. the API credit ran out: the follow-up goes with the mock-up they had
+                b.log("warden", f"couldn't make {row['name']} an updated mock-up: {e}"[:300], "warn")
+            if not fresh:
+                b.set(f"held_mockup.{row['email'].lower()}", today)
+        link = fresh or b.get(f"mockup.{row['name'].lower()}", "")
+        made = outbox.follow_up_email(s, row["name"], link, updated=bool(fresh))
         if made:
-            said = await _vet_and_send(ctx, None, row["name"], row["email"], *made, link, first=False, row=row)
+            said = await _vet_and_send(ctx, None, row["name"], row["email"], *made, link, first=False, row=row,
+                                       updated=bool(fresh))
             if said.startswith("sent"):
                 return said
             b.set(f"held.{row['email'].lower()}", today)
@@ -459,7 +468,7 @@ def _due_by_email(s) -> list[dict]:
 
 
 async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: str, body: str, link: str,
-                        first: bool, row: dict | None = None) -> str:
+                        first: bool, row: dict | None = None, updated: bool = False) -> str:
     from hq import outbox
     b = ctx.brain
     # US and Canadian law (CAN-SPAM, CASL) need a postal address; Alfred's template only asks for it there
@@ -473,7 +482,8 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
         b.log("warden", f"held back the email to {name}: " + ", ".join(problems), "warn")
         return f"held back {name}"
     facts = p or {"name": name, "country": (row or {}).get("country", ""),
-                  "first_email_sent": (row or {}).get("contacted", ""), "messages_so_far": (row or {}).get("messages", 0)}
+                  "first_email_sent": (row or {}).get("contacted", ""), "messages_so_far": (row or {}).get("messages", 0),
+                  **({"made_them_an_updated_mockup": True} if updated else {})}
     ok, why = await outbox.ai_check(ctx, facts, subject, body)
     if not ok:
         if p:

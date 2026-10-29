@@ -120,9 +120,13 @@ def test_a_held_back_follow_up_no_longer_blocks_the_rest(tmp_path, monkeypatch):
     monkeypatch.setattr(outbox, "uk_now", lambda: datetime(2026, 10, 28, 13, 0))
     monkeypatch.setattr(outbox, "sent_today", lambda c: len(sent))
     monkeypatch.setattr(agents, "_due_by_email", lambda s: [r for r in rows if r["name"] not in sent])
-    monkeypatch.setattr(outbox, "follow_up_email", lambda s, name, link: ("Following up", "body " + name))
+    monkeypatch.setattr(outbox, "follow_up_email", lambda s, name, link, updated=False: ("Following up", "body " + name))
 
-    async def vet(c, p, name, to, subject, body, link, first, row=None):
+    async def no_mockup(c, row):
+        return ""
+    monkeypatch.setattr(outbox, "refresh_mockup", no_mockup)
+
+    async def vet(c, p, name, to, subject, body, link, first, row=None, updated=False):
         if name == "Stuck":
             return f"held back {name}"
         sent.append(name)
@@ -137,3 +141,16 @@ def test_a_held_back_follow_up_no_longer_blocks_the_rest(tmp_path, monkeypatch):
     out = asyncio.run(agents.warden(ctx))
     assert sent == ["Fine", "Also"] and "sent the follow-up to Fine" in out  # behind pace at 13:00: two in one run
     assert b.get("held.a@stuck.com") == "2026-10-28"  # held for today, tried again tomorrow
+
+
+
+def test_a_follow_up_with_an_updated_mock_up_says_so(monkeypatch):
+    from hq import outbox
+    import kinetic_outreach as tracker
+    body = ("Hi there,\n\nI'm just following up.\n\nThe free example home page I made for you is still yours to see, "
+            "with no obligation.\n\nThanks")
+    monkeypatch.setattr(tracker, "follow_up_draft", lambda s, a: {"body": "Subject: Following up\n\n" + body})
+    parts = outbox.follow_up_email(None, "Joe's", "https://x/m/joes-v2/", updated=True)[1].split("\n\n")
+    assert parts[2].startswith("Since my last email I've made you a new, updated design for Joe's")
+    assert parts[2].endswith("https://x/m/joes-v2/")
+    assert outbox.follow_up_email(None, "Joe's", "https://x/m/joes/")[1].count("https://x/m/joes/") == 1
