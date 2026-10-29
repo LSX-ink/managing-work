@@ -392,25 +392,41 @@ async def warden(ctx: Ctx) -> str:
         b.log("warden", note, "warn" if "REPLIED" in note else "info")
     if not outbox.in_hours(outbox.uk_now()):
         return "outside sending hours (Mon to Sat, 9:00 to 17:30)"
-    cap = int(b.get("settings.send_per_day", 15))
-    sent = outbox.sent_today(ctx)
-    if sent >= cap:
-        return f"today's limit reached ({cap} emails)"
-    # owner, 28 Oct 2026: always hit the daily limit. One email a run, more when behind the day's pace; an email that's
-    # held back no longer blocks the queue (one stuck follow-up held everything back all day on 28 Oct)
-    want = min(cap - sent, max(1, min(3, outbox.on_pace(cap, outbox.uk_now()) - sent)))
+    # owner, 29 Oct 2026: follow-ups had filled the whole day's limit, so no new business got a first email. New first
+    # emails and follow-ups now each have their own daily limit, and the two take turns.
+    caps = {"first email": int(b.get("settings.send_per_day", 15)), "follow-up": int(b.get("settings.followups_per_day", 15))}
+    sent = {k: outbox.sent_today_of(ctx, k) for k in caps}
+    if all(sent[k] >= caps[k] for k in caps):
+        return f"today's limits reached ({caps['first email']} new emails, {caps['follow-up']} follow-ups)"
+    total, done_n = sum(caps.values()), sum(sent.values())
+    # always hit the daily limits: one email a run, more when behind the day's pace; a held-back email never blocks
+    want = min(total - done_n, max(1, min(3, outbox.on_pace(total, outbox.uk_now()) - done_n)))
     done = []
     while len(done) < want:
-        said = await _send_one(ctx)
+        open_ = [k for k in caps if outbox.sent_today_of(ctx, k) < caps[k]]
+        if not open_:
+            break
+        said = await _send_one(ctx, open_)
         if not said.startswith("sent"):
             return "; ".join(done + [said])
         done.append(said)
     return "; ".join(done)
 
 
-async def _send_one(ctx: Ctx) -> str:
-    """The next email that passes: a due follow-up first, then a first email to a fresh lead. Held-back ones are
-    noted and passed over, so the next lead gets its turn in the same run."""
+async def _send_one(ctx: Ctx, open_: list[str] | None = None) -> str:
+    """The next email that passes, from the kinds still under today's limit ("first email", "follow-up"), whichever
+    has had fewer today going first. Held-back ones are noted and passed over, so the next lead gets its turn."""
+    from hq import outbox
+    open_ = open_ or ["follow-up", "first email"]
+    said = ""
+    for kind in sorted(open_, key=lambda k: outbox.sent_today_of(ctx, k)):
+        said = await (_send_follow_up(ctx) if kind == "follow-up" else _send_first(ctx))
+        if said.startswith("sent"):
+            return said
+    return said
+
+
+async def _send_follow_up(ctx: Ctx) -> str:
     from hq import outbox
     s, b = ctx.settings, ctx.brain
     today = outbox.uk_now().date().isoformat()
@@ -433,6 +449,12 @@ async def _send_one(ctx: Ctx) -> str:
             if said.startswith("sent"):
                 return said
             b.set(f"held.{row['email'].lower()}", today)
+    return "no follow-ups due right now"
+
+
+async def _send_first(ctx: Ctx) -> str:
+    from hq import outbox
+    s, b = ctx.settings, ctx.brain
     looked = 0
     await outbox.check_companies(ctx)  # UK leads that are limited companies can be emailed too (PECR)
     for p in outbox.candidates(s, outbox.limited_companies(b)):  # 2. a first email to the best fresh lead we can email

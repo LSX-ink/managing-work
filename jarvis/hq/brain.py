@@ -106,6 +106,14 @@ class Brain:
         with self._db() as db:
             return db.execute(sql, args).fetchone()[0]
 
+    def events_today(self, agent: str, kind: str | None = None) -> list[dict]:
+        start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        sql, args = "SELECT * FROM events WHERE agent = ? AND ts >= ?", [agent, start]
+        if kind:
+            sql, args = sql + " AND kind = ?", args + [kind]
+        with self._db() as db:
+            return [self._event(r) for r in db.execute(sql + " ORDER BY id", args).fetchall()]
+
     def runs_today(self, agent: str) -> int:
         start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
         with self._db() as db:

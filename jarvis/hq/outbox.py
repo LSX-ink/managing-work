@@ -650,6 +650,11 @@ def sent_today(ctx) -> int:
     return ctx.brain.count_today("warden", "win")
 
 
+def sent_today_of(ctx, kind: str) -> int:
+    """Emails of one kind ("first email" or "follow-up") Vera sent today."""
+    return sum(1 for e in ctx.brain.events_today("warden", "win") if (e.get("data") or {}).get("type") == kind)
+
+
 def watch_replies(ctx) -> list[str]:
     """Replies from anyone we emailed: opt-outs are honoured for good, other replies stop the follow-ups."""
     s = ctx.settings

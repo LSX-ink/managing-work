@@ -171,3 +171,33 @@ def test_hawk_hunts_a_different_trade_each_run(tmp_path):
         b.set("scout.trade_turn", t)
         seen.append(agents._trade(b))
     assert seen == list(agents.TRADE_MIX) and len(set(seen)) == len(seen)
+
+
+def test_new_emails_and_follow_ups_have_their_own_daily_limits(tmp_path, monkeypatch):
+    # 29 Oct 2026: 15 follow-ups filled the day's limit, so no new business got a first email
+    import asyncio
+    from hq import agents, outbox
+    b = Brain(tmp_path / "brain.db")
+    ctx = agents.Ctx(None, b, None)
+    b.set("settings.send_per_day", 2)
+    b.set("settings.followups_per_day", 2)
+    for i in range(2):
+        b.log("warden", f"checked and sent the follow-up to F{i}", "win", {"type": "follow-up"})
+    monkeypatch.setattr(outbox, "watch_replies", lambda c: [])
+    monkeypatch.setattr(outbox, "in_hours", lambda now: True)
+    monkeypatch.setattr(outbox, "uk_now", lambda: datetime.now().replace(hour=16, minute=0))
+    tried = []
+
+    async def first(c):
+        tried.append("first")
+        b.log("warden", "checked and sent the first email to N", "win", {"type": "first email"})
+        return "sent the first email to N"
+
+    async def follow(c):
+        tried.append("follow")
+        return "sent a follow-up"
+    monkeypatch.setattr(agents, "_send_first", first)
+    monkeypatch.setattr(agents, "_send_follow_up", follow)
+    asyncio.run(agents.warden(ctx))
+    assert tried == ["first", "first"] and outbox.sent_today_of(ctx, "first email") == 2  # follow-ups were full
+    assert "limits reached" in asyncio.run(agents.warden(ctx))
