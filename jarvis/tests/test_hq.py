@@ -185,7 +185,7 @@ def test_new_emails_and_follow_ups_have_their_own_daily_limits(tmp_path, monkeyp
         b.log("warden", f"checked and sent the follow-up to F{i}", "win", {"type": "follow-up"})
     monkeypatch.setattr(outbox, "watch_replies", lambda c: [])
     monkeypatch.setattr(outbox, "in_hours", lambda now: True)
-    monkeypatch.setattr(outbox, "uk_now", lambda: datetime.now().replace(hour=16, minute=0))
+    monkeypatch.setattr(outbox, "uk_now", lambda: datetime(2026, 10, 29, 16, 0))  # a Thursday
     tried = []
 
     async def first(c):
@@ -201,3 +201,34 @@ def test_new_emails_and_follow_ups_have_their_own_daily_limits(tmp_path, monkeyp
     asyncio.run(agents.warden(ctx))
     assert tried == ["first", "first"] and outbox.sent_today_of(ctx, "first email") == 2  # follow-ups were full
     assert "limits reached" in asyncio.run(agents.warden(ctx))
+
+
+def test_weekends_send_only_follow_ups_likeliest_first(tmp_path, monkeypatch):
+    # owner, 29 Oct 2026: "15 new ones Monday-Friday, weekend the most likely to respond get a follow up"
+    import asyncio
+    from hq import agents, outbox
+    b = Brain(tmp_path / "brain.db")
+    ctx = agents.Ctx(None, b, None)
+    rows = [{"name": "Quiet", "email": "q@x.com"}, {"name": "Busy", "email": "b@x.com"}]
+    sent = []
+    monkeypatch.setattr(outbox, "watch_replies", lambda c: [])
+    monkeypatch.setattr(outbox, "uk_now", lambda: datetime(2026, 10, 31, 11, 0))  # a Saturday
+    monkeypatch.setattr(agents, "_due_by_email", lambda s: [r for r in rows if r["name"] not in sent])
+    monkeypatch.setattr(outbox, "likeliest_first", lambda s, due: sorted(due, key=lambda r: r["name"] != "Busy"))
+    monkeypatch.setattr(outbox, "follow_up_email", lambda s, name, link, updated=False: ("Following up", "body"))
+
+    async def no_mockup(c, row):
+        return ""
+    monkeypatch.setattr(outbox, "refresh_mockup", no_mockup)
+
+    async def vet(c, p, name, to, subject, body, link, first, row=None, updated=False):
+        sent.append(name)
+        b.log("warden", f"sent the follow-up to {name}", "win", {"type": "follow-up"})
+        return f"sent the follow-up to {name}"
+    monkeypatch.setattr(agents, "_vet_and_send", vet)
+
+    async def first(c):
+        raise AssertionError("no new emails at the weekend")
+    monkeypatch.setattr(agents, "_send_first", first)
+    asyncio.run(agents.warden(ctx))
+    assert sent[0] == "Busy" and outbox.in_hours(datetime(2026, 11, 1, 10, 0))  # Sundays send follow-ups too

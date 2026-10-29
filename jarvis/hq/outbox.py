@@ -8,7 +8,7 @@ Guard rails, all enforced here, before anything is sent:
   countries where cold email needs consent)
 - never to anyone opted out, not interested, already talking to us, or already emailed today
 - settings.send_per_day emails a day (default 15): one per run, more when behind the day's pace so the limit is
-  always reached; leads with no email don't count; only Monday to Saturday 09:00 to 17:30 UK
+  always reached; leads with no email don't count; 09:00 to 17:30 UK; Monday to Friday 15 new emails a day, at the weekend only follow-ups
 - every email: the business's real problem, the free mock-up as a link, "See your design before you pay anything",
   half when we start building and half once complete, signed Alfred, an opt-out line, no placeholders, no Klarna
 - then the free AI reads it as a strict editor and must answer APPROVE
@@ -60,7 +60,21 @@ def uk_now() -> datetime:
 
 
 def in_hours(now: datetime) -> bool:
-    return now.weekday() < 6 and (9, 0) <= (now.hour, now.minute) <= (17, 30)
+    return (9, 0) <= (now.hour, now.minute) <= (17, 30)
+
+
+def weekend(now: datetime) -> bool:
+    """Owner, 29 Oct 2026: 15 new emails Monday to Friday; at the weekend only follow-ups, to the most likely to reply."""
+    return now.weekday() >= 5
+
+
+def likeliest_first(settings, rows: list[dict]) -> list[dict]:
+    """Follow-ups, the businesses most likely to reply first: the busiest by Google reviews and rating."""
+    prospects = st.rows_of(settings, st.PROSPECTS)
+    def score(r):
+        p = st.find_prospect(prospects, r.get("prospect") or r["name"]) or {}
+        return busy_score(p)
+    return sorted(rows, key=score, reverse=True)
 
 
 def on_pace(cap: int, now: datetime) -> int:
