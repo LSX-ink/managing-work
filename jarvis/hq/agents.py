@@ -171,7 +171,14 @@ async def analyst(ctx: Ctx) -> str:
     return "numbers updated"
 
 
+# owner, 29 Oct 2026: "just trade mix", for the DMs and the emails alike. Hawk hunts a different trade each run.
+TRADE_MIX = ("barbers", "beauty", "cafes", "trades", "restaurants", "garages", "fitness", "shops", "health", "cleaners")
+
+
 def _trade(b: Brain) -> str:
+    mix = b.get("settings.trades") or TRADE_MIX
+    if b.get("settings.trade_mix", True):
+        return mix[b.get("scout.trade_turn", 0) % len(mix)]  # its own count, so UK and world runs both get every trade
     return b.get("settings.trade", "barbers")
 
 
@@ -182,9 +189,10 @@ async def scout(ctx: Ctx) -> str:
     s, b = ctx.settings, ctx.brain
     turn = b.get("scout.turn", 0)
     city = WORLD_CITIES[(turn // 2) % len(WORLD_CITIES)] if turn % 2 else UK_CITIES[(turn // 2) % len(UK_CITIES)]
-    b.set("scout.turn", turn + 1)
-    before = len(st.rows_of(s, st.PROSPECTS))
     trade = _trade(b)
+    b.set("scout.turn", turn + 1)
+    b.set("scout.trade_turn", b.get("scout.trade_turn", 0) + 1)
+    before = len(st.rows_of(s, st.PROSPECTS))
     await kf.find(s, {"town": city, "kind": trade, "audit_limit": 8}, ctx.http)
     rows = st.rows_of(s, st.PROSPECTS)
     new = len(rows) - before

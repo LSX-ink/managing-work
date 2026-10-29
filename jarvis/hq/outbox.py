@@ -108,7 +108,31 @@ def _fresh_busy(settings) -> list[dict]:
     out = [p for p in st.rows_of(settings, st.PROSPECTS)
            if not closed_or_busy(by_name.get(p["name"].lower())) and busy_score(p) > 0
            and (by_name.get(p["name"].lower()) or {}).get("draft_channel") != "dm"]  # on the owner's DM list already
-    return sorted(out, key=busy_score, reverse=True)
+    return mix_trades(sorted(out, key=busy_score, reverse=True))
+
+
+def mix_trades(rows: list[dict]) -> list[dict]:
+    """Best first within each trade, taking turns between trades (owner, 29 Oct 2026: "just trade mix", for the DMs
+    and the emails), so a day's list isn't all barbers."""
+    groups: dict[str, list[dict]] = {}
+    for r in rows:
+        groups.setdefault(trade_group(r), []).append(r)
+    out, lists = [], list(groups.values())
+    while lists:
+        out += [g.pop(0) for g in lists]
+        lists = [g for g in lists if g]
+    return out
+
+
+def trade_group(p: dict) -> str:
+    k = str(p.get("kind") or "").lower()
+    if "barber" in k:
+        return "barber"
+    if "hair" in k:
+        return "hair"
+    if re.search(r"beauty|nail|lash|brow|spa|skin|tann|makeup|massage", k):
+        return "beauty"
+    return k or "other"
 
 
 def candidates(settings, ltd: set | None = None) -> list[dict]:

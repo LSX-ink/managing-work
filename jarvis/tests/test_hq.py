@@ -154,3 +154,20 @@ def test_a_follow_up_with_an_updated_mock_up_says_so(monkeypatch):
     assert parts[2].startswith("Since my last email I've made you a new, updated design for Joe's")
     assert parts[2].endswith("https://x/m/joes-v2/")
     assert outbox.follow_up_email(None, "Joe's", "https://x/m/joes/")[1].count("https://x/m/joes/") == 1
+
+
+def test_leads_take_turns_between_trades():
+    from hq import outbox
+    rows = [{"name": f"B{i}", "kind": "barber shop"} for i in range(4)] + [{"name": "C1", "kind": "cafe"},
+            {"name": "N1", "kind": "nail salon"}, {"name": "P1", "kind": "plumber"}, {"name": "C2", "kind": "cafe"}]
+    assert [r["name"] for r in outbox.mix_trades(rows)] == ["B0", "C1", "N1", "P1", "B1", "C2", "B2", "B3"]
+
+
+def test_hawk_hunts_a_different_trade_each_run(tmp_path):
+    from hq import agents
+    b = Brain(tmp_path / "brain.db")
+    seen = []
+    for t in range(len(agents.TRADE_MIX)):
+        b.set("scout.trade_turn", t)
+        seen.append(agents._trade(b))
+    assert seen == list(agents.TRADE_MIX) and len(set(seen)) == len(seen)
