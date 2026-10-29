@@ -868,6 +868,48 @@ _FIXED_DAYS = {"christmas": (12, 25), "christmas day": (12, 25), "christmas eve"
                "new year": (1, 1), "new year's": (1, 1), "new year's day": (1, 1), "new year's eve": (12, 31),
                "halloween": (10, 31), "valentine's day": (2, 14), "valentines day": (2, 14), "valentine's": (2, 14),
                "bonfire night": (11, 5), "guy fawkes night": (11, 5)}
+_EASTER_OFFSETS = {"easter": 0, "easter sunday": 0, "easter day": 0, "good friday": -2, "easter monday": 1, "palm sunday": -7,
+                   "pancake day": -47, "shrove tuesday": -47, "ash wednesday": -46, "mother's day": -21, "mothers day": -21,
+                   "mothering sunday": -21}
+
+
+def _easter(year: int) -> dt.date:
+    """Easter Sunday (Western), by the anonymous Gregorian algorithm."""
+    a, b, c = year % 19, year // 100, year % 100
+    d, e = divmod(b, 4)
+    g = (8 * b + 13) // 25
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = divmod(c, 4)
+    l = (32 + 2 * e + 2 * i - h - k) % 7  # noqa: E741
+    m = (a + 11 * h + 22 * l) // 451
+    month, day = divmod(h + l - 7 * m + 114, 31)
+    return dt.date(year, month, day + 1)
+
+
+def _named_day(key: str, year: int) -> dt.date | None:
+    """Christmas, Easter, Pancake Day, Mother's Day (UK), Father's Day... in a given year."""
+    if key in _FIXED_DAYS:
+        return dt.date(year, *_FIXED_DAYS[key])
+    if key in _EASTER_OFFSETS:
+        return _easter(year) + dt.timedelta(days=_EASTER_OFFSETS[key])
+    if key in ("father's day", "fathers day", "remembrance sunday"):  # 3rd Sunday of June, 2nd Sunday of November
+        month, nth = (6, 3) if key.startswith("father") else (11, 2)
+        first = dt.date(year, month, 1)
+        return first + dt.timedelta(days=(6 - first.weekday()) % 7 + 7 * (nth - 1))
+    return None
+
+
+def _next_named_day(key: str, today: dt.date) -> dt.date | None:
+    t = _named_day(key, today.year)
+    return t if t is None or t >= today else _named_day(key, today.year + 1)
+
+
+def _day_title(key: str) -> str:
+    return key.title().replace("'S", "'s")
+
+
+_WHEN_IS = re.compile(_NAME + r"(?:when(?:'s| is) |what(?:'s| is) the date (?:of |for )?|what date is )(?:the )?(?P<day>[a-z' ]+?)"
+                      r"(?: this year| next year| (?P<y>\d{4}))?" + _END, re.I)
 _DAYS_UNTIL = re.compile(_NAME + r"(?:how (?:many|long) (?:days |sleeps |weeks )?(?:is it |are there |left )?(?:until|till|til|to|before)"
                          r"|how long (?:is it )?(?:until|till|to)) (?P<day>[a-z' ]+?)" + _END, re.I)
 _TOMORROW = re.compile(_NAME + r"(?:what(?:'s| is) (?:the date |the day )?tomorrow|what day is (?:it )?tomorrow|"
@@ -894,8 +936,7 @@ _AGE = re.compile(_NAME + r"how old (?:is|would be|will be) (?:someone|somebody|
 
 def _said_date(m: re.Match, year: int) -> dt.date | None:
     if "named" in m.re.groupindex and m.group("named"):
-        key = m.group("named").strip().lower().removeprefix("the ")
-        return dt.date(year, *_FIXED_DAYS[key]) if key in _FIXED_DAYS else None
+        return _named_day(m.group("named").strip().lower().removeprefix("the "), year)
     word = (m.group("mon") or m.group("mon2") or "").lower()
     if not word:
         return None
@@ -1020,9 +1061,13 @@ def _date_maths(said: str, today: dt.date) -> str | None:
     if not (m := _WEEKDAY_OF.match(said)):
         return None
     if m.group("named"):
-        if (key := m.group("named").strip().lower().removeprefix("the ")) not in _FIXED_DAYS:
-            return None  # "what day is it", "what day is Easter": the others or Claude
-        month, day = _FIXED_DAYS[key]
+        key = m.group("named").strip().lower().removeprefix("the ")
+        t = _named_day(key, int(m.group("y"))) if m.group("y") else _next_named_day(key, today)
+        if t is None:
+            return None  # "what day is it": the others or Claude
+        verb = "was" if t < today else "is"
+        return f"{_day_title(key)}{f' {t.year}' if m.group('y') else ''} {verb} on a {t:%A}, the {_ordinal(t.day)} of {t:%B}" \
+               f"{f' {t.year}' if t.year != today.year and not m.group('y') else ''}."
     else:
         word = (m.group("mon") or m.group("mon2")).lower()
         month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
@@ -1187,19 +1232,26 @@ def _calendar_answer(said: str, now: time.struct_time) -> str | None:
         return f"It's {hour}:{there.minute:02d} {'am' if there.hour < 12 else 'pm'}{when} in {m.group('where').strip().title()}."
     if m := _DAYS_UNTIL.match(said):
         key = m.group("day").strip().lower().removeprefix("the ")
-        if key not in _FIXED_DAYS:
+        if (target := _next_named_day(key, today)) is None:
             return None
-        month, day = _FIXED_DAYS[key]
-        target = dt.date(today.year, month, day)
-        if target < today:
-            target = dt.date(today.year + 1, month, day)
-        n, name = (target - today).days, key.title().replace("'S", "'s")
+        n, name = (target - today).days, _day_title(key)
         if n == 0:
             return f"{name} is today!"
-        return f"{n} day{'s' if n != 1 else ''} until {name}, on {target:%A} the {_ordinal(target.day)} of {target:%B}."
+        return (f"{n} day{'s' if n != 1 else ''} until {name}, on {target:%A} the {_ordinal(target.day)} of {target:%B}"
+                f"{f' {target.year}' if target.year != today.year else ''}.")
     if _TOMORROW.match(said):
         t = today + dt.timedelta(days=1)
         return f"Tomorrow is {t:%A} the {_ordinal(t.day)} of {t:%B}."
+    if m := _WHEN_IS.match(said):
+        key = m.group("day").strip().lower()
+        year = int(m.group("y")) if m.group("y") else today.year + ("next year" in said.lower())
+        t = _named_day(key, year) if m.group("y") or "year" in said.lower() else _next_named_day(key, today)
+        if t is None:
+            return None  # "when is my dentist appointment": Claude or the calendar
+        if t == today:
+            return f"{_day_title(key)} is today!"
+        verb = "was" if t < today else "is"
+        return f"{_day_title(key)} {verb} on {t:%A} the {_ordinal(t.day)} of {t:%B}{f' {t.year}' if t.year != today.year else ''}."
     return None
 
 
