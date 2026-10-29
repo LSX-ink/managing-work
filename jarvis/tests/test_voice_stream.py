@@ -367,10 +367,10 @@ def test_dates_ahead_and_weekdays_are_worked_out_instantly():
     assert instant_answer("what day is the 25th of December", en, now) == "The 25th of December is a Friday."
     assert instant_answer("what day of the week is March 3rd", en, now) == "The 3rd of March 2027 is a Wednesday."
     assert instant_answer("what day was the 4th of July 1776", en, now) == "The 4th of July 1776 was a Thursday."
-    assert instant_answer("what day does Christmas fall on", en, now) == "The 25th of December is a Friday."
+    assert instant_answer("what day does Christmas fall on", en, now) == "Christmas is on a Friday, the 25th of December."
     assert instant_answer("what day is the 30th of February", en, now) == "There's no 30th of February."
     assert instant_answer("what day is it", en, now) == "It's Tuesday the 6th of October."
-    assert instant_answer("what day is Easter", en, now) is None
+    assert instant_answer("what day is Easter", en, now) == "Easter is on a Sunday, the 28th of March 2027."
 
 
 def test_discounts_tips_and_bill_splits_are_instant():
@@ -646,6 +646,23 @@ def test_phonetic_spelling_and_anagrams_are_instant():
     assert instant_answer("is listen an anagram of silent", s) == "Yes, listen and silent are anagrams."
     assert instant_answer("are cat and dog anagrams", s) == "No, cat and dog are not anagrams."
     assert instant_answer("are you and me free tonight", s) is None
+
+
+def test_moveable_days_like_easter_are_instant():
+    import time
+    from brain import _easter, instant_answer
+    s, now = SimpleNamespace(speech_lang="en-GB"), time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")
+    assert [_easter(y).isoformat() for y in (2024, 2025, 2026, 2027)] == ["2024-03-31", "2025-04-20", "2026-04-05", "2027-03-28"]
+    assert instant_answer("when is Easter", s, now) == "Easter is on Sunday the 28th of March 2027."
+    assert instant_answer("when's Good Friday?", s, now) == "Good Friday is on Friday the 26th of March 2027."
+    assert instant_answer("what date is pancake day", s, now) == "Pancake Day is on Tuesday the 9th of February 2027."
+    assert instant_answer("when is mother's day", s, now) == "Mother's Day is on Sunday the 7th of March 2027."
+    assert instant_answer("when is father's day", s, now) == "Father's Day is on Sunday the 20th of June 2027."
+    assert instant_answer("when is Christmas", s, now) == "Christmas is on Friday the 25th of December."
+    assert instant_answer("when is easter this year", s, now) == "Easter was on Sunday the 5th of April."
+    assert instant_answer("how many days until easter", s, now) == "163 days until Easter, on Sunday the 28th of March 2027."
+    assert instant_answer("what day is christmas 2030", s, now) == "Christmas 2030 is on a Wednesday, the 25th of December."
+    assert instant_answer("when is my dentist appointment", s, now) is None
 
 
 def test_unit_conversions_are_instant():
