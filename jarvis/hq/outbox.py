@@ -350,7 +350,7 @@ def same_business(title: str, handle: str, name: str) -> bool:
     return not words or any(w in seen.split() or w in squashed for w in words)
 
 
-async def instagram_exists(handle: str, name: str = "") -> bool:
+async def instagram_exists(handle: str, name: str = "") -> bool | None:
     """True only when instagram.com/<handle> is a real, live profile (owner, 26 Oct 2026: a dead @name went on the DM
     list; "you should have checked this before sending it to me"). Logged-out Instagram says "Profile isn't available"
     for names that don't exist; a real one shows "<Name> (@handle)" in the title. With the business's name, the profile
@@ -362,8 +362,10 @@ async def instagram_exists(handle: str, name: str = "") -> bool:
             pg = await (await b.new_context(locale="en-GB")).new_page()
             await pg.goto(f"https://www.instagram.com/{handle.strip('@')}/", wait_until="domcontentloaded", timeout=30000)
             await pg.wait_for_timeout(3000)
-            title = await pg.title()
+            title, url = await pg.title(), pg.url
             await b.close()
+        if "/accounts/login" in url:  # Instagram wants a log-in before it shows anything (30 Oct 2026): can't tell
+            return None
         live = f"(@{handle.strip('@').lower()})" in title.lower()
         return live and (not name or same_business(title, handle, name))
     except Exception:
