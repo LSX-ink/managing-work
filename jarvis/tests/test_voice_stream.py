@@ -665,6 +665,22 @@ def test_moveable_days_like_easter_are_instant():
     assert instant_answer("when is my dentist appointment", s, now) is None
 
 
+def test_fractions_decimals_and_percentages_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("what's 3/4 as a percentage", s) == "3/4 is 75%."
+    assert instant_answer("what's 0.25 as a fraction?", s) == "0.25 is a quarter (1/4)."
+    assert instant_answer("what's 1/3 as a decimal", s) == "1/3 is about 0.333 as a decimal."
+    assert instant_answer("what is 75% as a fraction", s) == "75% is three quarters (3/4)."
+    assert instant_answer("what's 40% as a decimal", s) == "40% is 0.4 as a decimal."
+    assert instant_answer("what's a third as a percentage", s) == "A third is about 33.3%."
+    assert instant_answer("what's three quarters as a decimal", s) == "Three quarters is 0.75 as a decimal."
+    assert instant_answer("what's 12.5% as a fraction", s) == "12.5% is an eighth (1/8)."
+    assert instant_answer("simplify 6/8", s) == "6/8 simplifies to 3/4."
+    assert instant_answer("simplify 3/7", s) == "3/7 is already as simple as it goes."
+    assert instant_answer("what's 15% of 80", s) == "That's 12."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

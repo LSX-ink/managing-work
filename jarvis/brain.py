@@ -658,6 +658,73 @@ def _say_num(x: float) -> str:
     return f"{round(x, 4):,g}" if abs(x) < 1e15 else f"{x:g}"
 
 
+_FRACTION_WORDS = {"half": 2, "halves": 2, "third": 3, "thirds": 3, "quarter": 4, "quarters": 4, "fifth": 5, "fifths": 5,
+                   "sixth": 6, "sixths": 6, "eighth": 8, "eighths": 8, "tenth": 10, "tenths": 10}
+_QUANTITY = (r"(?P<{0}a>\d+)/(?P<{0}b>\d+)|(?P<{0}p>\d+(?:\.\d+)?) ?(?:%|percent|per cent)|(?P<{0}d>\d*\.\d+)"
+             r"|(?P<{0}w>(?:a|an|one|two|three|four|five|six|seven|eight|nine|\d+) (?:" + "|".join(_FRACTION_WORDS) + r"))")
+_AS_FORM = re.compile(_NAME + r"(?:what(?:'s| is) |convert |write |turn )?(?:" + _QUANTITY.format("") + r") (?:as|in|to|into) (?:a |an )?"
+                      r"(?P<to>percentage|percent|per cent|decimal|fraction)s?" + _END, re.I)
+_SIMPLIFY = re.compile(_NAME + r"(?:simplify|reduce|what(?:'s| is) (?:the simplest form of|(?P<a2>\d+)/(?P<b2>\d+) simplified)) ?"
+                       r"(?:(?P<a>\d+)/(?P<b>\d+))?" + _END, re.I)
+
+
+def _quantity(m: re.Match) -> "Fraction | None":
+    from fractions import Fraction
+    if m.group("a"):
+        return Fraction(int(m.group("a")), int(m.group("b"))) if int(m.group("b")) else None
+    if m.group("p"):
+        return Fraction(m.group("p")) / 100
+    if m.group("d"):
+        return Fraction(m.group("d"))
+    count, word = m.group("w").lower().split()
+    n = 1 if count in ("a", "an", "one") else int(count) if count.isdigit() else {w: k for k, w in _WORD_FOR.items()}[count]
+    return Fraction(n, _FRACTION_WORDS[word])
+
+
+def _say_fraction(f) -> str:
+    """3/4 -> 'three quarters', 1/2 -> 'a half', 7/16 -> '7/16'."""
+    if f.denominator == 1:
+        return f"{f.numerator:,}"
+    names = {2: ("a half", "halves"), 3: ("a third", "thirds"), 4: ("a quarter", "quarters"), 5: ("a fifth", "fifths"),
+             8: ("an eighth", "eighths"), 10: ("a tenth", "tenths")}
+    if f.denominator in names and 0 < f.numerator < f.denominator:
+        one, many = names[f.denominator]
+        return one if f.numerator == 1 else f"{_WORD_FOR.get(f.numerator, f.numerator)} {many}"
+    return f"{f.numerator}/{f.denominator}"
+
+
+_WORD_FOR = {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
+
+
+def _fraction_answer(said: str) -> str | None:
+    """'What's 3/4 as a percentage?', 'what's 0.25 as a fraction?', 'a third as a decimal', 'simplify 6/8'."""
+    from fractions import Fraction
+    if m := _AS_FORM.match(said):
+        if (f := _quantity(m)) is None:
+            return None
+        to = m.group("to").lower()
+        what = m.group(0)[m.start("a") if m.group("a") else m.start("p") if m.group("p") else m.start("d") if m.group("d") else m.start("w"):]
+        what = re.split(r" (?:as|in|to|into) ", what, maxsplit=1)[0]
+        what = what[0].upper() + what[1:]
+        if to == "fraction":
+            g = f.limit_denominator(1000)
+            return f"{what} is {_say_fraction(g)}{f' ({g.numerator}/{g.denominator})' if '/' not in _say_fraction(g) and g.denominator != 1 else ''}."
+        if to == "decimal":
+            exact = f.denominator in (2 ** i * 5 ** j for i in range(12) for j in range(12))
+            return f"{what} is {_say_num(float(f)) if exact else f'about {float(f):.3g}'} as a decimal."
+        pct = float(f * 100)
+        return f"{what} is {_say_num(pct) if Fraction(round(pct, 4)) == f * 100 else f'about {pct:.1f}'}%."
+    if (m := _SIMPLIFY.match(said)) and (m.group("a") or m.group("a2")):
+        a, b = int(m.group("a") or m.group("a2")), int(m.group("b") or m.group("b2"))
+        if not b:
+            return None
+        f = Fraction(a, b)
+        if f.denominator == b:
+            return f"{a}/{b} is already as simple as it goes."
+        return f"{a}/{b} simplifies to {f.numerator}/{f.denominator}."
+    return None
+
+
 def _more_maths(said: str) -> str | None:
     """'What percentage is 30 of 120?', 'increase 80 by 10%', 'is 12 even?', 'cube root of 27', 'how many times does 7 go into 50?'"""
     said = spoken_numbers(said)
@@ -1502,7 +1569,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := _calendar_answer(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said)
             or _height_weight(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
