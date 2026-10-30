@@ -239,7 +239,7 @@ async def dm_list(ctx: Ctx, n: int) -> int:
     from hq import outbox
     s, b = ctx.settings, ctx.brain
     items = []
-    looked = blocked = 0
+    looked, unchecked = 0, set()
     for p in outbox.sole_traders(s, outbox.limited_companies(b)):
         if len(items) >= n or looked >= n * 6:
             break
@@ -253,16 +253,11 @@ async def dm_list(ctx: Ctx, n: int) -> int:
         ok = b.get(f"ig.ok.{handle.lower()}")
         if ok is None:  # never put a dead @name on the owner's list (26 Oct 2026): check it's a real, live profile
             ok = await outbox.instagram_exists(handle, p["name"])   # live AND theirs
-            if ok is None:  # Instagram asked for a log-in, so it can't be checked now: nothing is marked, try later
-                blocked += 1
-                if blocked >= 3:
-                    b.log("closer", "Instagram is asking for a log-in before it shows profiles, so I can't check the "
-                          "@names right now. I'll try again at the next run.", "warn")
-                    break
-                continue
-            blocked = 0
-            b.set(f"ig.ok.{handle.lower()}", ok)
-        if not ok:
+            if ok is None:  # Instagram asked for a log-in, so it can't be checked now: nothing is cached, the @name
+                unchecked.add(p["id"])  # (read off their own website) goes on the list marked "check before sending"
+            else:
+                b.set(f"ig.ok.{handle.lower()}", ok)
+        if ok is False:
             b.log("closer", f"skipped {p['name']}: @{handle} isn't a live Instagram profile", "warn")
             b.set(f"ig.none.{p['id']}", True)
             continue
@@ -294,6 +289,8 @@ async def dm_list(ctx: Ctx, n: int) -> int:
                             "Alfred \"sent to <name>\" so the follow-ups are tracked.", ""]
     for i, (p, handle, link, text) in enumerate(items, start):
         where = f"@{handle}" if handle else "not on their website: search \"" + p["name"] + "\" on Instagram"
+        if p["id"] in unchecked:  # 30 Oct 2026: Instagram showed a log-in page instead of the profile
+            where += " (taken from their website; Instagram wouldn't let me check it, so open it before sending)"
         lines += [f"## {i}. {p['name']} ({p.get('town', '')})", f"Instagram: {where}",
                   f"{p.get('rating')}★ from {p.get('reviews')} Google reviews · "
                   + (f"website: {p['website']}" if p.get("website") else "no website"),
