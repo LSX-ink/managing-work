@@ -481,7 +481,11 @@ async def _send_first(ctx: Ctx) -> str:
         if twin:
             b.set(f"skip.{p['id']}", f"same inbox as {twin}, already emailed")
             continue
-        link = await outbox.make_mockup(ctx, p)  # Iris builds and checks it
+        try:
+            link = await outbox.make_mockup(ctx, p)  # Iris builds and checks it
+        except Exception as e:  # e.g. the API credit ran out (30 Oct 2026): follow-ups still go, the lead keeps its turn
+            b.log("warden", f"couldn't build a mock-up for {p['name']}, so no new email this round: {e}"[:300], "warn")
+            return "no new email: the mock-up builder isn't available"
         if not link:
             b.set(f"skip.{p['id']}", "the mock-up didn't pass Iris's checks")
             continue
