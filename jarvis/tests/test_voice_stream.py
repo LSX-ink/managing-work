@@ -681,6 +681,19 @@ def test_fractions_decimals_and_percentages_are_instant():
     assert instant_answer("what's 15% of 80", s) == "That's 12."
 
 
+def test_gas_marks_and_adding_a_percentage_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("what's gas mark 6 in celsius", s) == "Gas mark 6 is 200 degrees Celsius, or 180 in a fan oven."
+    assert instant_answer("gas mark 4 in fahrenheit", s) == "Gas mark 4 is about 350 degrees Fahrenheit."
+    assert instant_answer("what's 180 c in gas mark", s) == "180 Celsius is about gas mark 4."
+    assert instant_answer("what is 160 fan in gas mark", s) == "160 Celsius fan is about gas mark 4."
+    assert instant_answer("what's 350 fahrenheit in gas mark", s) == "350 Fahrenheit is about gas mark 4."
+    assert instant_answer("what's 50 plus 10%", s) == "That's 55."
+    assert instant_answer("what's 80 minus 25%", s) == "That's 60."
+    assert instant_answer("what's 15% of 80", s) == "That's 12."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
