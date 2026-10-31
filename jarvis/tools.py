@@ -33,6 +33,7 @@ import arcade
 import arcade_board
 import arcade_cards
 import arcade_words
+import bots
 import browser
 import calcmaths
 import calcmoney
@@ -153,6 +154,7 @@ import freelance_money
 import freelance_work
 import habits
 import helpers
+import higgsfield_guide
 import homediary
 import homehouse
 import homekitchen
@@ -388,6 +390,7 @@ ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
 ABILITIES += [alfredmem]  # Alfred's own long-term memory (Claude Mem)
+ABILITIES += [bots, higgsfield_guide]  # every bot in one window, and the Higgsfield guide
 
 
 def defer(tool: dict) -> dict:
