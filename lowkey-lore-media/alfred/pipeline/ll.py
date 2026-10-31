@@ -546,10 +546,19 @@ def shadow_proxy(c, loc, s, seed):
     """Speed: a full Poly Haven tree is ~1M polygons and EEVEE re-renders the sun shadow map every sample, which
     cost ~3 s/frame. The real tree stays on camera; this invisible low-poly trunk + canopy casts its shadow."""
     global M_PROXY
-    if M_PROXY is None: M_PROXY = flat_mat('ShadowProxy', (0.2, 0.2, 0.2), 1.0)
+    if M_PROXY is None:   # leafy cut-out (noise alpha) so the canopy casts a dappled shadow, not a hard polygon
+        M_PROXY = bpy.data.materials.new('ShadowProxy'); M_PROXY.use_nodes = True; nt = M_PROXY.node_tree
+        bsdf = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+        tc = nt.nodes.new('ShaderNodeTexCoord'); nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 2.2
+        nz.inputs['Detail'].default_value = 6; nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+        cr = nt.nodes.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].position = 0.46; cr.color_ramp.elements[1].position = 0.56
+        nt.links.new(nz.outputs[0], cr.inputs[0]); nt.links.new(cr.outputs[0], bsdf.inputs['Alpha'])
+        for k, v in (('surface_render_method', 'DITHERED'), ('use_transparent_shadow', True), ('blend_method', 'HASHED'), ('shadow_method', 'HASHED')):
+            try: setattr(M_PROXY, k, v)
+            except Exception: pass
     lo, hi = coll_bounds(c); h = (hi.z - lo.z) * s; w = max(hi.x - lo.x, hi.y - lo.y) * s
     tr = cyl('ProxyTrunk', 0.05 * h ** .5, h * 0.55, M_PROXY, segs=8); tr.location = (loc[0], loc[1], h * 0.275)
-    cn = lumpy('ProxyCanopy', 1.0, M_PROXY, seed, 1.0, 2, 0.25); cn.scale = (w * .42, w * .42, h * .3)
+    cn = lumpy('ProxyCanopy', 1.0, M_PROXY, seed, 1.0, 3, 0.25); cn.scale = (w * .42, w * .42, h * .3)
     cn.location = (loc[0], loc[1], lo.z * s + h * 0.68)
     for o in (tr, cn):
         o.visible_camera = False; o.visible_diffuse = False; o.visible_glossy = False
@@ -839,10 +848,20 @@ def lint(apply_state, every=10):
     json.dump(out, open(os.path.join(od, 'lint.json'), 'w'), indent=1)
     print(f'LINT {sum(1 for m in out if m["severity"] == "fail")} fail, {sum(1 for m in out if m["severity"] == "review")} review', flush=True)
 
+def grass_hills():
+    """distant hills (objects named Hill*) built with the ground material show its soil strata as a brown wall:
+    give them a grassy material instead (darker leafy grass, sun-faded tops)"""
+    hills = [o for o in bpy.data.objects if o.name.startswith('Hill') and o.type == 'MESH']
+    if not hills: return
+    m = pbr_mat('HillGrass', 'leafy_grass', 6.0, hsv=(0.56, 1.35, 0.42), nstr=0.6)
+    for o in hills: o.data.materials.clear(); o.data.materials.append(m)
+    print('grass on', len(hills), 'hills', flush=True)
+
 def run(apply_state):
     """apply_state(t) -> dict of extras for the overlay (e.g. {'follow': {'truck': [x,y,z]}})"""
     if arg('--post'): exec(arg('--post'))   # benchmarking hook run after the scene is built
     inset_transparent()
+    grass_hills()
     if '--lint' in args: lint(apply_state); return
     def state(f):
         extra = apply_state(frame_time(f)) or {}
@@ -857,6 +876,7 @@ def run(apply_state):
             print(f'STILL {s}s took {time.time() - t0:.1f}s', flush=True)
     if '--frames' in args:
         a, b = [int(x) for x in arg('--frames').split('-')]; b = min(b, NFRAMES - 1)
+        if b < a: print(f'DONE {a}-{b} nothing left', flush=True); return
         os.makedirs(FRAMES_DIR, exist_ok=True)
         # one persistent animation render: EEVEE keeps shaders, textures and static geometry on the GPU
         # between frames. State is applied before each frame; the camera matrix is exported after the
