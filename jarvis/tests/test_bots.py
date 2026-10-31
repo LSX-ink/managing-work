@@ -197,3 +197,73 @@ def test_tool_descriptions_fit():
         for t in m.tool_definitions():
             assert len(t["description"]) < 1500
             assert os.path.basename(m.__file__)
+
+
+# The lowkey.lore pipeline bots ------------------------------------------------------------------------------------
+
+def test_pipeline_bots_are_listed():
+    keys = {b["key"] for b in bots.all_bots()}
+    assert {"video_maker", "render_queue", "narrator", "mixer", "editor", "follow_pause", "publisher",
+            "model_kits", "asset_fetcher"} <= keys
+
+
+@pytest.fixture
+def started(monkeypatch):
+    calls = []
+    monkeypatch.setattr(bots, "_start", lambda cmd, cwd, log: calls.append(cmd))
+    monkeypatch.setattr(bots, "blender_running", lambda: False)
+    return calls
+
+
+def test_make_video_runs_make_py_in_background(tmp_path, monkeypatch, started):
+    root, vdir = make_project(tmp_path)
+    (root / "pipeline" / "make.py").write_text("")
+    monkeypatch.setenv("JARVIS_LORE_PROJECT", str(root))
+    out = bots.make_video("dam", "voice audio")
+    assert "Started voice audio for 03-dam" in out
+    assert started[0][-3:] == [str(vdir), "voice", "audio"]
+    bots.make_video("", "all")
+    assert "push" not in started[1] and "render" in started[1]
+    with pytest.raises(ValueError, match="step"):
+        bots.make_video("dam", "explode")
+
+
+def test_publish_needs_approval(tmp_path, monkeypatch, started):
+    root, vdir = make_project(tmp_path)
+    (root / "pipeline" / "make.py").write_text("")
+    monkeypatch.setenv("JARVIS_LORE_PROJECT", str(root))
+    (vdir / "qc" / "result.json").write_text(json.dumps({"sha": "abc", "passed_automatic": True}))
+    assert "won't publish" in bots.make_video("dam", "push") and not started
+    (vdir / "qc" / "approval.json").write_text(json.dumps({"sha": "abc"}))
+    assert "Started push" in bots.make_video("dam", "push")
+
+
+def test_no_second_blender(tmp_path, monkeypatch, started):
+    root, _ = make_project(tmp_path)
+    (root / "pipeline" / "make.py").write_text("")
+    monkeypatch.setenv("JARVIS_LORE_PROJECT", str(root))
+    monkeypatch.setattr(bots, "blender_running", lambda: True)
+    assert "already running" in bots.make_video("dam", "render") and not started
+    assert "already running" in bots.render_queue("dam")
+
+
+def test_render_queue_and_log(tmp_path, monkeypatch, started):
+    root, _ = make_project(tmp_path)
+    monkeypatch.setenv("JARVIS_LORE_PROJECT", str(root))
+    monkeypatch.setattr(bots, "bash_exe", lambda: "bash")
+    assert "03-dam" in bots.render_queue("dam 07-x:resume")
+    assert started[0][:2] == ["bash", "pipeline/queue.sh"] and started[0][2:] == ["03-dam", "07-x:resume"]
+    assert bots.pipeline_log("") == "Nothing has run yet."
+    (root / "out" / "queue_log.txt").write_text("frame 600 done")
+    assert "frame 600" in bots.pipeline_log("queue")
+
+
+def test_real_start_writes_log(tmp_path):
+    log = tmp_path / "x.log"
+    bots._start([sys.executable, "-c", "print('hi')"], tmp_path, log)
+    import time
+    for _ in range(50):
+        if "hi" in log.read_text():
+            break
+        time.sleep(0.1)
+    assert "hi" in log.read_text()

@@ -9,12 +9,16 @@ Running a bot:
 - an HQ agent: asks the HQ office (http://127.0.0.1:8341, JARVIS_HQ_URL) to run it now, same as its RUN button
 - video_qc: runs the lowkey.lore checker (pipeline/qc.py, and the Blender scene lint when asked) on the PC
   (JARVIS_LORE_PROJECT, the lowkey-lore-ref folder) and reports pass or fail with the checker's own findings
+- the lowkey.lore pipeline bots (video maker, narrator, mixer, editor, follow pause, publisher, render queue, asset
+  fetcher): make.py / queue.sh / fetch_assets.py on the PC, started in the background with a log in out/alfred-*.log.
+  Publishing only runs for a video that passed QC and was approved for that exact file (same rule as qc.gate)
 - the rest: Alfred's own tools, so the window's button just asks Alfred
 """
 
 import asyncio
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -26,7 +30,7 @@ import screen
 from config import Settings
 
 NAMES = {"alfred_bots"}
-ACTIONS = ["list", "run", "check_video"]
+ACTIONS = ["list", "run", "check_video", "make_video", "render_queue", "log"]
 KIND = "showme"
 screen.EXTRA_KINDS.add(KIND)
 HQ_URL = os.getenv("JARVIS_HQ_URL", "http://127.0.0.1:8341").rstrip("/")
@@ -40,6 +44,38 @@ EXTRA_BOTS = [
      "job": "Lints the Blender scene, then checks every frame of a finished lowkey.lore video for glitches "
             "(clipping, popping, camera snaps, things spinning on the spot, sound levels). Failures go back to be remade.",
      "say": "Run the video quality checker on the latest lowkey.lore video"},
+    {"key": "video_maker", "name": "Video maker", "emoji": "🏭", "group": "lowkey.lore",
+     "job": "Runs every step for one video in order (voice, audio, lint, render, encode, pause, phone, sheet, caption, "
+            "qc). Won't render if the lint fails, and won't publish unless QC passed and that exact file is approved.",
+     "say": "What lowkey.lore videos can the video maker make?", "steps": "all"},
+    {"key": "render_queue", "name": "Render queue", "emoji": "📼", "group": "lowkey.lore",
+     "job": "Renders a list of videos one after another in 600-frame chunks, retries a crash, and encodes and QCs "
+            "in the background. Logs to out/queue_log.txt.",
+     "say": "Show the lowkey.lore render queue log"},
+    {"key": "narrator", "name": "Narrator", "emoji": "🎙️", "group": "lowkey.lore",
+     "job": "Kokoro voice am_michael at 1.2x reads the script and adds the \"Follow for more insight\" outro.",
+     "say": "Re-voice the newest lowkey.lore video", "steps": "voice"},
+    {"key": "mixer", "name": "Sound mixer", "emoji": "🎚️", "group": "lowkey.lore",
+     "job": "Music and effects under a louder narrator, mastered to -14 LUFS with a -1 dBTP ceiling.",
+     "say": "Remix the sound on the newest lowkey.lore video", "steps": "audio"},
+    {"key": "editor", "name": "Editor", "emoji": "✂️", "group": "lowkey.lore",
+     "job": "Labels, arrows, captions and the warm grade; splices in the Higgsfield intro; makes the phone copy "
+            "(under 30 MB) and the contact sheet.",
+     "say": "Re-encode the newest lowkey.lore video", "steps": "encode phone sheet"},
+    {"key": "follow_pause", "name": "Follow pause", "emoji": "⏸️", "group": "lowkey.lore",
+     "job": "The mid-video freeze: a cheeky line, banter, a 3 s hold, \"Thank you\", then it carries on.",
+     "say": "Redo the follow pause on the newest lowkey.lore video", "steps": "pause"},
+    {"key": "publisher", "name": "Publisher", "emoji": "🚀", "group": "lowkey.lore",
+     "job": "Pushes the phone copy and contact sheet to the download page and copies the video and caption to the "
+            "Desktop. Only for a video that passed QC and was visually approved.",
+     "say": "Publish the newest approved lowkey.lore video", "steps": "push"},
+    {"key": "model_kits", "name": "3D model kits", "emoji": "🚂", "group": "lowkey.lore",
+     "job": "Real machines with correct physics (rollers roll, never spin in place): steam and vibratory rollers, cars, "
+            "pump set, generator, vacuum truck, Rocket locomotive, coal wagon, high-speed train. Used by every scene.",
+     "say": "What machines are in the lowkey.lore 3D kits?"},
+    {"key": "asset_fetcher", "name": "Asset fetcher", "emoji": "📦", "group": "lowkey.lore",
+     "job": "Downloads the Poly Haven textures, HDRIs and models the scenes use.",
+     "say": "Run the lowkey.lore asset fetcher"},
     {"key": "higgsfield", "name": "Higgsfield guide", "emoji": "✨", "group": "Videos and websites",
      "job": "Knows every Higgsfield feature and plans how to use it for the lore videos, Kinetic reels and websites, "
             "with credit costs checked first.",
@@ -253,6 +289,91 @@ def check_video(video: str = "", lint: bool = False) -> screen.Shown:
                                               {"label": "Lint + check", "say": f"Lint and check the lowkey.lore video {vdir.name}"}]))
 
 
+# The rest of the lowkey.lore pipeline (make.py and friends), started in the background: renders take hours.
+MAKE_STEPS = ["voice", "audio", "lint", "render", "encode", "pause", "phone", "sheet", "caption", "qc", "push"]
+ALL_STEPS = MAKE_STEPS[:-1]  # "all" never publishes: push is its own, gated step
+
+
+def _log(root: Path, name: str) -> Path:
+    out = root / "out"
+    out.mkdir(parents=True, exist_ok=True)
+    return out / f"alfred-{name}.log"
+
+
+def _start(cmd: list[str], cwd: Path, log: Path) -> None:
+    with open(log, "a", encoding="utf-8") as f:
+        f.write(f"\n=== {time.strftime('%Y-%m-%d %H:%M')} {' '.join(cmd)}\n")
+        f.flush()
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        subprocess.Popen(cmd, cwd=cwd, stdout=f, stderr=subprocess.STDOUT, creationflags=flags)
+
+
+def make_video(video: str = "", steps: str = "all") -> str:
+    """Run make.py steps for one video in the background."""
+    root = project_dir()
+    make = root / "pipeline" / "make.py"
+    if not make.exists():
+        raise ValueError(f"I can't find the video maker at {make}. Set JARVIS_LORE_PROJECT to the lowkey-lore-ref folder.")
+    wanted = (steps or "all").replace(",", " ").lower().split()
+    chosen = ALL_STEPS if wanted in (["all"], []) else wanted
+    bad = [w for w in chosen if w not in MAKE_STEPS]
+    if bad:
+        raise ValueError(f"I don't know the step {bad[0]}. Steps: {', '.join(MAKE_STEPS)}.")
+    vdir = find_video(root, video)
+    if {"render", "lint"} & set(chosen) and blender_running():
+        return "Blender is already running (a render?), so I won't start another one: two Blenders crash EEVEE."
+    if "push" in chosen:
+        result = _json(vdir / "qc" / "result.json") or {}
+        if not approved(vdir, result):
+            return (f"I won't publish {vdir.name}: it hasn't passed QC and been visually approved for this exact file. "
+                    "Check it first.")
+    log = _log(root, vdir.name)
+    _start([project_python(root), str(make), str(vdir)] + chosen, root, log)
+    return f"Started {' '.join(chosen)} for {vdir.name}. Progress goes to {log}; ask me how it's going."
+
+
+def bash_exe() -> str:
+    for exe in (os.getenv("JARVIS_BASH", "").strip(), shutil.which("bash") or "",
+                r"C:\Program Files\Git\bin\bash.exe"):
+        if exe and Path(exe).exists():
+            return exe
+    raise ValueError("The render queue needs Git Bash, and I can't find it. Set JARVIS_BASH to bash.exe.")
+
+
+def render_queue(videos: str) -> str:
+    root = project_dir()
+    names = (videos or "").replace(",", " ").split()
+    if not names:
+        raise ValueError("Which videos? For example: 06-hydro-dam 09-footpath-to-highway.")
+    if blender_running():
+        return "Blender is already running, so I won't start the queue on top of it."
+    names = [n if n.endswith(":resume") else find_video(root, n).name for n in names]
+    _start([bash_exe(), "pipeline/queue.sh"] + names, root, _log(root, "queue"))
+    return f"The render queue started: {', '.join(names)}. It logs to out/queue_log.txt."
+
+
+def fetch_assets() -> str:
+    root = project_dir()
+    script = root / "pipeline" / "fetch_assets.py"
+    if not script.exists():
+        raise ValueError(f"I can't find the asset fetcher at {script}.")
+    _start([project_python(root), str(script)], root / "pipeline", _log(root, "assets"))
+    return "The asset fetcher is downloading the Poly Haven textures, HDRIs and models."
+
+
+def pipeline_log(video: str = "") -> str:
+    root = project_dir()
+    if video in ("queue", "render_queue"):
+        logs = [root / "out" / "queue_log.txt", _log(root, "queue")]
+    else:
+        logs = [_log(root, find_video(root, video).name)] if video else sorted(
+            (root / "out").glob("alfred-*.log"), key=lambda p: p.stat().st_mtime)[-1:]
+    for log in logs:
+        if log.exists():
+            return f"{log.name}:\n" + _tail(log.read_text(encoding="utf-8", errors="replace"))[-1500:]
+    return "Nothing has run yet."
+
+
 async def run_hq(key: str, http: httpx.AsyncClient | None) -> str:
     client = http or httpx.AsyncClient()
     try:
@@ -271,6 +392,12 @@ async def run_bot(name: str, settings: Settings, http) -> str | screen.Shown:
     bot = find(name)
     if bot["key"] == "video_qc":
         return await asyncio.to_thread(check_video, "")
+    if bot.get("steps"):
+        return await asyncio.to_thread(make_video, "", bot["steps"])
+    if bot["key"] == "render_queue":
+        return await asyncio.to_thread(pipeline_log, "queue")
+    if bot["key"] == "asset_fetcher":
+        return await asyncio.to_thread(fetch_assets)
     if bot["key"] == "higgsfield":
         import higgsfield_guide
         return higgsfield_guide.show_features()
@@ -286,7 +413,11 @@ def tool_definitions() -> list[dict]:
                        "quality checker, the Higgsfield guide, the TikTok studio and more), shown as a window on the "
                        "HUD. 'show my bots', 'what bots have I got', 'run Hawk', 'check this video'. list: all bots; "
                        "run (bot): run one now; check_video (optional video, else the newest; lint true to lint the "
-                       "Blender scene first): quality-check a lowkey.lore video on the PC. A failed video must not be sent or posted.",
+                       "Blender scene first): quality-check a lowkey.lore video on the PC. make_video (video, steps "
+                       "e.g. 'voice audio' or 'all'; 'push' publishes and only works for an approved video): runs the "
+                       "lowkey.lore pipeline in the background; render_queue (videos): renders several in turn; log "
+                       "(optional video, or 'queue'): how a run is going. Renders take hours: say so. A failed video "
+                       "must not be sent or posted.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -294,6 +425,8 @@ def tool_definitions() -> list[dict]:
                 "bot": {"type": "string", "description": "run: the bot's name or key, e.g. hawk, scout, video_qc."},
                 "video": {"type": "string", "description": "check_video: the video's number, name or folder "
                                                            "(e.g. 03 or dam); leave out for the newest."},
+                "steps": {"type": "string", "description": "make_video: steps from " + ", ".join(MAKE_STEPS) + ", or all."},
+                "videos": {"type": "string", "description": "render_queue: video names, space separated (name:resume keeps frames)."},
                 "lint": {"type": "boolean", "description": "check_video: also run the Blender scene lint first "
                                                            "(not while a render is running)."},
             },
@@ -311,4 +444,10 @@ async def run_tool(name: str, args: dict, settings: Settings, http=None):
         return await run_bot(args.get("bot") or "", settings, http)
     if action == "check_video":
         return await asyncio.to_thread(check_video, args.get("video") or "", bool(args.get("lint")))
+    if action == "make_video":
+        return await asyncio.to_thread(make_video, args.get("video") or "", args.get("steps") or "all")
+    if action == "render_queue":
+        return await asyncio.to_thread(render_queue, args.get("videos") or "")
+    if action == "log":
+        return await asyncio.to_thread(pipeline_log, args.get("video") or "")
     raise ValueError(f"Pick one of: {', '.join(ACTIONS)}.")
