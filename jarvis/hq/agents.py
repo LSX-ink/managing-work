@@ -519,6 +519,9 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
     postal = b.get("settings.postal_address", "")
     if postal:
         body = body.replace("[your postal address]", postal)
+    if await asyncio.to_thread(outbox.emailed_recently, ctx.settings, to):
+        b.log("warden", f"held back the email to {name}: {to} already had an email from us in the last 2 days", "info")
+        return f"held back {name}"
     problems = outbox.rule_check(subject, body, link, first)
     if problems:
         if p:

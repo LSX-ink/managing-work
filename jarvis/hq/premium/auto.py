@@ -413,10 +413,37 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     if any("folder missing" in i for i in issues):  # Cloudflare sometimes needs a second push before new files show
         await asyncio.to_thread(outbox.deploy_site)
         issues = await check_live(slug)
+    if issues and await asyncio.to_thread(patch_broken_photos, out, issues):  # save the build, not throw it away
+        await asyncio.to_thread(outbox.deploy_site)
+        issues = await check_live(slug)
     ig_ok = bool(instagram) and await outbox.instagram_exists(instagram, p["name"])   # live AND theirs
     return {"slug": slug, "name": p["name"], "link": link, "layout": layout, "issues": issues, "instagram": instagram,
             "instagram_ok": ig_ok, "dm": outbox.dm_text(settings, p, link), "review": notes,
             "audit": {k: audit.get(k) for k in ("score", "grade") if isinstance(audit, dict)}}
+
+
+def patch_broken_photos(out: Path, issues: list[str]) -> bool:
+    """When the only problems are photos that won't load (p/NN.jpg), put one of the shop's other good photos in their
+    place, so a finished mock-up isn't thrown away for one bad picture (30 Oct 2026: a third of builds were lost that
+    way). True when something was patched and nothing else was wrong."""
+    import shutil
+    from PIL import Image
+    broken = [m.group(1) for i in issues if (m := re.search(r"broken image \S*/(p/[\w.-]+)", i))]
+    if not broken or len(broken) != len(issues):
+        return False
+    def good(f: Path) -> bool:
+        try:
+            with Image.open(f) as im:
+                im.verify()
+            return True
+        except Exception:
+            return False
+    spare = [f for f in sorted((out / "p").glob("*.jpg")) if f"p/{f.name}" not in broken and good(f)]
+    if not spare:
+        return False
+    for i, rel in enumerate(broken):
+        shutil.copyfile(spare[i % len(spare)], out / rel)
+    return True
 
 
 async def check_live(slug: str) -> list[str]:

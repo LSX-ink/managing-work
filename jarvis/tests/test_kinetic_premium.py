@@ -198,3 +198,18 @@ def test_each_business_gets_its_own_story_piece_never_a_recent_one(tmp_path):
 def test_mock_ups_use_the_cheaper_claude_by_default(monkeypatch):
     assert Settings().mockup_model == "claude-sonnet-5-5"
     assert "opus" not in Settings().mockup_model
+
+
+def test_a_broken_photo_is_replaced_instead_of_losing_the_mock_up(tmp_path):
+    import sys
+    from pathlib import Path
+    from PIL import Image
+    sys.path.insert(0, str(Path(__file__).parent.parent / "hq" / "premium"))
+    import auto
+    (tmp_path / "p").mkdir()
+    Image.new("RGB", (8, 8), "red").save(tmp_path / "p" / "01.jpg")
+    (tmp_path / "p" / "00.jpg").write_bytes(b"not a picture")
+    issues = ["broken image https://kineticwebdesigns.co.uk/m/x/p/00.jpg"]
+    assert auto.patch_broken_photos(tmp_path, issues)
+    assert (tmp_path / "p" / "00.jpg").read_bytes() == (tmp_path / "p" / "01.jpg").read_bytes()
+    assert not auto.patch_broken_photos(tmp_path, issues + ["500 https://kineticwebdesigns.co.uk/m/x/before.jpg"])

@@ -633,15 +633,30 @@ def send(settings, to: str, subject: str, body: str) -> str:
     return alfred_mail.send(settings, {"draft_id": d["id"], "confirmed": True})
 
 
+def emailed_recently(settings, to: str, days: int = 2) -> bool:
+    """We already emailed this address in the last few days: never a second email so soon, whichever lead or branch
+    it's for (31 Oct 2026: two branches sharing one inbox, and one lead three times in a day)."""
+    from datetime import timedelta
+    since = (datetime.now() - timedelta(days=days)).isoformat(timespec="seconds")
+    to = to.lower().strip()
+    return any(str(r.get("to", "")).lower().strip() == to and str(r.get("sent") or "") >= since
+               for r in alfred_mail._load_drafts(settings) if r.get("status") == "sent")
+
+
 def record_sent(settings, p: dict | None, name: str, to: str, first: bool) -> None:
     if first:
         tracker.drafted(settings, name, p, "email", (p or {}).get("country") or world.HOME, mockup=True)
+    before = next((r.get("messages", 0) for r in st.rows_of(settings, st.OUTREACH) if r.get("name", "").lower() == name.lower()), 0)
     row, _ = tracker.track(settings, name, p, "contacted", "email")
     row["email"] = to
     rows = st.rows_of(settings, st.OUTREACH)
     for r in rows:
         if r.get("name", "").lower() == name.lower():
             r["email"] = to
+            # every email Vera sends is a new message. The tracker treats a second "I emailed them" on the same day
+            # as the same message, which on 31 Oct left a lead due again and it got 3 follow-ups in one day
+            if not first and r.get("messages", 0) <= before:
+                r["messages"] = before + 1
     st.save(settings, st.OUTREACH, rows)
     tracker.sync_prospect(settings, row)
 
