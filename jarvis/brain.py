@@ -539,6 +539,8 @@ def _maths_answer(said: str) -> str | None:
     for words, symbol in _SPOKEN_MATHS:
         text = re.sub(r"(?<![a-z])(?:" + words + r")(?![a-z])", f" {symbol} " if symbol[0] != "\\" else symbol, text)
     text = re.sub(r"sqrt\s+([\d.]+)", r"sqrt(\1)", text).strip()
+    if p := re.fullmatch(r"([\d.,]+)\s*([+-])\s*([\d.]+)\s*%", text):  # "50 plus 10%" means 55, not 50.1
+        text = f"{p.group(1)} * (1 {p.group(2)} {p.group(3)} / 100)"
     if re.search(r"[a-z]", text.replace("sqrt", "")) or not re.search(r"\d\s*(?:\*\*?|/|\+|-)\s*[\d(s]|sqrt\(", text):
         return None  # words left over, or no sum at all: Claude handles it
     try:
@@ -867,6 +869,37 @@ def _height_weight(said: str) -> str | None:
         pounds = round(float(m.group("n")) * 2.20462)
         stone, lbs = divmod(pounds, 14)
         return f"{_say_num(float(m.group('n')))} kg is {stone} stone{f' {lbs} pound' + ('s' if lbs != 1 else '') if lbs else ''}."
+    return None
+
+
+_GAS_MARKS = {"1/4": 110, "1/2": 120, "1": 140, "2": 150, "3": 170, "4": 180, "5": 190, "6": 200, "7": 220, "8": 230, "9": 240}
+_GAS_TO = re.compile(_NAME + r"(?:what(?:'s| is) |convert )?gas (?:mark )?(?P<g>[1-9]|1/4|1/2|a quarter|a half|quarter|half)"
+                     r" (?:in|to|as) (?P<to>celsius|centigrade|c|degrees|fahrenheit|f|fan)(?: oven)?" + _END, re.I)
+_TO_GAS = re.compile(_NAME + r"(?:what(?:'s| is) |convert )?(?P<t>\d{2,3}) ?(?:degrees ?)?(?P<unit>c|celsius|centigrade|f|fahrenheit)?"
+                     r"(?: fan)? (?:in|to|as) gas(?: mark)?" + _END, re.I)
+
+
+def _gas_mark(said: str) -> str | None:
+    """'What's gas mark 6 in Celsius?' (200, 180 fan, 400 F) and 'what's 180 C in gas mark?' for UK oven dials."""
+    if m := _GAS_TO.match(said):
+        g = {"a quarter": "1/4", "quarter": "1/4", "a half": "1/2", "half": "1/2"}.get(m.group("g").lower(), m.group("g"))
+        c, to = _GAS_MARKS[g], m.group("to").lower()
+        f = round((c * 9 / 5 + 32) / 25) * 25
+        mark = {"1/4": "a quarter", "1/2": "a half"}.get(g, g)
+        if to in ("fahrenheit", "f"):
+            return f"Gas mark {mark} is about {f} degrees Fahrenheit."
+        if to == "fan":
+            return f"Gas mark {mark} is {c - 20} degrees in a fan oven."
+        return f"Gas mark {mark} is {c} degrees Celsius, or {c - 20} in a fan oven."
+    if m := _TO_GAS.match(said):
+        t = int(m.group("t"))
+        unit = (m.group("unit") or ("f" if t > 260 else "c")).lower()[0]
+        c = (t - 32) * 5 / 9 if unit == "f" else t + (20 if " fan" in said.lower() else 0)
+        if not 100 <= c <= 260:
+            return None
+        g = min(_GAS_MARKS, key=lambda k: abs(_GAS_MARKS[k] - c))
+        mark = {"1/4": "a quarter", "1/2": "a half"}.get(g, g)
+        return f"{m.group('t')} {'Fahrenheit' if unit == 'f' else 'Celsius'}{' fan' if ' fan' in said.lower() else ''} is about gas mark {mark}."
     return None
 
 
@@ -1570,7 +1603,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said)
-            or _height_weight(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
 
