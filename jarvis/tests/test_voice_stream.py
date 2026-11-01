@@ -694,6 +694,24 @@ def test_gas_marks_and_adding_a_percentage_are_instant():
     assert instant_answer("what's 15% of 80", s) == "That's 12."
 
 
+def test_times_before_and_after_and_adding_durations_are_instant():
+    import time
+    from brain import instant_answer
+    s, now = SimpleNamespace(speech_lang="en-GB"), time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")
+    assert instant_answer("what's 4 hours before 2 pm", s, now) == "That's 10 am."
+    assert instant_answer("what's 9 am plus 8 hours", s, now) == "That's 5 pm."
+    assert instant_answer("what time is 45 minutes after 10:50", s, now) == "That's 11:35 am."
+    assert instant_answer("what time is an hour and a half after 9 am", s, now) == "That's 10:30 am."
+    assert instant_answer("what's 3 hours after 11 pm", s, now) == "That's 2 am the next day."
+    assert instant_answer("what is 2 hours before midnight", s, now) == "That's 10 pm."
+    assert instant_answer("what time was it 3 hours ago", s, now) == "It was 6 am."
+    assert instant_answer("what time was it 10 hours ago", s, now) == "It was 11 pm yesterday."
+    assert instant_answer("what's 2 hours 30 minutes plus 45 minutes", s, now) == "That's 3 hours and 15 minutes."
+    assert instant_answer("what's 2 hours minus 45 minutes", s, now) == "That's 1 hour and 15 minutes."
+    assert instant_answer("what's 1 hour 20 in minutes", s, now) == "That's 80 minutes."
+    assert instant_answer("what time will it be in 3 hours", s, now) == "It'll be 12 pm."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

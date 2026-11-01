@@ -1282,9 +1282,75 @@ def _relative_day(said: str, today: dt.date) -> str | None:
     return None
 
 
+_DUR = (r"(?:(?P<{0}h>\d+(?:\.\d+)?|an?|one) (?:hours?|hrs?)(?P<{0}half> and a half)?(?:,? (?:and )?(?P<{0}m>\d+)(?: minutes?| mins?)?)?"
+        r"|(?P<{0}m2>\d+) (?:minutes?|mins?)|(?P<{0}hh>half an hour))")
+_CLOCK_AT = _CLOCK.replace("(?P<", "(?P<c") + r"|(?P<cword>midnight|midday|noon)"
+_OFFSET_CLOCK = re.compile(_NAME + r"(?:what(?:'s| is| was| will be)(?: the time)?|what time (?:is|was|will it be|will be)) (?:"
+                           + _DUR.format("a") + r") (?P<way>before|after|from|past) (?:" + _CLOCK_AT + r")" + _END, re.I)
+_CLOCK_PLUS = re.compile(_NAME + r"what(?:'s| is) (?:" + _CLOCK_AT + r") (?P<way>plus|minus|add|take away|\+|-) (?:"
+                         + _DUR.format("a") + r")" + _END, re.I)
+_AGO_CLOCK = re.compile(_NAME + r"what time was it (?:" + _DUR.format("a") + r") ago" + _END, re.I)
+_DUR_SUM = re.compile(_NAME + r"what(?:'s| is) (?:" + _DUR.format("a") + r") (?P<way>plus|minus|add|take away|and) (?:"
+                      + _DUR.format("b") + r")" + _END, re.I)
+_DUR_IN = re.compile(_NAME + r"(?:what(?:'s| is) |how many minutes (?:is|are|in) )(?:" + _DUR.format("a") + r")(?: in minutes)?" + _END, re.I)
+
+
+def _dur_minutes(m: re.Match, p: str) -> float:
+    if m.group(p + "hh"):
+        return 30
+    if m.group(p + "m2"):
+        return int(m.group(p + "m2"))
+    h = m.group(p + "h").lower()
+    hours = 1 if h in ("a", "an", "one") else float(h)
+    return hours * 60 + (30 if m.group(p + "half") else 0) + int(m.group(p + "m") or 0)
+
+
+def _say_minutes(total: float) -> str:
+    hours, minutes = divmod(round(total), 60)
+    parts = [f"{n} {unit}{'s' if n != 1 else ''}" for n, unit in ((hours, "hour"), (minutes, "minute")) if n]
+    return " and ".join(parts) or "no time at all"
+
+
+def _clock_from(m: re.Match) -> tuple[int, int] | None:
+    if m.group("cword"):
+        return (0 if m.group("cword").lower() == "midnight" else 12), 0
+    if m.group("ch24"):
+        return int(m.group("ch24")), int(m.group("cm24"))
+    hour, minute = int(m.group("ch")), int(m.group("cm") or 0)
+    if not 1 <= hour <= 12 or minute > 59:
+        return None
+    return hour % 12 + (12 if m.group("cap").lower().startswith("p") else 0), minute
+
+
+def _time_offsets(said: str, here: dt.datetime) -> str | None:
+    """'What's 4 hours before 2 pm?', 'what's 9 am plus 8 hours?', 'what time was it 3 hours ago?',
+    'what's 2 hours 30 minutes plus 45 minutes?' and 'what's 1 hour 20 in minutes?'."""
+    said = spoken_numbers(said)
+    for pattern in (_OFFSET_CLOCK, _CLOCK_PLUS):
+        if (m := pattern.match(said)) and (clock := _clock_from(m)):
+            back = m.group("way").lower() in ("before", "minus", "take away", "-")
+            start = here.replace(hour=clock[0], minute=clock[1])
+            t = start + dt.timedelta(minutes=_dur_minutes(m, "a") * (-1 if back else 1))
+            day = "" if t.date() == start.date() or (m.group("cword") or "").lower() == "midnight" else \
+                " the day before" if t.date() < start.date() else " the next day"  # "2 hours before midnight" is just 10 pm
+            return f"That's {_say_clock(t.hour, t.minute)}{day}."
+    if m := _AGO_CLOCK.match(said):
+        t = here - dt.timedelta(minutes=_dur_minutes(m, "a"))
+        return f"It was {_say_clock(t.hour, t.minute)}{'' if t.date() == here.date() else ' yesterday'}."
+    if m := _DUR_SUM.match(said):
+        a, b = _dur_minutes(m, "a"), _dur_minutes(m, "b")
+        total = a - b if m.group("way").lower() in ("minus", "take away") else a + b
+        return None if total < 0 else f"That's {_say_minutes(total)}."
+    if (m := _DUR_IN.match(said)) and (m.group("ah") and (m.group("am") or m.group("ahalf"))):
+        return f"That's {_say_num(_dur_minutes(m, 'a'))} minutes."
+    return None
+
+
 def _clock_maths(said: str, now: time.struct_time) -> str | None:
     """'How long until 5 pm?' and 'what time will it be in 3 hours?': worked out from the clock on the spot."""
     here = dt.datetime(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
+    if (found := _time_offsets(said, here)) is not None:
+        return found
     if m := _TIME_IN.match(said):
         later = here + dt.timedelta(seconds=_seconds(m.group(1), m.group(2)))
         day = "" if later.date() == here.date() else " tomorrow" if (later.date() - here.date()).days == 1 else f" on {later:%A}"
