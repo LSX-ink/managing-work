@@ -118,6 +118,7 @@ import design_email
 import design_icons
 import design_images
 import design_cards
+import design_posts
 import instagram_dms
 import kinetic_briefing
 import kinetic_premium
@@ -378,7 +379,7 @@ ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market,
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [design, design_extract, design_contrast, design_palette, design_type, design_motion, design_kit, design_logo, design_social,
               design_layout, design_audit, design_components, design_gradient, design_mockup, design_email,
-              design_icons, design_images, design_cards, skillscan]  # design tools
+              design_icons, design_images, design_cards, design_posts, skillscan]  # design tools
 ABILITIES += [alfred_mail, alfred_replies]  # Alfred's own email account and reply drafts for new mail
 ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, track outreach, invoice
