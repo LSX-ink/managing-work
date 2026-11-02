@@ -521,7 +521,10 @@ def _number_value(words: str) -> str:
 def spoken_numbers(said: str) -> str:
     """'twenty five times four' -> '25 times 4', 'two hundred and fifty' -> '250', 'three point five' -> '3.5',
     so sums and conversions said in words are answered on the spot."""
-    return _SPOKEN_NUMBER.sub(lambda m: _number_value(m[0]), said)
+    said = _SPOKEN_NUMBER.sub(lambda m: _number_value(m[0]), said)
+    # "1 million" and "2.5 million" arrive as "1 1000000" and "2.5 1000000": multiply them out
+    return re.sub(r"(?<![\d.])(\d+(?:\.\d+)?) (1000|1000000|1000000000)(?![\d.])",
+                  lambda m: calcmaths.fmt(float(m[1]) * int(m[2])).replace(",", "") if float(m[1]) * int(m[2]) < 1e15 else m[0], said)
 
 
 _SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?[\d(][\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
@@ -696,6 +699,84 @@ def _say_fraction(f) -> str:
 
 
 _WORD_FOR = {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
+
+
+_ONES_SAID = ("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen "
+         "seventeen eighteen nineteen").split()
+_TENS_SAID = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
+
+
+def _number_words(n: int) -> str:
+    """1234 -> 'one thousand, two hundred and thirty-four', the British way."""
+    if n < 0:
+        return "minus " + _number_words(-n)
+    if n < 20:
+        return _ONES_SAID[n]
+    if n < 100:
+        return _TENS_SAID[n // 10] + (f"-{_ONES_SAID[n % 10]}" if n % 10 else "")
+    if n < 1000:
+        return f"{_ONES_SAID[n // 100]} hundred" + (f" and {_number_words(n % 100)}" if n % 100 else "")
+    for size, name in ((10 ** 12, "trillion"), (10 ** 9, "billion"), (10 ** 6, "million"), (1000, "thousand")):
+        if n >= size:
+            head, rest = divmod(n, size)
+            tail = "" if not rest else f" and {_number_words(rest)}" if rest < 100 else f", {_number_words(rest)}"
+            return f"{_number_words(head)} {name}{tail}"
+    return str(n)
+
+
+_NUMBER_OR = r"(?P<{0}>-?\d[\d,]*(?:\.\d+)?(?:/\d+)?)"
+_IN_WORDS = re.compile(_NAME + r"(?:what(?:'s| is)|how do (?:you|I) (?:say|write)|(?:can you )?write|say) (?:the number )?(?P<n>-?\d[\d,]*)"
+                       r" (?:in words|in full|out(?: in words)?)" + _END, re.I)
+_BIGGER = re.compile(_NAME + r"(?:which is|which(?:'s| one is)|what(?:'s| is) the) (?P<way>bigger|larger|greater|higher|smaller|lower|less)"
+                     r"(?: number)?,? " + _NUMBER_OR.format("a") + r" or " + _NUMBER_OR.format("b") + _END, re.I)
+_IS_BIGGER = re.compile(_NAME + r"is " + _NUMBER_OR.format("a") + r" (?P<way>bigger|larger|greater|more|smaller|less|lower) than "
+                        + _NUMBER_OR.format("b") + _END, re.I)
+_NEXT_PRIME = re.compile(_NAME + r"what(?:'s| is) the (?:next|first) prime(?: number)? (?:after|above|bigger than) (?P<n>\d[\d,]*)" + _END, re.I)
+_ZEROS = re.compile(_NAME + r"how many (?:zeros|zeroes|noughts) (?:are )?(?:there )?(?:in|does) (?:a |one )?(?P<w>thousand|million|billion|trillion)"
+                    r"(?: have)?" + _END, re.I)
+
+
+def _number_of(text: str):
+    from fractions import Fraction
+    text = text.replace(",", "")
+    try:
+        return Fraction(text)
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
+def _bigger_numbers(said: str) -> str | None:
+    """'What's 1234 in words?', 'which is bigger, 3/4 or 2/3?', 'is 0.5 more than 0.45?', 'next prime after 13', 'zeros in a million'."""
+    if m := _IN_WORDS.match(spoken_numbers(said)):
+        text = m.group("n").replace(",", "")
+        return f"{text} is {_number_words(int(text))}." if len(text.lstrip("-")) <= 15 else None
+    if m := _ZEROS.match(said):
+        n = {"thousand": 3, "million": 6, "billion": 9, "trillion": 12}[m.group("w").lower()]
+        return f"A {m.group('w').lower()} has {n} zeros: 1{',000' * (n // 3)}."
+    said = spoken_numbers(said)
+    if m := _NEXT_PRIME.match(said):
+        n = int(m.group("n").replace(",", ""))
+        if n > 10 ** 9:
+            return None
+        k = n + 1
+        while k < 2 or any(k % f == 0 for f in range(2, int(k ** 0.5) + 1)):
+            k += 1
+        return f"The next prime after {n:,} is {k:,}."
+    for pattern in (_BIGGER, _IS_BIGGER):
+        if m := pattern.match(said):
+            a, b = _number_of(m.group("a")), _number_of(m.group("b"))
+            if a is None or b is None:
+                return None
+            way = m.group("way").lower()
+            small = way in ("smaller", "lower", "less")
+            if a == b:
+                return f"They're the same: {m.group('a')} and {m.group('b')} are equal."
+            if pattern is _BIGGER:
+                pick = m.group("a") if (a < b) == small else m.group("b")
+                return f"{pick} is {way}."
+            yes = (a < b) if small else (a > b)
+            return f"{'Yes' if yes else 'No'}, {m.group('a')} is {way if yes else ('more' if small else 'less')} than {m.group('b')}."
+    return None
 
 
 def _fraction_answer(said: str) -> str | None:
@@ -1668,7 +1749,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := _calendar_answer(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said) or _bigger_numbers(said)
             or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
