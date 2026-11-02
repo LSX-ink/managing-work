@@ -712,6 +712,22 @@ def test_times_before_and_after_and_adding_durations_are_instant():
     assert instant_answer("what time will it be in 3 hours", s, now) == "It'll be 12 pm."
 
 
+def test_numbers_in_words_comparisons_and_millions_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("how do you say 1234 in words", s) == "1234 is one thousand, two hundred and thirty-four."
+    assert instant_answer("what's 2050 in words", s) == "2050 is two thousand and fifty."
+    assert instant_answer("write 1000005 out", s) == "1000005 is one million and five."
+    assert instant_answer("which is bigger 3/4 or 2/3", s) == "3/4 is bigger."
+    assert instant_answer("which is smaller, 0.3 or 0.25", s) == "0.25 is smaller."
+    assert instant_answer("is 0.5 more than 0.45", s) == "Yes, 0.5 is more than 0.45."
+    assert instant_answer("is 3 bigger than 7", s) == "No, 3 is less than 7."
+    assert instant_answer("what's the next prime after 13", s) == "The next prime after 13 is 17."
+    assert instant_answer("how many zeros in a billion", s) == "A billion has 9 zeros: 1,000,000,000."
+    assert instant_answer("what's 1 million divided by 12", s) == "That's 83,333.3333."
+    assert instant_answer("what's 2.5 million times 2", s) == "That's 5,000,000."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
