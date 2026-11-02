@@ -490,7 +490,7 @@ async def _send_first(ctx: Ctx) -> str:
                 b.set(f"build_fails.{p['id']}", tries)
                 if tries >= 2:
                     b.set(f"skip.{p['id']}", f"the mock-up build failed twice: {str(e)[:120]}")
-                continue
+                return f"no new email this round: the mock-up for {p['name']} failed"  # one failed build per round, at most
             return "no new email: the mock-up builder isn't available"
         if not link:
             b.set(f"skip.{p['id']}", "the mock-up didn't pass Iris's checks")
