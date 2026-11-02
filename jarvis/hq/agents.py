@@ -485,6 +485,12 @@ async def _send_first(ctx: Ctx) -> str:
             link = await outbox.make_mockup(ctx, p)  # Iris builds and checks it
         except Exception as e:  # e.g. the API credit ran out (30 Oct 2026): follow-ups still go, the lead keeps its turn
             b.log("warden", f"couldn't build a mock-up for {p['name']}, so no new email this round: {e}"[:300], "warn")
+            if "credit balance" not in str(e):  # anything else (2 Nov: a crashing page): the next lead gets its turn,
+                tries = b.get(f"build_fails.{p['id']}", 0) + 1  # and after a second failure this one is dropped
+                b.set(f"build_fails.{p['id']}", tries)
+                if tries >= 2:
+                    b.set(f"skip.{p['id']}", f"the mock-up build failed twice: {str(e)[:120]}")
+                continue
             return "no new email: the mock-up builder isn't available"
         if not link:
             b.set(f"skip.{p['id']}", "the mock-up didn't pass Iris's checks")

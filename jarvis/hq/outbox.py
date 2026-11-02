@@ -525,6 +525,17 @@ def split_subject(body: str) -> tuple[str, str]:
     return (m.group(1).strip(), body[m.end():]) if m else ("", body)
 
 
+FOLLOW_US = "You can see more of our work, and follow us, on Instagram: https://www.instagram.com/kineticwebdesigns/"
+
+
+def with_follow_us(body: str) -> str:
+    """Every email invites them to follow us on Instagram (owner, 2 Nov 2026), just before the sign-off."""
+    if FOLLOW_US in body:
+        return body
+    i = body.find("Thanks,")
+    return body[:i] + FOLLOW_US + "\n\n" + body[i:] if i >= 0 else body + "\n\n" + FOLLOW_US
+
+
 def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
     """Vera's first email, written like the DM: about them first, their one problem (or, for a busy shop, what a
     site saves them), the free concept link, the price and terms, then an easy yes. Price, sign-off, contact
@@ -546,7 +557,7 @@ def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
             f"reviews. You can open it on your phone here: {link}\n\n{st.PREVIEW}\n\n"
             + (f"If you like it, {price.group(1)[0].lower() + price.group(1)[1:]} If not, no problem at all.\n\n" if price else "")
             + f"{ask}\n\n{tail}")
-    return subject, body
+    return subject, with_follow_us(body)
 
 
 def follow_up_email(settings, name: str, link: str, updated: bool = False) -> tuple[str, str] | None:
@@ -562,7 +573,7 @@ def follow_up_email(settings, name: str, link: str, updated: bool = False) -> tu
         body = "\n\n".join(parts)
     elif link:
         body = body.replace("is still yours to see, with no obligation.", f"is still yours to see, with no obligation: {link}")
-    return subject, body
+    return subject, with_follow_us(body)
 
 
 async def refresh_mockup(ctx, row: dict) -> str:
@@ -602,7 +613,8 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "it is addressed to the right business; every claim about their website is plausible from the facts; "
               "it is polite, professional, honest and specific; British English; no made-up facts, prices or "
               "promises beyond: websites from £395 (or the local equivalent), half when we start building and half "
-              "once complete, a free home page mock-up, 'see your design before you pay anything'; it is signed by "
+              "once complete, a free home page mock-up, 'see your design before you pay anything', an invitation to follow "
+              "Kinetic Web Designs on Instagram (instagram.com/kineticwebdesigns, our real account); it is signed by "
               "Alfred; it has an opt-out line. A price in the business's own currency (e.g. $499 or €459) is the "
               "local equivalent of £395 and is fine. For a follow-up, the date of our first email is in the facts "
               "(first_email_sent) and is real, and when made_them_an_updated_mockup is true the new design and its link are real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
