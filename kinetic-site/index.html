@@ -1,18 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
+<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
 <title>Kinetic Web Designs</title>
 <meta name="description" content="Kinetic Web Designs builds websites around your colours: pick a style, test three colours in our colour lab, get an instant quote and tell us your vision.">
 <link rel="canonical" href="https://lsx-ink.github.io/managing-work/">
-<meta name="theme-color" content="#2443e8">
+<meta name="theme-color" content="#2a46d1">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Kinetic Web Designs">
 <meta property="og:title" content="Kinetic Web Designs: your website, built around your colours">
 <meta property="og:description" content="Pick a style, test your colours on a real page and see your price before you ask. Websites from £395 for independent businesses.">
 <meta property="og:url" content="https://lsx-ink.github.io/managing-work/">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232443e8'/%3E%3Ccircle cx='12' cy='16' r='6' fill='%23ffbf1f'/%3E%3Ccircle cx='21' cy='16' r='6' fill='%23ffffff' fill-opacity='.9'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect width='28' height='28' rx='7' fill='%232a46d1'/%3E%3Cpath d='M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
 <script type="application/ld+json">
 {"@context": "https://schema.org", "@type": "ProfessionalService", "name": "Kinetic Web Designs",
  "description": "Websites for independent businesses, built around your colours, with prices shown up front.",
@@ -24,115 +27,153 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;550;600;650;700;750&family=Geist+Mono:wght@500;600&family=Syne:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: a wide editorial column; the colour lab is the centrepiece, styles and quote sit either side of it in the scroll. */
+/* Kinetic Web Designs, MCP build.
+   Design rules from the Higgsfield website-builder design recipe: one cobalt accent on a cool neutral base,
+   Geist + Geist Mono, one corner radius (12px), a split hero with a real component preview as its visual,
+   no eyebrow labels, no glow or gradient effects, one signature motion (the hero preview cycling styles and colours). */
 :root {
-  --bg: #f2f4f7;
+  --bg: #f4f5f7;
   --surface: #ffffff;
-  --sunk: #e6e9ef;
-  --ink: #0d1424;
-  --muted: #4d5768;
-  --line: #d3d8e1;
-  --accent: #2443e8;
+  --sunk: #e9ebef;
+  --ink: #11141b;
+  --muted: #535a69;
+  --line: #d8dbe2;
+  --accent: #2a46d1;
   --accent-ink: #ffffff;
-  --signal: #ffbf1f;
-  --good: #137a47;
+  --accent-soft: #e6eafb;
+  --good: #13704a;
   --bad: #b3261e;
-  --display: "Syne", "Trebuchet MS", system-ui, sans-serif;
-  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  --r: 14px;
+  --display: "Geist", "Segoe UI", system-ui, sans-serif;
+  --body: "Geist", "Segoe UI", system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Consolas, monospace;
+  --r: 12px;
   --gutter: clamp(16px, 4vw, 40px);
+  /* motion: strong curves, short UI durations */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --press: 160ms;
+  --ui: 200ms;
+  color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0b101b; --surface: #121a29; --sunk: #1a2335; --ink: #eef1f7; --muted: #a3adbf; --line: #2a3448;
-    --accent: #7f93ff; --accent-ink: #0b101b; --signal: #ffcb4a; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
+    --bg: #0e1015; --surface: #161921; --sunk: #1d212b; --ink: #eceef3; --muted: #a2a8b5; --line: #2a2f3b;
+    --accent: #8ea0ff; --accent-ink: #0e1015; --accent-soft: #1f2540; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0b101b; --surface: #121a29; --sunk: #1a2335; --ink: #eef1f7; --muted: #a3adbf; --line: #2a3448;
-  --accent: #7f93ff; --accent-ink: #0b101b; --signal: #ffcb4a; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
+  --bg: #0e1015; --surface: #161921; --sunk: #1d212b; --ink: #eceef3; --muted: #a2a8b5; --line: #2a2f3b;
+  --accent: #8ea0ff; --accent-ink: #0e1015; --accent-soft: #1f2540; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
-.wrap { max-width: 1160px; margin: 0 auto; padding-inline: var(--gutter); }
+html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+html, body { overflow-x: clip; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: var(--gutter); }
 a { color: var(--accent); }
-h1, h2, h3 { font-family: var(--display); line-height: 1.08; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
-h2 { font-size: clamp(1.8rem, 4vw, 2.7rem); }
-h3 { font-size: 1.2rem; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.05; text-wrap: balance; margin: 0; letter-spacing: -0.035em; font-weight: 700; }
+h2 { font-size: clamp(2rem, 4.4vw, 3.1rem); }
+h3 { font-size: 1.12rem; letter-spacing: -0.015em; font-weight: 650; }
 p { margin: 0; }
-.eyebrow { font-family: var(--mono); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.lede { color: var(--muted); max-width: 62ch; font-size: 1.08rem; }
-:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; border-radius: 6px; }
-.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; z-index: 50; }
+.lede { color: var(--muted); max-width: 60ch; font-size: 1.08rem; line-height: 1.6; }
+.label { font-weight: 650; font-size: .9rem; color: var(--ink); }
+.eyebrow { font-weight: 600; font-size: .88rem; color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: var(--r); z-index: 200; }
 .skip:focus { left: 16px; }
-.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 1rem var(--body); border: 2px solid var(--ink); background: var(--ink); color: var(--bg);
-  padding: 12px 22px; border-radius: 999px; cursor: pointer; text-decoration: none; transition: transform .18s ease; }
-.btn:hover { transform: translateY(-2px); }
-.btn.ghost { background: transparent; color: var(--ink); }
+section { padding-block: clamp(64px, 9vw, 112px); }
+.head { display: grid; gap: 16px; margin-bottom: clamp(28px, 4vw, 44px); }
+
+/* Buttons: three identities. Solid ink for doing, cobalt with a sliding arrow for moving forward, outline for secondary. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font: 600 .98rem/1 var(--body); letter-spacing: -0.01em;
+  border: 1.5px solid var(--ink); background: var(--ink); color: var(--bg); padding: 14px 20px; border-radius: var(--r); cursor: pointer;
+  text-decoration: none; transition: transform .2s var(--ease-out), background .2s ease, color .2s ease, border-color .2s ease; white-space: nowrap; }
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(1px) scale(.98); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--ink); }
 .btn.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-section { padding-block: clamp(56px, 8vw, 96px); }
-.head { display: grid; gap: 14px; margin-bottom: 36px; }
+.btn.accent::after { content: "\2192"; font-family: var(--mono); transition: transform .25s var(--ease-out); }
+.btn.accent:hover::after { transform: translateX(4px); }
+.btn:disabled { opacity: .6; cursor: progress; }
+.textlink { font-weight: 600; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 6px; text-decoration-thickness: 2px; transition: text-decoration-color .2s ease; }
+.textlink:hover { text-decoration-color: var(--accent); }
 
-/* header */
-.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
-.logo { font: 800 1.25rem var(--display); color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 10px; }
-.logo i { width: 26px; height: 26px; border-radius: 8px; background: conic-gradient(from 200deg, var(--accent), var(--signal), var(--accent)); display: inline-block; }
-nav { display: flex; gap: 18px; flex-wrap: wrap; }
-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: .95rem; }
-nav a:hover { color: var(--accent); }
-@media (max-width: 720px) { .bar nav { display: none; } }
+/* Header */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(12px) saturate(150%);
+  border-bottom: 1px solid transparent; transition: border-color .2s ease; }
+.bar.scrolled { border-bottom-color: var(--line); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 68px; }
+.logo { font: 700 1.15rem var(--display); letter-spacing: -0.03em; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+.logo svg { width: 28px; height: 28px; flex: none; }
+.bar nav { display: flex; gap: 26px; }
+.bar nav a { color: var(--muted); text-decoration: none; font-weight: 550; font-size: .93rem; transition: color .15s ease; }
+.bar nav a:hover { color: var(--ink); }
+.bar .btn { padding: 11px 16px; font-size: .92rem; }
+@media (max-width: 900px) { .bar nav { display: none; } }
 
-/* hero */
-.hero { padding-block: clamp(40px, 7vw, 84px) clamp(48px, 7vw, 80px); }
-.hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 5vw, 64px); align-items: center; }
-@media (max-width: 880px) { .hero .wrap { grid-template-columns: 1fr; } }
-.hero h1 { font-size: clamp(2.6rem, 7vw, 5rem); font-weight: 800; }
+/* Hero: copy left, a live front page right */
+.hero { padding-block: clamp(40px, 7vw, 88px) clamp(48px, 7vw, 80px); }
+.hero .wrap { display: grid; grid-template-columns: .92fr 1.08fr; gap: clamp(32px, 5vw, 72px); align-items: center; }
+@media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; } }
+.hero .copy { display: grid; gap: 26px; min-width: 0; }
+.hero h1 { font-size: clamp(2.7rem, 6.4vw, 4.9rem); line-height: .98; letter-spacing: -0.05em; font-weight: 750; }
 .hero h1 em { font-style: normal; color: var(--accent); }
-.hero .copy { display: grid; gap: 22px; min-width: 0; }
-.hero .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
-.swatchline { display: flex; gap: 8px; align-items: center; font-family: var(--mono); font-size: .8rem; color: var(--muted); flex-wrap: wrap; }
-.swatchline b { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 1px solid var(--line); }
-.stage { position: relative; min-width: 0; }
-.mini { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 60px -30px rgba(13,20,36,.45);
-  background: var(--m-bg); color: var(--m-ink); font-family: var(--m-font, var(--body)); transition: background .6s ease, color .6s ease; }
-.mini .chrome { display: flex; gap: 6px; padding: 10px 12px; background: color-mix(in srgb, var(--m-ink) 8%, var(--m-bg)); }
-.mini .chrome span { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--m-ink) 25%, transparent); }
-.mini .in { padding: clamp(18px, 3vw, 30px); display: grid; gap: 14px; }
-.mini .nav { display: flex; justify-content: space-between; font-weight: 700; font-size: .85rem; }
-.mini .nav small { opacity: .65; font-weight: 500; }
-.mini h4 { margin: 0; font-family: var(--m-display, var(--display)); font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.05; }
-.mini .pill { justify-self: start; background: var(--m-main); color: var(--m-on); padding: 9px 18px; border-radius: var(--m-r, 999px); font-weight: 700; font-size: .85rem; transition: background .6s ease; }
-.mini .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.mini .cards div { border-radius: calc(var(--m-r, 12px) / 2); padding: 12px; background: color-mix(in srgb, var(--m-ink) 6%, var(--m-bg)); font-size: .75rem; }
-.mini .cards div b { display: block; width: 22px; height: 6px; border-radius: 3px; background: var(--m-accent); margin-bottom: 8px; transition: background .6s ease; }
-.stage .tag { position: absolute; right: -6px; bottom: -14px; background: var(--signal); color: #1a1400; font: 600 .8rem var(--mono); padding: 6px 12px; border-radius: 999px; }
+.hero .lede { font-size: 1.15rem; max-width: 42ch; }
+.ctas { display: flex; gap: 22px; flex-wrap: wrap; align-items: center; }
+.showcase { min-width: 0; display: grid; gap: 12px; }
+.showcase .frame { border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 1px 0 var(--line), 0 30px 70px -40px rgba(17,20,27,.45); }
+.showcase .fp { animation: fp-in .7s var(--ease-out); }
+@keyframes fp-in { from { opacity: 0; transform: scale(var(--k, .5)) translateY(8px); } to { opacity: 1; transform: scale(var(--k, .5)); } }
+.caption { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font: 500 .82rem var(--mono); color: var(--muted); }
+.caption .dots { display: inline-flex; gap: 4px; }
+.caption .dots b { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line); display: inline-block; transition: background .5s ease; }
+.caption button { margin-left: auto; font: 500 .82rem var(--mono); background: none; border: 0; color: var(--muted); cursor: pointer; padding: 4px 0; text-decoration: underline; text-underline-offset: 4px; }
 
-/* process */
-.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; counter-reset: step; list-style: none; padding: 0; margin: 0; }
-@media (max-width: 960px) { .steps { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .steps { grid-template-columns: 1fr; } }
-.steps li { counter-increment: step; display: grid; gap: 8px; padding: 18px; border-top: 3px solid var(--ink); min-width: 0; }
-.steps li::before { content: counter(step, decimal-leading-zero); font: 500 .85rem var(--mono); color: var(--accent); }
-.steps p { color: var(--muted); font-size: .95rem; }
+/* Promises: one ruled row, no cards */
+.promise-band { padding-block: 0; }
+.promises { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); border-block: 1px solid var(--line); }
+.promises li { padding: 22px 22px 24px 0; display: grid; gap: 4px; }
+.promises li + li { padding-left: 22px; border-left: 1px solid var(--line); }
+.promises strong { font-family: var(--display); font-size: 1.02rem; letter-spacing: -0.015em; }
+.promises span { color: var(--muted); font-size: .93rem; }
+@media (max-width: 860px) { .promises { grid-template-columns: 1fr 1fr; }
+  .promises li:nth-child(3) { border-left: 0; padding-left: 0; } .promises li:nth-child(n+3) { border-top: 1px solid var(--line); } }
+@media (max-width: 480px) { .promises { grid-template-columns: 1fr; } .promises li, .promises li + li { padding-left: 0; border-left: 0; } .promises li + li { border-top: 1px solid var(--line); } }
 
-/* styles */
-.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
-.chip { border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 7px 14px; font: 600 .9rem var(--body); cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-@media (max-width: 900px) { .styles { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .styles { grid-template-columns: 1fr; } }
-.style { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: grid; min-width: 0; }
-.style .meta { padding: 16px; display: grid; gap: 8px; border-top: 1px solid var(--line); }
-.style .meta p { color: var(--muted); font-size: .92rem; }
-.style .meta .for { font: 500 .75rem var(--mono); color: var(--muted); }
-.style .meta button { justify-self: start; }
-.style.picked { outline: 3px solid var(--accent); outline-offset: -3px; }
+/* Process: a numbered track */
+.steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; counter-reset: step; }
+.steps li { counter-increment: step; display: grid; gap: 10px; align-content: start; padding: 0 22px 0 0; position: relative; min-width: 0; }
+.steps li::before { content: counter(step); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface); border: 1.5px solid var(--ink); font: 600 .9rem var(--mono); position: relative; z-index: 1; margin-bottom: 8px; }
+.steps li::after { content: ""; position: absolute; left: 36px; right: 0; top: 18px; height: 1.5px; background: var(--line); }
+.steps li:last-child::after { display: none; }
+.steps li:first-child::before { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.steps p { color: var(--muted); font-size: .94rem; }
+@media (max-width: 960px) { .steps { grid-template-columns: 1fr; gap: 22px; }
+  .steps li { grid-template-columns: 36px 1fr; column-gap: 16px; padding: 0; }
+  .steps li::before { grid-row: span 2; margin: 0; }
+  .steps li::after { left: 17px; right: auto; top: 40px; bottom: -22px; width: 1.5px; height: auto; } }
+
+/* Styles gallery */
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; padding: 4px; background: var(--sunk); border-radius: var(--r); width: fit-content; max-width: 100%; }
+.chip { border: 0; background: transparent; color: var(--muted); border-radius: 9px; padding: 8px 14px; font: 600 .9rem var(--body); cursor: pointer; transition: background .2s ease, color .2s ease; }
+.chip:hover { color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(17,20,27,.12); }
+.styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 980px) { .styles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .styles { grid-template-columns: 1fr; } }
+.style { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: grid; grid-template-rows: auto 1fr; min-width: 0; transition: border-color .2s ease, box-shadow .2s ease; }
+.style:hover { border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); }
+.style .meta { padding: 18px; display: grid; gap: 10px; align-content: start; }
+.style .meta p { color: var(--muted); font-size: .93rem; }
+.style .meta .for { font: 500 .78rem var(--mono); color: var(--muted); }
+.style .labtools .btn { padding: 10px 14px; font-size: .88rem; }
+.style.picked { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
 
 /* front-page previews: a real 960px-wide home page, scaled down to fit its frame */
 .frame { position: relative; overflow: hidden; aspect-ratio: 960 / 640; background: var(--sunk); border-bottom: 1px solid var(--line); }
@@ -271,270 +312,409 @@ nav a:hover { color: var(--accent); }
 .viewer .scroll { overflow: auto; border-radius: 14px; }
 .viewer .frame { aspect-ratio: auto; border: 0; }
 
-/* colour lab */
-.lab { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 32px); display: grid; gap: 26px; }
+/* overrides for the preview frames */
+.frame { border-bottom: 1px solid var(--line); }
+.viewer { background: rgba(9,11,15,.94); }
+.viewer .top .btn { background: #fff; color: #11141b; border-color: #fff; padding: 10px 16px; }
+.viewer .scroll { border-radius: var(--r); }
+
+/* Colour lab */
+.lab { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(18px, 3vw, 32px); display: grid; gap: 28px; }
 .pickers { display: grid; grid-template-columns: repeat(3, 1fr) 1.3fr; gap: 16px; align-items: end; }
 @media (max-width: 900px) { .pickers { grid-template-columns: repeat(3, 1fr); } .pickers .presets { grid-column: 1 / -1; } }
-@media (max-width: 520px) { .pickers { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .pickers { grid-template-columns: 1fr; } }
 .pick { display: grid; gap: 6px; min-width: 0; }
-.pick label { font-weight: 700; font-size: .92rem; }
-.pick .field { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--line); border-radius: 12px; padding: 6px 10px 6px 6px; background: var(--bg); }
+.pick label { font-weight: 650; font-size: .92rem; }
+.pick .field { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--line); border-radius: var(--r); padding: 6px 10px 6px 6px; background: var(--bg); transition: border-color .2s ease; }
+.pick .field:focus-within { border-color: var(--accent); }
 .pick input[type="color"] { width: 44px; height: 38px; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 8px; flex: none; }
-.pick input[type="text"] { font: 500 .95rem var(--mono); border: 0; background: transparent; color: var(--ink); width: 100%; min-width: 0; text-transform: uppercase; }
-.pick small { color: var(--muted); font-size: .8rem; }
+.pick input[type="text"] { font: 500 .95rem var(--mono); border: 0; background: transparent; color: var(--ink); width: 100%; min-width: 0; text-transform: uppercase; outline: none; }
+.pick small { color: var(--muted); font-size: .82rem; }
 .presets { display: grid; gap: 8px; min-width: 0; }
 .presets .list { display: flex; gap: 8px; flex-wrap: wrap; }
-.preset { display: flex; border-radius: 999px; overflow: hidden; border: 1.5px solid var(--line); cursor: pointer; padding: 0; background: none; height: 30px; }
+.preset { display: flex; border-radius: 8px; overflow: hidden; border: 1.5px solid var(--line); cursor: pointer; padding: 0; background: none; height: 32px; transition: transform .15s ease, border-color .15s ease; }
+.preset:hover { transform: translateY(-1px); border-color: var(--ink); }
 .preset span { width: 22px; }
-.labtools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.checks { display: flex; gap: 10px; flex-wrap: wrap; }
-.check { display: inline-flex; gap: 8px; align-items: center; font-size: .88rem; padding: 6px 12px; border-radius: 999px; background: var(--sunk); }
+.labtools { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.checks { display: flex; gap: 8px; flex-wrap: wrap; }
+.check { display: inline-flex; gap: 8px; align-items: center; font-size: .86rem; padding: 7px 12px; border-radius: 8px; background: var(--sunk); }
+.check::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.check.pass { color: var(--good); } .check.fail { color: var(--bad); }
 .check b { font-family: var(--mono); font-weight: 500; }
-.check.pass b { color: var(--good); }
-.check.fail b { color: var(--bad); }
-.templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.check { color: var(--ink); } .check.pass::before { background: var(--good); } .check.fail::before { background: var(--bad); }
+.check.pass b { color: var(--good); } .check.fail b { color: var(--bad); }
+.templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 @media (max-width: 900px) { .templates { grid-template-columns: 1fr; } }
-.tpl { display: grid; gap: 10px; min-width: 0; }
-.tpl .frame { border: 1px solid var(--line); border-radius: 14px; }
-.tpl .cap { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.tpl .cap p { color: var(--muted); font-size: .88rem; }
+.tpl { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.tpl .frame { border: 1px solid var(--line); border-radius: var(--r); }
+.tpl:has(input:checked) .frame { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+.tpl .cap { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tpl .cap p { color: var(--muted); font-size: .88rem; flex-basis: 100%; }
 .tpl input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; }
-.tpl label { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
+.tpl label { display: flex; gap: 8px; align-items: center; font-weight: 650; cursor: pointer; }
+.lab > .labtools:last-child { border-top: 1px solid var(--line); padding-top: 22px; justify-content: space-between; }
 
-/* quote */
-.quote { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; align-items: start; }
-@media (max-width: 880px) { .quote { grid-template-columns: 1fr; } }
-.packs { display: grid; gap: 12px; }
-.pack { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r); padding: 18px; cursor: pointer; }
-.pack:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
-.pack input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 4px; }
-.pack p { color: var(--muted); font-size: .92rem; }
-.pack .price { font: 700 1.2rem var(--display); white-space: nowrap; }
-.addons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 6px; }
-@media (max-width: 520px) { .addons { grid-template-columns: 1fr; } }
-.addon { display: flex; gap: 10px; align-items: center; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: .95rem; }
-.addon input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
+/* Quote */
+.quote { display: grid; grid-template-columns: 1.4fr 1fr; gap: 28px; align-items: start; }
+@media (max-width: 900px) { .quote { grid-template-columns: 1fr; } }
+.packs { display: grid; gap: 10px; }
+.pack { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: start; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r); padding: 18px 20px; cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease; }
+.pack:hover { border-color: color-mix(in srgb, var(--ink) 35%, var(--line)); }
+.pack:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+.pack input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 3px; }
+.pack h3 { margin-bottom: 4px; }
+.pack p { color: var(--muted); font-size: .93rem; }
+.pack .price { font: 700 1.3rem var(--display); letter-spacing: -0.03em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.badge { display: inline-block; margin-left: 8px; padding: 3px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent);
+  font: 600 .72rem var(--body); vertical-align: 2px; letter-spacing: 0; }
+.addons-title { margin: 30px 0 12px; }
+.addons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (max-width: 560px) { .addons { grid-template-columns: 1fr; } }
+.addon { display: flex; gap: 10px; align-items: center; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r); padding: 12px 14px; font-size: .95rem; cursor: pointer; transition: border-color .2s ease; }
+.addon:has(input:checked) { border-color: var(--accent); }
+.addon input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; flex: none; }
 .addon span { flex: 1; }
-.care-addon { grid-column: 1 / -1; border-color: var(--accent); }
-.care-why { grid-column: 1 / -1; margin-top: -4px; }
-.care-why summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px;
-  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: .88rem; }
+.addon em { font-style: normal; font-family: var(--mono); font-size: .85rem; color: var(--muted); white-space: nowrap; }
+.addon input[type="number"] { width: 56px; font: 500 .9rem var(--mono); padding: 5px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.addon.existing { margin-top: 12px; background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.addon.existing em { color: var(--accent); font-weight: 600; }
+.pack .price s { display: block; font-size: .85rem; font-weight: 500; color: var(--muted); text-align: right; }
+.care-addon { grid-column: 1 / -1; background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.care-why { grid-column: 1 / -1; }
+.care-why summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 8px; padding: 6px 0; color: var(--accent); font-weight: 600; font-size: .9rem; }
 .care-why summary::-webkit-details-marker { display: none; }
-.care-why summary span { font-size: 1.1rem; letter-spacing: .1em; color: var(--accent); line-height: 1; }
-.care-why[open] summary { color: var(--ink); border-color: var(--accent); }
-.care-why ul { margin: 10px 0 0; padding: 14px 18px 14px 34px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 8px; }
+.care-why summary span { display: none; }
+.care-why summary::after { content: "+"; font-family: var(--mono); }
+.care-why[open] summary::after { content: "\2212"; }
+.care-why ul { margin: 6px 0 0; padding: 16px 18px 16px 34px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); display: grid; gap: 8px; }
 .care-why li { color: var(--muted); font-size: .93rem; }
 .care-why li b { color: var(--ink); }
-.addon em { font-style: normal; font-family: var(--mono); font-size: .85rem; color: var(--muted); }
-.addon input[type="number"] { width: 56px; font: 500 .9rem var(--mono); padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
-.total { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); background: var(--ink); color: var(--bg); border-radius: 20px; padding: 26px; display: grid; gap: 14px; }
-.total .big { font: 800 clamp(2.4rem, 6vw, 3.4rem) var(--display); font-variant-numeric: tabular-nums; }
-.total dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; margin: 0; font-size: .95rem; }
-.total dt { opacity: .75; }
-.total dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.total .btn { background: var(--signal); border-color: var(--signal); color: #1a1400; justify-self: start; }
-.total small { opacity: .7; }
+.total { position: sticky; top: 92px; background: var(--ink); color: var(--bg); border-radius: var(--r); padding: 28px; display: grid; gap: 16px; }
+.total .label { color: inherit; opacity: .7; font-weight: 550; }
+.total .big { font: 750 clamp(2.8rem, 6vw, 3.8rem)/1 var(--display); letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
+.total dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; margin: 0; font-size: .93rem; border-top: 1px solid color-mix(in srgb, var(--bg) 18%, transparent); padding-top: 16px; }
+.total dt { opacity: .72; }
+.total dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: .88rem; }
+.total small { opacity: .72; }
+.total .btn { background: var(--bg); color: var(--ink); border-color: var(--bg); justify-self: start; }
+.total .btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* brief */
-.brief { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
-@media (max-width: 880px) { .brief { grid-template-columns: 1fr; } }
-form.vision { display: grid; gap: 14px; min-width: 0; }
-.f { display: grid; gap: 6px; }
-.f label { font-weight: 700; font-size: .92rem; }
-.f input, .f textarea, .f select { font: 1rem var(--body); padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); width: 100%; }
-.f textarea { min-height: 120px; resize: vertical; }
+/* Client area: ruled rows */
+.account { display: grid; border-top: 1px solid var(--line); }
+.account article { display: grid; grid-template-columns: 200px 1fr 210px; gap: 12px 32px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.account p { color: var(--muted); max-width: 62ch; }
+.account .btn { justify-self: end; }
+@media (max-width: 760px) { .account article { grid-template-columns: 1fr; } .account .btn { justify-self: start; } }
+.secure-note { margin-top: 18px; color: var(--muted); font-size: .9rem; max-width: 70ch; }
+.addr { font-family: var(--mono); font-size: .92em; color: var(--ink); user-select: all; }
+
+/* FAQ */
+.faq { display: grid; max-width: 860px; border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; padding: 20px 0; font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; list-style: none; display: flex; justify-content: space-between; gap: 14px; align-items: center; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font: 500 1.3rem var(--mono); color: var(--muted); transition: transform .25s ease; flex: none; }
+.faq details[open] summary::after { transform: rotate(45deg); color: var(--accent); }
+.faq details p { margin: 0 0 20px; color: var(--muted); max-width: 66ch; }
+
+/* Brief */
+.brief { display: grid; grid-template-columns: 1.25fr .75fr; gap: 28px; align-items: start; }
+@media (max-width: 900px) { .brief { grid-template-columns: 1fr; } }
+form.vision { display: grid; gap: 16px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: clamp(18px, 3vw, 30px); }
+.f { display: grid; gap: 6px; min-width: 0; }
+.f label { font-weight: 650; font-size: .92rem; }
+.f input, .f textarea, .f select { font: 1rem var(--body); padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; transition: border-color .2s ease, box-shadow .2s ease; }
+.f input:focus, .f textarea:focus, .f select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.f input::placeholder, .f textarea::placeholder { color: color-mix(in srgb, var(--muted) 85%, var(--bg)); }
+.f textarea { min-height: 128px; resize: vertical; }
 .f small { color: var(--muted); }
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-@media (max-width: 520px) { .two { grid-template-columns: 1fr; } }
-.summary { background: var(--sunk); border-radius: 18px; padding: 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
-.summary .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--line); padding-bottom: 8px; flex-wrap: wrap; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
+.err { color: var(--bad); font-weight: 600; min-height: 1.4em; font-size: .93rem; }
+form.vision .btn { justify-self: start; }
+.summary { position: sticky; top: 92px; border-top: 2px solid var(--ink); padding-top: 18px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.summary .label { margin-bottom: 8px; }
+.summary .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding: 10px 0; flex-wrap: wrap; }
 .summary .row span:first-child { color: var(--muted); }
 .summary .dots { display: flex; gap: 6px; }
 .summary .dots b { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); }
-.sent { background: var(--surface); border: 2px solid var(--good); border-radius: 16px; padding: 18px; display: grid; gap: 10px; }
-.sent pre { white-space: pre-wrap; font: .85rem var(--mono); background: var(--sunk); padding: 12px; border-radius: 10px; max-height: 260px; overflow: auto; margin: 0; }
+.summary p { margin-top: 12px; color: var(--muted); font-size: .92rem; }
+.sent { background: var(--bg); border: 1.5px solid var(--good); border-radius: var(--r); padding: 18px; display: grid; gap: 10px; }
+.sent pre { white-space: pre-wrap; font: .85rem var(--mono); background: var(--sunk); padding: 12px; border-radius: 8px; max-height: 260px; overflow: auto; margin: 0; }
+.sent .btn { justify-self: start; }
 
-footer { border-top: 1px solid var(--line); padding-block: 40px; color: var(--muted); font-size: .92rem; }
-footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
-footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
+/* Footer */
+footer { border-top: 1px solid var(--line); padding-block: 44px; color: var(--muted); font-size: .92rem; }
+footer .wrap { display: flex; justify-content: space-between; gap: 18px 28px; flex-wrap: wrap; align-items: center; }
+footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
 footer nav a { color: var(--muted); text-decoration: none; }
 footer nav a:hover { color: var(--ink); }
-/* Promise strip under the hero: the four things a visitor wants to know first. */
-.promises { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-@media (max-width: 860px) { .promises { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 460px) { .promises { grid-template-columns: 1fr; } }
-.promises li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 4px; }
-.promises strong { font-family: var(--display); font-size: 1.05rem; }
-.promises span { color: var(--muted); font-size: .92rem; }
-.promise-band { padding-block: 0 8px; }
-.badge { display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 999px; background: var(--signal); color: #1a1300;
-  font: 600 .72rem var(--body); letter-spacing: .02em; vertical-align: middle; }
-/* FAQ */
-.faq { display: grid; gap: 10px; max-width: 820px; }
-.faq details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 4px 18px; }
-.faq summary { cursor: pointer; padding: 14px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 14px; }
-.faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: "+"; font: 500 1.2rem var(--mono); color: var(--accent); }
-.faq details[open] summary::after { content: "\2212"; }
-.faq details p { margin: 0 0 16px; color: var(--muted); }
-/* Client area: start, manage or cancel hosting and care (payments run on Stripe's secure pages). */
-.account { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-@media (max-width: 860px) { .account { grid-template-columns: 1fr; } }
-.account article { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: grid; gap: 10px; align-content: start; }
-.account h3 { margin: 0; font-family: var(--display); }
-.account p { margin: 0; color: var(--muted); }
-.account .btn { justify-self: start; }
-.secure-note { margin-top: 14px; color: var(--muted); font-size: .9rem; }
-.addr { font-family: var(--mono); color: var(--ink); user-select: all; }
+.vat-note { font-size: .8rem; }
+.legal .faq details p + p { margin-top: -8px; }
+.fill { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--ink); padding: 0 4px; border-radius: 4px; }
 
-/* sign-up gate */
-.gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--ink) 55%, transparent); backdrop-filter: blur(6px); }
+/* Sign-up pop-up */
+.gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #0b0d12 60%, transparent); backdrop-filter: blur(8px); }
 .gate[hidden] { display: none; }
-.gate .card { background: var(--surface); color: var(--ink); border-radius: 24px; padding: clamp(22px, 4vw, 36px); width: min(460px, 100%); display: grid; gap: 16px; box-shadow: 0 40px 80px -30px rgba(0,0,0,.5); }
-.gate h2 { font-size: 1.8rem; }
+.gate .card { background: var(--surface); color: var(--ink); border-radius: var(--r); padding: clamp(24px, 4vw, 36px); width: min(440px, 100%); display: grid; gap: 16px; box-shadow: 0 40px 90px -30px rgba(0,0,0,.55); animation: gate-in .45s var(--ease-out); }
+@keyframes gate-in { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+.gate .card .logo { pointer-events: none; }
+.gate h2 { font-size: 1.85rem; }
 .gate p { color: var(--muted); }
-.gate .err { color: var(--bad); font-weight: 600; min-height: 1.4em; }
-.gate .consent { display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; color: var(--muted); }
+.gate .consent { display: flex; gap: 10px; align-items: flex-start; font-size: .9rem; color: var(--muted); cursor: pointer; }
 .gate .consent input { accent-color: var(--accent); width: 18px; height: 18px; margin-top: 2px; flex: none; }
-.gate .fine { font-size: .78rem; }
-/* ===== 21st.dev-style layer: dark premium look, aurora hero, glass cards with a spotlight, shimmer buttons,
-   beam-bordered estimate and scroll reveals. Content and behaviour above are unchanged. ===== */
-:root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
-  --bg: #07090f; --surface: rgba(255,255,255,.035); --sunk: #11151f; --ink: #f4f6fb; --muted: #9aa3b5; --line: rgba(255,255,255,.09);
-  --accent: #8b7bff; --accent-ink: #0a0b12; --signal: #ffd166; --good: #5fd39a; --bad: #ff8a80; color-scheme: dark;
-  --glow: 139,123,255;
+.gate .fine { font-size: .8rem; }
+.gate .btn { width: 100%; }
+
+
+/* Real photos inside the style previews. A light wash of the main colour keeps each photo tied to the palette. */
+.fp .fart.has-photo { background: color-mix(in srgb, var(--m-main) 40%, #222); }
+.fp .fart.has-photo::before, .fp .fart.has-photo::after { display: none; }
+.fp .fart .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.fp .fart .tint { position: absolute; inset: 0; background: var(--m-main); mix-blend-mode: color; opacity: .22; pointer-events: none; }
+.fp .fart .fbadge { z-index: 2; }
+.fp.s-elegant .fart.has-photo { height: 230px; }
+.fp.s-elegant .fart.has-photo .photo { object-position: 50% 4%; }  /* keep the wig heads (top shelf) in frame */
+.fp.s-night .fart.has-photo .photo { filter: brightness(.8) contrast(1.05); }
+.fp.s-night .fart.has-photo .tint { mix-blend-mode: soft-light; opacity: .45; background: var(--m-accent); }
+.fp.s-night .fart.has-photo .fbadge { left: auto; top: auto; right: 18px; bottom: 18px; }
+.fp.s-playful .fart.has-photo .fbadge { right: 44px; top: 26px; }
+.fp.s-bold .fart.has-photo { border-radius: var(--m-r); }
+.fp.s-studio .fart u { background-size: cover !important; background-position: center !important; }
+
+
+/* Elegant (wig boutique): four real black hair textures side by side */
+.fp.s-elegant .fart.wigs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: none; height: 230px; }
+.fp .fart.wigs::before, .fp .fart.wigs::after { display: none; }
+.fp .fart.wigs u { position: relative; display: block; background-color: #e9e6e3; background-size: cover; background-position: center 30%; background-repeat: no-repeat; border-radius: var(--m-r); overflow: hidden; text-decoration: none; }
+.fp .fart.wigs i { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 10px 9px; font: italic 16px/1 var(--m-display); color: #fff; text-align: center;
+  background: linear-gradient(transparent, rgba(0,0,0,.6)); }
+
+
+/* Crafted (carpenters): photo first, warm edged cards */
+.fp.s-crafted .fhero { grid-template-columns: .95fr 1.05fr; }
+.fp.s-crafted .fhero > .fart { order: -1; height: 320px; }
+.fp.s-crafted h5 { font-size: 50px; }
+.fp.s-crafted .fserv div { border-left: 5px solid var(--m-main); }
+/* Fresh (window cleaners): airy tinted band, rounded photo, pill buttons */
+.fp.s-fresh .fhero { background: linear-gradient(180deg, color-mix(in srgb, var(--m-main) 12%, var(--m-bg)), var(--m-bg)); }
+.fp.s-fresh .fart.has-photo { border-radius: 140px 18px 18px 18px; height: 300px; }
+.fp.s-fresh .fbtn, .fp.s-fresh .fghost { border-radius: 999px; }
+.fp.s-fresh .fart.has-photo .fbadge { left: auto; top: auto; right: 14px; bottom: 14px; }
+.fp.s-fresh h5 { font-weight: 800; letter-spacing: -.03em; }
+/* Splash (painters): painted highlight on the headline, colour block behind the photo */
+.fp.s-splash h5 { font-size: 56px; font-weight: 800; text-transform: uppercase; line-height: .98; }
+.fp.s-splash h5 em { font-style: normal; background: linear-gradient(transparent 56%, var(--m-accent) 56% 90%, transparent 90%); }
+.fp.s-splash .fart.has-photo { overflow: visible; box-shadow: 16px 16px 0 var(--m-accent); }
+.fp.s-splash .fserv div { background: none; border: 2px solid var(--m-ink); }
+/* Classic (men's barbershop): dark top bar and a barber-pole edge on the photo */
+.fp.s-classic .fnav { background: var(--m-ink); color: var(--m-bg); border-bottom: 0; }
+.fp.s-classic .fnav .fbtn { background: var(--m-accent); color: var(--m-ink); }
+.fp.s-classic h5 { text-transform: uppercase; font-size: 54px; font-weight: 800; line-height: .98; }
+.fp.s-classic .fart.has-photo { border-left: 16px solid transparent;
+  border-image: repeating-linear-gradient(135deg, #c8102e 0 10px, #fff 10px 20px, #1f3f8f 20px 30px, #fff 30px 40px) 16; }
+.fp.s-classic .fart.has-photo .tint { opacity: .12; }
+.fp.s-classic .fart .inset { position: absolute; z-index: 2; right: 14px; bottom: 14px; width: 36%; height: 74%; object-fit: cover;
+  border: 4px solid var(--m-bg); border-radius: var(--m-r); box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+.fp.s-classic .fserv strong { text-transform: uppercase; letter-spacing: .04em; }
+
+/* Full-screen menu: big links over photos that change as you point at each one */
+.menu-btn { display: inline-flex; align-items: center; gap: 10px; font: 600 .92rem var(--body); color: var(--ink); background: transparent;
+  border: 1.5px solid var(--line); border-radius: var(--r); padding: 10px 14px; cursor: pointer; transition: border-color .2s ease; }
+.menu-btn:hover { border-color: var(--ink); }
+.burger { width: 16px; height: 10px; position: relative; display: inline-block; }
+.burger::before, .burger::after { content: ""; position: absolute; left: 0; right: 0; height: 2px; border-radius: 2px; background: currentColor; }
+.burger::before { top: 0; } .burger::after { bottom: 0; }
+.bar .right { display: flex; gap: 10px; align-items: center; }
+@media (max-width: 480px) { .bar .right .btn { display: none; } }
+.menu { position: fixed; inset: 0; z-index: 95; color: #fff; background: #0b0d12; overflow: hidden;
+  opacity: 0; visibility: hidden; transition: opacity .4s ease, visibility 0s linear .4s; }
+.menu.open { opacity: 1; visibility: visible; transition: opacity .4s ease; }
+.menu-bg { position: absolute; inset: -40px; --px: 0px; --py: 0px; }
+.menu-bg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0;
+  transform: translate3d(var(--px, 0px), var(--py, 0px), 0) scale(1.1); transition: opacity .7s ease, transform 1.2s var(--ease-out); }
+.menu-bg img.on { opacity: 1; transform: translate3d(var(--px, 0px), var(--py, 0px), 0) scale(1.03); }
+.menu::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(9,11,15,.92) 0%, rgba(9,11,15,.7) 45%, rgba(9,11,15,.3) 100%); }
+.menu-in { position: relative; z-index: 2; display: grid; grid-template-rows: 68px 1fr auto; min-height: 100dvh; padding-bottom: 28px; }
+.menu-top { display: flex; justify-content: space-between; align-items: center; }
+.menu .logo { color: #fff; }
+.menu .menu-btn { color: #fff; border-color: rgba(255,255,255,.3); }
+.menu .menu-btn:hover { border-color: #fff; }
+.menu-links { display: grid; align-content: center; justify-items: start; gap: 2px; padding-block: 24px; }
+.menu-links a { --i: 0; color: #fff; text-decoration: none; display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;
+  font: 700 clamp(2.3rem, 7vw, 5.4rem)/1.04 var(--display); letter-spacing: -0.05em; opacity: .42;
+  transition: opacity .3s ease, transform .45s var(--ease-out); }
+.menu-links a small { font: 500 1rem var(--body); letter-spacing: 0; opacity: 0; transform: translateX(-10px); transition: opacity .3s ease, transform .4s ease; }
+.menu-links a.on, .menu-links a:focus-visible { opacity: 1; transform: translateX(12px); }
+.menu-links a.on small, .menu-links a:focus-visible small { opacity: .85; transform: none; }
+.menu-links a:focus-visible { outline-color: #fff; }
+.menu.open .menu-links a { animation: menu-rise .7s var(--ease-out) both; animation-delay: calc(var(--i) * 55ms + 80ms); }
+@keyframes menu-rise { from { opacity: 0; transform: translateY(26px); } }
+.menu-foot { display: flex; justify-content: space-between; gap: 10px 24px; flex-wrap: wrap; color: rgba(255,255,255,.72); font-size: .9rem; }
+.menu-foot a { color: #fff; }
+.menu-foot .addr { color: #fff; }
+@media (hover: none) { .menu-links a { opacity: .9; } .menu-links a small { opacity: .75; transform: none; } }
+.credit { font-size: .82rem; }
+.credit a { color: inherit; }
+
+
+/* Business types: tall photo cards that filter the style gallery */
+.types .head { margin-bottom: 28px; }
+.strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 1180px; margin: 0 auto; padding-inline: var(--gutter); }
+.type { display: block; text-decoration: none; position: relative; aspect-ratio: 3 / 4; border-radius: var(--r); overflow: hidden; border: 0; padding: 0; cursor: pointer; text-align: left;
+  background: #1b1e26; color: #fff; isolation: isolate; font: inherit; }
+.type img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease-out); z-index: 0; }
+.type::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(9,11,15,0) 40%, rgba(9,11,15,.82) 100%); }
+.type span { position: absolute; z-index: 2; left: 18px; right: 18px; bottom: 16px; display: grid; gap: 2px; }
+.type strong { font: 700 1.35rem/1.1 var(--display); letter-spacing: -0.03em; }
+.type small { font-size: .88rem; opacity: .85; }
+.type:hover img, .type:focus-visible img { transform: scale(1.06); }
+.type:active { transform: scale(.99); }
+@media (max-width: 900px) {
+  .strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 62%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; scrollbar-width: none; }
+  .strip::-webkit-scrollbar { display: none; }
+  .type { scroll-snap-align: start; }
 }
-body { background:
-  radial-gradient(1200px 600px at 80% -10%, rgba(var(--glow),.16), transparent 60%),
-  radial-gradient(900px 500px at -10% 30%, rgba(56,189,248,.08), transparent 60%), var(--bg);
-  background-attachment: fixed; }
-body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-  background-size: 56px 56px; mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%); }
-main, footer, .bar { position: relative; z-index: 1; }
-::selection { background: rgba(var(--glow),.45); }
+@media (max-width: 480px) { .strip { grid-auto-columns: 78%; } }
+.logo-note { color: var(--muted); font-size: .86rem; }
 
-/* floating glass nav */
-.bar { background: transparent; border: 0; backdrop-filter: none; padding-top: 12px; }
-.bar .wrap { background: rgba(12,14,22,.6); backdrop-filter: blur(16px) saturate(140%); border: 1px solid var(--line);
-  border-radius: 999px; padding: 10px 10px 10px 22px; box-shadow: 0 10px 40px -20px rgba(0,0,0,.8); max-width: 1120px; }
-nav a { color: var(--muted); } nav a:hover { color: var(--ink); }
-.logo i { box-shadow: 0 0 18px rgba(var(--glow),.7); }
-
-/* aurora hero */
-html, body { overflow-x: clip; }
-.hero { position: relative; isolation: isolate; }
-.hero::before, .hero::after { content: ""; position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(90px);
-  opacity: .35; z-index: -1; animation: drift 18s ease-in-out infinite alternate; pointer-events: none; }
-.hero::before { background: radial-gradient(circle, #6d5dfc, transparent 65%); top: -30vmax; left: -10vmax; }
-.hero::after { background: radial-gradient(circle, #22d3ee, transparent 65%); bottom: -35vmax; right: -15vmax; animation-delay: -9s; opacity: .22; }
-@keyframes drift { to { transform: translate(8vmax, 6vmax) scale(1.15); } }
-.hero .eyebrow { justify-self: start; border: 1px solid var(--line); background: rgba(255,255,255,.04); padding: 6px 14px; border-radius: 999px;
-  color: var(--ink); letter-spacing: .08em; }
-.hero .eyebrow::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #5fd39a;
-  margin-right: 9px; box-shadow: 0 0 10px #5fd39a; vertical-align: 1px; }
-.hero h1 { letter-spacing: -0.03em; background: linear-gradient(180deg, #fff 30%, #a9b0c2); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero h1 em { background: linear-gradient(90deg, #a78bfa, #60a5fa, #22d3ee, #a78bfa); background-size: 300% 100%;
-  -webkit-background-clip: text; background-clip: text; color: transparent; animation: flow 8s linear infinite; }
-@keyframes flow { to { background-position: 300% 0; } }
-.mini { box-shadow: 0 0 0 1px var(--line), 0 40px 120px -30px rgba(var(--glow),.55); transform: perspective(1200px) rotateY(-8deg) rotateX(4deg);
-  transition: transform .6s cubic-bezier(.2,.8,.2,1), background .6s ease, color .6s ease; }
-.stage:hover .mini { transform: none; }
-
-/* shimmer buttons */
-.btn { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: var(--ink); }
-.btn.ghost { background: transparent; color: var(--ink); border-color: rgba(255,255,255,.18); }
-.btn:not(.ghost) { background: #f4f6fb; color: #07090f; border-color: #f4f6fb; }
-.btn.accent { position: relative; overflow: hidden; isolation: isolate; color: #fff; border: 0; padding: 13px 24px;
-  background: linear-gradient(135deg, #7c6cff, #4f7cff); box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 10px 30px -10px rgba(var(--glow),.9); }
-.btn.accent::after { content: ""; position: absolute; inset: 0; z-index: -1; transform: translateX(-120%);
-  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%); animation: shine 3.2s ease-in-out infinite; }
-@keyframes shine { 60%, 100% { transform: translateX(120%); } }
-
-/* glass cards with a pointer spotlight */
-.promises li, .steps li, .style, .pack, .addon, .faq details, .account article, .total, .care-why ul, .lab, .vision form, .summary, .sent {
-  --mx: 50%; --my: 50%; position: relative; background:
-    radial-gradient(420px circle at var(--mx) var(--my), rgba(var(--glow),.12), transparent 45%), rgba(255,255,255,.03);
-  border: 1px solid var(--line); backdrop-filter: blur(6px); transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease; }
-.promises li:hover, .steps li:hover, .style:hover, .pack:hover, .addon:hover, .account article:hover {
-  border-color: rgba(var(--glow),.45); box-shadow: 0 20px 60px -30px rgba(var(--glow),.6); }
-.steps li { border-top: 1px solid var(--line); border-radius: var(--r); }
-.steps li::before { color: #a78bfa; }
-.care-addon { border-color: rgba(var(--glow),.6); box-shadow: 0 0 0 1px rgba(var(--glow),.25), 0 0 40px -12px rgba(var(--glow),.7); }
-.badge { background: linear-gradient(90deg, #ffd166, #ff9f6b); }
-
-/* the estimate panel gets a travelling beam border */
-.total { background: #0b0d16; border: 1px solid transparent; overflow: hidden; isolation: isolate; color: var(--ink); }
-.total::before { content: ""; position: absolute; inset: -60%; z-index: -2;
-  background: conic-gradient(from 0deg, transparent 0 70%, #a78bfa 80%, #22d3ee 90%, transparent 100%); animation: spin 6s linear infinite; }
-.total::after { content: ""; position: absolute; inset: 1px; border-radius: inherit; z-index: -1; background: #0b0d16; }
-@keyframes spin { to { transform: rotate(1turn); } }
-.total .btn { background: linear-gradient(90deg, #ffd166, #ff9f6b); border: 0; color: #1a1300; }
-
-/* forms */
-input, textarea, select { background: rgba(255,255,255,.04); color: var(--ink); border-color: var(--line); }
-.gate { background: rgba(4,5,10,.7); backdrop-filter: blur(10px); }
-.gate .card { background: #0d1019; border: 1px solid var(--line); box-shadow: 0 40px 120px -40px rgba(var(--glow),.7); }
-
-/* scroll reveal */
-.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+/* Reveal on scroll (motivated: each section arrives as you reach it) */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s var(--ease-out); }
 .reveal.in { opacity: 1; transform: none; }
-footer { border-top: 1px solid var(--line); }
-@media (max-width: 720px) { .bar .wrap { border-radius: 18px; } .mini { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; } .hero::before, .hero::after, .total::before { animation: none; } }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+  /* gentler reduced-motion rules live at the end of the motion pass */
+}
+
+/* ===== Motion pass (Emil Kowalski principles): purpose first, strong ease-out, under 300ms for UI,
+   transforms and opacity only, hover motion only on real pointers, press feedback on everything pressable. ===== */
+@keyframes fade-only { from { opacity: 0; } }
+
+/* Hover motion only where hover exists (touch fires false hovers on tap) */
+.btn:hover, .preset:hover, .type:hover img { transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { transform: translateY(-1px); }
+  .preset:hover { transform: translateY(-1px); }
+  .type:hover img { transform: scale(1.04); }
+}
+.type:focus-visible img { transform: scale(1.04); }
+
+/* Press feedback: subtle scale, fast, ease-out */
+.btn { transition: transform var(--press) var(--ease-out), background-color var(--ui) ease, color var(--ui) ease, border-color var(--ui) ease; }
+.btn:active, .chip:active, .sw:active, .preset:active, .menu-btn:active, .caption button:active { transform: scale(0.97); }
+.pack:active, .addon:active, .type:active { transform: scale(0.99); }
+.chip, .sw, .preset, .menu-btn, .caption button { transition: transform var(--press) var(--ease-out), background-color var(--ui) ease, color var(--ui) ease, border-color var(--ui) ease, box-shadow var(--ui) ease; }
+.pack, .addon { transition: transform var(--press) var(--ease-out), border-color var(--ui) ease, box-shadow var(--ui) ease; }
+.type { transition: transform var(--press) var(--ease-out); }
+.type img { transition: transform 600ms var(--ease-out); }
+
+/* Hero swap: a short blur-masked crossfade instead of a long slide */
+.showcase .fp { animation: fp-in 380ms var(--ease-out); }
+@keyframes fp-in { from { opacity: 0; filter: blur(4px); transform: scale(var(--k, .5)); } to { opacity: 1; filter: blur(0); transform: scale(var(--k, .5)); } }
+
+/* Sign-up pop-up and full-size viewer: modal entrance, centred, from 0.97 (never from 0) */
+.gate .card { animation: modal-in 260ms var(--ease-out); }
+.viewer:not([hidden]) { animation: fade-only 200ms ease; }
+.viewer:not([hidden]) .scroll { animation: modal-in 260ms var(--ease-out); }
+@keyframes modal-in { from { opacity: 0; transform: scale(0.97); } }
+
+/* FAQ: the answer arrives instead of teleporting; the plus turns quickly */
+.faq summary::after { transition: transform var(--ui) var(--ease-out), color var(--ui) ease; }
+.faq details[open] p { animation: faq-in 220ms var(--ease-out); }
+@keyframes faq-in { from { opacity: 0; transform: translateY(-4px); } }
+
+/* Full-screen menu: quick fade, quick hover, short stagger */
+.menu { transition: opacity 300ms ease, visibility 0s linear 300ms; }
+.menu.open { transition: opacity 300ms ease; }
+.menu-links a, .menu-links a small { transition: opacity var(--ui) ease, transform var(--ui) var(--ease-out); }
+.menu.open .menu-links a { animation: menu-rise 420ms var(--ease-out) both; animation-delay: calc(var(--i) * 45ms + 60ms); }
+.menu-bg img { transition: opacity 500ms ease, transform 900ms var(--ease-out); }
+
+/* Section reveals: shorter, strong ease-out, small distance */
+.reveal { transform: translateY(10px); transition: opacity 500ms ease, transform 500ms var(--ease-out); }
+.reveal.in { transform: none; }
+
+/* Selected states change smoothly */
+.style, .tpl .frame { transition: border-color var(--ui) ease, box-shadow var(--ui) ease; }
+
+/* Reduced motion: fewer and gentler, not zero. Keep fades that explain a change, drop movement and loops. */
+@media (prefers-reduced-motion: reduce) {
+  .fp .scene *, .fp .scene { animation: none !important; }
+  .btn, .chip, .sw, .preset, .pack, .addon, .type, .type img, .menu-links a, .menu-links a small, .menu-bg img, .reveal { transform: none !important; }
+  .showcase .fp { animation: fade-only 200ms ease; }
+  .gate .card, .viewer:not([hidden]) .scroll, .faq details[open] p, .menu.open .menu-links a { animation: fade-only 200ms ease both; animation-delay: 0ms; }
+  .fp .scene .neon { filter: none; }
+}
+
+/* Add-on details: three dots under the price open a short description */
+.addon { flex-wrap: wrap; }
+.addons { align-items: start; }
+.addon-price { display: grid; justify-items: end; gap: 2px; }
+.addon-more { border: 0; background: none; padding: 2px 6px; margin: -2px -6px 0 0; border-radius: 6px; cursor: pointer;
+  color: var(--accent); font: 700 .9rem/1 var(--body); letter-spacing: .12em;
+  transition: transform var(--press) var(--ease-out), background-color var(--ui) ease; }
+.addon-more:hover { background: var(--accent-soft); }
+.addon-more:active { transform: scale(0.94); }
+.addon-more[aria-expanded="true"] { background: var(--accent-soft); }
+.addon-info { flex-basis: 100%; color: var(--muted); font-size: .86rem; line-height: 1.5; padding: 8px 0 2px 28px; cursor: default;
+  border-top: 1px dashed var(--line); margin-top: 4px; }
+.addon-info:not([hidden]) { animation: info-in 200ms var(--ease-out); }
+@keyframes info-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .addon-info:not([hidden]) { animation: fade-only 160ms ease; } }
 </style>
 
 <a class="skip" href="#main">Skip to content</a>
 
 <div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" hidden>
   <form class="card" id="gate-form" novalidate>
-    <span class="eyebrow">Kinetic Web Designs</span>
+    <span class="logo"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic</span>
     <h2 id="gate-title">Join to explore our designs</h2>
     <p>Enter your email to open the style gallery, colour lab and instant quotes. No password needed.</p>
     <div class="f">
       <label for="gate-email">Your email</label>
       <input id="gate-email" type="email" autocomplete="email" inputmode="email" placeholder="you@yourbusiness.co.uk" required>
+      <p class="err" id="gate-err" role="alert"></p>
     </div>
-    <label class="consent"><input type="checkbox" id="gate-consent"> Send me design tips, offers and news from Kinetic Web Designs by email. You can unsubscribe at any time.</label>
-    <p class="err" id="gate-err" role="alert"></p>
+    <label class="consent"><input type="checkbox" id="gate-consent"> Send me design tips, offers and news from Kinetic Web Designs by email. You can unsubscribe at any time. See our <a href="#privacy">privacy notice</a>.</label>
     <button class="btn accent" type="submit" id="gate-go">Continue</button>
     <p class="fine">We check your email address is real before you continue. We never share it.</p>
   </form>
 </div>
 
-<header class="bar">
+<header class="bar" id="bar">
   <div class="wrap">
-    <a class="logo" href="#top"><i aria-hidden="true"></i>Kinetic</a>
+    <a class="logo" href="#top"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic</a>
     <nav aria-label="Main">
-      <a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#faq">FAQ</a><a href="#account">Client area</a><a href="#vision">Your vision</a>
+      <a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#account">Client area</a><a href="#faq">FAQ</a>
     </nav>
-    <a class="btn accent" href="#vision">Start a project</a>
+    <div class="right"><a class="btn accent" href="#vision">Start a project</a>
+      <button class="menu-btn" type="button" id="menu-open" aria-expanded="false" aria-controls="menu"><span class="burger" aria-hidden="true"></span>Menu</button></div>
   </div>
 </header>
+
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Site menu" inert>
+  <div class="menu-bg" id="menu-bg" aria-hidden="true"></div>
+  <div class="menu-in wrap">
+    <div class="menu-top"><span class="logo"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic</span>
+      <button class="menu-btn" type="button" id="menu-close">Close</button></div>
+    <nav class="menu-links" id="menu-links" aria-label="Site menu links"></nav>
+    <div class="menu-foot"><span>Email <span class="addr">alfredw.lsx@gmail.com</span></span><span class="credit">Photos from <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></span></div>
+  </div>
+</div>
 
 <main id="main">
 <div class="hero" id="top">
   <div class="wrap">
     <div class="copy">
-      <span class="eyebrow">Web design for independent businesses</span>
       <h1>Your website, built around <em>your colours.</em></h1>
-      <p class="lede">Pick a style you like, choose three colours and watch them work on a real page. You'll get three designs to choose from, a clear price up front, and a site that works on every phone.</p>
-      <div class="ctas"><a class="btn" href="#lab">Try the colour lab</a><a class="btn ghost" href="#quote">Get a price</a></div>
-      <div class="swatchline" aria-live="polite"><span>Now showing:</span><b id="hs1"></b><b id="hs2"></b><b id="hs3"></b><span id="hs-name">Harbour</span></div>
+      <p class="lede">Pick a style, test three colours on a real page and see your price before you ask.</p>
+      <div class="ctas"><a class="btn" href="#lab">Try the colour lab</a><a class="textlink" href="#quote">Get a price</a></div>
     </div>
-    <div class="stage" aria-hidden="true">
-      <div class="mini" id="hero-mini">
-        <div class="chrome"><span></span><span></span><span></span></div>
-        <div class="in">
-          <div class="nav"><span id="hero-biz">Harbour Coffee</span><small>Menu · Visit · Book</small></div>
-          <h4 id="hero-line">Fresh roast, five minutes from the quay.</h4>
-          <span class="pill">Order ahead</span>
-          <div class="cards"><div><b></b>Opening hours</div><div><b></b>Our beans</div><div><b></b>Find us</div></div>
-        </div>
-      </div>
-      <span class="tag">3 colours · 1 site</span>
-    </div>
+    <figure class="showcase" style="margin:0">
+      <div id="hero-stage"></div>
+      <figcaption class="caption" aria-live="polite"><span class="dots"><b id="hs1"></b><b id="hs2"></b><b id="hs3"></b></span><span id="hs-name">Harbour</span><button type="button" id="hero-pause">Pause</button></figcaption>
+    </figure>
   </div>
 </div>
 
@@ -549,9 +729,15 @@ footer { border-top: 1px solid var(--line); }
   </div>
 </section>
 
+<section class="types" aria-labelledby="types-title">
+  <div class="wrap"><div class="head"><h2 id="types-title">Made for businesses like yours</h2>
+    <p class="lede">Tap your kind of business to see the styles that suit it.</p></div></div>
+  <div class="strip" id="type-strip"></div>
+</section>
+
 <section aria-labelledby="how-title">
   <div class="wrap">
-    <div class="head"><span class="eyebrow">How it works</span><h2 id="how-title">From your idea to a live site in five steps</h2></div>
+    <div class="head"><h2 id="how-title">From your idea to a live site in five steps</h2></div>
     <ol class="steps">
       <li><h3>Tell us your vision</h3><p>How you'd like it to look and what it needs to do, in your own words.</p></li>
       <li><h3>Pick 3 colours</h3><p>Choose a main colour, a background and an accent in our colour lab.</p></li>
@@ -564,7 +750,7 @@ footer { border-top: 1px solid var(--line); }
 
 <section id="styles" aria-labelledby="styles-title">
   <div class="wrap">
-    <div class="head"><span class="eyebrow">Inspiration</span><h2 id="styles-title">Find a style you like</h2>
+    <div class="head"><h2 id="styles-title">Find a style you like</h2>
       <p class="lede">Each style is a full front page. Tap the colour dots to see it in different colours, or try it in your own. Pick one and the colour lab below uses it.</p></div>
     <div class="filters" role="group" aria-label="Filter styles by business">
       <button class="chip" aria-pressed="true" data-f="all">All</button>
@@ -579,40 +765,45 @@ footer { border-top: 1px solid var(--line); }
 
 <section id="lab" aria-labelledby="lab-title">
   <div class="wrap">
-    <div class="head"><span class="eyebrow">Colour workshop</span><h2 id="lab-title">Test how your colours work</h2>
+    <div class="head"><h2 id="lab-title">Test how your colours work</h2>
       <p class="lede">Choose three colours. We show them on three templates, each using your palette a different way, and check the text stays easy to read.</p></div>
     <div class="lab">
       <div class="pickers">
         <div class="pick"><label for="c1t">Main colour</label><div class="field"><input type="color" id="c1" aria-label="Main colour picker"><input type="text" id="c1t" maxlength="7" spellcheck="false"></div><small>Buttons and headlines</small></div>
         <div class="pick"><label for="c2t">Background</label><div class="field"><input type="color" id="c2" aria-label="Background colour picker"><input type="text" id="c2t" maxlength="7" spellcheck="false"></div><small>The page behind everything</small></div>
         <div class="pick"><label for="c3t">Accent</label><div class="field"><input type="color" id="c3" aria-label="Accent colour picker"><input type="text" id="c3t" maxlength="7" spellcheck="false"></div><small>Highlights and small details</small></div>
-        <div class="presets"><span class="eyebrow">Ready-made palettes</span><div class="list" id="presets"></div></div>
+        <div class="presets"><span class="label">Ready-made palettes</span><div class="list" id="presets"></div></div>
       </div>
       <div class="labtools">
         <button class="btn ghost" type="button" id="shuffle">Suggest a palette</button>
+        <button class="btn ghost" type="button" id="logo-pick">Use colours from my logo</button>
+        <input type="file" id="logo-file" accept="image/*" hidden>
+        <span class="logo-note" id="logo-note" aria-live="polite">Your logo stays on your device.</span>
         <div class="checks" id="checks" aria-live="polite"></div>
       </div>
       <div class="templates" id="templates"></div>
-      <div class="labtools"><a class="btn accent" href="#vision" id="use-palette">Use these colours in my brief</a><span class="eyebrow" id="style-note">Style: Clean</span></div>
+      <div class="labtools"><span class="eyebrow" id="style-note">Style: Clean</span><a class="btn accent" href="#vision" id="use-palette">Use these colours in my brief</a></div>
     </div>
   </div>
 </section>
 
 <section id="quote" aria-labelledby="quote-title">
   <div class="wrap">
-    <div class="head"><span class="eyebrow">Instant quote</span><h2 id="quote-title">See your price before you ask</h2>
-      <p class="lede">Prices are fixed for what's listed. Half is paid up front to book your start date and the rest when your site goes live.</p></div>
+    <div class="head"><h2 id="quote-title">See your price before you ask</h2>
+      <p class="lede">Prices are fixed for what's listed. Half is paid up front to book your start date and the rest when your site goes live. All prices are the full price: we are not VAT registered, so no VAT is added.</p></div>
     <div class="quote">
       <div>
         <div class="packs" role="radiogroup" aria-label="Website package" id="packs"></div>
-        <h3 style="margin-top:26px">Add-ons</h3>
+        <label class="addon existing"><input type="checkbox" id="existing"><span><b>I already have a website</b><br>Get 20% off a Business website or Online shop when we rebuild your current site.</span><em>20% off</em></label>
+        <h3 class="addons-title">Add-ons</h3>
         <div class="addons" id="addons"></div>
       </div>
       <aside class="total" aria-live="polite">
-        <span class="eyebrow" style="color:inherit;opacity:.75">Your estimate</span>
+        <span class="label">Your estimate</span>
         <div class="big" id="q-total">£895</div>
         <dl id="q-lines"></dl>
         <small id="q-time">Ready in 2 to 4 weeks</small>
+        <small class="vat-note">This is the full price. We are not VAT registered, so no VAT is added.</small>
         <a class="btn" href="#vision">Add to my brief</a>
       </aside>
     </div>
@@ -621,7 +812,7 @@ footer { border-top: 1px solid var(--line); }
 
 <section id="account" aria-labelledby="account-title">
   <div class="wrap">
-    <div class="head"><span class="eyebrow">Client area</span><h2 id="account-title">Your hosting and care plan</h2>
+    <div class="head"><h2 id="account-title">Your hosting and care plan</h2>
       <p class="lede">£20 a month by Direct Debit or card. No long contract: start, change or cancel whenever you like.</p></div>
     <div class="account">
       <article><h3>Start your plan</h3><p>Set up your £20 monthly Direct Debit or card payment in a couple of minutes. Your first payment is taken when your website goes live.</p>
@@ -637,7 +828,7 @@ footer { border-top: 1px solid var(--line); }
 
 <section id="faq" aria-labelledby="faq-title">
   <div class="wrap">
-    <div class="head"><span class="eyebrow">Questions</span><h2 id="faq-title">Good to know before you start</h2></div>
+    <div class="head"><h2 id="faq-title">Good to know before you start</h2></div>
     <div class="faq">
       <details><summary>How long does it take?</summary><p>A Starter website takes 1 to 2 weeks, a Business website 2 to 4 weeks and an Online shop 4 to 6 weeks, counted from your go-ahead.</p></details>
       <details><summary>How do I pay?</summary><p>Half is paid up front to book your start date, and the rest when your site goes live. You get a clear invoice for each.</p></details>
@@ -645,6 +836,7 @@ footer { border-top: 1px solid var(--line); }
       <details><summary>Can I ask for changes?</summary><p>Yes. Starter websites include 2 rounds of changes and Business websites and shops include 3.</p></details>
       <details><summary>What's in monthly hosting and care?</summary><p>Your domain name, fast and secure hosting, security updates, backups and small text changes, all for £20 a month. Need lots of big videos or downloads? Extra file storage is £5 a month per 10 GB.</p></details>
       <details><summary>Who owns my website and domain?</summary><p>You do. Your domain is registered in your name and your accounts belong to you. If you ever leave, we hand everything over.</p></details>
+      <details><summary>I already have a website. Can you improve it?</summary><p>Yes, and you get 20% off a Business website or Online shop. Tick "I already have a website" in the quote, add your website link to your brief and tell us what you like about it. We keep what works, fix what doesn't and send you three new designs in your colours.</p></details>
       <details><summary>Do you write the words too?</summary><p>We write the copy with you. If you'd like us to write whole pages for you, copywriting is £60 a page.</p></details>
       <details><summary>Will people find me on Google?</summary><p>Starter websites include the Google basics. Business websites and shops link your existing Google Business Profile. Full Google Business Profile setup and optimisation (creating or verifying the profile, categories, photos, services and a review link) is £150 as an add-on.</p></details>
     </div>
@@ -653,7 +845,7 @@ footer { border-top: 1px solid var(--line); }
 
 <section id="vision" aria-labelledby="vision-title">
   <div class="wrap">
-    <div class="head"><span class="eyebrow">Your vision</span><h2 id="vision-title">Tell us how you'd like your website to look</h2>
+    <div class="head"><h2 id="vision-title">Tell us how you'd like your website to look</h2>
       <p class="lede">Describe it in your own words. We bring your thoughts to life, send you three designs in your colours, then build the one you choose.</p></div>
     <div class="brief">
       <form class="vision" id="vision-form" novalidate>
@@ -666,23 +858,51 @@ footer { border-top: 1px solid var(--line); }
           <div class="f"><label for="v-phone">Phone (optional)</label><input id="v-phone" type="tel" autocomplete="tel"></div>
         </div>
         <div class="f"><label for="v-what">What does your business do?</label><input id="v-what" placeholder="e.g. a barber shop in Stockport"></div>
+        <div class="f"><label for="v-current">Already have a website? (optional)</label><input id="v-current" type="url" inputmode="url" autocomplete="url" placeholder="https://www.yourbusiness.co.uk">
+          <small>Send us the link so we can see what you like about it and make it better.</small></div>
         <div class="f"><label for="v-look">How would you like it to look and feel?</label><textarea id="v-look" placeholder="Calm and premium, lots of photos of our work, easy to book…" required></textarea></div>
         <div class="f"><label for="v-like">Websites you like (optional)</label><input id="v-like" placeholder="Links or names, and what you like about them"></div>
         <div class="f"><label for="v-when">When would you like it live?</label>
           <select id="v-when"><option>As soon as possible</option><option>Within a month</option><option>In 1 to 3 months</option><option>Just exploring</option></select></div>
-        <p class="err" id="v-err" role="alert" style="color:var(--bad);font-weight:600"></p>
+        <p class="err" id="v-err" role="alert"></p>
         <button class="btn accent" type="submit">Send my brief</button>
         <div id="v-done" hidden></div>
       </form>
       <aside class="summary" aria-label="What's included in your brief">
-        <span class="eyebrow">Included with your brief</span>
+        <span class="label">Included with your brief</span>
         <div class="row"><span>Style</span><strong id="s-style">Clean</strong></div>
         <div class="row"><span>Colours</span><span class="dots"><b id="s1"></b><b id="s2"></b><b id="s3"></b></span></div>
         <div class="row"><span>Template</span><strong id="s-tpl">Light & airy</strong></div>
         <div class="row"><span>Package</span><strong id="s-pack">Business website</strong></div>
         <div class="row"><span>Estimate</span><strong id="s-total">£895</strong></div>
-        <p style="color:var(--muted);font-size:.92rem">Within two working days we reply with three designs in your colours, a fixed quote and a start date. Prefer email? Write to <span class="addr">alfredw.lsx@gmail.com</span>.</p>
+        <p>Within two working days we reply with three designs in your colours, a fixed quote and a start date. Prefer email? Write to <span class="addr">alfredw.lsx@gmail.com</span>.</p>
       </aside>
+    </div>
+  </div>
+</section>
+<section id="legal" class="legal" aria-labelledby="legal-title">
+  <div class="wrap">
+    <div class="head"><h2 id="legal-title">The legal bits</h2>
+      <p class="lede">The details UK law asks every business to share, in plain English.</p></div>
+    <div class="faq">
+      <details id="business-details"><summary>Who we are</summary>
+        <p>Kinetic Web Designs is a trading name of <span class="fill">[owner's full name]</span>, a sole trader in England.
+        Business address: <span class="fill">[business address]</span>. Email: <span class="addr">alfredw.lsx@gmail.com</span>.
+        We are not VAT registered, so our prices have no VAT to add. If that changes, we'll show our VAT number here and on every invoice.</p></details>
+      <details id="privacy"><summary>Privacy notice</summary>
+        <p><b>What we collect.</b> Your name, business name, email, phone number, website link and the details you put in your brief or sign-up form, plus your payment records if you take the hosting and care plan.</p>
+        <p><b>Why.</b> To reply to your brief, quote, build and look after your website (needed for our contract with you), to keep our accounts (a legal duty), and to send design tips and offers only if you ticked the box (your consent, which you can withdraw any time by replying "unsubscribe").</p>
+        <p><b>Who else sees it.</b> Only the services that run this site for us: Formspree (forms), Stripe (payments, which never share your card or bank details with us) and our email provider. We never sell your details.</p>
+        <p><b>How long we keep it.</b> Enquiries that don't go ahead: 12 months. Client and payment records: 6 years, as HMRC requires.</p>
+        <p><b>Your rights.</b> You can ask to see, correct or delete your details, or object to how we use them, by emailing <span class="addr">alfredw.lsx@gmail.com</span>. If you're unhappy with how we handle your data you can complain to the Information Commissioner's Office at <a href="https://ico.org.uk/make-a-complaint/" target="_blank" rel="noopener">ico.org.uk</a>.</p>
+        <p><b>Cookies.</b> We don't use tracking or advertising cookies. Your brief draft and colour choices are saved in your own browser only, so you don't lose them.</p></details>
+      <details id="terms"><summary>Terms of business</summary>
+        <p><b>Prices.</b> Prices on this site are the full price for what's listed. Your written quote is fixed for 30 days.</p>
+        <p><b>Paying.</b> 50% deposit to book your start date, the rest when your site goes live. You own your website and content once the final invoice is paid.</p>
+        <p><b>Your right to cancel.</b> If you're buying as a private individual rather than a business, you can cancel within 14 days of agreeing to go ahead and get a full refund. If you ask us to start work within those 14 days and then cancel, you pay only for the work already done.</p>
+        <p><b>Hosting and care.</b> £20 a month, paid monthly, no minimum term. Cancel any time with one month's notice and we hand your website and domain over to you.</p>
+        <p><b>Changes.</b> Starter websites include 2 rounds of changes, Business websites and shops 3. Extra changes are charged at an hourly rate we agree with you first.</p>
+        <p><b>Complaints.</b> Email <span class="addr">alfredw.lsx@gmail.com</span> and we'll reply within 2 working days and do our best to put things right.</p></details>
     </div>
   </div>
 </section>
@@ -690,9 +910,10 @@ footer { border-top: 1px solid var(--line); }
 
 <footer>
   <div class="wrap">
-    <span><strong style="color:var(--ink)">Kinetic Web Designs</strong> · Websites for independent businesses</span>
-    <nav aria-label="Footer"><a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#faq">FAQ</a><a href="#account">Client area</a><a href="#vision">Start a project</a></nav>
+    <a class="logo" href="#top"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic Web Designs</a>
+    <nav aria-label="Footer"><a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#faq">FAQ</a><a href="#account">Client area</a><a href="#vision">Start a project</a><a href="#privacy">Privacy</a><a href="#terms">Terms</a></nav>
     <span>Email <a class="addr" href="mailto:alfredw.lsx@gmail.com">alfredw.lsx@gmail.com</a></span>
+    <span class="credit">Photos from <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></span>
   </div>
 </footer>
 
@@ -700,6 +921,7 @@ footer { border-top: 1px solid var(--line); }
   <div class="top"><strong id="viewer-title">Preview</strong><button class="btn" type="button" id="viewer-close">Close</button></div>
   <div class="scroll" id="viewer-page"></div>
 </div>
+<script>window.KINETIC_PHOTOS = {};</script>
 <script>
 (() => {
   // Where sign-ups and briefs go once the site is hosted (a form endpoint). Empty: kept in this browser only.
@@ -747,10 +969,18 @@ footer { border-top: 1px solid var(--line); }
   const STYLES = [
     { id: "clean", name: "Clean", for: ["trades", "shops"], desc: "Plenty of white space, simple type and soft corners. Lets your photos and products lead.",
       display: "'Figtree', system-ui, sans-serif", body: "'Figtree', system-ui, sans-serif", r: "12px", sample: "Simple. Clear. Yours." },
-    { id: "bold", name: "Bold", for: ["trades", "food"], desc: "Big chunky headlines and solid blocks of colour. Hard to miss on a phone.",
+    { id: "bold", name: "Bold", for: ["trades"], desc: "Big chunky headlines and solid blocks of colour. Hard to miss on a phone.",
       display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "4px", sample: "Call us. We'll be there." },
+    { id: "crafted", name: "Crafted", for: ["trades"], desc: "Warm and solid, with your work photo first. Suits carpenters, joiners and builders.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "6px", sample: "Made to measure." },
+    { id: "fresh", name: "Fresh", for: ["trades"], desc: "Light, bright and airy with soft rounded shapes. Suits window cleaners and cleaning companies.",
+      display: "'Figtree', sans-serif", body: "'Figtree', sans-serif", r: "18px", sample: "Sparkling windows." },
+    { id: "splash", name: "Splash", for: ["trades"], desc: "Bold type with a painted highlight and a colour block behind your photo. Suits painters and decorators.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "0px", sample: "A fresh coat." },
     { id: "elegant", name: "Elegant", for: ["beauty", "shops"], desc: "A refined serif, fine lines and calm spacing. Feels premium and unhurried, like a wig boutique.",
       display: "Georgia, 'Times New Roman', serif", body: "'Figtree', sans-serif", r: "2px", sample: "Treatments, beautifully done." },
+    { id: "classic", name: "Classic", for: ["beauty"], desc: "A traditional men's barbershop look with strong type and a barber-pole edge. Made for barbers.",
+      display: "'Syne', sans-serif", body: "'Figtree', sans-serif", r: "4px", sample: "Proper cuts." },
     { id: "playful", name: "Playful", for: ["food", "shops"], desc: "Rounded shapes, pill buttons and a friendly tone. Great for coffee shops and cafes.",
       display: "'Trebuchet MS', 'Figtree', sans-serif", body: "'Figtree', sans-serif", r: "22px", sample: "Come in, the kettle's on!" },
     { id: "studio", name: "Studio", for: ["beauty", "shops"], desc: "Big photos, tight type and an editorial grid, like a magazine for your brand.",
@@ -783,20 +1013,6 @@ footer { border-top: 1px solid var(--line); }
     <div class="nav"><span>${biz}</span><small>Menu · Visit · Book</small></div><h4>${line}</h4><span class="pill">${cta}</span>
     <div class="cards"><div><b></b>Opening hours</div><div><b></b>What we do</div><div><b></b>Find us</div></div></div>`;
 
-  // ---------- hero palette cycle ----------
-  const heroBiz = [["Harbour Coffee", "Fresh roast, five minutes from the quay."], ["Fig & Clay Bistro", "Small plates, big flavour, open till late."],
-    ["Fern Garden Co.", "Gardens designed, planted and cared for."], ["Midnight Barbers", "Sharp cuts. Open late. Walk-ins welcome."],
-    ["Salon Rosa", "Colour, cuts and care you'll love."], ["Workshop Plumbing", "Fixed fast, left tidy. Fully insured."]];
-  let hi = 0;
-  function hero() {
-    const p = PALETTES[hi % PALETTES.length], [biz, line] = heroBiz[hi % heroBiz.length];
-    miniVars($("#hero-mini"), templateVars("light", p.c, STYLES[0]));
-    $("#hero-biz").textContent = biz; $("#hero-line").textContent = line;
-    ["#hs1", "#hs2", "#hs3"].forEach((s, i) => $(s).style.background = p.c[i]);
-    $("#hs-name").textContent = p.name;
-  }
-  hero();
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => { hi++; hero(); }, 3200);
 
   // ---------- front-page previews ----------
   const PAGES = {
@@ -812,6 +1028,22 @@ footer { border-top: 1px solid var(--line); }
       h: "Find your <em>crown</em>.", sub: "Human hair and synthetic wigs, cut and styled for you in a calm private studio.", b1: "Book a fitting", b2: "Shop wigs",
       badge: "", scene: "wigs", serv: [["Human hair wigs", "Cut and styled for you"], ["Lace fronts", "A natural hairline"], ["Private fittings", "Unhurried, one to one"]],
       quote: "They found my perfect wig and made me feel amazing.", pal: 4 },
+    crafted: { biz: "Oak & Grain Joinery", links: ["Kitchens", "Wardrobes", "Doors", "Contact"], cta: "Get a quote", kick: "Joiners and carpenters",
+      h: "Made to measure. Built to last.", sub: "Fitted wardrobes, kitchens, doors and decking, handmade in our workshop and fitted by us.", b1: "See our work", b2: "Free quote",
+      badge: "Free home visit", serv: [["Fitted wardrobes", "Built to fit your room"], ["Kitchens", "Supplied and fitted"], ["Doors and stairs", "Hung, fixed or made new"]],
+      quote: "Our wardrobes fit perfectly and they left the house spotless.", pal: 2 },
+    fresh: { biz: "Crystal Clear Windows", links: ["Homes", "Businesses", "Areas"], cta: "Book a clean", kick: "Window cleaning",
+      h: "Sparkling windows, every month.", sub: "Pure-water poles reach up to four floors. Frames, sills and doors included.", b1: "Get a price", b2: "Our areas",
+      badge: "Streak-free or we come back", serv: [["Homes", "From £15 a clean"], ["Shops and offices", "Done before you open"], ["Gutters and fascias", "Cleared and washed"]],
+      quote: "Always on time and the windows have never looked better.", pal: 0 },
+    splash: { biz: "Fresh Coat Decorators", links: ["Painting", "Wallpaper", "Outside", "Contact"], cta: "Free quote", kick: "Painters and decorators",
+      h: "A fresh coat, <em>done properly.</em>", sub: "Inside and outside painting, wallpapering and finishing. Furniture covered, rooms left clean.", b1: "Get a quote", b2: "Colour advice",
+      badge: "", serv: [["Rooms and hallways", "Walls, ceilings, woodwork"], ["Wallpaper", "Hung straight and matched"], ["Outside", "Render, doors and windows"]],
+      quote: "Neat, quick and the finish is perfect.", pal: 5 },
+    classic: { biz: "Gents' Room Barbers", links: ["Cuts", "Shaves", "Prices", "Book"], cta: "Book a chair", kick: "Black-owned barbers · Fades, lineups, shaves",
+      h: "Proper cuts for proper gents.", sub: "Fades, scissor cuts, beard shaping and hot towel shaves. Book online or walk in.", b1: "Book a cut", b2: "Price list",
+      badge: "", serv: [["Skin fade", "£20 · 45 minutes"], ["Lineup and beard", "£15 · 25 minutes"], ["Hot towel shave", "£22 · 30 minutes"]],
+      quote: "Best fade I've had, and they always remember my name.", pal: 1 },
     playful: { biz: "Bean & Steam", links: ["Menu", "Beans", "Find us"], cta: "Order ahead", kick: "Coffee · Brunch · Cake",
       h: "Fresh coffee, poured with love.", sub: "Beans roasted down the road, bakes out of the oven at 7am and the comfiest sofas in town.", b1: "See the menu", b2: "Order ahead",
       badge: "New autumn blend!", scene: "coffee", serv: [["Flat whites", "Roasted in town"], ["Fresh bakes", "Out of the oven at 7am"], ["Order ahead", "Skip the queue"]],
@@ -915,16 +1147,38 @@ footer { border-top: 1px solid var(--line); }
       <path class="a spark" d="M96 52 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3z"/>
     </svg>`
   };
+  // Real photos (free Unsplash licence) for each example business.
+  const IMG = (id, w = 900) => window.KINETIC_PHOTOS[id] || `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=72`;
+  const PHOTOS = {
+    clean: "photo-1630288214173-a119cf823388",    // excavator on site
+    bold: "photo-1676210134190-3f2c0d5cf58d",     // plumber at a water heater
+    elegant: "",                                   // uses the four hair photos in WIGS
+    playful: "photo-1461988366670-48e401bafb0a",  // espresso machine
+    studio: ["photo-1441984904996-e0b6ba687e04", "photo-1441986300917-64674bd600d8", "photo-1540221652346-e5dd6b50f3e7"],  // boutique
+    night: "photo-1782596747899-e522836b328e",    // barbershop after dark
+    crafted: "photo-1687422810663-c316494f725a",  // carpenter in his workshop
+    fresh: "photo-1639164757108-aab9534efefe",    // window cleaner on a ladder
+    splash: "photo-1688372199140-cade7ae820fe",   // decorator painting a wall
+    classic: "photo-1585747860715-2ba37e788b70"   // upscale barbershop: leather chairs, brick, warm lights
+  };
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   function frontPage(style, colours, tpl) {
     const p = PAGES[style.id] || PAGES.clean;
     const v = templateVars(tpl || (style.dark ? "dark" : "light"), colours, style);
     const vars = Object.entries(v).map(([k, val]) => `${k}:${val}`).join(";");
-    const art = style.id === "studio" ? "<u></u><u></u><u></u>" : (p.badge ? `<span class="fbadge">${p.badge}</span>` : "") + (SCENES[p.scene] || "");
+    const ph = PHOTOS[style.id];
+    // Four real black hair textures (free Unsplash photos), cropped to the face and hair.
+    const WIGS = [["photo-1764200298380-8456ec16bc13", "Straight"], ["photo-1611590027211-b954fd027b51", "Curly"],
+      ["photo-1632765854612-9b02b6ec2b15", "Afro"], ["photo-1614173968962-0e61c5ed196f", "Braids"]];
+    const HAIR = id => window.KINETIC_PHOTOS[id] || `https://images.unsplash.com/${id}?auto=format&fit=crop&crop=faces&w=560&h=620&q=80`;
+    const art = style.id === "elegant" ? WIGS.map(([id, label]) => `<u class="wig" style="background-image:url('${HAIR(id)}')"><i>${label}</i></u>`).join("")
+      : style.id === "studio" ? ph.map(id => `<u style="background-image:url('${IMG(id, 600)}')"></u>`).join("")
+      : (p.badge ? `<span class="fbadge">${p.badge}</span>` : "") + `<img class="photo" src="${IMG(ph)}" alt="" decoding="async"><span class="tint"></span>`
+        + (style.id === "classic" ? `<img class="inset" src="${IMG("photo-1665947823432-fabb5e9631bf", 500)}" alt="" decoding="async">` : "");  // barber at work
     return `<div class="fp s-${style.id}" style="${esc(vars)}" aria-hidden="true">
       <div class="fnav"><span class="flogo"><i></i>${p.biz}</span><span class="flinks">${p.links.map(l => `<span>${l}</span>`).join("")}</span><span class="fbtn">${p.cta}</span></div>
       <div class="fhero"><div><div class="fkick">${p.kick}</div><h5>${p.h}</h5><p class="fsub">${p.sub}</p>
-        <div class="fbtns"><span class="fbtn">${p.b1}</span><span class="fghost">${p.b2}</span></div></div><div class="fart${p.scene ? " has-scene" : ""}">${art}</div></div>
+        <div class="fbtns"><span class="fbtn">${p.b1}</span><span class="fghost">${p.b2}</span></div></div><div class="fart${style.id === "studio" ? "" : style.id === "elegant" ? " wigs" : " has-photo"}">${art}</div></div>
       <div class="fserv">${p.serv.map(([a, b]) => `<div><b></b><strong>${a}</strong><span>${b}</span></div>`).join("")}</div>
       <div class="fquote"><q>${p.quote}</q><small>★★★★★</small></div></div>`;
   }
@@ -1020,14 +1274,33 @@ footer { border-top: 1px solid var(--line); }
     { id: "shop", name: "Online shop", price: 1595, weeks: "4 to 6 weeks", desc: "Everything in Business, plus a shop with up to 20 products, card payments and delivery options." }
   ];
   const ADDONS = [
-    { id: "logo", name: "Logo design", price: 150 }, { id: "copy", name: "Copywriting, per page", price: 60, per: "pages" },
-    { id: "booking", name: "Online booking", price: 200 }, { id: "seo", name: "Full Google Business Profile setup and optimisation", price: 150 },
-    { id: "photos", name: "Photo editing and stock images", price: 100 }, { id: "extra", name: "Extra pages", price: 120, per: "extra" }
+    { id: "logo", name: "Logo design", price: 150,
+      info: "A simple, professional logo in your colours. You get two first ideas, two rounds of changes, and files ready for your website, social media and print." },
+    { id: "copy", name: "Copywriting, per page", price: 60, per: "pages",
+      info: "We write the words for one page of your site after a short chat with you. Clear, friendly, and written so Google understands what you do." },
+    { id: "booking", name: "Online booking", price: 200,
+      info: "Customers pick a service, day and time on your site and get a confirmation email, plus a reminder before their appointment so fewer people miss it." },
+    { id: "seo", name: "Full Google Business Profile setup and optimisation", price: 150,
+      info: "We create or verify your Google Business Profile, choose the right categories, add your opening hours, photos and services, and set up a review link you can send to customers, so you show up in local searches and on Google Maps." },
+    { id: "photos", name: "Photo editing and stock images", price: 100,
+      info: "We brighten, crop and resize up to 20 of your own photos, and fill any gaps with good-quality stock images that suit your business." },
+    { id: "extra", name: "Extra pages", price: 120, per: "extra",
+      info: "One more page on top of your package, such as a gallery, price list, team or FAQ page, designed to match the rest of your site." }
   ];
-  $("#packs").innerHTML = PACKS.map(p => `<label class="pack"><input type="radio" name="pack" value="${p.id}" ${state.pack === p.id ? "checked" : ""}>
-    <span><h3>${p.name}${p.popular ? '<span class="badge">Recommended</span>' : ""}</h3><p>${p.desc}</p></span><span class="price">${money(p.price)}</span></label>`).join("");
+  // Existing-website discount: 20% off the Business website and Online shop packages (not the Starter, not add-ons).
+  const EXISTING_OFF = 0.2;
+  const discountFor = p => state.existing && p.id !== "starter" ? Math.round(p.price * EXISTING_OFF) : 0;
+  function renderPacks() {
+    $("#packs").innerHTML = PACKS.map(p => { const off = discountFor(p);
+      return `<label class="pack"><input type="radio" name="pack" value="${p.id}" ${state.pack === p.id ? "checked" : ""}>
+      <span><h3>${p.name}${p.popular ? '<span class="badge">Recommended</span>' : ""}</h3><p>${p.desc}</p></span>
+      <span class="price">${off ? `<s>${money(p.price)}</s>${money(p.price - off)}` : money(p.price)}</span></label>`; }).join("");
+  }
+  renderPacks();
   $("#addons").innerHTML = ADDONS.map(a => `<label class="addon"><input type="checkbox" data-a="${a.id}" ${state.addons[a.id] ? "checked" : ""}><span>${a.name}</span>
-    ${a.per ? `<input type="number" min="1" max="20" value="${state.addons[a.id] || 1}" data-q="${a.id}" aria-label="How many">` : ""}<em>${money(a.price)}</em></label>`).join("") +
+    ${a.per ? `<input type="number" min="1" max="20" value="${state.addons[a.id] || 1}" data-q="${a.id}" aria-label="How many">` : ""}<span class="addon-price"><em>${money(a.price)}</em>
+    <button class="addon-more" type="button" aria-expanded="false" aria-controls="info-${a.id}" aria-label="What's included in ${a.name}">&bull;&bull;&bull;</button></span>
+    <small class="addon-info" id="info-${a.id}" hidden>${a.info}</small></label>`).join("") +
     `<label class="addon care-addon"><input type="checkbox" id="care" ${state.care ? "checked" : ""}><span><b>Hosting and care, paid monthly</b><br>Your domain, hosting, security checks, updates, backups and small changes</span><em>£20/mo</em></label>
     <details class="care-why"><summary aria-label="Why hosting and care matters"><span aria-hidden="true">•••</span> Why it matters</summary><ul>
       <li><b>Your site stays online.</b> We renew your domain and hosting for you, so your website never expires or disappears.</li>
@@ -1039,6 +1312,14 @@ footer { border-top: 1px solid var(--line); }
       <li><b>One person to call, no long contract.</b> Cancel any time with a month's notice.</li>
     </ul></details>`;
   $("#packs").addEventListener("change", e => { state.pack = e.target.value; save(); quote(); });
+  // The three dots under an add-on price show or hide what it includes (without ticking the box).
+  $("#addons").addEventListener("click", e => {
+    if (e.target.closest(".addon-info")) { e.preventDefault(); return; }
+    const b = e.target.closest(".addon-more"); if (!b) return;
+    e.preventDefault();
+    const info = document.getElementById(b.getAttribute("aria-controls")), open = info.hidden;
+    info.hidden = !open; b.setAttribute("aria-expanded", String(open));
+  });
   $("#addons").addEventListener("change", e => {
     const id = e.target.dataset.a || e.target.dataset.q;
     if (e.target.dataset.a) state.addons[id] = e.target.checked ? (+($(`[data-q="${id}"]`)?.value) || 1) : 0;
@@ -1047,13 +1328,31 @@ footer { border-top: 1px solid var(--line); }
   });
   $("#care").checked = state.care;
   $("#care").addEventListener("change", e => { state.care = e.target.checked; save(); quote(); });
+  $("#existing").checked = !!state.existing;
+  $("#existing").addEventListener("change", e => { state.existing = e.target.checked; save(); renderPacks(); quote(); });
+  let shownTotal = null;
+  function showTotal(t) {
+    const el = $("#q-total");
+    if (shownTotal === null || matchMedia("(prefers-reduced-motion: reduce)").matches) { shownTotal = t; el.textContent = money(t); return; }
+    const from = shownTotal, start = performance.now(); shownTotal = t;
+    const step = now => {
+      if (shownTotal !== t) return;
+      const k = Math.min(1, (now - start) / 280), ease = 1 - Math.pow(1 - k, 3);
+      el.textContent = money(k < 1 ? Math.round(from + (t - from) * ease) : t);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+    setTimeout(() => { if (shownTotal === t) el.textContent = money(t); }, 400);  // lands on the exact total even if animation is paused
+  }
   function quote() {
     const p = PACKS.find(x => x.id === state.pack) || PACKS[1];
     const lines = [[p.name, p.price]];
+    if (discountFor(p)) lines.push(["Existing website discount (20%)", -discountFor(p)]);
     ADDONS.forEach(a => { const q = state.addons[a.id]; if (q) lines.push([a.name + (a.per ? ` × ${q}` : ""), a.price * (a.per ? q : 1)]); });
     const total = lines.reduce((s, [, v]) => s + v, 0);
-    $("#q-total").textContent = money(total);
-    $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${money(v)}</dd>`).join("") +
+    showTotal(total);
+    $("#q-lines").innerHTML = lines.map(([n, v]) => `<dt>${n}</dt><dd>${v < 0 ? "\u2212" + money(-v) : money(v)}</dd>`).join("") +
+      (state.existing && p.id === "starter" ? `<dt>Existing website discount</dt><dd>Business or Shop only</dd>` : "") +
       `<dt>Deposit to start (50%)</dt><dd>${money(total / 2)}</dd>` + (state.care ? `<dt>Hosting and care (monthly, from go-live)</dt><dd>£20/month</dd>` : "");
     $("#q-time").textContent = "Ready in " + p.weeks + " from your go-ahead";
     state.total = total; summary();
@@ -1066,10 +1365,11 @@ footer { border-top: 1px solid var(--line); }
     ["#s1", "#s2", "#s3"].forEach((s, i) => $(s).style.background = state.c[i]);
     $("#s-tpl").textContent = (TEMPLATES.find(t => t.id === state.tpl) || TEMPLATES[0]).name;
     $("#s-pack").textContent = (PACKS.find(p => p.id === state.pack) || PACKS[1]).name;
-    $("#s-total").textContent = money(state.total || 895) + (state.care ? " + £20/month" : "");
+    const pk = PACKS.find(p => p.id === state.pack) || PACKS[1];
+    $("#s-total").textContent = money(state.total || 895) + (state.care ? " + £20/month" : "") + (discountFor(pk) ? " (20% off)" : "");
   }
   const draft = store.get("brief") || {};
-  ["name", "biz", "email", "phone", "what", "look", "like", "when"].forEach(k => {
+  ["name", "biz", "email", "phone", "what", "current", "look", "like", "when"].forEach(k => {
     const el = $("#v-" + k); if (draft[k]) el.value = draft[k];
     el.addEventListener("input", () => { draft[k] = el.value; store.set("brief", draft); });
   });
@@ -1085,11 +1385,11 @@ footer { border-top: 1px solid var(--line); }
     if (!EMAIL.test(f("email"))) { $("#v-err").textContent = "Please check your email address."; return; }
     $("#v-err").textContent = "";
     const style = STYLES.find(s => s.id === state.style) || STYLES[0];
-    const brief = { type: "brief", name: f("name"), business: f("biz"), email: f("email"), phone: f("phone"), what: f("what"), look: f("look"),
+    const brief = { type: "brief", name: f("name"), business: f("biz"), email: f("email"), phone: f("phone"), what: f("what"), currentSite: f("current"), look: f("look"),
       inspiration: f("like"), when: f("when"), style: style.name, colours: { main: state.c[0], background: state.c[1], accent: state.c[2] },
       template: $("#s-tpl").textContent, package: $("#s-pack").textContent, estimate: $("#s-total").textContent, sent: new Date().toISOString() };
     const ok = await post(BRIEF_ENDPOINT, brief);
-    const text = `Website brief for ${brief.business}\nFrom: ${brief.name} (${brief.email}${brief.phone ? ", " + brief.phone : ""})\nWhat they do: ${brief.what || "-"}\nLook and feel: ${brief.look}\nSites they like: ${brief.inspiration || "-"}\nWhen: ${brief.when}\nStyle: ${brief.style}\nColours: ${brief.colours.main}, ${brief.colours.background}, ${brief.colours.accent}\nTemplate: ${brief.template}\nPackage: ${brief.package}\nEstimate: ${brief.estimate}`;
+    const text = `Website brief for ${brief.business}\nFrom: ${brief.name} (${brief.email}${brief.phone ? ", " + brief.phone : ""})\nWhat they do: ${brief.what || "-"}\nCurrent website: ${brief.currentSite || "-"}\nLook and feel: ${brief.look}\nSites they like: ${brief.inspiration || "-"}\nWhen: ${brief.when}\nStyle: ${brief.style}\nColours: ${brief.colours.main}, ${brief.colours.background}, ${brief.colours.accent}\nTemplate: ${brief.template}\nPackage: ${brief.package}\nEstimate: ${brief.estimate}`;
     const done = $("#v-done"); done.hidden = false; done.className = "sent";
     done.innerHTML = ok ? `<strong>Thanks, ${brief.name}. Your brief is with us.</strong><p>We'll reply to ${brief.email} with three designs in your colours.</p>`
       : `<strong>Your brief is ready.</strong><p>Copy it and email it to <span class="addr">alfredw.lsx@gmail.com</span>, and we'll reply with three designs in your colours.</p><pre id="brief-text"></pre><button class="btn ghost" type="button" id="copy-brief">Copy brief</button>`;
@@ -1139,24 +1439,813 @@ footer { border-top: 1px solid var(--line); }
     gate.hidden = true; document.documentElement.style.overflow = "";
   });
 
+
+  // ---------- hero: a real front page, cycling through the styles in their own colours ----------
+  const heroStage = $("#hero-stage"), pauseBtn = $("#hero-pause");
+  let hi = 0, heroTimer = null;
+  function hero() {
+    const s = STYLES[hi % STYLES.length], pal = PALETTES[PAGES[s.id].pal];
+    heroStage.innerHTML = frame(frontPage(s, pal.c), `${s.name} style front page for ${PAGES[s.id].biz}`);
+    fitAll(heroStage);
+    ["#hs1", "#hs2", "#hs3"].forEach((x, i) => $(x).style.background = pal.c[i]);
+    $("#hs-name").textContent = `${PAGES[s.id].biz}, ${s.name} style in ${pal.name}`;
+  }
+  function play(on) {
+    clearInterval(heroTimer); heroTimer = on ? setInterval(() => { hi++; hero(); }, 4200) : null;
+    pauseBtn.textContent = on ? "Pause" : "Play";
+  }
+  pauseBtn.addEventListener("click", () => play(!heroTimer));
+  hero(); play(!matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  // ---------- business types: photo cards that filter the gallery ----------
+  const TYPE_IMG = id => window.KINETIC_PHOTOS[id] || `https://images.unsplash.com/${id}?auto=format&fit=crop&w=700&h=930&q=70`;
+  const TYPES = [
+    ["food", "Food & drink", "Cafes, bistros, bakeries", "photo-1518473537958-1d1b23cac484"],
+    ["beauty", "Hair & beauty", "Barbers, salons, wig studios", "photo-1759134248487-e8baaf31e33e"],
+    ["trades", "Trades", "Plumbers, carpenters, painters, window cleaners", "photo-1597974380476-fbf652dfe188"],
+    ["shops", "Shops", "Boutiques and online stores", "photo-1441984904996-e0b6ba687e04"]
+  ];
+  $("#type-strip").innerHTML = TYPES.map(([f, name, note, id]) => `<a class="type" href="#styles" data-type="${f}">
+    <img src="${TYPE_IMG(id)}" alt="" decoding="async"><span><strong>${name}</strong><small>${note}</small></span></a>`).join("");
+  $("#type-strip").addEventListener("click", e => {
+    const b = e.target.closest("[data-type]"); if (!b) return; e.preventDefault();
+    document.querySelector(`.chip[data-f="${b.dataset.type}"]`).click();
+    $("#styles").scrollIntoView();
+  });
+
+  // ---------- colour lab: pull three colours out of a logo or photo (all in the browser, nothing is uploaded) ----------
+  const sat = h => { const [r, g, b] = rgb(h).map(v => v / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx === 0 ? 0 : (mx - mn) / mx; };
+  const dist = (a, b) => { const x = rgb(a), y = rgb(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+  const toHex = (r, g, b) => "#" + [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("");
+  function paletteFrom(img) {
+    const c = document.createElement("canvas"), n = 72, k = Math.min(1, n / Math.max(img.width, img.height));
+    c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+    const ctx = c.getContext("2d", { willReadFrequently: true }); ctx.drawImage(img, 0, 0, c.width, c.height);
+    const d = ctx.getImageData(0, 0, c.width, c.height).data, counts = new Map();
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) continue;
+      const key = toHex(d[i] & 0xf0 | 8, d[i + 1] & 0xf0 | 8, d[i + 2] & 0xf0 | 8);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([hx]) => hx);
+    const picked = [];
+    ranked.forEach(hx => { if (picked.length < 8 && picked.every(p => dist(p, hx) > 70)) picked.push(hx); });
+    if (!picked.length) return null;
+    const colourful = picked.filter(hx => sat(hx) > .28 && lum(hx) > .02 && lum(hx) < .6);
+    const main = colourful[0] || picked.slice().sort((a, b) => lum(a) - lum(b))[0];
+    const light = picked.find(hx => lum(hx) > .82 && sat(hx) < .25);
+    const bg = light || mix(main, "#ffffff", .94);
+    const accent = colourful.find(hx => hx !== main && dist(hx, main) > 110) || picked.find(hx => hx !== main && hx !== bg && dist(hx, main) > 110 && dist(hx, bg) > 110);
+    return [main, bg, accent || mix(main, "#ffc94a", .7)];
+  }
+  $("#logo-pick").addEventListener("click", () => $("#logo-file").click());
+  $("#logo-file").addEventListener("change", e => {
+    const file = e.target.files[0]; if (!file) return;
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const p = paletteFrom(img); URL.revokeObjectURL(url);
+      if (!p) { $("#logo-note").textContent = "We couldn't find colours in that image. Try another one."; return; }
+      state.c = p; save(); renderLab();
+      $("#logo-note").textContent = `Colours taken from ${file.name}. Adjust them above if you like.`;
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); $("#logo-note").textContent = "That file isn't an image we can read. Try a PNG or JPG."; };
+    img.src = url; e.target.value = "";
+  });
+
   renderStyles(); renderLab(); quote();
 })();
 
-// 21st.dev-style touches: pointer spotlight on cards and sections that fade in as you scroll.
+// Header rule appears once you scroll; sections fade in as you reach them.
 (() => {
-  const cards = ".promises li, .steps li, .style, .pack, .addon, .faq details, .account article, .total, .care-why ul, .lab, .summary";
-  document.addEventListener("pointermove", e => {
-    const el = e.target.closest && e.target.closest(cards);
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", (e.clientX - r.left) + "px");
-    el.style.setProperty("--my", (e.clientY - r.top) + "px");
-  }, { passive: true });
+  const bar = document.getElementById("bar");
+  const onScroll = () => bar.classList.toggle("scrolled", scrollY > 8);
+  addEventListener("scroll", onScroll, { passive: true }); onScroll();
   if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const io = new IntersectionObserver(es => es.forEach(x => { if (x.isIntersecting) { x.target.classList.add("in"); io.unobserve(x.target); } }),
-    { rootMargin: "0px 0px -8% 0px" });
+    { rootMargin: "0px 0px -6% 0px" });
   document.querySelectorAll("main section .head, main section .wrap > *:not(.head)").forEach(el => { el.classList.add("reveal"); io.observe(el); });
 })();
+// Full-screen menu: each link shows its own photo behind; the photo drifts gently with the pointer.
+(() => {
+  const IMG = id => window.KINETIC_PHOTOS[id] || `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1800&q=70`;
+  const ITEMS = [
+    ["#styles", "Styles", "Ten full front pages to try", "photo-1441986300917-64674bd600d8"],
+    ["#lab", "Colour lab", "Test your three colours", "photo-1716471330459-063b3baf247e"],
+    ["#quote", "Quote", "See your price before you ask", "photo-1504608245011-62d9758c1bb9"],
+    ["#account", "Client area", "Hosting and care plan", "photo-1524561506982-601111bed7a6"],
+    ["#faq", "FAQ", "Good to know before you start", "photo-1518473537958-1d1b23cac484"],
+    ["#vision", "Start a project", "Tell us your vision", "photo-1759134248487-e8baaf31e33e"]
+  ];
+  const menu = document.getElementById("menu"), bg = document.getElementById("menu-bg"), links = document.getElementById("menu-links");
+  const openBtn = document.getElementById("menu-open"), closeBtn = document.getElementById("menu-close");
+  links.innerHTML = ITEMS.map(([href, name, note], i) => `<a href="${href}" data-i="${i}" style="--i:${i}">${name}<small>${note}</small></a>`).join("");
+  let loaded = false;
+  function show(i) {
+    if (!loaded) { bg.innerHTML = ITEMS.map(([, , , id]) => `<img src="${IMG(id)}" alt="" decoding="async">`).join(""); loaded = true; }
+    bg.querySelectorAll("img").forEach((im, n) => im.classList.toggle("on", n === i));
+    links.querySelectorAll("a").forEach((a, n) => a.classList.toggle("on", n === i));
+  }
+  function open() {
+    show(0); menu.inert = false; menu.classList.add("open"); openBtn.setAttribute("aria-expanded", "true");
+    document.documentElement.style.overflow = "hidden"; setTimeout(() => closeBtn.focus(), 30);
+  }
+  function close(focusBack = true) {
+    menu.classList.remove("open"); menu.inert = true; openBtn.setAttribute("aria-expanded", "false");
+    document.documentElement.style.overflow = ""; if (focusBack) openBtn.focus();
+  }
+  openBtn.addEventListener("click", open);
+  addEventListener("load", () => setTimeout(() => { if (!loaded) show(-1); }, 1500));  // fetch the menu photos early so they appear instantly
+  closeBtn.addEventListener("click", () => close());
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && menu.classList.contains("open")) close(); });
+  links.addEventListener("pointerover", e => { const a = e.target.closest("a"); if (a) show(+a.dataset.i); });
+  links.addEventListener("focusin", e => { const a = e.target.closest("a"); if (a) show(+a.dataset.i); });
+  links.addEventListener("click", e => {
+    const a = e.target.closest("a"); if (!a) return;
+    e.preventDefault(); close(false);
+    const target = document.querySelector(a.getAttribute("href"));
+    setTimeout(() => { target.scrollIntoView(); history.replaceState(null, "", a.getAttribute("href")); }, 0);
+  });
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    menu.addEventListener("pointermove", e => {
+      bg.style.setProperty("--px", ((e.clientX / innerWidth) - .5) * -30 + "px");
+      bg.style.setProperty("--py", ((e.clientY / innerHeight) - .5) * -30 + "px");
+    }, { passive: true });
+  }
+})();
+document.addEventListener("error", e => { if (e.target.tagName === "IMG") e.target.style.visibility = "hidden"; }, true);
 </script>
 
-</html>
+<script>
+// Footer and sign-up links to the legal notes open the right one.
+document.addEventListener("click", e => {
+  const a = e.target.closest('a[href="#privacy"], a[href="#terms"], a[href="#business-details"]'); if (!a) return;
+  const d = document.querySelector(a.getAttribute("href")); if (d) d.open = true;
+});
+</script>
+<script>
+/* Kinetic Web Designs: final interactive layer.
+   Part 1, "Tactile 3D" (from Option D) across the whole page, but never inside the pricing section (#quote).
+   Part 2, the pricing extras from Option E, only inside #quote: quote breakdown chart, smart quote hints,
+   package timeline and the "how you pay" bar.
+   Everything is permanently on. CSS is scoped under html.kw-fx (one permanent class, so selector weight matches the previews). */
+(() => {
+  "use strict";
+  const D = document, H = D.documentElement;
+  const q1 = (s, el = D) => el.querySelector(s), qa = (s, el = D) => [...el.querySelectorAll(s)];
+  const RM = matchMedia("(prefers-reduced-motion: reduce)");
+  const FINE = matchMedia("(hover: hover) and (pointer: fine)");
+  const rm = () => RM.matches;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const inQuote = el => !!(el && el.closest && el.closest("#quote"));
+  H.classList.add("kw-fx");
+
+  /* zero-weight "not inside the pricing section" filter */
+  const NQ = ":not(:where(#quote *))";
+
+  /* =============================================================== Part 1: Tactile 3D =============================================================== */
+  const cssD = String.raw`
+html { --kd-edge: color-mix(in srgb, var(--ink) 62%, #000); }
+/* tilting style cards */
+html.kw-fx .style { position: relative; transform: perspective(1100px) rotateX(calc(var(--ty, 0) * -7deg)) rotateY(calc(var(--tx, 0) * 9deg)) translateY(calc(var(--tl, 0) * -6px));
+  transition: transform .5s var(--ease-out), border-color var(--ui) ease, box-shadow .5s var(--ease-out); will-change: transform;
+  box-shadow: calc(var(--tx, 0) * -16px) calc(var(--ty, 0) * -10px + var(--tl, 0) * 26px) calc(var(--tl, 0) * 50px) calc(var(--tl, 0) * -18px) rgba(17,20,27,.38); }
+html.kw-fx .style.kd-live { transition: transform .12s linear, border-color var(--ui) ease, box-shadow .12s linear; }
+html.kw-fx .style.picked { box-shadow: 0 0 0 1.5px var(--accent), calc(var(--tx, 0) * -16px) calc(var(--ty, 0) * -10px + var(--tl, 0) * 26px) calc(var(--tl, 0) * 50px) calc(var(--tl, 0) * -18px) rgba(17,20,27,.38); }
+html.kw-fx .style::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3; opacity: var(--tl, 0);
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgba(255,255,255,.38), rgba(255,255,255,.08) 28%, transparent 55%);
+  mix-blend-mode: soft-light; transition: opacity .4s ease; }
+@media (prefers-color-scheme: dark) { html.kw-fx .style::after { mix-blend-mode: screen; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgba(255,255,255,.14), transparent 50%); } }
+/* magnetic buttons (and keycap press timing) */
+html.kw-fx .btn${NQ}, html.kw-fx .chip${NQ}, html.kw-fx .menu-btn${NQ} { translate: var(--mgx, 0px) var(--mgy, 0px); }
+html.kw-fx .btn${NQ} { transition: transform var(--press) var(--ease-out), translate .35s var(--ease-out), background-color var(--ui) ease, color var(--ui) ease, border-color var(--ui) ease, box-shadow var(--press) var(--ease-out); }
+html.kw-fx .chip${NQ}, html.kw-fx .menu-btn${NQ} { transition: transform var(--press) var(--ease-out), translate .35s var(--ease-out), background-color var(--ui) ease, color var(--ui) ease, border-color var(--ui) ease, box-shadow var(--ui) ease; }
+html.kw-fx .kd-mag { transition-duration: var(--press), .12s, var(--ui), var(--ui), var(--ui), var(--ui); }
+/* torch on business photos */
+.kd-torch { display: none; }
+html.kw-fx .kd-torch { display: block; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; transition: opacity .35s ease;
+  background: radial-gradient(circle 120px at var(--mx, 50%) var(--my, 40%), rgba(255,236,190,.22) 0, rgba(255,236,190,.06) 45%, rgba(5,7,12,.62) 100%); }
+html.kw-fx .type.kd-lit .kd-torch { opacity: 1; }
+/* 3D laptop */
+.kd-rig { position: relative; min-width: 0; }
+html.kw-fx .showcase { perspective: 1400px; }
+html.kw-fx .kd-rig { transform-style: preserve-3d; transform: rotateX(calc(var(--dy, 0) * 1deg + 4deg)) rotateY(calc(var(--dx, 0) * 1deg - 6deg)); transition: transform .6s var(--ease-out); padding-bottom: 22px; }
+html.kw-fx .kd-rig.kd-live { transition: transform .15s linear; }
+html.kw-fx #hero-stage { position: relative; padding: 10px 10px 12px; background: linear-gradient(160deg, #2a2e38, #12141a 60%); border-radius: 16px 16px 6px 6px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 40px 60px -34px rgba(10,12,18,.65); }
+html.kw-fx #hero-stage::before { content: ""; position: absolute; top: 4px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #3a3f4c; }
+html.kw-fx #hero-stage::after { content: ""; position: absolute; left: -7%; right: -7%; bottom: -18px; height: 18px; border-radius: 3px 3px 18px 18px;
+  background: linear-gradient(180deg, #c9ccd4 0, #a9adb7 40%, #7d818c 100%); transform: perspective(300px) rotateX(38deg); transform-origin: top;
+  box-shadow: 0 18px 26px -14px rgba(10,12,18,.55); }
+html.kw-fx #hero-stage .frame { border-radius: 6px; border-color: #000; box-shadow: none; }
+@media (prefers-color-scheme: dark) { html.kw-fx #hero-stage::after { background: linear-gradient(180deg, #5a5f6b 0, #3c404a 50%, #24272e 100%); } }
+/* pocket phone */
+.kd-phone { display: none; }
+html.kw-fx .kd-phone { display: block; position: absolute; right: 2%; bottom: 4px; width: clamp(78px, 17%, 118px); aspect-ratio: 9 / 18.5; border-radius: 18px; padding: 6px;
+  background: linear-gradient(150deg, #30343f, #0f1116); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 30px 40px -18px rgba(10,12,18,.7);
+  transform: translateZ(70px) rotateY(-14deg); z-index: 2; animation: kd-bob 6s ease-in-out infinite; }
+html.kw-fx .kd-phone .kd-scr { position: relative; width: 100%; height: 100%; border-radius: 13px; overflow: hidden; background: var(--sunk); }
+html.kw-fx .kd-phone .kd-scr::before { content: ""; position: absolute; top: 4px; left: 50%; width: 30%; height: 7px; margin-left: -15%; border-radius: 6px; background: #0f1116; z-index: 2; }
+html.kw-fx .kd-phone .fp { position: absolute; top: 0; left: 0; transform: scale(var(--pk, .22)); transform-origin: top left; animation: none; pointer-events: none; }
+@keyframes kd-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+/* tilt with your phone */
+.kd-gyro { display: none; }
+html.kw-fx .kd-gyro.kd-can { display: inline-flex; align-items: center; gap: 6px; font: 500 .82rem var(--mono); background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+html.kw-fx .kd-gyro svg { width: 14px; height: 14px; }
+html.kw-fx .kd-gyro[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+/* depth-layered hero */
+html.kw-fx .hero .copy > * { translate: calc(var(--hx, 0) * var(--z) * 1px) calc(var(--hy, 0) * var(--z) * 1px); transition: translate .5s var(--ease-out); }
+html.kw-fx .hero h1 { --z: 14; text-shadow: calc(var(--hx, 0) * -3px) calc(var(--hy, 0) * -3px + 2px) 0 color-mix(in srgb, var(--accent) 16%, transparent); }
+html.kw-fx .hero .lede { --z: 7; }
+html.kw-fx .hero .ctas { --z: 3; }
+/* floating 3D shapes */
+.kd-shapes { display: none; }
+html.kw-fx .hero { position: relative; overflow-x: clip; }
+html.kw-fx .hero > .wrap { position: relative; z-index: 1; }
+html.kw-fx .kd-shapes { display: block; position: absolute; inset: 0; pointer-events: none; z-index: 0; perspective: 900px; overflow: hidden; }
+.kd-shape { position: absolute; transform-style: preserve-3d; translate: calc(var(--hx, 0) * var(--z) * 1px) calc(var(--hy, 0) * var(--z) * 1px); transition: translate .6s var(--ease-out); }
+.kd-cube3 { width: var(--s); height: var(--s); transform-style: preserve-3d; animation: kd-spin3 var(--t, 18s) linear infinite; }
+.kd-cube3 i { position: absolute; inset: 0; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); }
+.kd-cube3 i:nth-child(1) { transform: translateZ(calc(var(--s) / 2)); background: color-mix(in srgb, var(--accent) 34%, var(--bg)); }
+.kd-cube3 i:nth-child(2) { transform: rotateY(180deg) translateZ(calc(var(--s) / 2)); background: color-mix(in srgb, var(--accent) 30%, var(--bg)); }
+.kd-cube3 i:nth-child(3) { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); background: color-mix(in srgb, var(--accent) 52%, var(--bg)); }
+.kd-cube3 i:nth-child(4) { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); background: color-mix(in srgb, var(--accent) 22%, var(--bg)); }
+.kd-cube3 i:nth-child(5) { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); background: color-mix(in srgb, var(--accent) 14%, var(--bg)); }
+.kd-cube3 i:nth-child(6) { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); background: color-mix(in srgb, var(--accent) 60%, var(--bg)); }
+.kd-ring { width: var(--s); height: var(--s); border-radius: 50%; border: 9px solid color-mix(in srgb, var(--accent) 40%, transparent); animation: kd-ring var(--t, 14s) linear infinite;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); }
+@media (max-width: 920px) { .kd-shape:nth-child(2), .kd-shape:nth-child(4), .kd-shape:nth-child(5) { display: none; }
+  .kd-shape:nth-child(1) { left: auto !important; right: 26%; top: 2% !important; } .kd-shape:nth-child(3) { right: -26px !important; top: 1% !important; } }
+@keyframes kd-spin3 { from { transform: rotateX(-20deg) rotateY(0); } to { transform: rotateX(-20deg) rotateY(360deg); } }
+@keyframes kd-ring { from { transform: rotateX(64deg) rotateZ(0); } to { transform: rotateX(64deg) rotateZ(360deg); } }
+/* flip cards for promises */
+.kd-face svg, .kd-back-t { display: none; }
+html.kw-fx .promises li { perspective: 900px; cursor: pointer; padding-block: 14px; }
+html.kw-fx .promises li:focus-visible { outline-offset: -3px; }
+html.kw-fx .kd-flip { display: grid; transform-style: preserve-3d; transition: transform .7s var(--ease-out); min-height: 108px; }
+html.kw-fx .kd-face { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: grid; gap: 8px; align-content: center; border-radius: var(--r); padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 0 var(--line), 0 14px 24px -18px rgba(17,20,27,.4); }
+html.kw-fx .kd-face svg { display: block; width: 34px; height: 34px; color: var(--accent); }
+html.kw-fx .kd-face { position: relative; }
+html.kw-fx .kd-front::after { content: "\21BB"; position: absolute; top: 10px; right: 12px; font: 500 .95rem var(--mono); color: var(--muted); }
+html.kw-fx .kd-back { transform: rotateY(180deg); background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+html.kw-fx .kd-back .kd-back-t { display: block; font: 600 .78rem var(--mono); color: var(--accent); }
+html.kw-fx .kd-back span { color: var(--ink); }
+html.kw-fx li.kd-flipped .kd-flip { transform: rotateY(180deg); }
+@media (hover: hover) and (pointer: fine) { html.kw-fx .promises li:hover .kd-flip { transform: rotateY(180deg); } html.kw-fx .promises li.kd-flipped:hover .kd-flip { transform: rotateY(180deg); } }
+/* build cube, exploded website, paint chips: side-by-side layout */
+.kd-cubebox, .kd-iso, .kd-chips { display: none; }
+@media (min-width: 761px) { html.kw-fx .kd-has-cube, html.kw-fx .kd-has-iso, html.kw-fx .kd-has-chips { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 40px; }
+  html.kw-fx .kd-has-cube > :not(.kd-cubebox), html.kw-fx .kd-has-iso > :not(.kd-iso), html.kw-fx .kd-has-chips > :not(.kd-chips) { grid-column: 1; }
+  html.kw-fx .kd-has-cube > .kd-cubebox, html.kw-fx .kd-has-iso > .kd-iso, html.kw-fx .kd-has-chips > .kd-chips { grid-column: 2; grid-row: 1 / span 2; } }
+html.kw-fx .kd-cubebox { display: grid; justify-items: center; gap: 10px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; padding: 14px; }
+html.kw-fx .kd-cubebox:active { cursor: grabbing; }
+html.kw-fx .kd-cubebox small { font: 500 .78rem var(--mono); color: var(--muted); }
+.kd-stage { width: 128px; height: 128px; perspective: 700px; }
+.kd-cube { position: relative; width: 128px; height: 128px; transform-style: preserve-3d; }
+.kd-cube > div { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 6px; border-radius: 14px; background: var(--surface);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, var(--line)); font: 650 .82rem var(--body); color: var(--ink); backface-visibility: hidden;
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--accent) 12%, transparent); }
+.kd-cube > div svg { width: 46px; height: 46px; color: var(--accent); }
+.kd-cube > div:nth-child(1) { transform: translateZ(64px); }
+.kd-cube > div:nth-child(2) { transform: rotateY(90deg) translateZ(64px); }
+.kd-cube > div:nth-child(3) { transform: rotateY(180deg) translateZ(64px); }
+.kd-cube > div:nth-child(4) { transform: rotateY(-90deg) translateZ(64px); }
+.kd-cube > div:nth-child(5) { transform: rotateX(90deg) translateZ(64px); }
+.kd-cube > div:nth-child(6) { transform: rotateX(-90deg) translateZ(64px); background: var(--accent); color: var(--accent-ink); }
+.kd-cube > div:nth-child(6) svg { color: var(--accent-ink); }
+.kd-shadow { width: 120px; height: 16px; border-radius: 50%; background: radial-gradient(closest-side, rgba(17,20,27,.3), transparent); margin-top: 8px; }
+/* exploded website */
+html.kw-fx .kd-iso { display: block; width: min(300px, 100%); justify-self: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.kd-iso svg { width: 100%; height: auto; display: block; overflow: visible; }
+.kd-iso .ly { transition: transform .9s var(--ease-out); }
+.kd-iso .ly1 { transform: translateY(var(--e1, -8px)); } .kd-iso .ly2 { transform: translateY(var(--e2, -15px)); } .kd-iso .ly3 { transform: translateY(var(--e3, -22px)); }
+.kd-iso.kd-open { --e1: -40px; --e2: -80px; --e3: -118px; }
+.kd-iso:not(.kd-in) { --e1: -60px; --e2: -120px; --e3: -175px; }
+.kd-iso .ly1 .top, .kd-iso .ly2 .top { fill-opacity: .55; }
+.kd-iso .top { fill: var(--surface); stroke: var(--line); } .kd-iso .side1 { fill: color-mix(in srgb, var(--ink) 18%, var(--surface)); } .kd-iso .side2 { fill: color-mix(in srgb, var(--ink) 30%, var(--surface)); }
+.kd-iso .ac { fill: var(--accent); } .kd-iso .acs { fill: var(--accent-soft); } .kd-iso .ink { fill: var(--ink); opacity: .7; } .kd-iso .mu { fill: var(--muted); opacity: .45; }
+.kd-iso .gd { fill: none; stroke: var(--accent); stroke-dasharray: 3 4; opacity: .5; }
+.kd-iso small { display: block; text-align: center; font: 500 .78rem var(--mono); color: var(--muted); margin-top: 4px; }
+/* 3D paint chips */
+html.kw-fx .kd-chips { display: grid; justify-items: center; gap: 6px; perspective: 900px; padding: 8px 20px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.kd-fan { position: relative; width: 260px; max-width: 100%; height: 150px; transform-style: preserve-3d; transform: rotateX(calc(18deg + var(--cy, 0) * -10deg)) rotateY(calc(var(--cx, 0) * 14deg)); transition: transform .5s var(--ease-out); }
+.kd-chip { position: absolute; left: 50%; bottom: 0; width: 92px; height: 132px; margin-left: -46px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); padding: 6px;
+  display: grid; grid-template-rows: 1fr auto; gap: 6px; transform-origin: 50% 110%; transition: transform .6s var(--ease-out); box-shadow: 0 16px 24px -14px rgba(17,20,27,.45); }
+.kd-chip b { border-radius: 6px; background: var(--c, #ccc); box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.kd-chip span { font: 600 .7rem var(--mono); color: var(--ink); line-height: 1.2; } .kd-chip span em { display: block; font-style: normal; color: var(--muted); font-weight: 500; }
+.kd-chip:nth-child(1) { transform: translateX(-26px) rotate(-14deg) translateZ(0); } .kd-chip:nth-child(2) { transform: translateZ(14px); } .kd-chip:nth-child(3) { transform: translateX(26px) rotate(14deg) translateZ(28px); }
+.kd-chips.kd-open .kd-chip:nth-child(1), .kd-chips:hover .kd-chip:nth-child(1) { transform: translateX(-58px) rotate(-22deg) translateZ(0) translateY(-4px); }
+.kd-chips.kd-open .kd-chip:nth-child(2), .kd-chips:hover .kd-chip:nth-child(2) { transform: translateZ(30px) translateY(-16px); }
+.kd-chips.kd-open .kd-chip:nth-child(3), .kd-chips:hover .kd-chip:nth-child(3) { transform: translateX(58px) rotate(22deg) translateZ(60px) translateY(-4px); }
+.kd-chips small { font: 500 .78rem var(--mono); color: var(--muted); }
+/* keycap buttons */
+html.kw-fx .btn${NQ} { box-shadow: 0 4px 0 var(--kd-edge), 0 8px 14px -8px rgba(17,20,27,.45); }
+html.kw-fx .btn.accent${NQ} { box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 58%, #000), 0 8px 14px -8px rgba(17,20,27,.45); }
+html.kw-fx .btn.ghost${NQ} { box-shadow: 0 3px 0 var(--line); background: color-mix(in srgb, var(--surface) 70%, transparent); }
+html.kw-fx .btn${NQ}:active { transform: translateY(3px) !important; box-shadow: 0 1px 0 var(--kd-edge), 0 2px 4px -2px rgba(17,20,27,.4); }
+html.kw-fx .btn.accent${NQ}:active { box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 58%, #000); }
+html.kw-fx .btn.ghost${NQ}:active { box-shadow: 0 0 0 var(--line); }
+html.kw-fx .viewer .top .btn { box-shadow: 0 3px 0 #9aa0ad; }
+/* click ripple */
+html.kw-fx .btn${NQ}, html.kw-fx .chip${NQ}, html.kw-fx .preset${NQ}, html.kw-fx .menu-btn${NQ} { position: relative; overflow: hidden; isolation: isolate; }
+.kd-ripple { position: absolute; border-radius: 50%; pointer-events: none; width: 20px; height: 20px; margin: -10px 0 0 -10px; background: currentColor; opacity: .28; z-index: 0;
+  transform: scale(0); animation: kd-rip .6s var(--ease-out) forwards; }
+@keyframes kd-rip { to { transform: scale(var(--rs, 20)); opacity: 0; } }
+/* cards lift with shadows */
+@media (hover: hover) and (pointer: fine) {
+  html.kw-fx .tpl .frame, html.kw-fx .type, html.kw-fx .preset { transition: transform .45s var(--ease-out), box-shadow .45s var(--ease-out), border-color var(--ui) ease; }
+  html.kw-fx .tpl .frame:hover, html.kw-fx .type:hover { transform: translateY(-8px); box-shadow: 0 1px 2px rgba(17,20,27,.1), 0 6px 12px -4px rgba(17,20,27,.14), 0 18px 30px -10px rgba(17,20,27,.24), 0 40px 60px -26px rgba(17,20,27,.4); }
+  html.kw-fx .preset:hover { transform: translateY(-4px); box-shadow: 0 2px 3px rgba(17,20,27,.12), 0 10px 18px -8px rgba(17,20,27,.4); }
+}
+html.kw-fx .tpl .frame:active, html.kw-fx .type:active { transform: translateY(1px) scale(.99); box-shadow: 0 1px 2px rgba(17,20,27,.2); transition-duration: .12s; }
+html.kw-fx .tpl .frame, html.kw-fx .type { box-shadow: 0 1px 2px rgba(17,20,27,.08), 0 8px 16px -10px rgba(17,20,27,.25); }
+/* FAQ answers unfold */
+html.kw-fx .faq details { perspective: 900px; }
+html.kw-fx .faq details[open] p { transform-origin: top center; animation: kd-unfold .55s var(--ease-out) both; }
+html.kw-fx .faq details[open] p + p { animation-delay: .06s; }
+html.kw-fx .faq summary::after { transition: transform .45s var(--ease-out), color var(--ui) ease; }
+html.kw-fx .faq details[open] summary::after { transform: rotateY(180deg) rotate(45deg); }
+html.kw-fx .faq summary { transition: transform var(--press) var(--ease-out); }
+html.kw-fx .faq summary:active { transform: translateY(2px); }
+@keyframes kd-unfold { from { opacity: 0; transform: rotateX(-80deg) translateY(-6px); } 60% { opacity: 1; } to { opacity: 1; transform: none; } }
+/* moving light source (colour lab and brief; not the price panel) */
+html.kw-fx .lab, html.kw-fx form.vision { box-shadow: calc(var(--lx, 0) * -22px) calc(var(--ly, 0) * -14px + 22px) 46px -24px rgba(17,20,27,.42);
+  transition: box-shadow .6s var(--ease-out); }
+@media (prefers-color-scheme: dark) { html.kw-fx .lab, html.kw-fx form.vision { box-shadow: calc(var(--lx, 0) * -22px) calc(var(--ly, 0) * -14px + 22px) 46px -20px rgba(0,0,0,.85); } }
+
+/* reduced motion: keep the look, drop the motion */
+@media (prefers-reduced-motion: reduce) {
+  html.kw-fx .style, html.kw-fx .kd-rig { transform: none !important; }
+  html .btn, html .chip, html .menu-btn { translate: none !important; }
+  html.kw-fx .hero .copy > *, .kd-shape { translate: none !important; }
+  .kd-cube3, .kd-ring, html.kw-fx .kd-phone { animation: none !important; }
+  html.kw-fx .kd-flip { transition: none; }
+  html.kw-fx .kd-flip, html.kw-fx li.kd-flipped .kd-flip { transform: none !important; }
+  html.kw-fx li.kd-flipped .kd-front, html.kw-fx .kd-back { visibility: hidden; } html.kw-fx li.kd-flipped .kd-back { visibility: visible; transform: none; }
+  @media (hover: hover) and (pointer: fine) { html.kw-fx .promises li:hover .kd-flip { transform: none; } }
+  .kd-iso .ly, .kd-chip, .kd-fan { transition: none; }
+  .kd-ripple { display: none; }
+  html.kw-fx .faq details[open] p { animation: fade-only 200ms ease both; }
+}
+`;
+
+  /* ======================================================== Part 2: pricing extras (from Option E) ======================================================== */
+  const cssE = `
+.kE-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[class^="kE-"] svg,[class*=" kE-"] svg{flex:none}
+
+/* quote breakdown chart */
+.kE-donut{display:none}
+html.kw-fx .kE-donut{display:grid;grid-template-columns:104px 1fr;gap:16px;align-items:center;border-top:1px solid color-mix(in srgb,var(--bg) 18%,transparent);padding-top:16px}
+.kE-donut svg{width:104px;height:104px;transform:rotate(-90deg)}
+.kE-donut circle.seg{fill:none;stroke-width:14;transition:stroke-dasharray .6s var(--ease-out),stroke-dashoffset .6s var(--ease-out),opacity .3s ease}
+.kE-donut circle.track{fill:none;stroke:color-mix(in srgb,var(--bg) 14%,transparent);stroke-width:14}
+.kE-donut .mid{position:relative;width:104px;height:104px}
+.kE-donut .mid span{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font:600 .62rem/1.2 var(--body);opacity:.75}
+.kE-donut .mid strong{display:block;font:700 .95rem var(--mono);opacity:1}
+.kE-donut ul{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:.8rem;min-width:0}
+.kE-donut li{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;animation:kE-fade .35s ease both}
+.kE-donut li i{width:10px;height:10px;border-radius:3px}
+.kE-donut li span{opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kE-donut li em{font-style:normal;font-family:var(--mono);font-size:.74rem;opacity:.8}
+.kE-donut .ttl{grid-column:1/-1;font-size:.8rem;opacity:.7;font-weight:550}
+html.kw-fx .total{--kd0:#8ea0ff;--kd1:#5fd39a;--kd2:#ffb86b;--kd3:#ff8fb1;--kd4:#6fd6e8;--kd5:#e2d36b;--kd6:#c9a4ff}
+@media (prefers-color-scheme:dark){html.kw-fx:not([data-theme="light"]) .total{--kd0:#2a46d1;--kd1:#13704a;--kd2:#a85400;--kd3:#b3265e;--kd4:#0b6e80;--kd5:#6f6000;--kd6:#6b3fc4}}
+html.kw-fx[data-theme="dark"] .total{--kd0:#2a46d1;--kd1:#13704a;--kd2:#a85400;--kd3:#b3265e;--kd4:#0b6e80;--kd5:#6f6000;--kd6:#6b3fc4}
+
+/* smart quote hints */
+.kE-hint{display:none}
+html.kw-fx .kE-hint{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:12px 14px;border-radius:var(--r);background:var(--accent-soft);color:var(--ink);font-size:.9rem;line-height:1.5}
+.kE-hint svg{width:26px;height:26px;color:var(--accent)}
+.kE-hint .rays{transform-origin:12px 10px;animation:kE-rays 2.4s ease-in-out infinite}
+.kE-hint p{transition:opacity .2s ease}
+.kE-hint p.swap{opacity:0}
+
+/* package timeline */
+.kE-time{display:none}
+html.kw-fx .kE-time{display:grid;gap:8px;margin-top:16px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.kE-time .t{font-weight:650;font-size:.92rem}
+.kE-time button{display:grid;grid-template-columns:minmax(90px,130px) 1fr;gap:12px;align-items:center;background:none;border:0;padding:4px 0;cursor:pointer;color:var(--muted);font:500 .84rem var(--body);text-align:left}
+.kE-time .track{position:relative;height:14px;border-radius:7px;background:var(--sunk)}
+.kE-time .seg{position:absolute;top:0;bottom:0;border-radius:7px;background:color-mix(in srgb,var(--muted) 45%,transparent);transform-origin:left;transform:scaleX(0);transition:transform .7s var(--ease-out),background .3s ease}
+.kE-time.in .seg{transform:scaleX(1)}
+.kE-time button.sel{color:var(--ink);font-weight:650}
+.kE-time button.sel .seg{background:var(--accent)}
+.kE-time .seg span{position:absolute;right:6px;top:50%;transform:translateY(-50%);font:600 .66rem var(--mono);color:var(--accent-ink);white-space:nowrap}
+.kE-time button:not(.sel) .seg span{color:var(--ink)}
+.kE-time .axis{display:grid;grid-template-columns:minmax(90px,130px) 1fr;gap:12px;font:500 .7rem var(--mono);color:var(--muted)}
+.kE-time .axis div{display:flex;justify-content:space-between}
+
+/* how you pay */
+.kE-pay{display:none}
+html.kw-fx .kE-pay{display:grid;gap:8px;border-top:1px solid color-mix(in srgb,var(--bg) 18%,transparent);padding-top:16px;font-size:.82rem}
+.kE-pay .t{opacity:.7;font-weight:550}
+.kE-pay .split{display:grid;grid-template-columns:1fr 1fr;gap:4px;height:12px}
+.kE-pay .split b{border-radius:4px;background:currentColor;transform:scaleX(0);transition:transform .6s var(--ease-out)}
+.kE-pay .split b:first-child{transform-origin:right}
+.kE-pay .split b:last-child{transform-origin:left;opacity:.45}
+.kE-pay.in .split b{transform:scaleX(1)}
+.kE-pay .lbl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kE-pay .lbl>div{display:flex;gap:6px;align-items:flex-start}
+.kE-pay .lbl>div:last-child{justify-content:flex-end;text-align:right}
+.kE-pay .lbl svg{width:16px;height:16px;margin-top:1px;opacity:.85}
+.kE-pay strong{font-family:var(--mono);display:block}
+.kE-pay span{opacity:.75}
+.kE-pay .care{opacity:.75}
+
+@keyframes kE-fade{from{opacity:0}to{opacity:1}}
+@keyframes kE-rays{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.05)}}
+
+@media (prefers-reduced-motion:reduce){
+  .kE-time .seg,.kE-pay .split b,.kE-donut circle.seg{transition:opacity .15s ease!important}
+  .kE-hint .rays{animation:none!important}
+  .kE-time .seg,.kE-pay .split b{transform:none!important}
+}
+`;
+  const st = D.createElement("style"); st.id = "kw-final-style"; st.textContent = cssD + cssE; D.head.appendChild(st);
+
+  /* --------------------------------------------------------------- shared pointer state ---------------------------------------------------------------- */
+  let raf = 0, last = null;
+  const tasks = new Set();
+  function frame() { raf = 0; tasks.forEach(f => f(last)); }
+  addEventListener("pointermove", e => { last = e; if (!raf) raf = requestAnimationFrame(frame); }, { passive: true });
+
+  /* ------------------------------------------------------------ tilting style cards ------------------------------------------------------------ */
+  function setTilt(el, e, live) {
+    const r = el.getBoundingClientRect();
+    const px = clamp((e.clientX - r.left) / r.width, 0, 1), py = clamp((e.clientY - r.top) / r.height, 0, 1);
+    el.style.setProperty("--tx", ((px - .5) * 2).toFixed(3)); el.style.setProperty("--ty", ((py - .5) * 2).toFixed(3));
+    el.style.setProperty("--gx", (px * 100).toFixed(1) + "%"); el.style.setProperty("--gy", (py * 100).toFixed(1) + "%");
+    el.style.setProperty("--tl", live ? "1" : "0"); el.classList.toggle("kd-live", !!live);
+  }
+  function resetTilt(el) { if (!el) return; ["--tx", "--ty"].forEach(p => el.style.setProperty(p, "0")); el.style.setProperty("--tl", "0"); el.classList.remove("kd-live"); }
+  const TILT = ".style";
+  let tiltEl = null;
+  tasks.add(e => {
+    if (!e || e.pointerType !== "mouse" || rm()) return;
+    const el = e.target.closest?.(TILT) || null;
+    if (tiltEl && tiltEl !== el) { resetTilt(tiltEl); tiltEl = null; }
+    if (el) { tiltEl = el; setTilt(el, e, true); }
+  });
+  D.addEventListener("pointerleave", () => { resetTilt(tiltEl); tiltEl = null; });
+  D.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" || rm()) return;
+    const el = e.target.closest(TILT); if (!el) return;
+    setTilt(el, e, true);
+    const end = () => { resetTilt(el); removeEventListener("pointerup", end); removeEventListener("pointercancel", end); };
+    addEventListener("pointerup", end); addEventListener("pointercancel", end);
+  }, { passive: true });
+
+  /* ------------------------------------------------------------ magnetic buttons ------------------------------------------------------------ */
+  let magEl = null;
+  const unMag = () => { if (magEl) { magEl.style.setProperty("--mgx", "0px"); magEl.style.setProperty("--mgy", "0px"); magEl.classList.remove("kd-mag"); magEl = null; } };
+  tasks.add(e => {
+    if (!e || e.pointerType !== "mouse" || rm()) { unMag(); return; }
+    let el = e.target.closest?.(".btn, .chip, .menu-btn");
+    if (!el && magEl) { const r = magEl.getBoundingClientRect(); if (e.clientX > r.left - 24 && e.clientX < r.right + 24 && e.clientY > r.top - 24 && e.clientY < r.bottom + 24) el = magEl; }
+    if (el && (el.closest(".gate") || inQuote(el))) el = null;
+    if (el !== magEl) unMag();
+    if (!el) return;
+    magEl = el; el.classList.add("kd-mag");
+    const r = el.getBoundingClientRect(); const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    el.style.setProperty("--mgx", clamp(dx * .28, -10, 10).toFixed(1) + "px"); el.style.setProperty("--mgy", clamp(dy * .35, -7, 7).toFixed(1) + "px");
+  });
+
+  /* ------------------------------------------------------------ torch on business photos ------------------------------------------------------------ */
+  qa(".type").forEach(t => { const i = D.createElement("i"); i.className = "kd-torch"; i.setAttribute("aria-hidden", "true"); t.appendChild(i); });
+  function torchAt(t, e) { const r = t.getBoundingClientRect(); t.style.setProperty("--mx", (e.clientX - r.left) + "px"); t.style.setProperty("--my", (e.clientY - r.top) + "px"); }
+  let lit = null;
+  tasks.add(e => {
+    if (!e || e.pointerType !== "mouse") return;
+    const t = e.target.closest?.(".type") || null;
+    if (lit && lit !== t) lit.classList.remove("kd-lit");
+    lit = t; if (t) { t.classList.add("kd-lit"); torchAt(t, e); }
+  });
+  const strip = q1("#type-strip");
+  if (strip) {
+    strip.addEventListener("pointerdown", e => { if (e.pointerType === "mouse") return; const t = e.target.closest(".type"); if (!t) return; t.classList.add("kd-lit"); torchAt(t, e);
+      setTimeout(() => t.classList.remove("kd-lit"), 1400); }, { passive: true });
+    strip.addEventListener("pointermove", e => { if (e.pointerType === "mouse") return; const t = e.target.closest(".type"); if (t) torchAt(t, e); }, { passive: true });
+  }
+
+  /* ------------------------------------------------------------ hero: 3D laptop, pocket phone, gyro, depth, shapes ------------------------------------------------------------ */
+  const stage = q1("#hero-stage"), hero = q1(".hero");
+  if (stage && hero) {
+    const rig = D.createElement("div"); rig.className = "kd-rig";
+    stage.parentNode.insertBefore(rig, stage); rig.appendChild(stage);
+    const phone = D.createElement("div"); phone.className = "kd-phone"; phone.setAttribute("aria-hidden", "true");
+    phone.innerHTML = '<div class="kd-scr"></div>'; rig.appendChild(phone);
+    const scr = phone.firstChild;
+    const syncPhone = () => {
+      const fp = stage.querySelector(".fp"); if (!fp) return;
+      const c = fp.cloneNode(true); scr.replaceChildren(c);
+      const w = scr.clientWidth || 100; scr.style.setProperty("--pk", (w / 400).toFixed(4));
+    };
+    new MutationObserver(syncPhone).observe(stage, { childList: true }); syncPhone();
+    new ResizeObserver(() => { const w = scr.clientWidth; if (w) scr.style.setProperty("--pk", (w / 400).toFixed(4)); }).observe(scr);
+
+    const shapes = D.createElement("div"); shapes.className = "kd-shapes"; shapes.setAttribute("aria-hidden", "true");
+    const cube3 = (s, t) => `<div class="kd-cube3" style="--s:${s}px;--t:${t}s"><i></i><i></i><i></i><i></i><i></i><i></i></div>`;
+    shapes.innerHTML =
+      `<div class="kd-shape" style="left:3%;top:6%;--z:-26">${cube3(34, 20)}</div>` +
+      `<div class="kd-shape" style="left:44%;top:3%;--z:30">${cube3(22, 14)}</div>` +
+      `<div class="kd-shape" style="right:3%;top:2%;--z:-34"><div class="kd-ring" style="--s:96px;--t:16s"></div></div>` +
+      `<div class="kd-shape" style="left:40%;bottom:8%;--z:22">${cube3(26, 24)}</div>` +
+      `<div class="kd-shape" style="left:47%;top:46%;--z:-14"><div class="kd-ring" style="--s:40px;--t:11s"></div></div>`;
+    hero.insertBefore(shapes, hero.firstChild);
+
+    let gyro = false;
+    const setHero = (nx, ny, live) => {
+      if (rm()) return;
+      rig.style.setProperty("--dx", (nx * 12).toFixed(2)); rig.style.setProperty("--dy", (-ny * 8).toFixed(2)); rig.classList.toggle("kd-live", !!live);
+      hero.style.setProperty("--hx", nx.toFixed(3)); hero.style.setProperty("--hy", ny.toFixed(3));
+    };
+    tasks.add(e => {
+      if (!e || e.pointerType !== "mouse" || gyro) return;
+      const r = hero.getBoundingClientRect(); if (e.clientY > r.bottom + 100) return;
+      setHero(clamp((e.clientX / innerWidth - .5) * 2, -1, 1), clamp(((e.clientY - r.top) / r.height - .5) * 2, -1, 1), true);
+    });
+    hero.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !gyro) setHero(0, 0, false); });
+    let scrollRaf = 0;
+    addEventListener("scroll", () => { if (scrollRaf) return; scrollRaf = requestAnimationFrame(() => { scrollRaf = 0;
+      if (gyro || FINE.matches) return; const r = hero.getBoundingClientRect(); const p = clamp(-r.top / Math.max(1, r.height), -1, 1);
+      setHero(Math.sin(p * 2.4) * .8, p * 1.2, false); }); }, { passive: true });
+
+    const cap = q1(".showcase .caption");
+    if (cap) {
+      const gb = D.createElement("button"); gb.type = "button"; gb.className = "kd-gyro"; gb.setAttribute("aria-pressed", "false");
+      gb.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="13" rx="1.6"/><path d="M1.5 6c-.8 1.3-.8 2.7 0 4M14.5 6c.8 1.3.8 2.7 0 4"/></svg><span>Tilt with your phone</span>';
+      if ("DeviceOrientationEvent" in window && matchMedia("(hover: none)").matches) gb.classList.add("kd-can");
+      const pause = q1("#hero-pause");
+      if (pause && pause.parentNode === cap) cap.insertBefore(gb, pause); else cap.appendChild(gb);
+      const onOrient = e => {
+        if (!gyro || e.gamma == null) return;
+        setHero(clamp(e.gamma / 30, -1, 1), clamp((e.beta - 45) / 30, -1, 1), true);
+      };
+      gb.addEventListener("click", async () => {
+        if (gyro) { gyro = false; removeEventListener("deviceorientation", onOrient); gb.setAttribute("aria-pressed", "false"); gb.lastChild.textContent = "Tilt with your phone"; setHero(0, 0, false); return; }
+        try {
+          if (typeof DeviceOrientationEvent.requestPermission === "function") { const r = await DeviceOrientationEvent.requestPermission(); if (r !== "granted") { gb.lastChild.textContent = "Tilt not allowed"; return; } }
+          gyro = true; addEventListener("deviceorientation", onOrient); gb.setAttribute("aria-pressed", "true"); gb.lastChild.textContent = "Stop tilting";
+        } catch (err) { gb.lastChild.textContent = "Tilt not available"; }
+      });
+    }
+  }
+
+  /* ------------------------------------------------------------ flip cards for promises ------------------------------------------------------------ */
+  const PICONS = [
+    '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20.5 19.5 7H32a1 1 0 0 1 1 1v12.5L19.5 34z" fill="currentColor" fill-opacity=".12"/><circle cx="26.5" cy="13.5" r="2.6"/><path d="M15 21h7M15 25h4"/></svg>',
+    '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="10" width="20" height="16" rx="2.5" fill="currentColor" fill-opacity=".1"/><rect x="10" y="15" width="20" height="16" rx="2.5" fill="currentColor" fill-opacity=".18"/><rect x="16" y="20" width="20" height="16" rx="2.5" fill="currentColor" fill-opacity=".3"/></svg>',
+    '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="11" y="3.5" width="18" height="33" rx="4" fill="currentColor" fill-opacity=".12"/><path d="M17.5 7.5h5M18 32.5h4"/><path d="M15 15h10M15 19h7M15 23h9" stroke-opacity=".7"/></svg>',
+    '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10h30v19H17l-7 6v-6H5z" fill="currentColor" fill-opacity=".12"/><path d="m13 19.5 4 4 9-9"/></svg>'
+  ];
+  qa(".promises li").forEach((li, i) => {
+    const strong = li.querySelector("strong"), span = li.querySelector("span"); if (!strong || !span) return;
+    const flip = D.createElement("div"); flip.className = "kd-flip";
+    const front = D.createElement("div"); front.className = "kd-face kd-front"; front.innerHTML = PICONS[i % 4]; front.querySelector("svg").setAttribute("aria-hidden", "true"); front.appendChild(strong);
+    const back = D.createElement("div"); back.className = "kd-face kd-back";
+    const bt = D.createElement("b"); bt.className = "kd-back-t"; bt.setAttribute("aria-hidden", "true"); bt.textContent = strong.textContent;
+    back.append(bt, span); flip.append(front, back); li.appendChild(flip);
+    li.tabIndex = 0;
+    const toggle = () => li.classList.toggle("kd-flipped");
+    li.addEventListener("click", toggle);
+    li.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+  });
+
+  /* ------------------------------------------------------------ build cube ------------------------------------------------------------ */
+  const ic = p => `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const FACES = [
+    ["Your idea", ic('<path d="M24 6a12 12 0 0 0-7 21.8V33h14v-5.2A12 12 0 0 0 24 6z" fill="currentColor" fill-opacity=".14"/><path d="M19 38h10M21 42h6"/>')],
+    ["3 colours", ic('<circle cx="18" cy="20" r="10" fill="currentColor" fill-opacity=".35"/><circle cx="30" cy="20" r="10" fill="currentColor" fill-opacity=".2"/><circle cx="24" cy="30" r="10" fill="currentColor" fill-opacity=".1"/>')],
+    ["Template", ic('<rect x="6" y="8" width="36" height="32" rx="4" fill="currentColor" fill-opacity=".1"/><path d="M6 16h36M14 24h12M14 30h8"/><rect x="30" y="22" width="7" height="12" rx="1.5" fill="currentColor" fill-opacity=".3"/>')],
+    ["Build", ic('<path d="m17 15-9 9 9 9M31 15l9 9-9 9M27 11l-6 26"/>')],
+    ["Launch", ic('<path d="M24 5c7 5 9 13 7 22l-4 6h-6l-4-6c-2-9 0-17 7-22z" fill="currentColor" fill-opacity=".15"/><circle cx="24" cy="18" r="3.2"/><path d="M17 27l-5 6 6 1M31 27l5 6-6 1M22 37l2 6 2-6"/>')],
+    ["Kinetic", '<svg viewBox="0 0 28 28" aria-hidden="true"><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>']
+  ];
+  const howHead = q1("#how-title")?.closest(".head");
+  if (howHead) {
+    const box = D.createElement("div"); box.className = "kd-cubebox"; box.tabIndex = 0;
+    box.setAttribute("role", "img"); box.setAttribute("aria-label", "A 3D cube with one step on each face. Drag, swipe or use the arrow keys to spin it.");
+    box.innerHTML = `<div class="kd-stage"><div class="kd-cube">${FACES.map(([n, s]) => `<div>${s}<span>${n}</span></div>`).join("")}</div></div><div class="kd-shadow"></div><small>Drag to spin</small>`;
+    howHead.classList.add("kd-has-cube"); howHead.appendChild(box);
+    const cube = box.querySelector(".kd-cube");
+    let rx = -18, ry = 30, vx = 0, vy = .18, drag = null, seen = false, looping = false;
+    const draw = () => { cube.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`; };
+    draw();
+    const loop = () => {
+      if (looping) return; looping = true;
+      const step = () => {
+        if (!seen) { looping = false; return; }
+        if (!drag) {
+          if (!rm()) { vy += (.18 - vy) * .02; } else { vy *= .9; }
+          vx *= .94; ry += vy; rx = clamp(rx + vx, -70, 70); rx += (-18 - rx) * .01;
+        }
+        draw(); requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+    new IntersectionObserver(es => { seen = es[0].isIntersecting; if (seen) loop(); }).observe(box);
+    box.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false }; vx = vy = 0; });
+    box.addEventListener("pointermove", e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.moved) { if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return; if (e.pointerType !== "mouse" && Math.abs(dy) > Math.abs(dx)) { drag = null; return; } drag.moved = true; try { box.setPointerCapture(e.pointerId); } catch (_) {} }
+      vy = dx * .5; vx = -dy * .35; ry += vy; rx = clamp(rx + vx, -70, 70); drag.x = e.clientX; drag.y = e.clientY; draw();
+    });
+    const end = () => { drag = null; };
+    box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end); box.addEventListener("lostpointercapture", end);
+    box.addEventListener("keydown", e => {
+      const k = { ArrowLeft: [0, -90], ArrowRight: [0, 90], ArrowUp: [90, 0], ArrowDown: [-90, 0] }[e.key]; if (!k) return;
+      e.preventDefault(); rx = clamp(rx + k[0], -90, 90); ry += k[1]; vy = 0; cube.style.transition = "transform .5s var(--ease-out)"; draw(); setTimeout(() => { cube.style.transition = ""; }, 520);
+    });
+  }
+
+  /* ------------------------------------------------------------ exploded isometric website ------------------------------------------------------------ */
+  const visHead = q1("#vision-title")?.closest(".head");
+  if (visHead) {
+    const cx = 150, W = 120, Hh = 60;
+    const P = (cy, u, v) => [cx + (u - v) * W, cy - Hh + (u + v) * Hh];
+    const f = p => p.map(n => n.toFixed(1)).join(",");
+    const quad = (cy, u0, v0, u1, v1, cls) => `<polygon class="${cls}" points="${[P(cy, u0, v0), P(cy, u1, v0), P(cy, u1, v1), P(cy, u0, v1)].map(f).join(" ")}"/>`;
+    const plate = (cy, t) => {
+      const T = P(cy, 0, 0), R = P(cy, 1, 0), B = P(cy, 1, 1), L = P(cy, 0, 1);
+      return `<polygon class="side1" points="${f(L)} ${f(B)} ${B[0]},${B[1] + t} ${L[0]},${L[1] + t}"/><polygon class="side2" points="${f(B)} ${f(R)} ${R[0]},${R[1] + t} ${B[0]},${B[1] + t}"/>` +
+        `<polygon class="top" points="${f(T)} ${f(R)} ${f(B)} ${f(L)}" stroke-width="1"/>`;
+    };
+    const base = 190;
+    const L0 = plate(base, 10) + quad(base, 0, 0, 1, .1, "acs") + [.03, .06, .09].map(u => quad(base, u, .03, u + .018, .07, "mu")).join("") +
+      quad(base, .05, .16, .95, .2, "mu") + quad(base, .05, .9, .95, .95, "mu");
+    const L1 = plate(base, 6) + quad(base, .06, .14, .94, .58, "ac") + quad(base, .1, .2, .5, .27, "acs") + quad(base, .1, .31, .4, .35, "acs") + quad(base, .1, .4, .3, .5, "top");
+    const L2 = plate(base, 4) + [[.06, .3], [.37, .61], [.68, .92]].map(([a, b]) => quad(base, a, .64, b, .9, "acs") + quad(base, a + .04, .68, a + .1, .74, "ac")).join("");
+    const L3 = quad(base, .62, .2, .9, .3, "ac") + quad(base, .62, .33, .86, .4, "ink") +
+      `<path class="ink" d="M${P(base, .78, .5)[0]},${P(base, .78, .5)[1] - 14} l0,22 l6,-6 l5,10 l3,-1.5 l-5,-10 l8,0 z" style="opacity:.9"/>`;
+    const iso = D.createElement("div"); iso.className = "kd-iso"; iso.tabIndex = 0; iso.setAttribute("role", "button");
+    iso.setAttribute("aria-label", "Drawing of a website's layers. Press to pull the layers apart.");
+    iso.setAttribute("aria-pressed", "false");
+    iso.innerHTML = `<svg viewBox="0 0 300 270" aria-hidden="true">
+      <ellipse cx="150" cy="${base + 70}" rx="118" ry="10" fill="currentColor" opacity=".08"/>
+      <path class="gd" d="M${cx - W} ${base} v-130 M${cx + W} ${base} v-130 M${cx} ${base + Hh} v-130"/>
+      <g class="ly">${L0}</g><g class="ly ly1">${L1}</g><g class="ly ly2">${L2}</g><g class="ly ly3">${L3}</g></svg><small>Tap to pull it apart</small>`;
+    visHead.classList.add("kd-has-iso"); visHead.appendChild(iso);
+    const tog = force => { const o = iso.classList.toggle("kd-open", force); iso.setAttribute("aria-pressed", String(o)); };
+    iso.addEventListener("click", e => tog(e.pointerType === "mouse" && FINE.matches ? true : undefined));
+    iso.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tog(); } });
+    if (FINE.matches) { iso.addEventListener("pointerenter", () => iso.classList.add("kd-open")); iso.addEventListener("pointerleave", () => { iso.classList.remove("kd-open"); iso.setAttribute("aria-pressed", "false"); }); }
+    if ("IntersectionObserver" in window && !rm()) {
+      const io = new IntersectionObserver(es => { if (es[0].isIntersecting) { setTimeout(() => iso.classList.add("kd-in"), 250); io.disconnect(); } }, { threshold: .4 });
+      io.observe(iso);
+    } else iso.classList.add("kd-in");
+  }
+
+  /* ------------------------------------------------------------ 3D paint chips ------------------------------------------------------------ */
+  const labHead = q1("#lab-title")?.closest(".head");
+  if (labHead) {
+    const chips = D.createElement("div"); chips.className = "kd-chips"; chips.setAttribute("role", "img");
+    const NAMES = ["Main", "Background", "Accent"];
+    chips.innerHTML = `<div class="kd-fan">${NAMES.map(n => `<div class="kd-chip"><b></b><span>${n}<em>#000000</em></span></div>`).join("")}</div><small>Your colours</small>`;
+    labHead.classList.add("kd-has-chips"); labHead.appendChild(chips);
+    const fan = chips.firstChild;
+    const paint = () => {
+      const vals = [1, 2, 3].map(n => (q1("#c" + n + "t")?.value || "").toUpperCase());
+      qa(".kd-chip", chips).forEach((c, i) => { c.style.setProperty("--c", vals[i]); c.querySelector("em").textContent = vals[i]; });
+      chips.setAttribute("aria-label", "Paint chips of your colours: main " + vals[0] + ", background " + vals[1] + ", accent " + vals[2]);
+    };
+    paint();
+    const checks = q1("#checks"); if (checks) new MutationObserver(paint).observe(checks, { childList: true });
+    D.addEventListener("input", e => { if (/^c[123]$/.test(e.target.id)) requestAnimationFrame(paint); });
+    chips.addEventListener("click", () => chips.classList.toggle("kd-open"));
+    chips.addEventListener("pointermove", e => {
+      if (e.pointerType !== "mouse" || rm()) return; const r = chips.getBoundingClientRect();
+      fan.style.setProperty("--cx", (((e.clientX - r.left) / r.width - .5) * 2).toFixed(2)); fan.style.setProperty("--cy", (((e.clientY - r.top) / r.height - .5) * 2).toFixed(2));
+    });
+    chips.addEventListener("pointerleave", () => { fan.style.setProperty("--cx", "0"); fan.style.setProperty("--cy", "0"); });
+  }
+
+  /* ------------------------------------------------------------ click ripple (not in the pricing section) ------------------------------------------------------------ */
+  D.addEventListener("pointerdown", e => {
+    if (rm()) return;
+    const host = e.target.closest(".btn, .chip, .preset, .menu-btn"); if (!host || inQuote(host)) return;
+    const r = host.getBoundingClientRect(); const s = D.createElement("span"); s.className = "kd-ripple"; s.setAttribute("aria-hidden", "true");
+    s.style.left = (e.clientX - r.left) + "px"; s.style.top = (e.clientY - r.top) + "px"; s.style.setProperty("--rs", (Math.hypot(r.width, r.height) / 10).toFixed(1));
+    host.appendChild(s); s.addEventListener("animationend", () => s.remove()); setTimeout(() => s.remove(), 900);
+  }, { passive: true });
+
+  /* ------------------------------------------------------------ moving light source ------------------------------------------------------------ */
+  tasks.add(e => { if (!e || e.pointerType !== "mouse" || rm()) return;
+    H.style.setProperty("--lx", ((e.clientX / innerWidth - .5) * 2).toFixed(3)); H.style.setProperty("--ly", ((e.clientY / innerHeight - .5) * 2).toFixed(3)); });
+  let lr = 0;
+  addEventListener("scroll", () => { if (lr || FINE.matches) return; lr = requestAnimationFrame(() => { lr = 0; if (rm()) return;
+    const p = scrollY / Math.max(1, D.body.scrollHeight - innerHeight); H.style.setProperty("--lx", Math.sin(p * Math.PI * 6).toFixed(3)); H.style.setProperty("--ly", (Math.cos(p * Math.PI * 4) * .6).toFixed(3)); }); }, { passive: true });
+
+  /* ======================================================== Part 2 behaviour: pricing extras ======================================================== */
+  const money = n => "£" + n.toLocaleString("en-GB", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const packId = () => { const r = q1('#packs input[name="pack"]:checked'); return r ? r.value : "business"; };
+  const qLines = () => {
+    const out = [];
+    for (const dt of qa("#q-lines dt")) {
+      const name = dt.textContent.trim(); if (/^Deposit/.test(name) || /^Hosting/.test(name)) break;
+      const raw = (dt.nextElementSibling || {}).textContent || "";
+      const neg = /−|-/.test(raw), v = parseFloat(raw.replace(/[^0-9.]/g, ""));
+      if (!isNaN(v)) out.push([name, neg ? -v : v]);
+    }
+    return out;
+  };
+  const refreshQuote = [];
+  let pendQ = 0;
+  const scheduleQuote = () => { if (pendQ) return; pendQ = requestAnimationFrame(() => { pendQ = 0; refreshQuote.forEach(fn => { try { fn(); } catch (err) {} }); }); };
+  const qlinesEl = q1("#q-lines"), total = q1("#quote .total");
+  if (qlinesEl) new MutationObserver(scheduleQuote).observe(qlinesEl, { childList: true, subtree: true, characterData: true });
+
+  /* quote breakdown chart */
+  let donut = null;
+  if (total && qlinesEl) {
+    donut = D.createElement("div"); donut.className = "kE-donut";
+    donut.innerHTML = `<div class="mid"><svg viewBox="0 0 104 104" aria-hidden="true"><circle class="track" cx="52" cy="52" r="42"/></svg><span>one-off<strong></strong></span></div><ul aria-label="What makes up your estimate"></ul>`;
+    qlinesEl.after(donut);
+  }
+  const CIRC = 2 * Math.PI * 42, segEls = new Map();
+  function drawDonut() {
+    if (!donut) return;
+    const raw = qLines(); if (!raw.length) return;
+    const parts = []; let disc = 0;
+    raw.forEach(([n, v]) => { if (v < 0) disc += -v; else parts.push([n.replace(/ × \d+$/, ""), n, v]); });
+    if (parts.length && disc) parts[0][2] = Math.max(0, parts[0][2] - disc);
+    const sum = parts.reduce((s, p) => s + p[2], 0) || 1;
+    const svg = donut.querySelector("svg"); let off = 0; const seen = new Set();
+    parts.forEach(([key, , v], i) => {
+      let c = segEls.get(key);
+      if (!c) { c = D.createElementNS("http://www.w3.org/2000/svg", "circle"); c.setAttribute("class", "seg"); c.setAttribute("cx", 52); c.setAttribute("cy", 52); c.setAttribute("r", 42);
+        c.style.strokeDasharray = `0 ${CIRC}`; c.style.strokeDashoffset = -off; svg.appendChild(c); segEls.set(key, c); c.getBoundingClientRect(); }
+      const len = v / sum * CIRC;
+      c.style.stroke = `var(--kd${i % 7})`; c.style.strokeDasharray = `${Math.max(0, len - (parts.length > 1 ? 1.5 : 0))} ${CIRC}`; c.style.strokeDashoffset = -off; c.style.opacity = 1;
+      off += len; seen.add(key);
+    });
+    segEls.forEach((c, k) => { if (!seen.has(k)) { c.style.strokeDasharray = `0 ${CIRC}`; c.style.opacity = 0; setTimeout(() => { if (!seen.has(k) && segEls.get(k) === c && c.style.opacity === "0") { c.remove(); segEls.delete(k); } }, 650); } });
+    donut.querySelector("strong").textContent = money(raw.reduce((s, [, v]) => s + v, 0));
+    donut.querySelector("ul").innerHTML = parts.map(([, n, v], i) => `<li><i style="background:var(--kd${i % 7})"></i><span title="${esc(n)}">${esc(n)}${i === 0 && disc ? " (after 20% off)" : ""}</span><em>${Math.round(v / sum * 100)}%</em></li>`).join("");
+  }
+  refreshQuote.push(drawDonut);
+
+  /* smart quote hints */
+  const addonsEl = q1("#addons");
+  let hint = null;
+  if (addonsEl) {
+    hint = D.createElement("div"); hint.className = "kE-hint"; hint.setAttribute("aria-live", "polite");
+    hint.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><g class="rays"><path d="M12 1.5v1.6M4.6 4.6l1.1 1.1M19.4 4.6l-1.1 1.1M2 11h1.6M20.4 11H22"/></g><path d="M8.5 14.5a5 5 0 1 1 7 0c-.8.8-1.2 1.6-1.2 2.5H9.7c0-.9-.4-1.7-1.2-2.5Z"/><path d="M9.8 19.5h4.4M10.6 22h2.8"/></svg><p></p>';
+    addonsEl.after(hint);
+  }
+  const ticked = id => { const i = q1(`#addons [data-a="${id}"]`); return !!(i && i.checked); };
+  function hintText() {
+    const p = packId(), ex = (q1("#existing") || {}).checked, care = (q1("#care") || {}).checked;
+    if (ex && p === "starter") return "The 20% off for an existing website applies to the Business website or Online shop, not the Starter.";
+    if (ticked("extra") && p === "starter") return "The Starter website is one page. The Business website includes up to 5 pages.";
+    if (ticked("copy")) return "We write the copy with you anyway. This add-on is for whole pages written for you, at £60 a page.";
+    if (care === false) return "Hosting and care covers your domain, hosting, security updates, backups and small text changes for £20 a month, with no long contract.";
+    if (ex) return "Add your current website's link to your brief so we can see what you like about it.";
+    if (p === "shop") return "The Online shop includes up to 20 products, card payments and delivery options.";
+    return "Tip: tap ••• on any add-on to see what's included before you tick it.";
+  }
+  function drawHint() {
+    if (!hint) return;
+    const t = hintText(), p = hint.querySelector("p"); if (p.textContent === t) return;
+    if (rm() || !p.textContent) { p.textContent = t; return; }
+    p.classList.add("swap"); setTimeout(() => { p.textContent = t; p.classList.remove("swap"); }, 180);
+  }
+  refreshQuote.push(drawHint);
+
+  /* package timeline */
+  const PT = [["starter", "Starter website", 1, 2], ["business", "Business website", 2, 4], ["shop", "Online shop", 4, 6]];
+  const packsEl = q1("#packs"), time = D.createElement("div"); time.className = "kE-time";
+  time.innerHTML = `<span class="t">How long each package takes, from your go-ahead</span>${PT.map(([id, n, a, b]) => `<button type="button" data-pk="${id}" aria-label="${n}: ${a} to ${b} weeks. Choose this package"><span>${n}</span><span class="track"><span class="seg" style="left:${a / 6 * 100}%;width:${(b - a) / 6 * 100}%"><span>${a}–${b} wk</span></span></span></button>`).join("")}
+    <div class="axis" aria-hidden="true"><span></span><div><span>0</span><span>2</span><span>4</span><span>6 weeks</span></div></div>`;
+  if (packsEl) packsEl.after(time);
+  time.addEventListener("click", e => { const b = e.target.closest("[data-pk]"); if (!b) return; const r = q1(`#packs input[value="${b.dataset.pk}"]`); if (r && !r.checked) r.click(); });
+  function drawTime() { const id = packId(); time.querySelectorAll("[data-pk]").forEach(b => { b.classList.toggle("sel", b.dataset.pk === id); b.setAttribute("aria-pressed", String(b.dataset.pk === id)); }); }
+  refreshQuote.push(drawTime);
+
+  /* how you pay */
+  const pay = D.createElement("div"); pay.className = "kE-pay";
+  if (total) (donut || qlinesEl || total.lastChild).after(pay);
+  function drawPay() {
+    const t = qLines().reduce((s, [, v]) => s + v, 0), half = t / 2, care = (q1("#care") || {}).checked;
+    pay.innerHTML = `<span class="t">How you pay</span><div class="split" aria-hidden="true"><b></b><b></b></div>
+      <div class="lbl"><div><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg><div><strong>${money(half)}</strong><span>to book your start date</span></div></div>
+      <div><div><strong>${money(t - half)}</strong><span>when your site goes live</span></div><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5c2.5 1.6 3.6 4.3 3.2 7.6L8 12.5 4.8 9.1C4.4 5.8 5.5 3.1 8 1.5Z"/><circle cx="8" cy="6" r="1.3"/><path d="M5 10.5 3 12.8l2.6-.2M11 10.5l2 2.3-2.6-.2"/></svg></div></div>
+      ${care ? '<span class="care">Then £20 a month for hosting and care, from go-live.</span>' : ""}`;
+    if (rm()) pay.classList.add("in"); else { pay.classList.remove("in"); requestAnimationFrame(() => requestAnimationFrame(() => pay.classList.add("in"))); }
+  }
+  refreshQuote.push(drawPay);
+
+  /* chart bars animate in when the estimate scrolls into view */
+  if (total && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver(es => es.forEach(x => { if (!x.isIntersecting) return; if (x.target === time) time.classList.add("in"); else drawPay(); io.unobserve(x.target); }), { threshold: .2 });
+    io.observe(total); io.observe(time);
+  } else time.classList.add("in");
+  if (rm()) time.classList.add("in");
+
+  scheduleQuote();
+})();
+
+</script>
+</body></html>
