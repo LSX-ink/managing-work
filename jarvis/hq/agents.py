@@ -28,7 +28,9 @@ UK_CITIES = ["Birmingham", "Manchester", "Leeds", "London", "Liverpool", "Bristo
 WORLD_CITIES = ["Dublin, Ireland", "New York, USA", "Sydney, Australia", "Lagos, Nigeria", "Houston, USA",
                 "Cork, Ireland", "Melbourne, Australia", "Atlanta, USA", "Johannesburg, South Africa", "Chicago, USA",
                 "Auckland, New Zealand", "Galway, Ireland", "Los Angeles, USA", "Accra, Ghana", "Brisbane, Australia",
-                "Dallas, USA", "Nairobi, Kenya", "Miami, USA", "Dubai, UAE", "Cape Town, South Africa"]
+                "Dallas, USA", "Nairobi, Kenya", "Miami, USA", "Dubai, UAE", "Cape Town, South Africa",
+                "Perth, Australia", "Wellington, New Zealand", "Singapore", "Phoenix, USA", "Durban, South Africa",
+                "Abu Dhabi, UAE", "Adelaide, Australia", "Seattle, USA", "Pretoria, South Africa", "Limerick, Ireland"]
 
 
 @dataclass
@@ -188,7 +190,8 @@ async def scout(ctx: Ctx) -> str:
     import kinetic_store as st
     s, b = ctx.settings, ctx.brain
     turn = b.get("scout.turn", 0)
-    city = WORLD_CITIES[(turn // 2) % len(WORLD_CITIES)] if turn % 2 else UK_CITIES[(turn // 2) % len(UK_CITIES)]
+    # owner, 3 Nov 2026: "focus on other countries, not just UK": three world runs to every UK one
+    city = UK_CITIES[(turn // 4) % len(UK_CITIES)] if turn % 4 == 0 else WORLD_CITIES[(turn - turn // 4 - 1) % len(WORLD_CITIES)]
     trade = _trade(b)
     b.set("scout.turn", turn + 1)
     b.set("scout.trade_turn", b.get("scout.trade_turn", 0) + 1)

@@ -123,7 +123,19 @@ def _fresh_busy(settings) -> list[dict]:
            if not closed_or_busy(by_name.get(p["name"].lower())) and busy_score(p) > 0
            and not NOT_A_LEAD.search(str(p.get("kind") or ""))
            and (by_name.get(p["name"].lower()) or {}).get("draft_channel") != "dm"]  # on the owner's DM list already
-    return mix_trades(sorted(out, key=busy_score, reverse=True))
+    return mix_countries(mix_trades(sorted(out, key=busy_score, reverse=True)))
+
+
+def mix_countries(rows: list[dict]) -> list[dict]:
+    """Two businesses abroad for every one in the UK, keeping each side's order (owner, 3 Nov 2026: "focus on other
+    countries, not just UK"), for the DM list and the emails alike."""
+    home = [r for r in rows if (r.get("country") or world.HOME) == world.HOME]
+    away = [r for r in rows if (r.get("country") or world.HOME) != world.HOME]
+    out = []
+    while home or away:
+        out += away[:2] + home[:1]
+        away, home = away[2:], home[1:]
+    return out
 
 
 def mix_trades(rows: list[dict]) -> list[dict]:

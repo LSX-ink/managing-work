@@ -232,3 +232,9 @@ def test_weekends_send_only_follow_ups_likeliest_first(tmp_path, monkeypatch):
     monkeypatch.setattr(agents, "_send_first", first)
     asyncio.run(agents.warden(ctx))
     assert sent[0] == "Busy" and outbox.in_hours(datetime(2026, 11, 1, 10, 0))  # Sundays send follow-ups too
+
+
+def test_two_businesses_abroad_for_every_one_in_the_uk():
+    from hq import outbox
+    rows = [{"name": f"UK{i}", "country": "GB"} for i in range(3)] + [{"name": f"US{i}", "country": "US"} for i in range(3)]
+    assert [r["name"] for r in outbox.mix_countries(rows)] == ["US0", "US1", "UK0", "US2", "UK1", "UK2"]
