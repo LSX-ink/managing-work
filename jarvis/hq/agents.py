@@ -30,7 +30,11 @@ WORLD_CITIES = ["Dublin, Ireland", "New York, USA", "Sydney, Australia", "Lagos,
                 "Auckland, New Zealand", "Galway, Ireland", "Los Angeles, USA", "Accra, Ghana", "Brisbane, Australia",
                 "Dallas, USA", "Nairobi, Kenya", "Miami, USA", "Dubai, UAE", "Cape Town, South Africa",
                 "Perth, Australia", "Wellington, New Zealand", "Singapore", "Phoenix, USA", "Durban, South Africa",
-                "Abu Dhabi, UAE", "Adelaide, Australia", "Seattle, USA", "Pretoria, South Africa", "Limerick, Ireland"]
+                "Abu Dhabi, UAE", "Adelaide, Australia", "Seattle, USA", "Pretoria, South Africa", "Limerick, Ireland",
+                # owner, 3 Nov 2026: "South African, American, Asia, everywhere" (English-speaking Asian cities)
+                "Mumbai, India", "Kuala Lumpur, Malaysia", "Manila, Philippines", "Hong Kong", "Bangalore, India",
+                "Bangkok, Thailand", "Gqeberha, South Africa", "Bloemfontein, South Africa", "San Diego, USA",
+                "Austin, USA", "Toronto, Canada", "Delhi, India", "Cebu, Philippines", "Penang, Malaysia"]
 
 
 @dataclass
