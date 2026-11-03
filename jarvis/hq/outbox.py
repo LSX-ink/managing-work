@@ -328,7 +328,7 @@ async def premium_mockup(ctx, p: dict) -> str:
 
 
 def deploy_site() -> None:
-    r = subprocess.run(["npx.cmd", "--yes", "wrangler", "pages", "deploy", ".", "--cwd", str(LIVE), "--project-name",
+    r = subprocess.run(["npx.cmd", "--yes", "wrangler@4.156.2", "pages", "deploy", ".", "--cwd", str(LIVE), "--project-name",
                         "kinetic", "--branch", "main", "--commit-dirty=true"], capture_output=True, text=True, encoding="utf-8", errors="replace",
                        timeout=300)
     if r.returncode != 0:
