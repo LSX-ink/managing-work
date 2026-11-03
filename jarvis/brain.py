@@ -1455,12 +1455,79 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
     return f"{' and '.join(parts)} until {m.group('word').lower() if m.group('word') else _say_clock(hour, minute)}."
 
 
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+_CLOCKS = re.compile(_NAME + r"when (?:do|does|will) (?:the )?clocks? (?P<way>go back|go forward|change|go forwards)(?: this year| next)?" + _END, re.I)
+_SEASON = re.compile(_NAME + r"what season is it(?: now)?" + _END, re.I)
+_QUARTER = re.compile(_NAME + r"what (?:quarter|financial quarter) (?:is it|are we in)(?: now)?" + _END, re.I)
+_NTH_DAY = re.compile(_NAME + r"what(?:'s| is) (?:the )?(?P<n>\d{1,3})(?:st|nd|rd|th) day of (?:the|this) year" + _END, re.I)
+_NTH_WEEKDAY = re.compile(_NAME + r"(?:what(?:'s| is)|when is) the (?P<nth>first|second|third|fourth|last|1st|2nd|3rd|4th) (?P<wd>"
+                          + "|".join(_WEEKDAYS) + r") (?:in|of) " + _MONTH + r"(?: (?P<y>\d{4}))?" + _END, re.I)
+_WEEKDAYS_LEFT = re.compile(_NAME + r"how many (?P<wd>" + "|".join(_WEEKDAYS) + r")s (?:are )?(?:there )?(?:left|remaining) "
+                            r"(?:this|in the) (?P<span>year|month)" + _END, re.I)
+
+
+def _last_sunday(year: int, month: int) -> dt.date:
+    last = dt.date(year, month, calendar.monthrange(year, month)[1])
+    return last - dt.timedelta(days=(last.weekday() + 1) % 7)
+
+
+def _nth_weekday(year: int, month: int, weekday: int, nth: int) -> dt.date | None:
+    if nth == -1:
+        last = dt.date(year, month, calendar.monthrange(year, month)[1])
+        return last - dt.timedelta(days=(last.weekday() - weekday) % 7)
+    first = dt.date(year, month, 1)
+    day = first + dt.timedelta(days=(weekday - first.weekday()) % 7 + 7 * (nth - 1))
+    return day if day.month == month else None
+
+
+def _calendar_more(said: str, today: dt.date) -> str | None:
+    """'When do the clocks go back?', 'what season is it?', 'what quarter is it?', 'the 100th day of the year',
+    'the first Monday in December', 'how many Fridays are left this year?'."""
+    if m := _CLOCKS.match(said):
+        way = m.group("way").lower()
+        changes = [(d, "forward") for y in (today.year, today.year + 1) for d in [_last_sunday(y, 3)]] + \
+                  [(d, "back") for y in (today.year, today.year + 1) for d in [_last_sunday(y, 10)]]
+        wanted = [c for c in sorted(changes) if c[0] >= today and (way == "change" or c[1] in way)]
+        day, which = wanted[0]
+        when = "today" if day == today else f"on Sunday the {_ordinal(day.day)} of {day:%B}{f' {day.year}' if day.year != today.year else ''}"
+        return f"The clocks go {which} an hour {when}, at {'1 am' if which == 'forward' else '2 am'}."
+    if _SEASON.match(said):
+        season = ("winter", "spring", "summer", "autumn")[today.month % 12 // 3]
+        return f"It's {season}."
+    if _QUARTER.match(said):
+        q = (today.month - 1) // 3 + 1
+        return f"It's Q{q}, quarter {q} of {today.year}."
+    if m := _NTH_DAY.match(said):
+        n = int(m.group("n"))
+        if not 1 <= n <= (366 if calendar.isleap(today.year) else 365):
+            return None
+        d = dt.date(today.year, 1, 1) + dt.timedelta(days=n - 1)
+        return f"Day {n} of {today.year} is {d:%A} the {_ordinal(d.day)} of {d:%B}."
+    if m := _NTH_WEEKDAY.match(said):
+        word = m.group("mon").lower()
+        month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+        nth = {"first": 1, "1st": 1, "second": 2, "2nd": 2, "third": 3, "3rd": 3, "fourth": 4, "4th": 4, "last": -1}[m.group("nth").lower()]
+        year = int(m.group("y")) if m.group("y") else today.year + (month < today.month)
+        d = _nth_weekday(year, month, _WEEKDAYS.index(m.group("wd").lower()), nth)
+        if d is None:
+            return None
+        return f"The {m.group('nth').lower()} {m.group('wd').capitalize()} in {d:%B}{f' {year}' if year != today.year else ''} is the {_ordinal(d.day)}."
+    if m := _WEEKDAYS_LEFT.match(said):
+        wd = _WEEKDAYS.index(m.group("wd").lower())
+        end = dt.date(today.year, 12, 31) if m.group("span").lower() == "year" else \
+            dt.date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
+        first = today + dt.timedelta(days=(wd - today.weekday()) % 7 or 7)  # not counting today
+        n = 0 if first > end else (end - first).days // 7 + 1
+        return f"There {'is' if n == 1 else 'are'} {n} {m.group('wd').capitalize()}{'' if n == 1 else 's'} left this {m.group('span').lower()}, not counting today."
+    return None
+
+
 def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
     if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)
                   or _calendar_facts(said, today) or _weekday_date(said, today) or _countdown(said, today)
-                  or _relative_day(said, today)) is not None:
+                  or _relative_day(said, today) or _calendar_more(said, today)) is not None:
         return found
     if (found := _time_difference(said)) is not None:
         return found
