@@ -349,7 +349,8 @@ async def premium_mockup(ctx, p: dict) -> str:
     import auto
     base = auto.slugify(re.split(r",| in ", p["name"])[0])
     site = p.get("website") or ""
-    if site and "instagram.com" not in site:  # owner, 3 Nov 2026: "their existing website looks better than what we
+    if site and "instagram.com" not in site and ctx.brain.get("settings.compare_sites", False):  # paid check: off (owner,
+        # 3 Nov 2026: "if that costs credit don't"). When on: "their existing website looks better than what we
         looks = ctx.brain.get(f"looks.{p['id']}")  # created... why would they want to switch?" Judge theirs first,
         if looks is None:  # before paying to build anything
             client = omniroute.make_client(ctx.settings)
@@ -365,6 +366,7 @@ async def premium_mockup(ctx, p: dict) -> str:
         issues = [i for i in await auto.check_live(base) if not auto.their_link_issue(i)]  # ~45 were built while
         if not issues:  # uploads were failing): use it once it passes the same checks, don't pay to build it again
             return f"{SITE}/m/{base}/"
+    auto.COMPARE = bool(ctx.brain.get("settings.compare_sites", False))
     r = await auto.make(f"{p['name']}, {p.get('town') or p.get('address') or ''}".strip(", "), ctx.settings,
                         omniroute.make_client(ctx.settings), p.get("website") or "", (p.get("instagram") or "").lstrip("@"))
     if (r.get("audit") or {}).get("grade") == "good":

@@ -403,6 +403,7 @@ that you'd want to switch? Be honest; a tie or "slightly nicer" is not enough.
 Reply with JSON only: {"clearly_better": true/false, "theirs": 1-10, "ours": 1-10,
 "fix": "if not clearly better: the 2-3 most important concrete changes that would make the redesign beat their site"}"""
 
+COMPARE = False  # the side-by-side judge costs Claude credit; the owner said not to spend it (3 Nov 2026)
 STRONG_SITE = 7  # owner, 3 Nov 2026: "their existing website looks better than what we created... do better"
 
 
@@ -516,7 +517,7 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     await asyncio.to_thread(premium_page.build, folder, out)
     beaten = ""
-    if website and "instagram.com" not in website:  # owner, 3 Nov 2026: ours must clearly beat the site they have
+    if COMPARE and website and "instagram.com" not in website:  # ours must clearly beat the site they have (3 Nov 2026)
         v = await versus(writer, model, website, out / "index.html")
         if v and not v.get("clearly_better"):
             progress(f"Their site holds up ({v.get('theirs')} vs our {v.get('ours')}): redesigning once...")
