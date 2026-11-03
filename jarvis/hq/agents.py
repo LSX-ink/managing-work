@@ -419,7 +419,9 @@ async def warden(ctx: Ctx) -> str:
         return "auto-send is off"
     for note in await asyncio.to_thread(outbox.watch_replies, ctx):
         b.log("warden", note, "warn" if "REPLIED" in note else "info")
-    if not outbox.in_hours(outbox.uk_now()):
+    now = outbox.uk_now()
+    catch_up = b.get(f"warden.catchup.{now.date().isoformat()}") and now.hour < 21  # owner, 3 Nov 2026: credit ran
+    if not outbox.in_hours(now) and not catch_up:  # out mid-day, "carry on": finish the day's limit this evening
         return "outside sending hours (9:00 to 17:30)"
     # owner, 29 Oct 2026: follow-ups had filled the whole day's limit, so no new business got a first email. New first
     # emails and follow-ups now each have their own daily limit, and the two take turns.
