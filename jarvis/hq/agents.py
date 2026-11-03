@@ -13,7 +13,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -236,6 +236,16 @@ async def closer(ctx: Ctx) -> str:
     return f"{made} Instagram DMs ready for you and {len(notes)} follow-ups drafted"
 
 
+RAMP_START, RAMP_STEP, RAMP_MAX = date(2026, 11, 2), 5, 50
+
+
+def weekly_new_cap(base: int, today: date) -> int:
+    """New first emails a day: 15 the week of 2 Nov 2026, then 5 more each week (owner, 3 Nov 2026), topped at 50
+    so a sudden jump doesn't push our emails into spam folders."""
+    weeks = max(0, (today - RAMP_START).days // 7)
+    return min(RAMP_MAX, base + RAMP_STEP * weeks)
+
+
 DM_FOLDER = Path.home() / "OneDrive" / "Desktop" / "Instagram DMs"
 
 
@@ -413,7 +423,8 @@ async def warden(ctx: Ctx) -> str:
         return "outside sending hours (9:00 to 17:30)"
     # owner, 29 Oct 2026: follow-ups had filled the whole day's limit, so no new business got a first email. New first
     # emails and follow-ups now each have their own daily limit, and the two take turns.
-    caps = {"first email": int(b.get("settings.send_per_day", 15)), "follow-up": int(b.get("settings.followups_per_day", 15))}
+    caps = {"first email": weekly_new_cap(int(b.get("settings.send_per_day", 15)), outbox.uk_now().date()),
+            "follow-up": int(b.get("settings.followups_per_day", 15))}
     if outbox.weekend(outbox.uk_now()):  # owner, 29 Oct 2026: new emails Monday to Friday; weekends are for follow-ups
         caps["first email"] = 0
     sent = {k: outbox.sent_today_of(ctx, k) for k in caps}

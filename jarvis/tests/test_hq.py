@@ -239,3 +239,12 @@ def test_countries_take_turns_all_over_the_world():
     rows = [{"name": f"UK{i}", "country": "GB"} for i in range(3)] + [{"name": "US0", "country": "US"},
             {"name": "ZA0", "country": "ZA"}, {"name": "US1", "country": "US"}]
     assert [r["name"] for r in outbox.mix_countries(rows)] == ["UK0", "US0", "ZA0", "UK1", "US1", "UK2"]
+
+
+def test_new_email_cap_grows_five_a_week():
+    from datetime import date
+    from hq.agents import weekly_new_cap
+    assert weekly_new_cap(15, date(2026, 11, 3)) == 15
+    assert weekly_new_cap(15, date(2026, 11, 9)) == 20
+    assert weekly_new_cap(15, date(2026, 11, 16)) == 25
+    assert weekly_new_cap(15, date(2027, 6, 1)) == 50
