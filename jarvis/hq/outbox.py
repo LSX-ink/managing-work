@@ -24,6 +24,7 @@ import json
 import math
 import re
 import subprocess
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -330,6 +331,12 @@ async def premium_mockup(ctx, p: dict) -> str:
     import omniroute
     sys.path.insert(0, str(Path(__file__).parent / "premium"))
     import auto
+    base = auto.slugify(re.split(r",| in ", p["name"])[0])
+    ready = LIVE / "m" / base / "index.html"
+    if ready.exists() and not ctx.brain.get(f"mockup.{p['name'].lower()}") and             time.time() - ready.stat().st_mtime < 3 * 86400:  # built in the last 3 days and never sent (3 Nov 2026:
+        issues = [i for i in await auto.check_live(base) if not auto.their_link_issue(i)]  # ~45 were built while
+        if not issues:  # uploads were failing): use it once it passes the same checks, don't pay to build it again
+            return f"{SITE}/m/{base}/"
     r = await auto.make(f"{p['name']}, {p.get('town') or p.get('address') or ''}".strip(", "), ctx.settings,
                         omniroute.make_client(ctx.settings), p.get("website") or "", (p.get("instagram") or "").lstrip("@"))
     if (r.get("audit") or {}).get("grade") == "good":
