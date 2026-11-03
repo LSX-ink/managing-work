@@ -34,6 +34,14 @@ def zellige(gold: str) -> str:
     return "url(\"data:image/svg+xml," + svg.replace("#", "%23").replace("<", "%3C").replace(">", "%3E") + "\")"
 
 
+def trade_words(html: str, c: dict) -> str:
+    """A restaurant or cafe has a menu, not "services" (owner, 3 Nov 2026: the mock-ups must beat their own sites)."""
+    if not c.get("food"):
+        return html
+    return (html.replace(">Services<", ">Menu<").replace(">Services &amp; prices<", ">The menu<")
+            .replace('data-t="Services"', 'data-t="Menu"'))
+
+
 def build(src: Path, out: Path) -> None:
     c = json.load(open(src / "config.json", encoding="utf-8"))
     col = c["colours"]
@@ -57,7 +65,14 @@ def build(src: Path, out: Path) -> None:
             w, h = im.size  # judge the background by the whole border, not one corner (a thin dark frame fooled it)
             edge = [im.getpixel((x, y)) for x in range(w) for y in (0, h - 1)] + [im.getpixel((x, y)) for y in range(h) for x in (0, w - 1)]
             white_bg = sum(1 for r, g, b, a in edge if a > 200 and min(r, g, b) > 235) > len(edge) * .5
-            px = [(*ink, 0 if (white_bg and r > 235 and g > 235 and b > 235) else a) for r, g, b, a in im.getdata()]
+            colourful = sum(1 for r, g, b, a in im.getdata() if a > 200 and max(r, g, b) - min(r, g, b) > 60) > w * h * .04
+            def paint(r, g, b, a):  # 3 Nov 2026: painting a colourful badge all one colour left a blank disc (Twists & Locs):
+                if white_bg and r > 235 and g > 235 and b > 235:  # a colourful mark keeps its colours, only its dark
+                    return (*ink, 0)  # lettering is painted
+                if colourful and not (max(r, g, b) < 90 and max(r, g, b) - min(r, g, b) < 40):
+                    return (r, g, b, a)
+                return (*ink, a)
+            px = [paint(*p) for p in im.getdata()]
             im.putdata(px)
         im = im.crop(im.getbbox() or (0, 0, *im.size)); im.save(out / "logo.png"); logo = "logo.png"
     hero = [ph(f) for f in c["hero"]]
@@ -85,7 +100,7 @@ def build(src: Path, out: Path) -> None:
                                        "lat": lat, "lng": lng, "fonts": FONTS[c.get("fonts", c["layout"])]})
         from compare import add as add_compare; html = add_compare(html, c, src, out)
         from depth3d import add as add_3d; html = add_3d(html, c, out)  # only when the config asks for it
-        (out / "index.html").write_text(html, encoding="utf-8")
+        (out / "index.html").write_text(trade_words(html, c), encoding="utf-8")
         print("written", c["layout"], len(html) // 1024, "KB,", len(photos), "photos")
         return
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -208,7 +223,7 @@ const gc=getComputedStyle(document.documentElement).getPropertyValue('--gold').t
 </script></body></html>"""
     from compare import add as add_compare; html = add_compare(html, c, src, out)
     from depth3d import add as add_3d; html = add_3d(html, c, out)  # only when the config asks for it
-    (out / "index.html").write_text(html, encoding="utf-8")
+    (out / "index.html").write_text(trade_words(html, c), encoding="utf-8")
     print("written", len(html) // 1024, "KB,", len(photos), "photos")
 
 

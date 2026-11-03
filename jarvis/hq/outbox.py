@@ -332,6 +332,18 @@ async def premium_mockup(ctx, p: dict) -> str:
     sys.path.insert(0, str(Path(__file__).parent / "premium"))
     import auto
     base = auto.slugify(re.split(r",| in ", p["name"])[0])
+    site = p.get("website") or ""
+    if site and "instagram.com" not in site:  # owner, 3 Nov 2026: "their existing website looks better than what we
+        looks = ctx.brain.get(f"looks.{p['id']}")  # created... why would they want to switch?" Judge theirs first,
+        if looks is None:  # before paying to build anything
+            client = omniroute.make_client(ctx.settings)
+            looks = await auto.their_site_looks(getattr(client, "direct", client), ctx.settings.mockup_model, site)
+            ctx.brain.set(f"looks.{p['id']}", looks)
+        if isinstance(looks, dict) and int(looks.get("score") or 0) >= auto.STRONG_SITE:
+            ctx.brain.set(f"strong_site.{p['id']}", True)
+            ctx.brain.log("designer", f"skipped {p['name']}: their site already looks good ({looks.get('score')}/10, "
+                                      f"{looks.get('why', '')})"[:300], "info")
+            return ""
     ready = LIVE / "m" / base / "index.html"
     if ready.exists() and not ctx.brain.get(f"mockup.{p['name'].lower()}") and             time.time() - ready.stat().st_mtime < 3 * 86400:  # built in the last 3 days and never sent (3 Nov 2026:
         issues = [i for i in await auto.check_live(base) if not auto.their_link_issue(i)]  # ~45 were built while

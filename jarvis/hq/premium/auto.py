@@ -113,7 +113,28 @@ def listing_facts(place: dict, instagram: str, website: str) -> dict:
     return {"name": place["displayName"]["text"], "phone": place.get("nationalPhoneNumber", ""),
             "address": place.get("formattedAddress", ""), "hours": hours, "reviews": reviews, "stats": stats,
             "loc": [loc.get("latitude"), loc.get("longitude")] if loc else None, "instagram": instagram.strip("@"),
-            "book_url": website, "book_label": "Book now" if website else "Call us"}
+            "book_url": website, "book_label": book_label(place, website), "food": is_food(place)}
+
+
+FOOD = {"restaurant", "cafe", "coffee_shop", "bakery", "bar", "pub", "meal_takeaway", "meal_delivery", "food",
+        "fast_food_restaurant", "pizza_restaurant", "hamburger_restaurant", "ice_cream_shop", "dessert_shop"}
+
+
+def is_food(place: dict) -> bool:
+    return bool(FOOD & set(place.get("types") or []) or (place.get("primaryType") or "") in FOOD
+                or (place.get("primaryType") or "").endswith("_restaurant"))
+
+
+def book_label(place: dict, website: str) -> str:
+    """The main button in the business's own trade's words (owner, 3 Nov 2026: "Book now" on a burger takeaway)."""
+    if not website:
+        return "Call us"
+    if not is_food(place):
+        return "Book now"
+    types = set(place.get("types") or [])
+    if types & {"meal_takeaway", "meal_delivery"} and "restaurant" not in types:
+        return "Order online"
+    return "Book a table" if types & {"restaurant", "bar", "pub"} or (place.get("primaryType") or "").endswith("_restaurant") else "Plan a visit"
 
 
 def recent_pieces(n: int = 30, leads: Path = LEADS) -> list[str]:
@@ -284,7 +305,8 @@ async def page_shots(page: Path) -> list[bytes]:
     return shots
 
 
-async def review(client, model: str, folder: Path, page: Path, c: dict, layout: str, facts: dict) -> tuple[dict, list[str]]:
+async def review(client, model: str, folder: Path, page: Path, c: dict, layout: str, facts: dict,
+                 extra: str = "") -> tuple[dict, list[str]]:
     """The design review with every website skill (owner, 27 Oct 2026: "always use all the skills so you get the best
     version"). Returns the improved config and the notes; on any failure, the config as it was."""
     import design  # noqa: E402 - Alfred's skills library
@@ -296,7 +318,7 @@ async def review(client, model: str, folder: Path, page: Path, c: dict, layout: 
         content = [{"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
                                                 "data": base64.b64encode(s).decode()}} for s in shots]
         content.append({"type": "text", "text": f"Layout: {layout}. Font presets: {sorted(layouts.FONTS)}.\nPhoto "
-                        f"files: {photos}\n\nConfig:\n{json.dumps(shown, ensure_ascii=False)}"})
+                        f"files: {photos}\n\nConfig:\n{json.dumps(shown, ensure_ascii=False)}" + (f"\n\n{extra}" if extra else "")})
         system = REVIEW_PROMPT + "\n\nOUR DESIGN SKILLS:\n\n" + design.website_pack()
         for attempt in range(REVIEW_TRIES):  # a reply that isn't clean JSON is asked for again (Capello, 27 Oct 2026)
             r = await client.messages.create(model=model, max_tokens=8000, system=system,
@@ -363,6 +385,90 @@ async def phone_shots(their_url: str, ours: Path, folder: Path) -> bool:
     return True
 
 
+LOOKS_PROMPT = """You judge small-business websites for a web design studio that sells redesigns. Look at the screenshots of
+this business's CURRENT website (desktop first screen, then phone first screen). Would a fresh, modern redesign look
+clearly better to the owner? Be strict and honest: a site that already looks modern, clean and professional (good
+photos, good type, clear layout, works on a phone) scores high, and we should leave it alone.
+Reply with JSON only: {"score": 1-10 (10 = already excellent), "why": "one short sentence"}"""
+
+VERSUS_PROMPT = """You are the hard-to-please owner of this business. You get two sets of screenshots, each labelled: "YOUR
+CURRENT WEBSITE" (desktop, phone) and "THE REDESIGN" (desktop, phone). Ignore cookie and pop-up banners on either. Judged on looks alone (first impression, photos,
+typography, polish, how premium and trustworthy it feels), is the redesign CLEARLY better than what you have, enough
+that you'd want to switch? Be honest; a tie or "slightly nicer" is not enough.
+Reply with JSON only: {"clearly_better": true/false, "theirs": 1-10, "ours": 1-10,
+"fix": "if not clearly better: the 2-3 most important concrete changes that would make the redesign beat their site"}"""
+
+STRONG_SITE = 7  # owner, 3 Nov 2026: "their existing website looks better than what we created... do better"
+
+
+async def site_shots(url: str) -> list[bytes]:
+    """A page's first screen on a desktop and on a phone, cookie banners closed."""
+    from playwright.async_api import async_playwright
+    shots = []
+    async with async_playwright() as pw:
+        b = await pw.chromium.launch(channel="msedge", args=["--use-angle=d3d11"])
+        try:
+            for view, mobile in (({"width": 1280, "height": 800}, False), ({"width": 390, "height": 760}, True)):
+                pg = await b.new_page(viewport=view, is_mobile=mobile, has_touch=mobile)
+                await pg.goto(url, wait_until="domcontentloaded", timeout=45000)
+                await pg.wait_for_timeout(5000)
+                for label in ("Reject all", "Reject", "Decline", "Only necessary", "Necessary only", "Accept", "Accept all"):
+                    btn = pg.get_by_role("button", name=re.compile(f"^{label}$", re.I))
+                    try:
+                        if await btn.count() and await btn.first.is_visible():
+                            await btn.first.click(timeout=2000)
+                            await pg.wait_for_timeout(1000)
+                            break
+                    except Exception:  # noqa: BLE001 - a banner that won't close stays in the picture
+                        pass
+                shots.append(await pg.screenshot(type="jpeg", quality=55))
+                await pg.close()
+        finally:
+            await b.close()
+    return shots
+
+
+async def _ask_eyes(client, model: str, prompt: str, shots: list[bytes], labels: dict[int, str] | None = None) -> dict:
+    content = []
+    for i, s in enumerate(shots):
+        if labels and i in labels:  # 3 Nov 2026: unlabelled, the judge mixed up which site was which
+            content.append({"type": "text", "text": labels[i]})
+        content.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+                                                    "data": base64.b64encode(s).decode()}})
+    content.append({"type": "text", "text": "JSON only."})
+    r = await client.messages.create(model=model, max_tokens=600, system=prompt, messages=[{"role": "user", "content": content}])
+    text = "".join(getattr(b, "text", "") for b in r.content)
+    return json.loads(text[text.index("{"): text.rindex("}") + 1])
+
+
+async def their_site_looks(client, model: str, url: str) -> dict:
+    """{"score", "why"} for how good their current site already looks; {} when it can't be loaded or judged."""
+    try:
+        return await _ask_eyes(client, model, LOOKS_PROMPT, await site_shots(url))
+    except Exception as exc:  # noqa: BLE001 - a site we can't see is judged by the old checks only
+        if "credit balance" in str(exc):
+            raise
+        return {}
+
+
+async def versus(client, model: str, their_url: str, ours: Path) -> dict:
+    """Their site next to our design, judged as their owner would; {} when it can't be judged. "clearly_better" is
+    decided from the two scores (ours at least 2 higher), as the judge's yes/no sometimes disagreed with its own scores."""
+    try:
+        theirs = await site_shots(their_url)
+        v = await _ask_eyes(client, model, VERSUS_PROMPT, theirs + await site_shots(ours.as_uri()),
+                            {0: "YOUR CURRENT WEBSITE (desktop, then phone):", len(theirs): "THE REDESIGN (desktop, then phone):"})
+    except Exception as exc:  # noqa: BLE001
+        if "credit balance" in str(exc):
+            raise
+        return {}
+    try:
+        v["clearly_better"] = int(v.get("ours") or 0) >= int(v.get("theirs") or 0) + 2
+    except (TypeError, ValueError):
+        v["clearly_better"] = False
+    return v
+
+
 async def make(business: str, settings, client, website: str = "", instagram: str = "", progress=print) -> dict:
     """Build, check and put online one premium mock-up. Returns {slug, link, dm, issues, instagram_ok, ...}."""
     import depth3d, full_check, kinetic_find, outbox, premium_page, research  # noqa: E401 - heavy, so only when building
@@ -404,6 +510,21 @@ async def make(business: str, settings, client, website: str = "", instagram: st
                                       encoding="utf-8")
     json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     await asyncio.to_thread(premium_page.build, folder, out)
+    beaten = ""
+    if website and "instagram.com" not in website:  # owner, 3 Nov 2026: ours must clearly beat the site they have
+        v = await versus(writer, model, website, out / "index.html")
+        if v and not v.get("clearly_better"):
+            progress(f"Their site holds up ({v.get('theirs')} vs our {v.get('ours')}): redesigning once...")
+            c, more = await review(writer, model, folder, out / "index.html", c, layout, facts,
+                                   extra="THEIR CURRENT SITE LOOKS AS GOOD AS THIS DESIGN. Make this design clearly beat it: "
+                                         + str(v.get("fix") or ""))
+            notes += more
+            json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+            await asyncio.to_thread(premium_page.build, folder, out)
+            v = await versus(writer, model, website, out / "index.html")
+            if v and not v.get("clearly_better"):
+                beaten = f"their own site looks as good as ours ({v.get('theirs')} vs {v.get('ours')})"
+        (folder / "versus.json").write_text(json.dumps(v, ensure_ascii=False), encoding="utf-8")
     if website and "instagram.com" not in website and await phone_shots(website, out / "index.html", folder):
         await asyncio.to_thread(premium_page.build, folder, out)  # again, now with the before/after
     progress("Putting it online and checking it like a customer would…")
@@ -423,6 +544,8 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     if issues and await asyncio.to_thread(patch_broken_photos, out, issues):  # save the build, not throw it away
         await asyncio.to_thread(outbox.deploy_site)
         issues = [i for i in await check_live(slug) if not their_link_issue(i)]
+    if beaten:
+        issues = [beaten, *issues]
     ig_ok = bool(instagram) and await outbox.instagram_exists(instagram, p["name"])   # live AND theirs
     return {"slug": slug, "name": p["name"], "link": link, "layout": layout, "issues": issues, "instagram": instagram,
             "instagram_ok": ig_ok, "dm": outbox.dm_text(settings, p, link), "review": notes,

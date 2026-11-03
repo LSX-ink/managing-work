@@ -275,19 +275,19 @@ def bold(a):
 CINEMA_CSS = """
 html{scroll-snap-type:y mandatory}body{background:#000}
 .scene{height:100svh;scroll-snap-align:start;position:relative;overflow:hidden;display:grid;align-items:end}
-.scene .bg{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.18);filter:brightness(.55) blur(6px);transition:transform 2.2s cubic-bezier(.2,.8,.2,1),filter 1.6s}
-.scene.live .bg{transform:scale(1.02);filter:brightness(.55) blur(0)}.scene::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent 60%)}
-.scene .in{position:relative;z-index:2;padding:0 max(22px,6vw) 12vh;max-width:1100px}
+.scene .bg{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.18);filter:brightness(.72) blur(6px);transition:transform 2.2s cubic-bezier(.2,.8,.2,1),filter 1.6s}
+.scene.live .bg{transform:scale(1.02);filter:brightness(.78) blur(0)}.scene::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.82),rgba(0,0,0,.25) 55%,transparent 75%),linear-gradient(90deg,rgba(0,0,0,.45),transparent 60%)}
+.scene .in{position:relative;z-index:2;padding:110px max(22px,6vw) 12vh;max-width:1000px}
 .scene .n{font:600 .8rem var(--body);letter-spacing:.4em;color:var(--gold);text-transform:uppercase}
-.scene h1,.scene h2{font:600 clamp(3rem,9vw,8.4rem)/.92 var(--head);text-transform:uppercase;margin:14px 0 20px;letter-spacing:.01em;color:#fff}
-.scene h2{font-size:clamp(2.4rem,6.5vw,6rem)}.scene h1 em,.scene h2 em{font-style:normal;color:var(--gold)}
+.scene h1,.scene h2{font:600 clamp(2.3rem,5.4vw,5rem)/1 var(--head);text-wrap:balance;text-transform:uppercase;margin:14px 0 20px;letter-spacing:.01em;color:#fff}
+.scene h2{font-size:clamp(2rem,4.6vw,4.2rem)}.scene h1 em,.scene h2 em{font-style:normal;color:var(--gold)}
 .scene p{color:rgba(255,255,255,.78);max-width:560px;font-size:1.08rem;margin:0 0 26px}
 .scene .t{opacity:0;transform:translateY(60px);transition:opacity 1s .3s,transform 1.1s .3s cubic-bezier(.2,.8,.2,1)}.scene.live .t{opacity:1;transform:none}.scene.live .t+.t{transition-delay:.5s}
 .cta{display:inline-flex;padding:16px 30px;background:var(--gold);color:#111;font:700 .85rem var(--body);letter-spacing:.18em;text-transform:uppercase;text-decoration:none;clip-path:polygon(0 0,100% 0,92% 100%,0 100%);transition:padding .3s}
 .cta:hover{padding-right:44px}.cta.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);clip-path:none}
 .dots{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:30;display:grid;gap:12px}.dots a{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35);display:block;transition:transform .3s,background .3s}.dots a.on{background:var(--gold);transform:scale(1.6)}
-.logo{position:fixed;left:max(22px,6vw);top:24px;z-index:30}.logo img{height:44px;width:auto}.logo span{font:600 1.3rem var(--head);color:#fff;letter-spacing:.1em;text-transform:uppercase}@media (max-width:600px){.logo span{display:block;font-size:.95rem;letter-spacing:.05em;line-height:1.15;max-width:calc(100vw - 190px)}}
-.bk{position:fixed;right:22px;top:20px;z-index:30}
+.top{position:fixed;inset:0 0 auto;z-index:30;display:flex;align-items:center;gap:28px;padding:16px max(22px,6vw);background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,0));transition:background .4s}.top.solid{background:rgba(10,10,10,.82);backdrop-filter:blur(14px)}.top nav{display:flex;gap:26px;margin-left:auto}.top nav a{color:rgba(255,255,255,.85);text-decoration:none;font:500 .82rem var(--body);letter-spacing:.14em;text-transform:uppercase}.top nav a:hover{color:var(--gold)}.logo{display:flex;align-items:center;text-decoration:none}.logo img{height:46px;width:auto;max-width:180px;object-fit:contain}@media (max-width:820px){.top nav{display:none}.top .bk{margin-left:auto}}.logo span{font:600 1.3rem var(--head);color:#fff;letter-spacing:.1em;text-transform:uppercase}@media (max-width:600px){.logo span{display:block;font-size:.95rem;letter-spacing:.05em;line-height:1.15;max-width:calc(100vw - 190px)}}
+.top .cta{padding:12px 22px;white-space:nowrap}@media (max-width:600px){.top .cta{padding:10px 16px;font-size:.72rem}}
 .glass{background:rgba(10,10,10,.55);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:26px 28px;max-width:720px}
 .glass .tb{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.glass .tb button{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;padding:9px 16px;border-radius:999px;font:600 .75rem var(--body);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 .glass .tb button.on{background:var(--gold);color:#111;border-color:var(--gold)}.glass ul{list-style:none;margin:0;padding:0}.glass li{display:flex;justify-content:space-between;gap:20px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.1);color:#fff}
@@ -298,12 +298,12 @@ html{scroll-snap-type:y mandatory}body{background:#000}
 .vis{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:end}.vis ul{list-style:none;padding:0;margin:0 0 20px;color:#fff}.vis li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.12);font-size:.92rem}
 .vis .map{height:300px;border-radius:18px;overflow:hidden}.foot{color:rgba(255,255,255,.5);font-size:.75rem;margin-top:24px}
 @media (max-width:900px){.vis{grid-template-columns:1fr}.dots{display:none}.scene .in{padding-bottom:9vh}.strip img{height:24vh}.vis .map{height:200px}}
-@media (max-height:740px){.scene h1,.scene h2{font-size:clamp(2.2rem,7vw,5rem)}}
+@media (max-height:740px){.scene h1,.scene h2{font-size:clamp(2rem,4.6vw,4rem)}}@media (max-width:600px){.scene h1{font-size:clamp(2rem,9vw,2.8rem)}.scene .in{padding-top:90px}}
 """
 CINEMA_JS = """
 const sc=[...document.querySelectorAll('.scene')],dt=document.querySelector('.dots');sc.forEach((s,i)=>{const a=document.createElement('a');a.href='#'+s.id;dt.appendChild(a)});
 const so3=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){sc.forEach(s=>s.classList.toggle('live',s===x.target));[...dt.children].forEach((d,i)=>d.classList.toggle('on',sc[i]===x.target))}}),{threshold:.55});sc.forEach(s=>so3.observe(s));
-setTimeout(()=>sc[0].classList.add('live'),200);
+setTimeout(()=>sc[0].classList.add('live'),200);const tp=document.querySelector('.top');addEventListener('scroll',()=>tp.classList.toggle('solid',scrollY>40),{passive:true});
 """
 
 
@@ -334,7 +334,7 @@ def cinema(a):
         f'<a class="cta" href="{e(a["book"])}">{e(a["book_label"])}</a> <a class="cta ghost" href="tel:{e(c["phone"].replace(" ", ""))}">{e(c["phone"])}</a></div>'
         f'<div class="map"><iframe class="mapf" loading="lazy" title="Map" src="https://maps.google.com/maps?q={a["lat"]},{a["lng"]}&z=16&output=embed"></iframe></div></div><p class="foot">{footer_line(c)}</p></div></section>']
     return (head(a) + "}" + BASE_CSS + CINEMA_CSS + "</style></head><body>"
-            f'<a class="logo" href="#s1">{logo}</a><a class="cta bk" href="{e(a["book"])}">{e(a["book_label"])}</a><nav class="dots"></nav>' + "".join(scenes) +
+            f'<header class="top"><a class="logo" href="#s1">{logo}</a><nav><a href="#s2">About</a><a href="#s3">Services</a><a href="#s5">Gallery</a><a href="#s6">Visit</a></nav><a class="cta bk" href="{e(a["book"])}">{e(a["book_label"])}</a></header><nav class="dots"></nav>' + "".join(scenes) +
             "<script>" + COMMON_JS + CINEMA_JS + "</script></body></html>")
 
 
