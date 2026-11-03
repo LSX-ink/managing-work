@@ -52,6 +52,11 @@ Rules, all strict:
 - Words: warm, confident, short. h1 is three short lines, the third the most striking. "kicker" is the street and area.
 - "audit": {"title": "What <their domain> is costing you, and what this fixes.", "fixes": [[problem, fix], ...]}, from
   the audit problems only (2 to 4 pairs, plain English, fix said as what this design does), or {} with no website.
+- Research first, then write (owner, 3 Nov 2026: "do proper research ... top tier, not lazy work"). Every line must be
+  something only THIS business could say: their real signature services, products, dishes or brands named on their
+  site, their area, how long they've been going, what reviewers praise again and again. Never generic filler ("Skin
+  first. Glow always.", "a store with personality", "quality you can trust"). Services come from their own price or
+  menu pages, word for word, with their prices. A shop lists its real product ranges or brands.
 Answer with the JSON object only, keys as in the example."""
 
 

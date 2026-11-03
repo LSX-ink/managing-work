@@ -34,7 +34,14 @@ async def site(url: str, folder: Path) -> dict:
         await pg.screenshot(path=str(folder / "their_home.jpg"), type="jpeg", quality=55)
         logos = await pg.evaluate("[...document.querySelectorAll('header img, nav img, [class*=logo] img, img[class*=logo], img[alt*=ogo i], img[src*=ogo i]')].map(i => i.currentSrc || i.src)")
         links = await pg.evaluate("[...new Set([...document.querySelectorAll('a')].map(a => a.href.split('#')[0]))]")
-        pages = [pg.url] + [l for l in links if host in l and not re.search(r"\.(pdf|jpe?g|png|webp)$|mailto:|tel:|cart|checkout|account|privacy|cookie|terms|login", l, re.I)][:14]
+        ok = [l for l in links if host in l and not re.search(r"\.(pdf|jpe?g|png|webp)$|mailto:|tel:|cart|checkout|account|privacy|cookie|terms|login", l, re.I)]
+        # owner, 3 Nov 2026: "do proper research". The pages that say who they are and what they sell come first (about,
+        # services, prices, menu, gallery, team, book), not the first 14 links (Allertons got 13 brand pages, no prices).
+        tiers = [re.compile(t, re.I) for t in (r"about|story|service|treatment|price|menu|team|staff|book",
+                                               r"gallery|portfolio|work|contact|visit|location|class|membership|food|drink",
+                                               r"shop|product|collection")]
+        tier = lambda l: next((i for i, t in enumerate(tiers) if t.search(l)), len(tiers))  # noqa: E731
+        pages = [pg.url] + sorted(ok, key=lambda l: (tier(l), l.count("/"), len(l)))[:16]
         seen = set()
         for u in dict.fromkeys(pages):
             try:
@@ -43,7 +50,7 @@ async def site(url: str, folder: Path) -> dict:
                     await pg.mouse.wheel(0, 1600); await pg.wait_for_timeout(250)
             except Exception:
                 continue
-            out["pages"][u] = re.sub(r"\s+", " ", await pg.evaluate("document.body.innerText"))[:6000]
+            out["pages"][u] = re.sub(r"\s+", " ", await pg.evaluate("document.body.innerText"))[:4000]
             srcs = await pg.evaluate("""() => { const s = new Set(); document.querySelectorAll('img').forEach(i => { s.add(i.currentSrc || i.src); });
               document.querySelectorAll('*').forEach(e => { const m = getComputedStyle(e).backgroundImage.match(/url\\(["']?([^"')]+)/); m && s.add(m[1]); });
               return [...s].filter(x => x && x.startsWith('http')); }""")
@@ -56,7 +63,7 @@ async def site(url: str, folder: Path) -> dict:
                     im = Image.open(BytesIO(await (await ctx.request.get(src)).body()))
                 except Exception:
                     continue
-                if im.width < 600 or im.height < 380:
+                if im.width < 520 or im.height < 340:  # a little smaller than before: some shops' photos are ~550 wide
                     continue
                 f = folder / "s" / f"{len(out['photos']):02d}.jpg"; f.parent.mkdir(exist_ok=True)
                 im = im.convert("RGB"); im.thumbnail((1800, 1800)); im.save(f, quality=84)
@@ -84,9 +91,10 @@ async def main(slug: str, query: str, url: str = "") -> None:
                          json={"textQuery": query, "maxResultCount": 1})
         place = r.json()["places"][0]
         json.dump(place, open(folder / "place.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
-        g = await google_photos(s, h, place, folder, 10)
     url = url or place.get("websiteUri", "")
     info = await site(url, folder) if url and "instagram" not in url else {"pages": {}, "photos": [], "logos": [], "colours": []}
+    async with httpx.AsyncClient(timeout=40) as h:  # few photos on their own site: take more of their Google ones
+        g = await google_photos(s, h, place, folder, 10 if len(info["photos"]) >= 8 else 16)
     json.dump(info, open(folder / "site.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     contact_sheet(folder, info["photos"] + g, folder / "sheet.jpg")
     print(json.dumps({"slug": slug, "name": place["displayName"]["text"], "rating": place.get("rating"), "reviews": place.get("userRatingCount"),
