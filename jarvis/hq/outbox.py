@@ -127,14 +127,15 @@ def _fresh_busy(settings) -> list[dict]:
 
 
 def mix_countries(rows: list[dict]) -> list[dict]:
-    """Two businesses abroad for every one in the UK, keeping each side's order (owner, 3 Nov 2026: "focus on other
-    countries, not just UK"), for the DM list and the emails alike."""
-    home = [r for r in rows if (r.get("country") or world.HOME) == world.HOME]
-    away = [r for r in rows if (r.get("country") or world.HOME) != world.HOME]
-    out = []
-    while home or away:
-        out += away[:2] + home[:1]
-        away, home = away[2:], home[1:]
+    """Countries take turns, each in its own best-first order (owner, 3 Nov 2026: "DM list and emails all over the
+    world"), so the UK is one country among many rather than most of the list."""
+    groups: dict[str, list[dict]] = {}
+    for r in rows:
+        groups.setdefault(r.get("country") or world.HOME, []).append(r)
+    out, lists = [], list(groups.values())
+    while lists:
+        out += [g.pop(0) for g in lists]
+        lists = [g for g in lists if g]
     return out
 
 
@@ -189,8 +190,8 @@ def is_uk(p: dict) -> bool:
 def sole_traders(settings, ltd: set) -> list[dict]:
     """Busy leads we can't cold-email (UK sole traders and partnerships under PECR, and countries where a sales
     email needs consent first): the owner DMs these by hand."""
-    return [p for p in _fresh_busy(settings) if not world.cold_email_ok(p.get("country") or world.HOME, p["name"])
-            and p["id"] not in ltd]
+    return [p for p in _fresh_busy(settings) if (not world.cold_email_ok(p.get("country") or world.HOME, p["name"])
+            and p["id"] not in ltd) or not p.get("website") or kf.social_only(p)]  # no site to email from: a DM, anywhere
 
 
 # ---- Companies House: is a UK lead a limited company? -------------------------------------------------
