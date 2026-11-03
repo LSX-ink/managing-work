@@ -728,6 +728,20 @@ def test_numbers_in_words_comparisons_and_millions_are_instant():
     assert instant_answer("what's 2.5 million times 2", s) == "That's 5,000,000."
 
 
+def test_clocks_seasons_and_nth_weekdays_are_instant():
+    import time
+    from brain import instant_answer
+    s, now = SimpleNamespace(speech_lang="en-GB"), time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")
+    assert instant_answer("when do the clocks go back", s, now) == "The clocks go back an hour on Sunday the 25th of October, at 2 am."
+    assert instant_answer("when do the clocks go forward", s, now) == "The clocks go forward an hour on Sunday the 28th of March 2027, at 1 am."
+    assert instant_answer("what season is it", s, now) == "It's autumn."
+    assert instant_answer("what quarter is it", s, now) == "It's Q4, quarter 4 of 2026."
+    assert instant_answer("what's the 100th day of the year", s, now) == "Day 100 of 2026 is Friday the 10th of April."
+    assert instant_answer("what's the first Monday in December", s, now) == "The first Monday in December is the 7th."
+    assert instant_answer("when is the second Tuesday in March", s, now) == "The second Tuesday in March 2027 is the 9th."
+    assert instant_answer("how many Fridays are left this year", s, now) == "There are 10 Fridays left this year, not counting today."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
