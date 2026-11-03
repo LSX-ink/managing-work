@@ -309,14 +309,30 @@ def publish_mockup(settings, p: dict, deploy: bool = True) -> str:
     return f"{SITE}/m/{slug(p['name'])}/"
 
 
+PLACEHOLDERS = re.compile(r"your price|£\s*—|Store makeover concept|lorem ipsum|\[(?:name|price|photo)\]", re.I)
+
+
+def placeholder_page(link: str) -> bool:
+    """True when our page at this link still has template filler instead of the business's own content."""
+    page = LIVE / "m" / link.rstrip("/").rsplit("/", 1)[-1] / "index.html"
+    try:
+        return bool(PLACEHOLDERS.search(page.read_text(encoding="utf-8", errors="replace")))
+    except OSError:
+        return False
+
+
 async def make_mockup(ctx, p: dict) -> str:
     """Iris (hq/designer.py) builds and checks the lead's mock-up in the site folder; its link, or "" when it was held
     back. Call deploy_site() afterwards to put it online. Shopify stores keep their store makeover."""
     from hq import designer
-    if mockup.trade_for(p) == "business" and sales.store_lead(p):
-        return await asyncio.to_thread(publish_mockup, ctx.settings, p, False)
+    # owner, 3 Nov 2026: the old "store makeover" was a template with "£— your price" and blank shapes, none of the
+    # shop's own products or photos. Every lead, shops included, now gets the premium build from their own content.
     if ctx.brain.get("settings.premium_mockups", True):  # owner, 27-28 Oct 2026: every mock-up uses all the skills
-        return await premium_mockup(ctx, p)
+        link = await premium_mockup(ctx, p)
+        if link and placeholder_page(link):
+            ctx.brain.log("designer", f"held back {p['name']}: the page still has placeholder text", "warn")
+            return ""
+        return link
     ok, _ = await designer.build(ctx, p, LIVE / "m" / slug(p["name"]), st.business(ctx.settings)["name"])
     if ok:
         ctx.brain.set(f"iris.{p['id']}", mockup.VERSION)
@@ -345,7 +361,7 @@ async def premium_mockup(ctx, p: dict) -> str:
                                       f"{looks.get('why', '')})"[:300], "info")
             return ""
     ready = LIVE / "m" / base / "index.html"
-    if ready.exists() and not ctx.brain.get(f"mockup.{p['name'].lower()}") and             time.time() - ready.stat().st_mtime < 3 * 86400:  # built in the last 3 days and never sent (3 Nov 2026:
+    if ready.exists() and not placeholder_page(f"{SITE}/m/{base}/") and not ctx.brain.get(f"mockup.{p['name'].lower()}") and             time.time() - ready.stat().st_mtime < 3 * 86400:  # built in the last 3 days and never sent (3 Nov 2026:
         issues = [i for i in await auto.check_live(base) if not auto.their_link_issue(i)]  # ~45 were built while
         if not issues:  # uploads were failing): use it once it passes the same checks, don't pay to build it again
             return f"{SITE}/m/{base}/"
