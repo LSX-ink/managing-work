@@ -501,7 +501,9 @@ async def _send_first(ctx: Ctx) -> str:
         await asyncio.to_thread(outbox.deploy_site)
         b.set(f"mockup.{p['name'].lower()}", link)
         subject, body = outbox.first_email(s, p, link, b)
-        said = await _vet_and_send(ctx, p, p["name"], to, subject, body, link, first=True)
+        # what our check of their site found goes to the editor as a fact (2 Nov: '© 2023' was held as made up)
+        facts = {**p, "site_check": outbox.praise_and_gap(p, b)[1]}
+        said = await _vet_and_send(ctx, facts, p["name"], to, subject, body, link, first=True)
         if said.startswith("sent"):
             return said
     return "no fresh leads with an email address right now (Hawk will find more)"

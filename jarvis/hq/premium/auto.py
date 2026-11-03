@@ -410,16 +410,33 @@ async def make(business: str, settings, client, website: str = "", instagram: st
     await asyncio.to_thread(outbox.deploy_site)
     link = f"https://kineticwebdesigns.co.uk/m/{slug}/"
     issues = await check_live(slug)
-    if any("folder missing" in i for i in issues):  # Cloudflare sometimes needs a second push before new files show
-        await asyncio.to_thread(outbox.deploy_site)
+    if any("folder missing" in i or "broken image" in i or i.startswith("500") for i in issues):
+        await asyncio.to_thread(outbox.deploy_site)  # Cloudflare sometimes needs a second push before new files show
         issues = await check_live(slug)
+    issues = [i for i in issues if not their_link_issue(i)]
+    if issues and all(compare_issue(i) for i in issues):  # 2 Nov 2026: drop the before/after rather than the build
+        c["no_compare"] = True
+        json.dump(c, open(folder / "config.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+        await asyncio.to_thread(premium_page.build, folder, out)
+        await asyncio.to_thread(outbox.deploy_site)
+        issues = [i for i in await check_live(slug) if not their_link_issue(i)]
     if issues and await asyncio.to_thread(patch_broken_photos, out, issues):  # save the build, not throw it away
         await asyncio.to_thread(outbox.deploy_site)
-        issues = await check_live(slug)
+        issues = [i for i in await check_live(slug) if not their_link_issue(i)]
     ig_ok = bool(instagram) and await outbox.instagram_exists(instagram, p["name"])   # live AND theirs
     return {"slug": slug, "name": p["name"], "link": link, "layout": layout, "issues": issues, "instagram": instagram,
             "instagram_ok": ig_ok, "dm": outbox.dm_text(settings, p, link), "review": notes,
             "audit": {k: audit.get(k) for k in ("score", "grade") if isinstance(audit, dict)}}
+
+
+def their_link_issue(issue: str) -> bool:
+    """A button to the business's own website that our checker couldn't open (their site blocks bots, 406, a
+    connection error): their site's problem, not the mock-up's, so it doesn't hold the mock-up back (2 Nov 2026)."""
+    return bool(re.search(r"button/link (goes nowhere|failed)", issue)) and "kineticwebdesigns.co.uk" not in issue
+
+
+def compare_issue(issue: str) -> bool:
+    return bool(re.search(r"before\.jpg|after\.jpg|before/after", issue))
 
 
 def patch_broken_photos(out: Path, issues: list[str]) -> bool:

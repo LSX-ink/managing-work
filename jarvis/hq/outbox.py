@@ -613,12 +613,12 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "it is addressed to the right business; every claim about their website is plausible from the facts; "
               "it is polite, professional, honest and specific; British English; no made-up facts, prices or "
               "promises beyond: websites from £395 (or the local equivalent), half when we start building and half "
-              "once complete, a free home page mock-up, 'see your design before you pay anything', an invitation to follow "
+              "once complete, a free home page mock-up, 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), an invitation to follow "
               "Kinetic Web Designs on Instagram (instagram.com/kineticwebdesigns, our real account); it is signed by "
               "Alfred; it has an opt-out line. A price in the business's own currency (e.g. $499 or €459) is the "
               "local equivalent of £395 and is fine. For a follow-up, the date of our first email is in the facts "
               "(first_email_sent) and is real, and when made_them_an_updated_mockup is true the new design and its link are real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
-              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far', 'made_them_an_updated_mockup') if p.get(k) not in (None, '')})}\n\n"
+              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far', 'made_them_an_updated_mockup', 'site_check') if p.get(k) not in (None, '')})}\n\n"
               f"Subject: {subject}\n\n{body}")
     try:
         text = await ctx.ask_ai(prompt, 2500)

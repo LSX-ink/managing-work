@@ -213,3 +213,16 @@ def test_a_broken_photo_is_replaced_instead_of_losing_the_mock_up(tmp_path):
     assert auto.patch_broken_photos(tmp_path, issues)
     assert (tmp_path / "p" / "00.jpg").read_bytes() == (tmp_path / "p" / "01.jpg").read_bytes()
     assert not auto.patch_broken_photos(tmp_path, issues + ["500 https://kineticwebdesigns.co.uk/m/x/before.jpg"])
+
+
+def test_their_own_site_blocking_our_checker_does_not_hold_the_mock_up_back():
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent / "hq" / "premium"))
+    import auto
+    assert auto.their_link_issue("button/link goes nowhere (406): https://www.rtltrades.com.au/")
+    assert auto.their_link_issue("button/link failed: https://www.picocleaners.com/ (ConnectError)")
+    assert not auto.their_link_issue("button/link goes nowhere (404): https://kineticwebdesigns.co.uk/m/x/#book")
+    assert auto.compare_issue("before/after slider doesn't drag (x=50)")
+    assert auto.compare_issue("broken image https://kineticwebdesigns.co.uk/m/x/after.jpg")
+    assert not auto.compare_issue("no map")
