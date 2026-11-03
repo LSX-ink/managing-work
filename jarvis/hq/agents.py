@@ -246,7 +246,7 @@ async def dm_list(ctx: Ctx, n: int) -> int:
     from hq import outbox
     s, b = ctx.settings, ctx.brain
     items = []
-    looked, unchecked = 0, set()
+    looked, unchecked, failed = 0, set(), 0
     for p in outbox.sole_traders(s, outbox.limited_companies(b)):
         if len(items) >= n or looked >= n * 6:
             break
@@ -283,6 +283,10 @@ async def dm_list(ctx: Ctx, n: int) -> int:
                 b.set(f"ig.dm.{handle.lower()}", p["name"])
         except Exception as e:
             b.log("closer", f"couldn't make the mock-up for {p['name']}: {e}", "warn")
+            failed += 1  # 3 Nov 2026: every build failed the same way and the list kept spending credit
+            if failed >= 3 and not items:
+                b.log("closer", "Three mock-ups in a row couldn't be made, so I stopped the list to save credit.", "warn")
+                break
     if not items:
         return 0
     await asyncio.to_thread(outbox.deploy_site)
