@@ -10,6 +10,7 @@ Instagram replies), so nothing new talks to the outside world. Hard rules, same 
 
 import asyncio
 import json
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -254,6 +255,8 @@ async def dm_list(ctx: Ctx, n: int) -> int:
             continue
         looked += 1
         handle = p.get("instagram", "").lstrip("@") or await outbox.instagram_handle(ctx.http, p)
+        if m := re.search(r"instagram\.com/([A-Za-z0-9_.]{2,30})", handle):  # saved as a full link: just the name
+            handle = m.group(1).rstrip(".")
         if not handle:  # the owner needs an @name to find them (asked 23 Oct 2026): only shops that give one
             b.set(f"ig.none.{p['id']}", True)
             continue
@@ -513,7 +516,7 @@ async def _send_first(ctx: Ctx) -> str:
         b.set(f"mockup.{p['name'].lower()}", link)
         subject, body = outbox.first_email(s, p, link, b)
         # what our check of their site found goes to the editor as a fact (2 Nov: '© 2023' was held as made up)
-        facts = {**p, "site_check": outbox.praise_and_gap(p, b)[1]}
+        facts = {**p, "site_check": outbox.praise_and_gap(p, b)[1], "free_mockup_we_made": link}
         said = await _vet_and_send(ctx, facts, p["name"], to, subject, body, link, first=True)
         if said.startswith("sent"):
             return said

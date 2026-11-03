@@ -439,6 +439,11 @@ def stay(p: dict) -> bool:
     return bool(STAY.search(f"{p.get('kind', '')} {p.get('name', '')}"))
 
 
+def books(p: dict) -> bool:
+    """Trades whose customers book appointments (owner, 3 Nov 2026: the pitch must fit the trade)."""
+    return trade_group(p) in ("barber", "hair", "beauty", "fitness", "health")
+
+
 def busy(p: dict) -> bool:
     return int(p.get("reviews") or 0) >= BUSY and float(p.get("rating") or 0) >= 4.6
 
@@ -477,10 +482,15 @@ def praise_and_gap(p: dict, brain=None) -> tuple[str, str]:
                "room before they choose, and come back without the middleman.")
         if problem:
             gap = f"One thing I spotted: {problem} " + gap
-    elif busy(p):
+    elif busy(p) and books(p):
+        doing = "cutting" if trade_group(p) in ("barber", "hair") else "working"
         gap = ("A business this busy doesn't need more walk-ins. What a great website does for you is take bookings "
-               "and deposits while you're cutting, so no-shows stop costing you and the phone stops interrupting, "
+               f"and deposits while you're {doing}, so no-shows stop costing you and the phone stops interrupting, "
                "and it lets your work and reviews justify premium prices.")
+    elif busy(p):  # 3 Nov 2026: a gift shop was told about haircuts and deposits; every trade gets its own pitch
+        gap = ("A business this busy doesn't need more passers-by. What a great website does for you is answer the "
+               "questions that tie up your phone, let people order or enquire any time, and let your reviews and "
+               "work justify your prices.")
         if problem:
             gap = f"One thing I spotted: {problem} " + gap
     else:
@@ -570,7 +580,7 @@ def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
     subject = (f"A free website idea for {name} ({float(rating):.1f}★ on Google)" if rating and reviews >= 25
                else f"A free website idea for {name}")
     ask = ("Would it help if I showed you how online booking with deposits would work for you? Just reply 'yes' "
-           "and I'll send it over." if busy(p) else
+           "and I'll send it over." if busy(p) and books(p) else
            "Just reply 'yes' if you'd like to talk it through, it only takes 10 minutes.")
     body = (f"Hi {name} team,\n\nI came across you on Google, and {praise}\n\n{gap}\n\n"
             "So I put together a free concept of what your website could look like, using your own photos and "
@@ -633,12 +643,12 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "it is addressed to the right business; every claim about their website is plausible from the facts; "
               "it is polite, professional, honest and specific; British English; no made-up facts, prices or "
               "promises beyond: websites from £395 (or the local equivalent), half when we start building and half "
-              "once complete, a free home page mock-up, 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), an invitation to follow "
+              "once complete (a Shopify store redesign is from £595 or the local equivalent), a free home page mock-up we really made for them (its link is in the facts as free_mockup_we_made), 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), an invitation to follow "
               "Kinetic Web Designs on Instagram (instagram.com/kineticwebdesigns, our real account); it is signed by "
               "Alfred; it has an opt-out line. A price in the business's own currency (e.g. $499 or €459) is the "
               "local equivalent of £395 and is fine. For a follow-up, the date of our first email is in the facts "
               "(first_email_sent) and is real, and when made_them_an_updated_mockup is true the new design and its link are real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
-              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far', 'made_them_an_updated_mockup', 'site_check') if p.get(k) not in (None, '')})}\n\n"
+              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far', 'made_them_an_updated_mockup', 'site_check', 'free_mockup_we_made') if p.get(k) not in (None, '')})}\n\n"
               f"Subject: {subject}\n\n{body}")
     try:
         text = await ctx.ask_ai(prompt, 2500)
