@@ -376,20 +376,24 @@ async def instagram_exists(handle: str, name: str = "") -> bool | None:
     for names that don't exist; a real one shows "<Name> (@handle)" in the title. With the business's name, the profile
     must also be theirs (same_business), not someone else's account their website happens to link."""
     from playwright.async_api import async_playwright
-    try:
-        async with async_playwright() as pw:
-            b = await pw.chromium.launch(channel="msedge")
-            pg = await (await b.new_context(locale="en-GB")).new_page()
-            await pg.goto(f"https://www.instagram.com/{handle.strip('@')}/", wait_until="domcontentloaded", timeout=30000)
-            await pg.wait_for_timeout(3000)
-            title, url = await pg.title(), pg.url
-            await b.close()
+    for attempt in range(2):
+        try:
+            async with async_playwright() as pw:
+                b = await pw.chromium.launch(channel="msedge")
+                pg = await (await b.new_context(locale="en-GB")).new_page()
+                await pg.goto(f"https://www.instagram.com/{handle.strip('@')}/", wait_until="domcontentloaded", timeout=45000)
+                await pg.wait_for_timeout(3000)
+                title, url = await pg.title(), pg.url
+                await b.close()
+        except Exception:  # 3 Nov 2026: a busy PC timed out and real profiles (@lacolombect) were thrown away as dead
+            continue
         if "/accounts/login" in url:  # Instagram wants a log-in before it shows anything (30 Oct 2026): can't tell
             return None
+        if not title.strip():  # page didn't finish loading: try again rather than call it dead
+            continue
         live = f"(@{handle.strip('@').lower()})" in title.lower()
         return live and (not name or same_business(title, handle, name))
-    except Exception:
-        return False
+    return None  # couldn't load it: unknown, not dead
 
 
 async def instagram_handle(http, p: dict) -> str:
