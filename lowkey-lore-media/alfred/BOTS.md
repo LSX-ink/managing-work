@@ -25,3 +25,10 @@ Also in this folder:
 - Length is 70–90 s.
 - Nothing is published without passing QC plus a visual approval of that exact file.
 - No Higgsfield generation without the owner's OK.
+
+## HARD RULE: renders run detached (since 3 Nov 2026)
+Every preview/render/repair is started with `powershell -File pipeline\launch.ps1 <video> [<video> ...]`. That runs
+`pipeline/chain.sh` (one video at a time) as a new Windows process created by WMI, outside any Claude or terminal
+session, with `LL_DETACHED=1`. `make.py` refuses preview/render/repair without that variable. Renders started inside a
+session died with it twice (a lost night, and the football chain at 21:01 on 3 Nov). Lint, stills, voice, audio and
+QC can still run in a session.
