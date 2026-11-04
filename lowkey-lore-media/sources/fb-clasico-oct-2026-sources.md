@@ -22,3 +22,6 @@ The "park the bus" line is banter: Mourinho's own 2004 phrase, applied to Madrid
 - Lunin in for Courtois (flu): Al Jazeera, citizen.digital ("Courtois out of Clasico with flu"), democrata.es; the club statement said illness ✓
 - 107-106 head-to-head: Al Jazeera takeaways states it after the match. Outlook India and Sportsdigest had it level at 106-106 (Barcelona's count) after the May 2026 game, so the Real win makes 107-106 ✓ (other counts differ by competitions included)
 - Player photos: Wikimedia Commons, free licences, with credits printed on each card (img/photos.json)
+- Starting XIs (both sides) and shirt numbers: ESPN line-ups (gameId 401882832) and democrata.es line-ups article (25 Oct 2026); both agree
+- xG: we use ESPN (Barcelona 1.19, Real Madrid 1.95). One other listing gives 1.27 / 2.01; the order (Madrid higher) is the same in both
+- Board chips show shirt numbers per ESPN; Camavinga (#6) came on in the 80th minute for Bernardo Silva
