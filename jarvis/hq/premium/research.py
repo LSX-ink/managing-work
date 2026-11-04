@@ -50,7 +50,7 @@ async def site(url: str, folder: Path) -> dict:
                     await pg.mouse.wheel(0, 1600); await pg.wait_for_timeout(250)
             except Exception:
                 continue
-            out["pages"][u] = re.sub(r"\s+", " ", await pg.evaluate("document.body.innerText"))[:4000]
+            out["pages"][u] = re.sub(r"\s+", " ", await pg.evaluate("document.body ? document.body.innerText : ''"))[:4000]
             srcs = await pg.evaluate("""() => { const s = new Set(); document.querySelectorAll('img').forEach(i => { s.add(i.currentSrc || i.src); });
               document.querySelectorAll('*').forEach(e => { const m = getComputedStyle(e).backgroundImage.match(/url\\(["']?([^"')]+)/); m && s.add(m[1]); });
               return [...s].filter(x => x && x.startsWith('http')); }""")
