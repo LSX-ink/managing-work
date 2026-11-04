@@ -1,0 +1,29 @@
+[
+ {
+  "slug": "gerrard",
+  "file": "File:Liverpool footballer Steven Gerrard.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Liverpool_footballer_Steven_Gerrard.jpg",
+  "license": "CC BY-SA 2.5",
+  "artist": "Mr. Phillip Chambers",
+  "date": "2005-11-23",
+  "credit": "Photo: Mr. Phillip Chambers, CC BY-SA 2.5, via Wikimedia Commons"
+ },
+ {
+  "slug": "dudek",
+  "file": "File:Jerzy Dudek (2) (rotated).jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Jerzy_Dudek_(2)_(rotated).jpg",
+  "license": "CC BY-SA 2.0",
+  "artist": "Ja Fryta from Strzegom",
+  "date": "2012-07-27",
+  "credit": "Photo: Ja Fryta from Strzegom, CC BY-SA 2.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "shevchenko",
+  "file": "File:Andriy V Shevchenko.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Andriy_V_Shevchenko.jpg",
+  "license": "Public domain",
+  "artist": "Goev",
+  "date": "2008-08-21",
+  "credit": "Photo: Goev, Public domain, via Wikimedia Commons"
+ }
+]
