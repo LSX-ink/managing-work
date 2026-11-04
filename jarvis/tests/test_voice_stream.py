@@ -742,6 +742,23 @@ def test_clocks_seasons_and_nth_weekdays_are_instant():
     assert instant_answer("how many Fridays are left this year", s, now) == "There are 10 Fridays left this year, not counting today."
 
 
+def test_journeys_pace_and_powers_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("how long does it take to drive 100 miles at 50 mph", en) == "At 50 mph, 100 miles takes 2 hours."
+    assert instant_answer("how long will it take to walk 5 km at 4 km/h", en) == "At 4 km/h, 5 km takes 1 hour and 15 minutes."
+    assert instant_answer("Alfred, how long does it take to cycle twenty miles at ten miles per hour?", en) == "At 10 mph, 20 miles takes 2 hours."
+    assert instant_answer("if I drive 120 miles in 2 hours how fast am I going", en) == "That's 60 mph."
+    assert instant_answer("I ran 10k in 50 minutes, what's my average speed", en) == "That's 12 km/h."
+    assert instant_answer("what speed is 30 miles in 45 minutes", en) == "That's 40 mph."
+    assert instant_answer("how far can I drive in 3 hours at 60 mph", en) == "In 3 hours at 60 mph, you'd cover 180 miles."
+    assert instant_answer("what's my pace if I run 5k in 25 minutes", en) == "That's 5 minutes per km, or 8 minutes 3 seconds per mile."
+    assert instant_answer("what's 3 to the 4th", en) == "That's 81."
+    assert instant_answer("what's 9 to the power 2", en) == "That's 81."
+    assert instant_answer("how fast is a cheetah", en) is None  # facts go to Claude
+    assert instant_answer("how long does it take", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

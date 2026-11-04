@@ -530,7 +530,8 @@ def spoken_numbers(said: str) -> str:
 _SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?[\d(][\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
 _SPOKEN_MATHS = ((r"(\d(?:[\d.,]*\d)?) ?(?:%|per ?cent) of ", r"\1/100*"), (r"divided by|over|÷", "/"),
                  (r"(?:multiplied )?by|times|x|×", "*"), (r"plus|add", "+"), (r"minus|take away", "-"),
-                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the power of", "**"),
+                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the (?:power (?:of )?)?(\d+)(?:st|nd|rd|th)(?: power)?|to the power (\d+)", r"**\1\2"),
+                 (r"to the power of", "**"),
                  (r"the square root of|square root of", "sqrt"))
 
 
@@ -1800,6 +1801,64 @@ _WHAT_HEARD = re.compile(_NAME + r"(?:what did (?:you|u) (?:just )?hear(?: me sa
                          r"(?:say|repeat) (?:back )?what I (?:just )?said|repeat (?:that|me) back)" + _END, re.I)
 
 
+_TRAVEL = r"(?:drive|walk|cycle|ride|run|jog|go|travel|do|fly)"
+_DIST = r"(?P<d>\d+(?:\.\d+)?) ?(?P<du>miles?|km|k|kilomet(?:re|er)s?)"
+_SPEED = (r"(?P<s>\d+(?:\.\d+)?) ?(?P<su>mph|miles (?:per|an|a) hour|km/h|kph|kmh|km an hour|kilomet(?:re|er)s (?:per|an|a) hour)")
+_TRIP_TIME = re.compile(_NAME + r"(?:how long (?:does it|will it|would it|is it going to) take(?: me)?(?: to " + _TRAVEL + r")?|how long is) "
+                        + _DIST + r" at " + _SPEED + _END, re.I)
+_TRIP_SPEED = re.compile(_NAME + r"(?:(?:if )?I (?:" + _TRAVEL[3:-1] + r"|drove|walked|cycled|rode|ran|jogged|went|travell?ed|did|flew) " + _DIST + r" in (?:" + _DUR.format("a")
+                         + r"),? (?:how fast|what speed|what(?:'s| is) my (?:average )?speed)(?: am I going| was I going| is that| was that| am I doing)?"
+                         r"|(?:how fast|what speed|what(?:'s| is) the (?:average )?speed) (?:is|for) " + _DIST.replace("<d", "<e")
+                         + r" in (?:" + _DUR.format("b") + r"))" + _END, re.I)
+_TRIP_FAR = re.compile(_NAME + r"how far (?:(?:can|will|would|do) I (?:" + _TRAVEL + r"|get)|is) (?:in )?(?:" + _DUR.format("a") + r") at "
+                       + _SPEED + _END, re.I)
+_PACE = re.compile(_NAME + r"what(?:'s| is)? (?:my |the )?pace (?:if I (?:run|jog|walk|do)|for|is|of) " + _DIST + r" in (?:" + _DUR.format("a") + r")" + _END, re.I)
+_KM_PER_MILE = 1.609344
+
+
+def _is_km(unit: str) -> bool:
+    return unit.lower().startswith("k")
+
+
+def _say_pace(minutes: float) -> str:
+    whole, seconds = divmod(round(minutes * 60), 60)
+    return f"{whole} minute{'s' if whole != 1 else ''}" + (f" {seconds} second{'s' if seconds != 1 else ''}" if seconds else "")
+
+
+def _journey_answer(said: str) -> str | None:
+    """'How long does it take to drive 100 miles at 50 mph?', 'if I drive 120 miles in 2 hours how fast am I going?',
+    'how far can I drive in 3 hours at 60 mph?' and 'what's my pace if I run 5k in 25 minutes?'."""
+    said = spoken_numbers(said)
+    if m := _TRIP_TIME.match(said):
+        dist, speed = float(m["d"]), float(m["s"])
+        if speed <= 0:
+            return None
+        if _is_km(m["du"]) != _is_km(m["su"]):
+            dist = dist / _KM_PER_MILE if _is_km(m["du"]) else dist * _KM_PER_MILE
+        unit = "km/h" if _is_km(m["su"]) else "mph"
+        said_dist = f"{calcmaths.fmt(float(m['d']))} {'km' if _is_km(m['du']) else ('mile' if float(m['d']) == 1 else 'miles')}"
+        return f"At {calcmaths.fmt(speed)} {unit}, {said_dist} takes {_say_minutes(dist / speed * 60)}."
+    if m := _TRIP_SPEED.match(said):
+        p = "a" if m["d"] else "b"
+        dist, unit = (m["d"], m["du"]) if m["d"] else (m["e"], m["eu"])
+        minutes = _dur_minutes(m, p)
+        if minutes <= 0:
+            return None
+        speed = float(dist) / minutes * 60
+        return f"That's {calcmaths.fmt(round(speed, 1))} {'km/h' if _is_km(unit) else 'mph'}."
+    if m := _TRIP_FAR.match(said):
+        far = float(m["s"]) * _dur_minutes(m, "a") / 60
+        unit = "km" if _is_km(m["su"]) else ("mile" if far == 1 else "miles")
+        return f"In {_say_minutes(_dur_minutes(m, 'a'))} at {calcmaths.fmt(float(m['s']))} {'km/h' if _is_km(m['su']) else 'mph'}, you'd cover {calcmaths.fmt(round(far, 1))} {unit}."
+    if m := _PACE.match(said):
+        km = float(m["d"]) if _is_km(m["du"]) else float(m["d"]) * _KM_PER_MILE
+        minutes = _dur_minutes(m, "a")
+        if km <= 0 or minutes <= 0:
+            return None
+        return f"That's {_say_pace(minutes / km)} per km, or {_say_pace(minutes / km * _KM_PER_MILE)} per mile."
+    return None
+
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -1817,7 +1876,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said) or _bigger_numbers(said)
-            or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _journey_answer(said) or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
 
