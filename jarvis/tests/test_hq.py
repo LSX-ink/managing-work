@@ -248,3 +248,12 @@ def test_new_email_cap_grows_five_a_week():
     assert weekly_new_cap(15, date(2026, 11, 9)) == 20
     assert weekly_new_cap(15, date(2026, 11, 16)) == 25
     assert weekly_new_cap(15, date(2027, 6, 1)) == 50
+
+
+def test_emails_found_in_page_text_and_cloudflare():
+    from hq import outbox
+    hidden = "42" + "".join("%02x" % (ord(c) ^ 0x42) for c in "hi@shop.co.uk")
+    html = f'<p>Email: bookings@cuts.co.uk</p><a data-cfemail="{hidden}">x</a> or bob [at] cuts [dot] com'
+    assert {"bookings@cuts.co.uk", "hi@shop.co.uk", "bob@cuts.com"} <= set(outbox.emails_in(html))
+    assert not outbox.good_address("press@linktr.ee") and not outbox.good_address("user@domain.com")
+    assert outbox.good_address("info@clarksbarbers.com")

@@ -200,11 +200,11 @@ async def scout(ctx: Ctx) -> str:
     trade = _trade(b)
     b.set("scout.turn", turn + 1)
     b.set("scout.trade_turn", b.get("scout.trade_turn", 0) + 1)
-    before = len(st.rows_of(s, st.PROSPECTS))
+    before = {r.get("id") for r in st.rows_of(s, st.PROSPECTS)}
     await kf.find(s, {"town": city, "kind": trade, "audit_limit": 8}, ctx.http)
     rows = st.rows_of(s, st.PROSPECTS)
-    new = len(rows) - before
-    no_site = sum(1 for r in rows[-max(new, 0):] if not r.get("website")) if new > 0 else 0
+    added = [r for r in rows if r.get("id") not in before]  # the list is full, so old ones make room: count by id
+    new, no_site = len(added), sum(1 for r in added if not r.get("website"))
     b.log("scout", f"found {new} new {trade} leads in {city} ({no_site} with no website)", "win" if new else "info",
           {"city": city, "new": new})
     b.set("leads.total", len(rows))
@@ -585,7 +585,8 @@ def roster() -> list[Agent]:
         Agent("ceo", "Atlas", "CEO", "👑", "#f5c84c", "Reads the brain each morning and sets the day's 3 priorities.",
               times=("07:55",), run=ceo),
         Agent("scout", "Hawk", "Lead Hunter", "🦅", "#4cc9f0", "Finds fresh businesses with weak or no websites, UK and worldwide.",
-              times=("08:30", "11:30", "14:30", "17:30"), run=scout),
+              # 4 Nov 2026: four runs a day ran Vera out of leads by 1pm; now every hour of the working day
+              times=tuple(f"{h:02d}:30" for h in range(7, 18)), run=scout),
         Agent("closer", "Blade", "Closer", "🗡️", "#f72585", "Each morning: your Instagram DM list (with @names and mock-ups), plus follow-ups due. Drafts only.",
               times=("09:05", "13:05"), run=closer),
         Agent("concierge", "Echo", "Concierge", "💬", "#b5179e", "Watches Instagram DMs and comments Alfred answers; flags what needs you.",

@@ -40,7 +40,12 @@ SITE = "https://kineticwebdesigns.co.uk"
 LIVE = Path(r"C:\Users\Thato\kinetic-repo\kinetic-live")
 OPT_OUT_WORDS = re.compile(r"\b(no thanks|no thank you|unsubscribe|stop|remove me|not interested|don'?t contact)\b", re.I)
 BAD_ADDRESS = re.compile(r"^(no-?reply|donotreply|do-not-reply|mailer-daemon|postmaster|abuse|privacy|gdpr)@|"
-                         r"\.(png|jpe?g|gif|webp|svg)$|example\.(com|org)|sentry|wixpress|godaddy", re.I)
+                         r"\.(png|jpe?g|gif|webp|svg)$|example\.(com|org)|sentry|wixpress|godaddy|"
+                         # template and platform addresses, not the business's (4 Nov 2026: press@linktr.ee)
+                         r"^(user|name|your-?name|youremail|email|test|press|legal)@|"
+                         r"@(domain|email|yourdomain|mysite|linktr\.ee|phorest|fresha|booksy|squareup|square|wix|"
+                         r"canva|shopify|resurva|vagaro|mindbodyonline|setmore|acuityscheduling|treatwell)\.?\w*$",
+                         re.I)
 MUST = [
     ("See your design before you pay anything", "the 'see your design before you pay anything' line"),
     ("Alfred", "Alfred's signature"),
@@ -282,10 +287,59 @@ async def email_for(ctx, p: dict) -> str:
                 return ""
             addr = pick_address(audit.get("emails") or [], p["website"])
             b.set(f"booking.{p['id']}", bool(audit.get("booking")))
+            if not addr:  # 4 Nov 2026: 638 leads were dropped because only homepage mailto: links were read
+                addr = pick_address(await asyncio.wait_for(site_emails(ctx.http, audit.get("url") or p["website"]), 60),
+                                    p["website"])
         except Exception:
             addr = ""
     b.set(key, addr)
     return addr
+
+
+TEXT_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,24}")
+CONTACT_LINK = re.compile(r'href=["\']([^"\'#]*(?:contact|about|get-in-touch|enquir|find-us|visit|location)[^"\'#]*)["\']',
+                          re.I)
+
+
+def _cf_email(hexed: str) -> str:
+    """Cloudflare hides addresses as data-cfemail="<hex>": the first byte is the key the rest is XORed with."""
+    try:
+        k = int(hexed[:2], 16)
+        return "".join(chr(int(hexed[i:i + 2], 16) ^ k) for i in range(2, len(hexed), 2))
+    except ValueError:
+        return ""
+
+
+def emails_in(html: str) -> list[str]:
+    """Every address on a page: mailto: links, plain text (also written "name [at] site.com") and Cloudflare's."""
+    text = re.sub(r"\s*[\[(]\s*at\s*[\])]\s*", "@", html, flags=re.I)
+    text = re.sub(r"\s*[\[(]\s*dot\s*[\])]\s*", ".", text, flags=re.I)
+    found = [m.split("?")[0] for m in re.findall(r'mailto:([^"\'>\s]+)', text, re.I)]
+    found += [_cf_email(h) for h in re.findall(r'data-cfemail=["\']([0-9a-f]+)', html, re.I)]
+    found += TEXT_EMAIL.findall(re.sub(r"<[^>]+>", " ", text))
+    return list(dict.fromkeys(e.strip(" .").lower() for e in found if e))
+
+
+async def site_emails(http, url: str) -> list[str]:
+    """The addresses on their home page and on up to four contact/about pages of the same site. Free: plain web
+    reads, no AI."""
+    from urllib.parse import urljoin, urlparse
+    head = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"}
+    try:
+        home = await http.get(url, headers=head, timeout=20, follow_redirects=True)
+    except Exception:
+        return []
+    found, host = emails_in(home.text), urlparse(str(home.url)).netloc
+    links = [urljoin(str(home.url), h) for h in CONTACT_LINK.findall(home.text)]
+    links = [u for u in dict.fromkeys(links) if urlparse(u).netloc == host and u != str(home.url)]
+    for u in sorted(links, key=lambda u: ("contact" not in u.lower(), len(u)))[:4]:
+        if any(good_address(e) for e in found):
+            break
+        try:
+            found += emails_in((await http.get(u, headers=head, timeout=20, follow_redirects=True)).text)
+        except Exception:
+            continue
+    return found
 
 
 # ---- the mock-up, online -------------------------------------------------------------------------
