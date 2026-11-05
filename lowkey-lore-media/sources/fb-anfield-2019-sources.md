@@ -1,0 +1,15 @@
+# Sources: Liverpool 4-0 Barcelona, 7 May 2019 (Champions League semi-final, second leg; 4-3 on aggregate)
+- ESPN: https://www.espn.com/soccer/match/_/gameId/538699
+- UEFA report: https://www.uefa.com/uefachampionsleague/match/2027160--liverpool-vs-barcelona/postmatch/report/
+- Liverpool FC match report: https://www.liverpoolfc.com/news/first-team/349380-match-report-liverpool-barcelona-champions-league
+- First leg: Barcelona 3-0 Liverpool, 1 May 2019, Camp Nou (ESPN, 11v11)
+- Salah and Firmino not in Liverpool's squad (ESPN line-ups; widely reported injuries, not stated as fact in the video)
+- Goals: Origi 7', Wijnaldum 54', Wijnaldum 56', Origi 79' (ESPN, footballcritic, fotmob)
+- Wijnaldum on for Robertson at half-time (ESPN)
+- 79': Alexander-Arnold walks away from the corner, turns back and takes it quickly to Origi (Sports Mole live commentary; Scotsman; CNN Chile)
+- Possession: ESPN 57% Barcelona, fbref 58% -> "almost sixty percent", shown as ESPN's 57%
+- Liverpool 13 shots, 7 on target (ESPN, fbref)
+- 2018: Roma 3-0 Barcelona after Barcelona won the first leg 4-1; Roma through on away goals (CBS Sports, FourFourTwo, Sky Sports)
+- Final: Tottenham 0-2 Liverpool, 1 June 2019 (Wikipedia, LFC)
+- Joke: "watch the corner" follows the quick-corner goal shown just before
+- Player photos: Wikimedia Commons, free licences, credits printed on each card (img/photos.json)
