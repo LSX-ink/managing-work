@@ -25,3 +25,4 @@ The "park the bus" line is banter: Mourinho's own 2004 phrase, applied to Madrid
 - Starting XIs (both sides) and shirt numbers: ESPN line-ups (gameId 401882832) and democrata.es line-ups article (25 Oct 2026); both agree
 - xG: we use ESPN (Barcelona 1.19, Real Madrid 1.95). One other listing gives 1.27 / 2.01; the order (Madrid higher) is the same in both
 - Board chips show shirt numbers per ESPN; Camavinga (#6) came on in the 80th minute for Bernardo Silva
+- Player cards: our own FIFA-style design (no EA artwork or logos). Ratings and the six face stats are each player's EA SPORTS FC 27 Ultimate Team launch gold item, read from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings) on 5 Nov 2026. Players not in that table (Icons, retired players, Neymar, Origi, Kroos) show their shirt number from this match instead of a rating. Card data: web/fc_cards.py
