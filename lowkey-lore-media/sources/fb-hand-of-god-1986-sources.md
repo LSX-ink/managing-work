@@ -10,3 +10,4 @@ Source: https://en.wikipedia.org/wiki/Argentina_v_England_(1986_FIFA_World_Cup)
 - 1986 Golden Boot: Lineker 6; Butragueño, Careca, Maradona 5 each: https://en.wikipedia.org/wiki/1986_FIFA_World_Cup#Goalscorers
 - Hodge's swapped Maradona shirt (second half) sold at Sotheby's in May 2022 for £7,142,500: https://en.wikipedia.org/wiki/Argentina_v_England_(1986_FIFA_World_Cup)
 - Player photos: Wikimedia Commons, free licences, with credits printed on each card (img/photos.json)
+- Player cards: our own FIFA-style design (no EA artwork or logos). Ratings and the six face stats are each player's EA SPORTS FC 27 Ultimate Team launch gold item, read from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings) on 5 Nov 2026. Players not in that table (Icons, retired players, Neymar, Origi, Kroos) show their shirt number from this match instead of a rating. Card data: web/fc_cards.py
