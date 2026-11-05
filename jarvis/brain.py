@@ -1428,6 +1428,58 @@ def _time_offsets(said: str, here: dt.datetime) -> str | None:
     return None
 
 
+_CLOCK_D = _CLOCK.replace("(?P<", "(?P<d") + r"|(?P<dword>midnight|midday|noon)"
+_PLACE = r"[a-z .']+?"
+_ZONE_WHEN = re.compile(_NAME + r"(?:if|when) it(?:'s| is) (?:" + _CLOCK_AT + r")(?: (?:in (?P<a>" + _PLACE + r")|here|(?P<a2>" + _PLACE
+                        + r") time))?,? what time (?:is it|will it be|would it be|is that) in (?P<b>" + _PLACE + r")" + _END, re.I)
+_ZONE_WHAT = re.compile(_NAME + r"what(?:'s| is) (?:" + _CLOCK_AT + r") (?:(?P<a>" + _PLACE + r") time )?in (?P<b>" + _PLACE
+                        + r")(?: time)?" + _END, re.I)
+_ZONE_AT = re.compile(_NAME + r"what time (?:is it|will it be|would it be) in (?P<b>" + _PLACE + r") at (?:" + _CLOCK_AT
+                      + r")(?: (?P<a>" + _PLACE + r") time| here| my time)?" + _END, re.I)
+_BETWEEN_CLOCKS = re.compile(_NAME + r"how (?:many hours|many minutes|long) (?:is it |is there |are there )?(?:between|from) (?:" + _CLOCK_AT
+                             + r") (?:and|to|until|till) (?:" + _CLOCK_D + r")" + _END, re.I)
+
+
+def _clock_d(m: re.Match) -> tuple[int, int] | None:
+    """The second clock of a 'between 9 am and 5 pm' question (the d-prefixed groups)."""
+    if m.group("dword"):
+        return (0 if m.group("dword").lower() == "midnight" else 12), 0
+    if m.group("dh24"):
+        return int(m.group("dh24")), int(m.group("dm24"))
+    hour, minute = int(m.group("dh")), int(m.group("dm") or 0)
+    if not 1 <= hour <= 12 or minute > 59:
+        return None
+    return hour % 12 + (12 if m.group("dap").lower().startswith("p") else 0), minute
+
+
+def _zone_clock(said: str) -> str | None:
+    """'If it's 3 pm in London, what time is it in Tokyo?', 'what's 5 pm London time in New York?' and
+    'how many hours between 9 am and 5 pm?'."""
+    said = re.sub(r"(?<![\d:])(\d):(\d\d)(?! ?[ap]\.?m)", r"0\1:\2", said)  # "9:30" is a 24-hour clock too
+    if m := _BETWEEN_CLOCKS.match(said):
+        start, end = _clock_from(m), _clock_d(m)
+        if not start or not end:
+            return None
+        gap = (end[0] * 60 + end[1] - start[0] * 60 - start[1]) % 1440
+        return f"From {_say_clock(*start)} to {_say_clock(*end)} is {_say_minutes(gap)}."
+    m = _ZONE_WHEN.match(said) or _ZONE_WHAT.match(said) or _ZONE_AT.match(said)
+    if not m or not (clock := _clock_from(m)):
+        return None
+    source = m.groupdict().get("a") or m.groupdict().get("a2")
+    try:
+        a, b = _offset_hours(source), _offset_hours(m.group("b"))
+    except Exception:  # no time zone data on this PC: Claude's tool asks the internet
+        return None
+    if not a or not b or b[1] == "here" and a[1] == "here":
+        return None  # somewhere less common: Claude looks it up
+    total = clock[0] * 60 + clock[1] + round((b[0] - a[0]) * 60)
+    day = "" if 0 <= total < 1440 else " the next day" if total >= 1440 else " the day before"
+    total %= 1440
+    there = "here" if b[1] == "here" else f"in {b[1]}"
+    where = "here" if a[1] == "here" else f"in {a[1]}"
+    return f"When it's {_say_clock(*clock)} {where}, it's {_say_clock(total // 60, total % 60)}{day} {there}."
+
+
 def _clock_maths(said: str, now: time.struct_time) -> str | None:
     """'How long until 5 pm?' and 'what time will it be in 3 hours?': worked out from the clock on the spot."""
     here = dt.datetime(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
@@ -1530,7 +1582,7 @@ def _calendar_answer(said: str, now: time.struct_time) -> str | None:
                   or _calendar_facts(said, today) or _weekday_date(said, today) or _countdown(said, today)
                   or _relative_day(said, today) or _calendar_more(said, today)) is not None:
         return found
-    if (found := _time_difference(said)) is not None:
+    if (found := _zone_clock(said) or _time_difference(said)) is not None:
         return found
     if m := _WORLD_TIME.match(said):
         name = dates.CITY_ZONES.get(m.group("where").strip().lower().removeprefix("the "))

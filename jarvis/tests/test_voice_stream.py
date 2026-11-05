@@ -759,6 +759,20 @@ def test_journeys_pace_and_powers_are_instant():
     assert instant_answer("how long does it take", en) is None
 
 
+def test_clock_in_another_zone_and_between_clocks_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    # Dubai, Tokyo and Delhi have no summer time, so these hold all year
+    assert instant_answer("if it's 3 pm in Dubai what time is it in Tokyo", en) == "When it's 3 pm in Dubai, it's 8 pm in Tokyo."
+    assert instant_answer("what's 9 pm Tokyo time in Dubai", en) == "When it's 9 pm in Tokyo, it's 4 pm in Dubai."
+    assert instant_answer("what's 10 am Dubai time in Delhi", en) == "When it's 10 am in Dubai, it's 11:30 am in Delhi."
+    assert instant_answer("when it's 11 pm in Dubai, what time is it in Tokyo?", en) == "When it's 11 pm in Dubai, it's 4 am the next day in Tokyo."
+    assert instant_answer("how many hours between 9 am and 5 pm", en) == "From 9 am to 5 pm is 8 hours."
+    assert instant_answer("how long is it from 9:30 to 17:15", en) == "From 9:30 am to 5:15 pm is 7 hours and 45 minutes."
+    assert instant_answer("how long from 10 pm to 6 am", en) == "From 10 pm to 6 am is 8 hours."
+    assert instant_answer("what's 5 pm in Narnia", en) is None  # unknown places go to Claude
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
