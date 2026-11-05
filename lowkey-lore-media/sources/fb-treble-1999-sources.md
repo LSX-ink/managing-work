@@ -8,3 +8,5 @@
 - "Led for 85 minutes" = 6' to 91' (derived from the goal times)
 - Player cards: our own FIFA-style design. Ratings are EA SPORTS FC 27 launch gold items from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings), read 5 Nov 2026; players not in it show their shirt number + a fact from this match. Card data: web/fc_cards.py
 - Photos: Wikimedia Commons, free licences, credits printed on each card (img/photos.json)
+- Both goals from Beckham corners; both scorers came on as substitutes (PA / Guernsey Press 'On this day'; Wikipedia)
+- United's first European Cup since 1968 (PA; CBS News)
