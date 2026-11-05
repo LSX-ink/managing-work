@@ -1,0 +1,130 @@
+{
+ "events": [
+  {
+   "t": 0.8,
+   "sound": "click",
+   "lufs": -33,
+   "what": "number appears: Barcelona possession"
+  },
+  {
+   "t": 3.761,
+   "sound": "click",
+   "lufs": -31,
+   "what": "scoreboard"
+  },
+  {
+   "t": 3.841,
+   "sound": "click",
+   "lufs": -34,
+   "what": "scoreboard"
+  },
+  {
+   "t": 4.948,
+   "sound": "click",
+   "lufs": -33,
+   "what": "number appears: Barcelona passes"
+  },
+  {
+   "t": 6.866,
+   "sound": "click",
+   "lufs": -33,
+   "what": "number appears: Madrid goals"
+  },
+  {
+   "t": 8.067,
+   "sound": "paper",
+   "lufs": -31,
+   "what": "tactics sheet in"
+  },
+  {
+   "t": 11.07,
+   "sound": "marker",
+   "lufs": -29,
+   "what": "arrow drawn"
+  },
+  {
+   "t": 11.65,
+   "sound": "marker",
+   "lufs": -31,
+   "what": "arrow head"
+  },
+  {
+   "t": 11.67,
+   "sound": "marker",
+   "lufs": -29,
+   "what": "arrow drawn"
+  },
+  {
+   "t": 12.254,
+   "sound": "marker",
+   "lufs": -31,
+   "what": "arrow head"
+  },
+  {
+   "t": 12.474,
+   "sound": "marker",
+   "lufs": -29,
+   "what": "arrow drawn"
+  },
+  {
+   "t": 13.657,
+   "sound": "marker",
+   "lufs": -31,
+   "what": "arrow head"
+  },
+  {
+   "t": 13.927,
+   "sound": "marker",
+   "lufs": -29,
+   "what": "arrow drawn"
+  },
+  {
+   "t": 15.64,
+   "sound": "marker",
+   "lufs": -31,
+   "what": "arrow head"
+  },
+  {
+   "t": 15.88,
+   "sound": "marker",
+   "lufs": -29,
+   "what": "arrow drawn"
+  },
+  {
+   "t": 16.66,
+   "sound": "marker",
+   "lufs": -31,
+   "what": "arrow head"
+  },
+  {
+   "t": 16.48,
+   "sound": "marker",
+   "lufs": -31,
+   "what": "note written: OFF MBAPP\u00c9"
+  },
+  {
+   "t": 9.733,
+   "sound": "card",
+   "lufs": -27,
+   "what": "polaroid put down"
+  },
+  {
+   "t": 3.628,
+   "sound": "crowd",
+   "lufs": -28,
+   "what": "crowd swell: phrase 1"
+  },
+  {
+   "t": 16.779,
+   "sound": "crowd",
+   "lufs": -28,
+   "what": "crowd swell: phrase 9"
+  }
+ ],
+ "sfx_short_term_lufs": {
+  "max": -26.8,
+  "median": -29.1
+ },
+ "mix_lufs": -14.1,
+ "true_peak": -1.8
+}

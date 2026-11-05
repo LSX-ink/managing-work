@@ -1,0 +1,59 @@
+{
+ "reference": {
+  "f0": 94,
+  "f0_lo": 76,
+  "f0_hi": 132,
+  "wpm": 142,
+  "pause": 0.32
+ },
+ "samples": [
+  {
+   "name": "1-edge-christopher-deep",
+   "f0": 107,
+   "f0_lo": 77,
+   "f0_hi": 140,
+   "wpm": 143,
+   "pause": 0.3
+  },
+  {
+   "name": "2-edge-eric",
+   "f0": 107,
+   "f0_lo": 84,
+   "f0_hi": 139,
+   "wpm": 143,
+   "pause": 0.3
+  },
+  {
+   "name": "3-edge-william-au",
+   "f0": 95,
+   "f0_lo": 75,
+   "f0_hi": 132,
+   "wpm": 143,
+   "pause": 0.3
+  },
+  {
+   "name": "4-kokoro-onyx",
+   "f0": 87,
+   "f0_lo": 72,
+   "f0_hi": 112,
+   "wpm": 142,
+   "pause": 0.3
+  },
+  {
+   "name": "5-chatterbox-deep-onyx",
+   "f0": 88,
+   "f0_lo": 71,
+   "f0_hi": 108,
+   "wpm": 143,
+   "pause": 0.3
+  },
+  {
+   "name": "6-chatterbox-deep-christopher",
+   "f0": 101,
+   "f0_lo": 77,
+   "f0_hi": 135,
+   "wpm": 143,
+   "pause": 0.3
+  }
+ ]
+}
