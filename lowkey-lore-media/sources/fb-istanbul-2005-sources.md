@@ -9,3 +9,4 @@ Source: https://en.wikipedia.org/wiki/2005_UEFA_Champions_League_final
 - Liverpool finished fifth in the 2004-05 Premier League (Chelsea, Arsenal, Manchester United, Everton above them): https://en.wikipedia.org/wiki/2004%E2%80%9305_Premier_League
 - Milan's starting XI (Dida; Cafu, Stam, Nesta, Maldini; Pirlo, Gattuso, Seedorf; Kaká; Shevchenko, Crespo): https://en.wikipedia.org/wiki/2005_UEFA_Champions_League_final
 - Player photos: Wikimedia Commons, free licences, with credits printed on each card (img/photos.json)
+- Player cards: our own FIFA-style design (no EA artwork or logos). Ratings and the six face stats are each player's EA SPORTS FC 27 Ultimate Team launch gold item, read from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings) on 5 Nov 2026. Players not in that table (Icons, retired players, Neymar, Origi, Kroos) show their shirt number from this match instead of a rating. Card data: web/fc_cards.py
