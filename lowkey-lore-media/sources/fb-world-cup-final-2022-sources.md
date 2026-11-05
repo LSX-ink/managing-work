@@ -1,0 +1,11 @@
+# Sources: Argentina 3-3 France (4-2 pens), World Cup final, 18 Dec 2022
+- Wikipedia: https://en.wikipedia.org/wiki/2022_FIFA_World_Cup_final
+- ESPN: https://www.espn.com/soccer/match/_/gameId/633850
+- Lusail Stadium; attendance 88,966 (Wikipedia); referee Szymon Marciniak (both)
+- Goals: Messi pen 23', Di María 36', Mbappé pen 80', Mbappé 81', Messi 108', Mbappé pen 118' (both)
+- Mbappé's two goals "within 97 seconds"; second man after Geoff Hurst (1966) to score a hat-trick in a World Cup final (Wikipedia lead)
+- France without a shot "for the vast majority of the match" (Wikipedia lead)
+- Shoot-out 4-2: Messi, Dybala, Paredes, Montiel scored; Mbappé, Kolo Muani scored; Coman saved by Martínez, Tchouaméni missed (Wikipedia; ESPN shoot-out list)
+- Shots 20-10 (both)
+- Player cards: our own FIFA-style design. Ratings are EA SPORTS FC 27 launch gold items from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings), read 5 Nov 2026; players not in it show their shirt number + a fact from this match. Card data: web/fc_cards.py
+- Photos: Wikimedia Commons, free licences, credits printed on each card (img/photos.json)
