@@ -12,3 +12,4 @@
 - Neymar to PSG, 3 August 2017, €222m release clause, world record; previous record Pogba €105m (AP via theScore; Reuters; Bloomberg)
 - Joke: the ending is banter built on the transfer fact above
 - Player photos: Wikimedia Commons, free licences, credits printed on each card (img/photos.json)
+- Player cards: our own FIFA-style design (no EA artwork or logos). Ratings and the six face stats are each player's EA SPORTS FC 27 Ultimate Team launch gold item, read from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings) on 5 Nov 2026. Players not in that table (Icons, retired players, Neymar, Origi, Kroos) show their shirt number from this match instead of a rating. Card data: web/fc_cards.py
