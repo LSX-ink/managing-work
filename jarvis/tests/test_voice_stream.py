@@ -773,6 +773,25 @@ def test_clock_in_another_zone_and_between_clocks_are_instant():
     assert instant_answer("what's 5 pm in Narnia", en) is None  # unknown places go to Claude
 
 
+def test_days_between_dates_and_dates_from_dates_are_instant():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 9, 0, 0, 4, 289, 0))  # Friday the 16th of October 2026
+    ask = lambda q: instant_answer(q, en, now=now)
+    assert ask("how many days between the 1st of March and the 25th of December") == "From Sunday the 1st of March to Friday the 25th of December is 299 days."
+    assert ask("how many days from today to the 1st of January") == "From Friday the 16th of October to Friday the 1st of January 2027 is 77 days."
+    assert ask("how many weeks between 1 March and 1 June") == "That's 13 weeks and 1 day."
+    assert ask("how many nights from the 20th of December to the 2nd of January") == "From Sunday the 20th of December to Saturday the 2nd of January 2027 is 13 nights."
+    assert ask("what date is 6 weeks from the 1st of December") == "That's Tuesday the 12th of January 2027."
+    assert ask("what's 2 weeks before Christmas") == "That's Friday the 11th of December."
+    assert ask("what's 100 days from today") == "That's Sunday the 24th of January 2027."
+    assert ask("how many weekends until Christmas") == "There are 10 weekends before Friday the 25th of December."
+    assert ask("how many Fridays until the 1st of December") == "There are 6 Fridays before Tuesday the 1st of December."
+    assert ask("how old will I be in 2030 if I was born in 1990") == "You'll turn 40 in 2030."
+    assert ask("how many days between now and then") is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

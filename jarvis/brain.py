@@ -1575,12 +1575,98 @@ def _calendar_more(said: str, today: dt.date) -> str | None:
     return None
 
 
+def _date_at(p: str) -> str:
+    """A date said aloud with p-prefixed groups: 'the 1st of March', 'March 1st 2027', 'today', 'Christmas'."""
+    said = _DATE_SAID.replace("(?P<", "(?P<" + p)
+    return r"(?:(?:" + said + r")(?:,? (?P<" + p + r"y>\d{4}))?|(?P<" + p + r"named>[a-z' ]+?))"
+
+
+_DATES_BETWEEN = re.compile(_NAME + r"how many (?P<unit>days|weeks|nights)(?: are there| is it| is that)? (?:between|from) " + _date_at("a")
+                            + r" (?:and|to|until|till) " + _date_at("b") + _END, re.I)
+_DATE_FROM = re.compile(_NAME + r"(?:what(?:'s| is)(?: the date)?|what date is|what day is|when is) (?P<n>\d+|a|an) (?P<unit>days?|weeks?) "
+                        r"(?P<way>from|after|before) " + _date_at("a") + _END, re.I)
+_WEEKENDS_UNTIL = re.compile(_NAME + r"how many (?P<unit>weekends|saturdays|sundays|mondays|tuesdays|wednesdays|thursdays|fridays)"
+                             r"(?: are there| are left| have I got| is it)? (?:until|till|before) " + _date_at("a") + _END, re.I)
+_AGE_IN = re.compile(_NAME + r"how old will I be (?:in|by) (?P<y>\d{4}),? if I (?:was|were|am) born (?:in )?(?P<by>\d{4})" + _END, re.I)
+
+
+def _date_from(m: re.Match, p: str, today: dt.date) -> tuple[dt.date, bool] | None:
+    """The date in p-prefixed groups, and whether a year was said."""
+    if m.group(p + "named"):
+        key = m.group(p + "named").strip().lower().removeprefix("the ")
+        if key in ("today", "now", "here"):
+            return today, True
+        if key == "tomorrow":
+            return today + dt.timedelta(days=1), True
+        if key == "yesterday":
+            return today - dt.timedelta(days=1), True
+        day = _named_day(key, today.year)
+        return (day, False) if day else None
+    word = (m.group(p + "mon") or m.group(p + "mon2") or "").lower()
+    month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+    try:
+        return dt.date(int(m.group(p + "y") or today.year), month, int(m.group(p + "d") or m.group(p + "d2"))), bool(m.group(p + "y"))
+    except ValueError:
+        return None
+
+
+def _long_date(day: dt.date, today: dt.date) -> str:
+    return f"{day:%A} the {_ordinal(day.day)} of {day:%B}{f' {day.year}' if day.year != today.year else ''}"
+
+
+def _date_spans(said: str, today: dt.date) -> str | None:
+    """'How many days between the 1st of March and the 25th of December?', 'what's 6 weeks from the 1st of December?',
+    'how many weekends until Christmas?' and 'how old will I be in 2030 if I was born in 1990?'."""
+    said = spoken_numbers(said)
+    if m := _DATES_BETWEEN.match(said):
+        a, b = _date_from(m, "a", today), _date_from(m, "b", today)
+        if not a or not b:
+            return None
+        (start, a_year), (end, b_year) = a, b
+        if end < start and not b_year:  # "from the 1st of December to the 1st of March" crosses New Year
+            end = _named_day(m.group("bnamed").strip().lower().removeprefix("the "), end.year + 1) if m.group("bnamed") \
+                else end.replace(year=end.year + 1)
+        days = abs((end - start).days)
+        if m.group("unit").lower() == "weeks":
+            weeks, rest = divmod(days, 7)
+            return f"That's {weeks} week{'s' if weeks != 1 else ''}" + (f" and {rest} day{'s' if rest != 1 else ''}" if rest else "") + "."
+        word = "night" if m.group("unit").lower() == "nights" else "day"
+        return f"From {_long_date(start, today)} to {_long_date(end, today)} is {days:,} {word}{'s' if days != 1 else ''}."
+    if m := _DATE_FROM.match(said):
+        found = _date_from(m, "a", today)
+        if not found:
+            return None
+        n = 1 if not m.group("n").isdigit() else int(m.group("n"))
+        days = n * (7 if m.group("unit").lower().startswith("w") else 1) * (-1 if m.group("way").lower() == "before" else 1)
+        if abs(days) > 36500:
+            return None
+        return f"That's {_long_date(found[0] + dt.timedelta(days=days), today)}."
+    if m := _WEEKENDS_UNTIL.match(said):
+        found = _date_from(m, "a", today)
+        if not found:
+            return None
+        end = found[0]
+        if end < today and not found[1]:
+            end = end.replace(year=end.year + 1)
+        unit = m.group("unit").lower()
+        wanted = 5 if unit in ("weekends", "saturdays") else ("mondays tuesdays wednesdays thursdays fridays saturdays sundays".split().index(unit))
+        count = sum(1 for i in range(1, (end - today).days) if (today + dt.timedelta(days=i)).weekday() == wanted)
+        unit = unit if unit == "weekends" else unit.capitalize()
+        return f"There {'is' if count == 1 else 'are'} {count} {unit if count != 1 else unit[:-1]} before {_long_date(end, today)}."
+    if m := _AGE_IN.match(said):
+        age = int(m.group("y")) - int(m.group("by"))
+        if not 0 <= age <= 150:
+            return None
+        return f"You'll turn {age} in {m.group('y')}."
+    return None
+
+
 def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
     if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)
                   or _calendar_facts(said, today) or _weekday_date(said, today) or _countdown(said, today)
-                  or _relative_day(said, today) or _calendar_more(said, today)) is not None:
+                  or _relative_day(said, today) or _calendar_more(said, today) or _date_spans(said, today)) is not None:
         return found
     if (found := _zone_clock(said) or _time_difference(said)) is not None:
         return found
