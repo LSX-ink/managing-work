@@ -921,6 +921,80 @@ def _money_answer(said: str) -> str | None:
     return None
 
 
+_VAT_RATE = 20  # UK standard rate
+_VAT_ON = re.compile(_NAME + r"(?:what(?:'s| is)|how much is|work out|calculate) (?:the )?VAT (?:on|for) " + _CASH + _END, re.I)
+_VAT_ADD = re.compile(_NAME + r"(?:add VAT to |put VAT on |(?:what(?:'s| is)|how much is) )" + _CASH
+                      + r"(?: (?:plus|with|including|inc|incl|and|add) VAT)?" + _END, re.I)
+_VAT_OFF = re.compile(_NAME + r"(?:take (?:the )?VAT off |remove (?:the )?VAT from |how much VAT is (?:there )?in |(?:what(?:'s| is)|how much is) )"
+                      + _CASH + r"(?P<off> (?:without|minus|excluding|exc|excl|ex|before|less) VAT)?" + _END, re.I)
+_NUM_A = r"(?P<a>-?\d[\d,]*(?:\.\d+)?)"
+_NUM_B = r"(?P<b>-?\d[\d,]*(?:\.\d+)?)"
+_PC_CHANGE = re.compile(_NAME + r"what(?:'s| is) the (?:percentage|percent|%) (?P<kind>change|increase|decrease|rise|drop|fall|difference) (?:from|between) "
+                        + r"[£$€]?" + _NUM_A + r" (?:to|and) [£$€]?" + _NUM_B + _END, re.I)
+_DIFFERENCE = re.compile(_NAME + r"what(?:'s| is) the difference between [£$€]?" + _NUM_A + r" and [£$€]?" + _NUM_B + _END, re.I)
+_CASH_PC = re.compile(_NAME + r"(?:what(?:'s| is)|how much is) " + _CASH + r" (?P<way>plus|add|with|minus|less|take away) " + _PERCENT + _END, re.I)
+_INTEREST = re.compile(_NAME + r"(?:what(?:'s| is)|how much is) (?:the )?" + _PERCENT + r" (?:interest )?(?:on|of) " + _CASH
+                       + r" (?:for|over|after|in) (?P<years>\d+) years?" + _END, re.I)
+_INTEREST_AT = re.compile(_NAME + r"(?:what(?:'s| is)|how much is|what does) " + _CASH + r" (?:at|with) " + _PERCENT
+                          + r"(?: interest)?(?: make| grow to| come to)? (?:for|over|after|in) (?P<years>\d+) years?" + _END, re.I)
+_YEARLY_TO_HOURLY = re.compile(_NAME + r"(?:what(?:'s| is) (?:the )?hourly (?:rate|pay|wage) (?:for|of|on) |(?:what(?:'s| is)|how much is) )"
+                               + _CASH + r" (?:a|per) year(?: (?:an|per|a) hour)?" + _END, re.I)
+_HOURLY_TO_YEARLY = re.compile(_NAME + r"(?:what(?:'s| is)|how much is) " + _CASH + r" (?:an|per|a) hour (?:a|per) (?P<per>year|month|week)" + _END, re.I)
+_HOURS_PAY = re.compile(_NAME + r"if I (?:earn|get|make|am paid|get paid) " + _CASH + r" (?:an|per|a) hour,? how much (?:is|are|do I get for|will I get for|for) "
+                        r"(?P<h>\d+(?:\.\d+)?) hours?" + _END, re.I)
+_HOURS_AT = re.compile(_NAME + r"(?:what(?:'s| is)|how much is) (?P<h>\d+(?:\.\d+)?) hours? at " + _CASH + r" (?:an|per|a) hour" + _END, re.I)
+_WEEK_HOURS = 37.5
+
+
+def _amount(m: re.Match) -> float:
+    return float(m.group("amt").replace(",", ""))
+
+
+def _money_more(said: str) -> str | None:
+    """VAT ('what's VAT on £100?', 'take VAT off £120'), percentage change, '£500 plus 20%', yearly interest and pay rates."""
+    said = spoken_numbers(said)
+    if m := _VAT_ON.match(said):
+        vat = round(_amount(m) * _VAT_RATE / 100, 2)
+        return f"VAT at {_VAT_RATE}% on {_money(_amount(m), m)} is {_money(vat, m)}, making {_money(_amount(m) + vat, m)}."
+    if (m := _VAT_OFF.match(said)) and (m.group("off") or not said.lower().startswith(("what", "how much is"))):
+        before = round(_amount(m) / (1 + _VAT_RATE / 100), 2)
+        return f"{_money(_amount(m), m)} with VAT is {_money(before, m)} before VAT, so the VAT is {_money(round(_amount(m) - before, 2), m)}."
+    if (m := _VAT_ADD.match(said)) and re.search(r"\bVAT\b", said, re.I):
+        return f"{_money(_amount(m), m)} plus VAT is {_money(round(_amount(m) * (1 + _VAT_RATE / 100), 2), m)}."
+    if m := _PC_CHANGE.match(said):
+        a, b = float(m.group("a").replace(",", "")), float(m.group("b").replace(",", ""))
+        if a == 0:
+            return None
+        change = (b - a) / abs(a) * 100
+        word = "increase" if change > 0 else "decrease"
+        return f"From {calcmaths.fmt(a)} to {calcmaths.fmt(b)} is " + ("no change." if change == 0 else f"a {calcmaths.fmt(round(abs(change), 2))}% {word}.")
+    if m := _DIFFERENCE.match(said):
+        a, b = float(m.group("a").replace(",", "")), float(m.group("b").replace(",", ""))
+        return f"The difference is {calcmaths.fmt(round(abs(a - b), 6))}."
+    if (m := _CASH_PC.match(said)) and (m.group("cur") or m.group("word")):  # plain '50 plus 10%' is a sum
+        sign = -1 if m.group("way").lower() in ("minus", "less", "take away") else 1
+        result = round(_amount(m) * (1 + sign * float(m.group("pc")) / 100), 2)
+        return f"{_money(_amount(m), m)} {'minus' if sign < 0 else 'plus'} {calcmaths.fmt(float(m.group('pc')))}% is {_money(result, m)}."
+    if m := _INTEREST.match(said) or _INTEREST_AT.match(said):
+        years = int(m.group("years"))
+        if not 1 <= years <= 100:
+            return None
+        total = round(_amount(m) * (1 + float(m.group("pc")) / 100) ** years, 2)
+        return (f"After {years} year{'s' if years != 1 else ''} at {calcmaths.fmt(float(m.group('pc')))}% a year, {_money(_amount(m), m)} grows to "
+                f"{_money(total, m)}, so {_money(round(total - _amount(m), 2), m)} in interest (paid yearly).")
+    if (m := _YEARLY_TO_HOURLY.match(said)) and "hour" in said.lower():
+        hourly = _amount(m) / (52 * _WEEK_HOURS)
+        return f"{_money(_amount(m), m)} a year is about {_money(round(hourly, 2), m)} an hour, at {calcmaths.fmt(_WEEK_HOURS)} hours a week."
+    if m := _HOURLY_TO_YEARLY.match(said):
+        weeks = {"year": 52, "month": 52 / 12, "week": 1}[m.group("per").lower()]
+        pay = round(_amount(m) * _WEEK_HOURS * weeks, 2)
+        return f"{_money(_amount(m), m)} an hour is {_money(pay, m)} a {m.group('per').lower()}, at {calcmaths.fmt(_WEEK_HOURS)} hours a week."
+    if m := _HOURS_PAY.match(said) or _HOURS_AT.match(said):
+        hours = float(m.group("h"))
+        return f"{calcmaths.fmt(hours)} hours at {_money(_amount(m), m)} an hour is {_money(round(_amount(m) * hours, 2), m)}."
+    return None
+
+
 _QTY = r"(?P<n>-?\d[\d,]*(?:\.\d+)?|" + _AMOUNT[1:-1] + r") ?(?P<a>[a-z°][a-z°23 .]{0,24}?)"
 _CONVERT = re.compile(_NAME + r"(?:(?:what(?:'s| is)|convert|change|how much is|how (?:long|far|heavy|big|hot|cold) is) )?"
                       + _QTY + r" (?:in|to|into|in to) (?P<b>[a-z°][a-z°23 ./]{0,24}?)" + _END, re.I)
@@ -2013,7 +2087,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := _calendar_answer(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said) or _bigger_numbers(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said) or _bigger_numbers(said)
             or _journey_answer(said) or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
