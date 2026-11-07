@@ -792,6 +792,26 @@ def test_days_between_dates_and_dates_from_dates_are_instant():
     assert ask("how many days between now and then") is None
 
 
+def test_vat_percentage_change_interest_and_pay_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's VAT on £100", en) == "VAT at 20% on £100 is £20, making £120."
+    assert instant_answer("add VAT to £120", en) == "£120 plus VAT is £144."
+    assert instant_answer("take VAT off £120", en) == "£120 with VAT is £100 before VAT, so the VAT is £20."
+    assert instant_answer("how much VAT is in £60", en) == "£60 with VAT is £50 before VAT, so the VAT is £10."
+    assert instant_answer("what's the percentage change from 50 to 75", en) == "From 50 to 75 is a 50% increase."
+    assert instant_answer("what's the percentage decrease from 80 to 60", en) == "From 80 to 60 is a 25% decrease."
+    assert instant_answer("what's the difference between 75 and 120", en) == "The difference is 45."
+    assert instant_answer("what's £500 plus 20%", en) == "£500 plus 20% is £600."
+    assert instant_answer("how much is 5% interest on £1000 for 3 years", en) == \
+        "After 3 years at 5% a year, £1,000 grows to £1,157.63, so £157.63 in interest (paid yearly)."
+    assert instant_answer("what is the hourly rate for £30000 a year", en) == "£30,000 a year is about £15.38 an hour, at 37.5 hours a week."
+    assert instant_answer("what's £12 an hour a year", en) == "£12 an hour is £23,400 a year, at 37.5 hours a week."
+    assert instant_answer("if I earn £12 an hour how much is 37.5 hours", en) == "37.5 hours at £12 an hour is £450."
+    assert instant_answer("what's 50 plus 10%", en) == "That's 55."  # a plain sum stays a sum
+    assert instant_answer("what's £120", en) is None
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
