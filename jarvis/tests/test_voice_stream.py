@@ -812,6 +812,22 @@ def test_vat_percentage_change_interest_and_pay_are_instant():
     assert instant_answer("what's £120", en) is None
 
 
+def test_bmi_roast_times_and_recipe_scaling_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's my BMI if I'm 70 kg and 175 cm", en) == "That's a BMI of 22.9, which is in the healthy range (18.5 to 24.9)."
+    assert instant_answer("what's my BMI if I am 11 stone 7 pounds and 5 foot 9", en) == "That's a BMI of 23.8, which is in the healthy range (18.5 to 24.9)."
+    assert instant_answer("work out my BMI 90 kg 1.8 m", en) == "That's a BMI of 27.8, which is in the overweight range (25 to 29.9)."
+    assert instant_answer("how long do I roast a 1.5 kg chicken", en) == (
+        "Roast it for about 1 hour and 20 minutes at 190 C (170 fan, gas mark 5), until the juices run clear. "
+        "That's 20 minutes per 500 grams plus 20.")
+    assert instant_answer("how long should I roast a 1 kg beef joint", en).startswith("Roast it for about 1 hour and 5 minutes for medium")
+    assert instant_answer("double 250 g", en) == "That's 500 g."
+    assert instant_answer("halve 300 ml", en) == "That's 150 ml."
+    assert instant_answer("double 250", en) == "That's 500."
+    assert instant_answer("what's my BMI", en) is None  # needs your height and weight: Claude asks
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
