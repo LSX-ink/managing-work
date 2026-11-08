@@ -565,7 +565,9 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
         return f"held back {name}"
     facts = p or {"name": name, "country": (row or {}).get("country", ""),
                   "first_email_sent": (row or {}).get("contacted", ""), "messages_so_far": (row or {}).get("messages", 0),
-                  **({"made_them_an_updated_mockup": True} if updated else {})}
+                  **({"made_them_an_updated_mockup": True} if updated else {}),
+                  # 8 Nov 2026: without this the editor held 40 follow-ups as "mock-up link not in the facts"
+                  **({"free_mockup_we_made": link} if link else {})}
     ok, why = await outbox.ai_check(ctx, facts, subject, body)
     if not ok:
         if p:
