@@ -1008,6 +1008,56 @@ _TO_FEET = re.compile(_NAME + r"(?:what(?:'s| is)|convert|how tall is) (?P<n>\d+
 _TO_STONE = re.compile(_NAME + r"(?:what(?:'s| is)|convert|how much is) (?P<n>\d+(?:\.\d+)?) ?(?:kg|kilos?|kilograms?) (?:in|to|into) stones?(?: and pounds)?" + _END, re.I)
 
 
+_WEIGHT = (r"(?:(?P<kg>\d+(?:\.\d+)?) ?(?:kg|kilos?|kilograms?)|(?P<st>\d+) ?(?:stone|st)(?: (?:and )?(?P<lb>\d+(?:\.\d+)?) ?(?:pounds?|lbs?))?)")
+_HEIGHT = (r"(?:(?P<cm>\d+(?:\.\d+)?) ?(?:cm|centimet(?:re|er)s)|(?P<m>[12](?:\.\d+)?) ?(?:m|met(?:re|er)s?)"
+           r"|(?P<ft>\d) ?(?:foot|feet|ft)(?: (?:and )?(?P<inch>\d+(?:\.\d+)?)(?: ?(?:inch(?:es)?|in))?)?)")
+_BMI = re.compile(_NAME + r"(?:what(?:'s| is) (?:my |the )?BMI|work out my BMI|calculate my BMI)(?: (?:if|when|for)(?: I(?:'m| am| weigh)| someone| a person)?)? "
+                  r"(?:" + _WEIGHT + r"(?:,? (?:and|at)?,? ?" + _HEIGHT + r"(?: tall)?)|" + _HEIGHT.replace("(?P<", "(?P<h") + r"(?: tall)?,? (?:and )?"
+                  + _WEIGHT.replace("(?P<", "(?P<w") + r")" + _END, re.I)
+_ROAST_TIMES = {"chicken": (20, 500, 20), "beef": (20, 450, 20), "lamb": (25, 500, 25), "pork": (30, 500, 30)}  # minutes per weight + extra
+_ROAST = re.compile(_NAME + r"how long (?:do I|should I|to|does it take to|will it take to|do you) (?:cook|roast) (?:a |an |my |the )?"
+                    r"(?P<n>\d+(?:\.\d+)?) ?(?P<unit>kg|kilos?|kilograms?|g|grams?|lbs?|pounds?) (?:of )?(?P<meat>chicken|beef|lamb|pork)(?: joint| leg| shoulder)?" + _END, re.I)
+_SCALE = re.compile(_NAME + r"(?:what(?:'s| is) )?(?P<how>double|twice|triple|treble|half|halve|half of) (?P<n>\d+(?:\.\d+)?) ?"
+                    r"(?P<unit>g|grams?|kg|ml|millilit(?:re|er)s|l|lit(?:re|er)s|oz|ounces?|cups?|tsp|teaspoons?|tbsp|tablespoons?)" + _END, re.I)
+
+
+def _kitchen_answer(said: str) -> str | None:
+    """'What's my BMI if I'm 70 kg and 175 cm?', 'how long do I roast a 1.5 kg chicken?' and 'double 250 g'."""
+    said = spoken_numbers(said)
+    if m := _BMI.match(said):
+        p = "" if (m.group("kg") or m.group("st")) else "w"
+        q = "" if (m.group("cm") or m.group("m") or m.group("ft")) else "h"
+        kg = float(m.group(p + "kg")) if m.group(p + "kg") else (int(m.group(p + "st")) * 14 + float(m.group(p + "lb") or 0)) * 0.45359237
+        if m.group(q + "cm"):
+            metres = float(m.group(q + "cm")) / 100
+        elif m.group(q + "m"):
+            metres = float(m.group(q + "m"))
+        else:
+            metres = (int(m.group(q + "ft")) * 12 + float(m.group(q + "inch") or 0)) * 0.0254
+        if not (0.5 < metres < 2.6 and 10 < kg < 400):
+            return None
+        bmi = kg / metres ** 2
+        band = ("underweight (under 18.5)" if bmi < 18.5 else "the healthy range (18.5 to 24.9)" if bmi < 25
+                else "the overweight range (25 to 29.9)" if bmi < 30 else "the obese range (30 or more)")
+        return f"That's a BMI of {bmi:.1f}, which is in {band}." if not band.startswith("under") else f"That's a BMI of {bmi:.1f}, which is {band}."
+    if m := _ROAST.match(said):
+        unit = m.group("unit").lower()
+        grams = float(m.group("n")) * (1000 if unit.startswith("k") else 453.59237 if unit.startswith(("lb", "pound")) else 1)
+        if not 200 <= grams <= 10000:
+            return None
+        per, weight, extra = _ROAST_TIMES[m.group("meat").lower()]
+        minutes = math.ceil(grams / weight * per + extra)
+        doneness = " for medium" if m.group("meat").lower() in ("beef", "lamb") else ""
+        check = "until the juices run clear" if m.group("meat").lower() in ("chicken", "pork") else "then rest it before carving"
+        return (f"Roast it for about {_say_minutes(minutes)}{doneness} at 190 C (170 fan, gas mark 5), {check}. "
+                f"That's {per} minutes per {weight} grams plus {extra}.")
+    if m := _SCALE.match(said):
+        how = m.group("how").lower()
+        factor = 2 if how in ("double", "twice") else 3 if how in ("triple", "treble") else 0.5
+        return f"That's {calcmaths.fmt(float(m.group('n')) * factor)} {m.group('unit')}."
+    return None
+
+
 def _height_weight(said: str) -> str | None:
     """'5 feet 10 in cm', '180 cm in feet', '70 kg in stone': heights and weights the British way."""
     said = spoken_numbers(said)
@@ -2088,7 +2138,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said) or _bigger_numbers(said)
-            or _journey_answer(said) or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
 
