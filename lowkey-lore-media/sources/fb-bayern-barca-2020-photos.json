@@ -1,0 +1,47 @@
+[
+ {
+  "slug": "muller",
+  "file": "File:Thomas Müller 2022 (cropped).jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Thomas_M%C3%BCller_2022_(cropped).jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Werner100359",
+  "date": "2022-02-16",
+  "credit": "Photo: Werner100359, CC BY-SA 4.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "kimmich",
+  "file": "File:20180602 FIFA Friendly Match Austria vs. Germany Joshua Kimmich 850 0717.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:20180602_FIFA_Friendly_Match_Austria_vs._Germany_Joshua_Kimmich_850_0717.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Granada",
+  "date": "2018-06-02",
+  "credit": "Photo: Granada, CC BY-SA 4.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "coutinho",
+  "file": "File:Coutinho 2018.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Coutinho_2018.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Oleg Bkhambri (Voltmetro)",
+  "date": "2018-03-23",
+  "credit": "Photo: Oleg Bkhambri (Voltmetro), CC BY-SA 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "lewandowski",
+  "file": "File:Robert Lewandowski Training FC Bayern München-2.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Robert_Lewandowski_Training_FC_Bayern_M%C3%BCnchen-2.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Rufus46",
+  "date": "2015-09-20",
+  "credit": "Photo: Rufus46, CC BY-SA 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "davies",
+  "file": "File:Alphonso Davies 2018.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Alphonso_Davies_2018.jpg",
+  "license": "CC BY 2.0",
+  "artist": "Chris from Brampton, Canada",
+  "date": "2018-10-16",
+  "credit": "Photo: Chris from Brampton, Canada, CC BY 2.0, via Wikimedia Commons"
+ }
+]
