@@ -2016,8 +2016,10 @@ def _ordinal(n: int) -> str:
 
 _LEAD = re.compile(r"^(?:(?:hey|ok|okay|oi|right|so|well|um+|uh+|er+|erm+|hmm+|alright|quick question|"
                    r"alfred|alfie|jarvis|(?:can|could|would) you (?:please )?tell me(?= (?:what|how|when)\b)|(?:can|could|would|will) you(?: please)?|"
-                   r"please|do you know|i (?:want|need|would like) to know)[,.!]?\s+)+", re.I)
-_TRAIL = re.compile(r"(?:,?\s+(?:mate|buddy|pal|sir|for me|thanks|thank you|cheers|alfred|jarvis|please))+([?.!]*)$", re.I)
+                   r"please|do you know|you know|i mean|i (?:want|need|would like) to know)[,.!]?\s+)+", re.I)
+_TRAIL = re.compile(r"(?:,?\s+(?:mate|buddy|pal|sir|for me|thanks|thank you|cheers|alfred|jarvis|please|then|now then|um+|uh+|erm+))+([?.!]*)$", re.I)
+_FILLER = re.compile(r",?\s+(?:um+|uh+|uhm+|erm+|er|hmm+)\b,?(?=\s)", re.I)  # "what's the, uh, time" -> "what's the time"
+_STUTTER = re.compile(r"\b([a-z]{2,}(?:'[a-z]+)?)(?:,? \1\b)+", re.I)  # "what's what's the time" -> "what's the time"
 _INDIRECT = ((r"^tell me (?=what |how |when )", ""), (r"^what time it is", "what time is it"), (r"^what the time is", "what's the time"),
              (r"^what (?:the date|today's date) is", "what's the date"), (r"^what day it is", "what day is it"),
              (r"^tell me (?:the|today's) date", "what's the date"), (r"^what the date is tomorrow", "what's the date tomorrow"))
@@ -2051,6 +2053,8 @@ def tidy_request(text: str) -> str:
     """'Um, Alfred, could you tell me what time it is please mate?' -> 'what time is it?': the plain request,
     so the instant answers catch the many ways people actually say things."""
     said = re.sub(r"\s+", " ", text).strip()
+    said = _FILLER.sub("", said)
+    said = _STUTTER.sub(r"\1", said)
     said = _LEAD.sub("", said)
     said = _TRAIL.sub(r"\1", said)
     for pattern, plain in _INDIRECT:
