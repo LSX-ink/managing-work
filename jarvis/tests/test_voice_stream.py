@@ -828,6 +828,21 @@ def test_bmi_roast_times_and_recipe_scaling_are_instant():
     assert instant_answer("what's my BMI", en) is None  # needs your height and weight: Claude asks
 
 
+def test_fillers_and_stutters_mid_sentence_still_get_instant_answers():
+    import time
+    from brain import instant_answer, tidy_request
+    en = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 9, 0, 0, 4, 289, 0))
+    assert instant_answer("uh what's the uh time", en, now=now) == "It's 9:00 am."
+    assert instant_answer("what's what's the time", en, now=now) == "It's 9:00 am."
+    assert instant_answer("what is the the date", en, now=now) == "It's Friday the 16th of October."
+    assert instant_answer("what's twelve times, uh, seven", en) == "That's 84."
+    assert instant_answer("how many days until uh Christmas", en, now=now) == "70 days until Christmas, on Friday the 25th of December."
+    assert instant_answer("what time is it now then", en, now=now) == "It's 9:00 am."
+    assert tidy_request("um, could you tell me what's the, er, date please?") == "what's the date?"
+    assert instant_answer("spell aardvark", en) == "Aardvark: double A, R, D, V, A, R, K."  # letters inside a word are left alone
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
