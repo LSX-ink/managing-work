@@ -654,6 +654,11 @@ def with_follow_us(body: str) -> str:
     return body[:i] + FOLLOW_US + "\n\n" + body[i:] if i >= 0 else body + "\n\n" + FOLLOW_US
 
 
+def possessive(text: str, name: str) -> str:
+    """'Grand Barbers's' reads wrong (9 Nov 2026, in a sent follow-up): a name ending in s takes just the apostrophe."""
+    return text.replace(f"{name}'s", f"{name}'") if name.lower().endswith("s") else text
+
+
 def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
     """Vera's first email, written like the DM: about them first, their one problem (or, for a busy shop, what a
     site saves them), the free concept link, the price and terms, then an easy yes. Price, sign-off, contact
@@ -675,7 +680,7 @@ def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
             f"reviews. You can open it on your phone here: {link}\n\n{st.PREVIEW}\n\n"
             + (f"If you like it, {price.group(1)[0].lower() + price.group(1)[1:]} If not, no problem at all.\n\n" if price else "")
             + f"{ask}\n\n{tail}")
-    return subject, with_follow_us(body)
+    return possessive(subject, name), possessive(with_follow_us(body), name)
 
 
 def follow_up_email(settings, name: str, link: str, updated: bool = False) -> tuple[str, str] | None:
@@ -691,7 +696,7 @@ def follow_up_email(settings, name: str, link: str, updated: bool = False) -> tu
         body = "\n\n".join(parts)
     elif link:
         body = body.replace("is still yours to see, with no obligation.", f"is still yours to see, with no obligation: {link}")
-    return subject, with_follow_us(body)
+    return possessive(subject, name), possessive(with_follow_us(body), name)
 
 
 async def refresh_mockup(ctx, row: dict) -> str:
