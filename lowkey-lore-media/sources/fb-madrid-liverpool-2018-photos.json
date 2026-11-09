@@ -1,0 +1,47 @@
+[
+ {
+  "slug": "benzema",
+  "file": "File:Karim Benzema wearing Real Madrid home kit 2021-2022.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Karim_Benzema_wearing_Real_Madrid_home_kit_2021-2022.jpg",
+  "license": "CC BY 3.0",
+  "artist": "Real Madrid",
+  "date": "2021-06-01",
+  "credit": "Photo: Real Madrid, CC BY 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "bale",
+  "file": "File:Gareth Bale 2015 (9).jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Gareth_Bale_2015_(9).jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Дмитрий Журавель",
+  "date": "2015-11-28",
+  "credit": "Photo: Дмитрий Журавель, CC BY-SA 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "salah",
+  "file": "File:Mohamed Salah 2018.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Mohamed_Salah_2018.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Анна Нэсси",
+  "date": "2018-06-25",
+  "credit": "Photo: Анна Нэсси, CC BY-SA 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "karius",
+  "file": "File:Loris Karius.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Loris_Karius.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Антон Зайцев",
+  "date": "2018-05-27",
+  "credit": "Photo: Антон Зайцев, CC BY-SA 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "mane",
+  "file": "File:Sadio Mané Senegal.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Sadio_Man%C3%A9_Senegal.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Екатерина Лаут",
+  "date": "2018-06-19",
+  "credit": "Photo: Екатерина Лаут, CC BY-SA 3.0, via Wikimedia Commons"
+ }
+]
