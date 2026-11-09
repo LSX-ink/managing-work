@@ -1,0 +1,29 @@
+[
+ {
+  "slug": "aguero",
+  "file": "File:Sergio Agüero 2018.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Sergio_Ag%C3%BCero_2018.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Екатерина Лаут",
+  "date": "2018-06-16",
+  "credit": "Photo: Екатерина Лаут, CC BY-SA 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "balotelli",
+  "file": "File:Mario Balotelli (15440231808) (cropped).jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Mario_Balotelli_(15440231808)_(cropped).jpg",
+  "license": "CC BY-SA 2.0",
+  "artist": "Kamran Hussain",
+  "date": "2014-10-25",
+  "credit": "Photo: Kamran Hussain, CC BY-SA 2.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "dzeko",
+  "file": "File:20150331 2026 AUT BIH 2177 Edin Džeko (cropped).jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:20150331_2026_AUT_BIH_2177_Edin_D%C5%BEeko_(cropped).jpg",
+  "license": "CC BY-SA 3.0 at",
+  "artist": "Ailura",
+  "date": "2015-03-31",
+  "credit": "Photo: Ailura, CC BY-SA 3.0 at, via Wikimedia Commons"
+ }
+]
