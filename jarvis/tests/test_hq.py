@@ -117,7 +117,8 @@ def test_a_held_back_follow_up_no_longer_blocks_the_rest(tmp_path, monkeypatch):
     sent = []
     monkeypatch.setattr(outbox, "watch_replies", lambda c: [])
     monkeypatch.setattr(outbox, "in_hours", lambda now: True)
-    monkeypatch.setattr(outbox, "uk_now", lambda: datetime(2026, 10, 28, 13, 0))
+    monkeypatch.setattr(outbox, "uk_now", lambda: datetime(2026, 10, 31, 13, 0))  # a Saturday: follow-ups only (9 Nov)
+    monkeypatch.setattr(outbox, "likeliest_first", lambda s, due: due)
     monkeypatch.setattr(outbox, "sent_today", lambda c: len(sent))
     monkeypatch.setattr(agents, "_due_by_email", lambda s: [r for r in rows if r["name"] not in sent])
     monkeypatch.setattr(outbox, "follow_up_email", lambda s, name, link, updated=False: ("Following up", "body " + name))
@@ -140,7 +141,7 @@ def test_a_held_back_follow_up_no_longer_blocks_the_rest(tmp_path, monkeypatch):
     monkeypatch.setattr(outbox, "limited_companies", lambda brain: set())
     out = asyncio.run(agents.warden(ctx))
     assert sent == ["Fine", "Also"] and "sent the follow-up to Fine" in out  # behind pace at 13:00: two in one run
-    assert b.get("held.a@stuck.com") == "2026-10-28"  # held for today, tried again tomorrow
+    assert b.get("held.a@stuck.com") == "2026-10-31"  # held for today, tried again tomorrow
 
 
 

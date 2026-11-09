@@ -434,7 +434,7 @@ async def warden(ctx: Ctx) -> str:
     sent ={k: outbox.sent_today_of(ctx, k) for k in caps}
     if all(sent[k] >= caps[k] for k in caps):
         return f"today's limits reached ({caps['first email']} new emails, {caps['follow-up']} follow-ups)"
-    total, done_n = sum(caps.values()), sum(sent.values())
+    total, done_n = sum(caps.values()), sum(min(sent[k], caps[k]) for k in caps)
     # always hit the daily limits: one email a run, more when behind the day's pace; a held-back email never blocks
     want = min(total - done_n, max(1, min(3, outbox.on_pace(total, outbox.uk_now()) - done_n)))
     done = []
