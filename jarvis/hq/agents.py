@@ -429,7 +429,9 @@ async def warden(ctx: Ctx) -> str:
             "follow-up": int(b.get("settings.followups_per_day", 15))}
     if outbox.weekend(outbox.uk_now()):  # owner, 29 Oct 2026: new emails Monday to Friday; weekends are for follow-ups
         caps["first email"] = 0
-    sent = {k: outbox.sent_today_of(ctx, k) for k in caps}
+    else:  # owner, 9 Nov 2026: "you don't send follow ups during weekday, only weekend"
+        caps["follow-up"] = 0
+    sent ={k: outbox.sent_today_of(ctx, k) for k in caps}
     if all(sent[k] >= caps[k] for k in caps):
         return f"today's limits reached ({caps['first email']} new emails, {caps['follow-up']} follow-ups)"
     total, done_n = sum(caps.values()), sum(sent.values())
