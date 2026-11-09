@@ -659,6 +659,10 @@ def possessive(text: str, name: str) -> str:
     return text.replace(f"{name}'s", f"{name}'") if name.lower().endswith("s") else text
 
 
+# owner, 9 Nov 2026: "let them know in the email this is only a mock up please visit our website to see what we do"
+MOCKUP_NOTE = f"This is only a mock-up. Please visit {SITE.replace('https://', '')} to see what we do."
+
+
 def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
     """Vera's first email, written like the DM: about them first, their one problem (or, for a busy shop, what a
     site saves them), the free concept link, the price and terms, then an easy yes. Price, sign-off, contact
@@ -677,7 +681,7 @@ def first_email(settings, p: dict, link: str, brain=None) -> tuple[str, str]:
            "Just reply 'yes' if you'd like to talk it through, it only takes 10 minutes.")
     body = (f"Hi {name} team,\n\nI came across you on Google, and {praise}\n\n{gap}\n\n"
             "So I put together a free concept of what your website could look like, using your own photos and "
-            f"reviews. You can open it on your phone here: {link}\n\n{st.PREVIEW}\n\n"
+            f"reviews. You can open it on your phone here: {link}\n\n{MOCKUP_NOTE}\n\n{st.PREVIEW}\n\n"
             + (f"If you like it, {price.group(1)[0].lower() + price.group(1)[1:]} If not, no problem at all.\n\n" if price else "")
             + f"{ask}\n\n{tail}")
     return possessive(subject, name), possessive(with_follow_us(body), name)
@@ -696,6 +700,11 @@ def follow_up_email(settings, name: str, link: str, updated: bool = False) -> tu
         body = "\n\n".join(parts)
     elif link:
         body = body.replace("is still yours to see, with no obligation.", f"is still yours to see, with no obligation: {link}")
+    if link and MOCKUP_NOTE not in body:
+        parts = body.split("\n\n")
+        at = next((i + 1 for i, x in enumerate(parts) if link in x), 2)
+        parts.insert(at, MOCKUP_NOTE)
+        body = "\n\n".join(parts)
     return possessive(subject, name), possessive(with_follow_us(body), name)
 
 
