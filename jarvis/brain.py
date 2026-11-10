@@ -843,6 +843,133 @@ def _more_maths(said: str) -> str | None:
     return None
 
 
+_LIST_NUMS = r"(?P<nums>-?\d[\d,.]*(?:(?:,? and |, | )-?\d[\d,.]*)+)"
+_LIST_STAT = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate |find |give me )?(?:the )?(?P<stat>median|mode|range|sum|total"
+                        r"|biggest|largest|highest|maximum|max|smallest|lowest|minimum|min)(?: number| value)? (?:of|in|out of|from) "
+                        + _LIST_NUMS + _END, re.I)
+_ADD_UP = re.compile(_NAME + r"(?:what(?:'s| is| do)|what does|can you)? ?(?:add up|add together|total(?: up)?) " + _LIST_NUMS
+                     + r"(?: add up to| come to| make)?" + _END, re.I)
+_SORT_NUMS = re.compile(_NAME + r"(?:can you |please )?(?:sort|order|put) " + _LIST_NUMS
+                        + r"(?: in order)?(?: (?:from )?(?P<way>smallest to (?:biggest|largest)|lowest to highest|biggest to smallest"
+                        r"|largest to smallest|highest to lowest|in ascending order|in descending order|ascending|descending))?(?: in order)?"
+                        + _END, re.I)
+_FACTORS = re.compile(_NAME + r"(?:what are |list |tell me |give me )?(?:the |all the )?(?:factors|divisors) of (?P<n>\d[\d,]*)" + _END, re.I)
+_COMMON = re.compile(_NAME + r"(?:what(?:'s| is) |work out |find )?(?:the )?(?P<kind>lowest common multiple|least common multiple|lcm"
+                     r"|highest common factor|greatest common (?:factor|divisor)|hcf|gcd|gcf) (?:of )?" + _LIST_NUMS + _END, re.I)
+_FROM_BASE = re.compile(_NAME + r"(?:what(?:'s| is) |convert )?(?:(?P<base>binary|hex|hexadecimal|octal) (?P<v>[0-9a-f]+)"
+                        r"|(?P<v2>[0-9a-f]+) (?:from|in) (?P<base2>binary|hex|hexadecimal|octal))"
+                        r"(?: (?:in|to|as|into) (?:decimal|normal numbers?|numbers?|denary))?" + _END, re.I)
+
+
+def _list_of(m: re.Match) -> list[float]:
+    return [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", re.sub(r"(?<=\d),(?=\d{3}\b)", "", m.group("nums")))]
+
+
+def _number_lists(said: str) -> str | None:
+    """'What's the median of 3, 9 and 1?', 'add up 4, 5 and 6', 'sort 5, 2, 9', 'factors of 12', 'LCM of 4 and 6', 'binary 1010'."""
+    said = spoken_numbers(said)
+    if m := _LIST_STAT.match(said):
+        nums, stat = _list_of(m), m.group("stat").lower()
+        if stat == "median":
+            s, mid = sorted(nums), len(nums) // 2
+            return f"The median is {_say_num(s[mid] if len(s) % 2 else (s[mid - 1] + s[mid]) / 2)}."
+        if stat == "mode":
+            counts = {n: nums.count(n) for n in nums}
+            top = max(counts.values())
+            if top == 1:
+                return "There's no mode. Every number appears once."
+            modes = [n for n in dict.fromkeys(nums) if counts[n] == top]
+            return f"The mode is {' and '.join(_say_num(n) for n in modes)}, appearing {'twice' if top == 2 else f'{top} times'}."
+        if stat == "range":
+            return f"The range is {_say_num(max(nums) - min(nums))}, from {_say_num(min(nums))} to {_say_num(max(nums))}."
+        if stat in ("sum", "total"):
+            return f"That adds up to {_say_num(sum(nums))}."
+        big = stat in ("biggest", "largest", "highest", "maximum", "max")
+        return f"The {'biggest' if big else 'smallest'} is {_say_num(max(nums) if big else min(nums))}."
+    if m := _ADD_UP.match(said):
+        return f"That adds up to {_say_num(sum(_list_of(m)))}."
+    if m := _SORT_NUMS.match(said):
+        way = (m.group("way") or "").lower()
+        down = way.startswith(("biggest", "largest", "highest")) or "descending" in way
+        return f"In order: {', '.join(_say_num(n) for n in sorted(_list_of(m), reverse=down))}."
+    if m := _FACTORS.match(said):
+        n = int(m.group("n").replace(",", ""))
+        if not 1 <= n <= 10 ** 7:
+            return None
+        small = [f for f in range(1, int(n ** 0.5) + 1) if n % f == 0]
+        found = sorted(set(small + [n // f for f in small]))
+        if len(found) > 24:
+            return f"{n:,} has {len(found)} factors, from {found[1]:,} up to {found[-2]:,}."
+        return f"The factors of {n:,} are {', '.join(f'{f:,}' for f in found[:-1])} and {found[-1]:,}." if len(found) > 1 \
+            else "The only factor of 1 is 1."
+    if m := _COMMON.match(said):
+        nums = _list_of(m)
+        if any(n != int(n) or n <= 0 for n in nums):
+            return None
+        whole = [int(n) for n in nums]
+        lowest = m.group("kind").lower() in ("lowest common multiple", "least common multiple", "lcm")
+        return f"The {'lowest common multiple' if lowest else 'highest common factor'} is {(math.lcm if lowest else math.gcd)(*whole):,}."
+    if m := _FROM_BASE.match(said):
+        base, value = (m.group("base") or m.group("base2")).lower(), (m.group("v") or m.group("v2")).replace(" ", "")
+        radix = 2 if base == "binary" else 8 if base == "octal" else 16
+        try:
+            n = int(value, radix)
+        except ValueError:
+            return None
+        return f"{'Hex' if radix == 16 else base.capitalize()} {value.upper() if radix == 16 else value} is {n:,}."
+    return None
+
+
+_SLEEP_CYCLE, _FALL_ASLEEP = 90, 15
+_BEDTIME = re.compile(_NAME + r"(?:if I (?:go to bed|go to sleep|sleep|fall asleep) (?:at|now)|I'm going to bed (?:at|now)) ?"
+                      r"(?P<clock>(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>am|pm|a\.m\.|p\.m\.)?|midnight)?,? "
+                      r"(?:when|what time) should I (?:wake up|get up|set my alarm(?: for)?)" + _END, re.I)
+_WAKE_TIME = re.compile(_NAME + r"(?:if I (?:need|have|want) to (?:wake up|get up|be up) at|I (?:need|have) to (?:wake up|get up|be up) at) "
+                        r"(?P<clock>(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>am|pm|a\.m\.|p\.m\.)?|midnight),? "
+                        r"(?:when|what time) should I (?:go to bed|go to sleep|sleep|be in bed)" + _END
+                        + r"|" + _NAME + r"(?:when|what time) should I (?:go to bed|go to sleep|be in bed) (?:if I (?:need|have|want) to"
+                        r" (?:wake up|get up|be up)|to (?:wake up|get up|be up)) at (?P<clock2>(?P<h2>\d{1,2})(?:[:.](?P<m2>\d{2}))? ?"
+                        r"(?P<ap2>am|pm|a\.m\.|p\.m\.)?|midnight)" + _END, re.I)
+
+
+def _sleep_clock(m: re.Match, suffix: str, evening: bool) -> int | None:
+    """Minutes after midnight; a bare hour means evening for bedtimes and morning for alarms."""
+    if (m.group("clock" + (suffix or "")) or "").lower() == "midnight":
+        return 0
+    hour, minute = int(m.group("h" + suffix)), int(m.group("m" + suffix) or 0)
+    ap = (m.group("ap" + suffix) or "").lower().replace(".", "")
+    if minute > 59 or hour > 23 or (ap and not 1 <= hour <= 12):
+        return None
+    if ap:
+        hour = hour % 12 + (12 if ap == "pm" else 0)
+    elif hour <= 12 and evening and hour >= 6:
+        hour = hour % 12 + 12
+    elif hour == 12 and not evening:
+        hour = 12
+    return hour * 60 + minute
+
+
+def _sleep_answer(said: str, now: time.struct_time) -> str | None:
+    """'If I go to bed at 11, when should I wake up?' and 'what time should I go to bed to wake up at 7?' in 90-minute sleep cycles."""
+    said = spoken_numbers(said)
+    if m := _BEDTIME.match(said):
+        start = _sleep_clock(m, "", True) if m.group("clock") else now.tm_hour * 60 + now.tm_min
+        if start is None:
+            return None
+        times = [_say_clock(*divmod((start + _FALL_ASLEEP + n * _SLEEP_CYCLE) % 1440, 60)) for n in (6, 5)]
+        return (f"Try waking at {times[0]} for six full sleep cycles, or {times[1]} for five. "
+                f"That allows {_FALL_ASLEEP} minutes to fall asleep.")
+    if m := _WAKE_TIME.match(said):
+        suffix = "" if m.group("h") or m.group("clock") else "2"
+        wake = _sleep_clock(m, suffix, False)
+        if wake is None:
+            return None
+        times = [_say_clock(*divmod((wake - _FALL_ASLEEP - n * _SLEEP_CYCLE) % 1440, 60)) for n in (6, 5)]
+        return (f"Go to bed at {times[0]} for six full sleep cycles, or {times[1]} for five. "
+                f"That allows {_FALL_ASLEEP} minutes to fall asleep.")
+    return None
+
+
 def _number_facts(said: str) -> str | None:
     """'Half of 90', 'is 97 a prime number?', 'what's 7 factorial?', 'round 3.14159 to 2 decimal places'."""
     said = spoken_numbers(said)
@@ -2138,10 +2265,10 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
-    if (found := _calendar_answer(said, now)) is not None:
+    if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _fraction_answer(said) or _bigger_numbers(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _fraction_answer(said) or _bigger_numbers(said)
             or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 

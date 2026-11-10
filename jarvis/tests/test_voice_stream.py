@@ -843,6 +843,37 @@ def test_fillers_and_stutters_mid_sentence_still_get_instant_answers():
     assert instant_answer("spell aardvark", en) == "Aardvark: double A, R, D, V, A, R, K."  # letters inside a word are left alone
 
 
+def test_number_lists_factors_and_bases_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("what's the median of 3, 9, 1 and 4", s) == "The median is 3.5."
+    assert instant_answer("what's the sum of 4, 5 and 6", s) == "That adds up to 15."
+    assert instant_answer("add up 4, 5 and 6", s) == "That adds up to 15."
+    assert instant_answer("what's the biggest of 4, 9 and 2", s) == "The biggest is 9."
+    assert instant_answer("sort 5, 2, 9 from biggest to smallest", s) == "In order: 9, 5, 2."
+    assert instant_answer("what's the mode of 2, 3, 3, 5", s) == "The mode is 3, appearing twice."
+    assert instant_answer("what's the range of 2, 8, 5", s) == "The range is 6, from 2 to 8."
+    assert instant_answer("what are the factors of 12", s) == "The factors of 12 are 1, 2, 3, 4, 6 and 12."
+    assert instant_answer("what's the lowest common multiple of 4 and 6", s) == "The lowest common multiple is 12."
+    assert instant_answer("what's the highest common factor of 12 and 18", s) == "The highest common factor is 6."
+    assert instant_answer("convert hex ff to decimal", s) == "Hex FF is 255."
+    assert instant_answer("what's 1010 from binary", s) == "Binary 1010 is 10."
+    assert instant_answer("what's 255 in binary", s) == "255 in binary is 1 1 1 1 1 1 1 1."
+    assert instant_answer("what's the average of 3, 5 and 10", s) == "The average is 6."
+
+
+def test_sleep_cycle_times_are_instant():
+    import time
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 22, 0, 0, 4, 289, 0))
+    assert instant_answer("if I go to bed at 11 when should I wake up", s, now=now) == (
+        "Try waking at 8:15 am for six full sleep cycles, or 6:45 am for five. That allows 15 minutes to fall asleep.")
+    assert instant_answer("if I go to bed now what time should I wake up", s, now=now).startswith("Try waking at 7:15 am")
+    assert instant_answer("what time should I go to bed to wake up at 6:30", s, now=now) == (
+        "Go to bed at 9:15 pm for six full sleep cycles, or 10:45 pm for five. That allows 15 minutes to fall asleep.")
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
