@@ -128,6 +128,7 @@ import design_flyer
 import design_appointment
 import design_hours
 import design_review
+import design_carousel
 import instagram_dms
 import kinetic_briefing
 import kinetic_premium
@@ -391,7 +392,8 @@ ABILITIES += [design, design_extract, design_contrast, design_palette, design_ty
               design_icons, design_images, design_cards, design_posts, design_menu,
               design_signature, design_voucher, design_sign,
               design_loyalty, design_flyer, design_appointment,
-              design_hours, design_review, skillscan]  # design tools
+              design_hours, design_review,
+              design_carousel, skillscan]  # design tools
 ABILITIES += [alfred_mail, alfred_replies]  # Alfred's own email account and reply drafts for new mail
 ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, track outreach, invoice
