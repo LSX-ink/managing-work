@@ -473,7 +473,9 @@ async def _send_follow_up(ctx: Ctx) -> str:
         if b.get(f"held.{row['email'].lower()}") == today:  # held back today: try again tomorrow
             continue
         fresh = ""
-        if b.get(f"held_mockup.{row['email'].lower()}") != today:
+        if handmade_only(b):  # 11 Nov 2026: no old-style rebuilds; the follow-up carries the mock-up they already have
+            pass
+        elif b.get(f"held_mockup.{row['email'].lower()}") != today:
             try:  # owner, 29 Oct 2026: follow-ups carry a mock-up made with the new designer
                 fresh = await outbox.refresh_mockup(ctx, row)
             except Exception as e:  # e.g. the API credit ran out: the follow-up goes with the mock-up they had
@@ -491,13 +493,36 @@ async def _send_follow_up(ctx: Ctx) -> str:
     return "no follow-ups due right now"
 
 
+def handmade_only(b) -> bool:
+    """Owner, 9-11 Nov 2026: mock-ups are bespoke 3D pages built to the raised standard, not the old auto-built ones.
+    While this is on, Vera emails only leads whose page is ready (brain key ready.<lead id> = its link) and never
+    builds or rebuilds a mock-up herself."""
+    return bool(b.get("settings.handmade_mockups", True))
+
+
 async def _send_first(ctx: Ctx) -> str:
     from hq import outbox
     s, b = ctx.settings, ctx.brain
     looked = 0
     await outbox.check_companies(ctx)  # UK leads that are limited companies can be emailed too (PECR)
+    handmade = handmade_only(b)
     for p in outbox.candidates(s, outbox.limited_companies(b)):  # 2. a first email to the best fresh lead we can email
         if b.get(f"skip.{p['id']}"):
+            continue
+        if handmade:  # owner, 11 Nov 2026: emails go only with the new bespoke 3D mock-ups ("This standard ok you can
+            ready = b.get(f"ready.{p['id']}")  # start making emails to send out"); old-style pages aren't built
+            if not ready:
+                continue
+            to = b.get(f"ready_email.{p['id']}") or await outbox.email_for(ctx, p)
+            if not to or outbox.already_emailed(s, to):
+                b.set(f"skip.{p['id']}", "no email address, or that inbox was already emailed")
+                continue
+            b.set(f"mockup.{p['name'].lower()}", ready)
+            subject, body = outbox.first_email(s, p, ready, b)
+            facts = {**p, "site_check": outbox.praise_and_gap(p, b)[1], "free_mockup_we_made": ready}
+            said = await _vet_and_send(ctx, facts, p["name"], to, subject, body, ready, first=True)
+            if said.startswith("sent"):
+                return said
             continue
         looked += 1
         if looked > 40:  # leads with no email don't count towards the limit: keep looking, next run carries on
@@ -535,6 +560,8 @@ async def _send_first(ctx: Ctx) -> str:
         said = await _vet_and_send(ctx, facts, p["name"], to, subject, body, link, first=True)
         if said.startswith("sent"):
             return said
+    if handmade:
+        return "no hand-built 3D mock-ups waiting to be emailed"
     return "no fresh leads with an email address right now (Hawk will find more)"
 
 
