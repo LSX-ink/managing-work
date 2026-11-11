@@ -493,10 +493,10 @@ _ONES = {"zero": 0, "nought": 0, "one": 1, "two": 2, "three": 3, "four": 4, "fiv
          "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
          "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
          "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90}
-_SCALES = {"hundred": 100, "thousand": 1000, "million": 1000000}
+_SCALES = {"hundred": 100, "thousand": 1000, "million": 1000000, "billion": 10 ** 9, "trillion": 10 ** 12}
 _NUM_WORD = r"(?:" + "|".join(list(_ONES) + list(_SCALES)) + r")"
-_AFTER_SCALE = r"(?:(?<=hundred)|(?<=thousand)|(?<=million))"
-_SPOKEN_NUMBER = re.compile(r"\b(?:an? (?=hundred|thousand|million))?" + _NUM_WORD
+_AFTER_SCALE = r"(?:(?<=hundred)|(?<=thousand)|(?<=million)|(?<=billion)|(?<=trillion))"
+_SPOKEN_NUMBER = re.compile(r"\b(?:an? (?=hundred|thousand|million|billion|trillion))?" + _NUM_WORD
                             + r"(?:(?: |-|" + _AFTER_SCALE + r" and )" + _NUM_WORD + r"|" + _AFTER_SCALE
                             + r"(?: and)? \d{1,2}(?![\d.,]))*(?: point(?: " + _NUM_WORD + r")+)?\b", re.I)
 
@@ -523,14 +523,14 @@ def spoken_numbers(said: str) -> str:
     so sums and conversions said in words are answered on the spot."""
     said = _SPOKEN_NUMBER.sub(lambda m: _number_value(m[0]), said)
     # "1 million" and "2.5 million" arrive as "1 1000000" and "2.5 1000000": multiply them out
-    return re.sub(r"(?<![\d.])(\d+(?:\.\d+)?) (1000|1000000|1000000000)(?![\d.])",
+    return re.sub(r"(?<![\d.])(\d+(?:\.\d+)?) (1000|1000000|1000000000|1000000000000)(?![\d.])",
                   lambda m: calcmaths.fmt(float(m[1]) * int(m[2])).replace(",", "") if float(m[1]) * int(m[2]) < 1e15 else m[0], said)
 
 
-_SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?[\d(][\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
+_SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?(?:[\d(]|pi\b)[\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
 _SPOKEN_MATHS = ((r"(\d(?:[\d.,]*\d)?) ?(?:%|per ?cent) of ", r"\1/100*"), (r"divided by|over|÷", "/"),
                  (r"(?:multiplied )?by|times|x|×", "*"), (r"plus|add", "+"), (r"minus|take away", "-"),
-                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the (?:power (?:of )?)?(\d+)(?:st|nd|rd|th)(?: power)?|to the power (\d+)", r"**\1\2"),
+                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the (?:power (?:of )?)?(\d+)(?:st|nd|rd|th)?(?: power)?", r"**\1"),
                  (r"to the power of", "**"),
                  (r"the square root of|square root of", "sqrt"))
 
@@ -545,7 +545,7 @@ def _maths_answer(said: str) -> str | None:
     text = re.sub(r"sqrt\s+([\d.]+)", r"sqrt(\1)", text).strip()
     if p := re.fullmatch(r"([\d.,]+)\s*([+-])\s*([\d.]+)\s*%", text):  # "50 plus 10%" means 55, not 50.1
         text = f"{p.group(1)} * (1 {p.group(2)} {p.group(3)} / 100)"
-    if re.search(r"[a-z]", text.replace("sqrt", "")) or not re.search(r"\d\s*(?:\*\*?|/|\+|-)\s*[\d(s]|sqrt\(", text):
+    if re.search(r"[a-z]", re.sub(r"\bpi\b", "", text.replace("sqrt", ""))) or not re.search(r"(?:\d|pi)\s*(?:\*\*?|/|\+|-)\s*(?:[\d(s]|pi)|sqrt\(", text):
         return None  # words left over, or no sum at all: Claude handles it
     try:
         value = calcmaths.calculate(text).rsplit(" = ", 1)[1]
@@ -967,6 +967,102 @@ def _sleep_answer(said: str, now: time.struct_time) -> str | None:
         times = [_say_clock(*divmod((wake - _FALL_ASLEEP - n * _SLEEP_CYCLE) % 1440, 60)) for n in (6, 5)]
         return (f"Go to bed at {times[0]} for six full sleep cycles, or {times[1]} for five. "
                 f"That allows {_FALL_ASLEEP} minutes to fall asleep.")
+    return None
+
+
+_CONSTANT = re.compile(_NAME + r"what(?:'s| is) (?:the value of |the number )?(?P<c>pi|e|the golden ratio|euler's number)(?: to (?P<dp>\d{1,2}) decimal places)?" + _END, re.I)
+_CONSTANTS = {"pi": ("Pi", math.pi), "e": ("E", math.e), "euler's number": ("Euler's number", math.e),
+              "the golden ratio": ("The golden ratio", (1 + 5 ** 0.5) / 2)}
+_TRIG = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?:the )?(?P<f>sin|sine|cos|cosine|tan|tangent) (?:of )?"
+                   r"(?P<n>-?\d+(?:\.\d+)?)(?: degrees?| °)?" + _END, re.I)
+_LOG = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?:the )?(?:(?P<ln>natural log(?:arithm)?|ln)|log(?:arithm)?"
+                  r"(?: base (?P<b>\d+(?:\.\d+)?))?) (?:of )?(?P<n>\d+(?:\.\d+)?)(?:,? (?:to|in) base (?P<b2>\d+(?:\.\d+)?))?" + _END, re.I)
+_MOD = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?P<a>-?\d+) (?:mod|modulo|modulus) (?P<b>-?\d+)" + _END, re.I)
+_ANGLE = re.compile(_NAME + r"(?:what(?:'s| is) |convert )?(?P<n>-?\d+(?:\.\d+)?) (?P<from>degrees?|radians?) (?:in|to|into|as) (?P<to>degrees|radians)" + _END, re.I)
+
+
+def _science_maths(said: str) -> str | None:
+    """'What's pi?', 'what's sin 30?', 'log of 100', 'natural log of 10', '17 mod 5', '45 degrees in radians'."""
+    said = spoken_numbers(said)
+    if m := _CONSTANT.match(said):
+        name, value = _CONSTANTS[m.group("c").lower()]
+        dp = min(int(m.group("dp") or 5), 15)
+        return f"{name} is about {value:.{dp}f}."
+    if m := _TRIG.match(said):
+        f, n = m.group("f").lower()[:3], float(m.group("n"))
+        if f == "tan" and abs(n % 180) == 90:
+            return f"The tangent of {_say_num(n)} degrees is undefined."
+        value = {"sin": math.sin, "cos": math.cos, "tan": math.tan}[f](math.radians(n))
+        name = {"sin": "sine", "cos": "cosine", "tan": "tangent"}[f]
+        return f"The {name} of {_say_num(n)} degrees is {_say_num(round(value, 4) + 0.0)}."
+    if m := _LOG.match(said):
+        n, base = float(m.group("n")), m.group("b") or m.group("b2")
+        if n <= 0 or (base and (float(base) <= 0 or float(base) == 1)):
+            return None
+        if m.group("ln"):
+            return f"The natural log of {_say_num(n)} is {_say_num(round(math.log(n), 4))}."
+        b = float(base) if base else 10.0
+        return f"Log base {_say_num(b)} of {_say_num(n)} is {_say_num(round(math.log(n, b), 4) + 0.0)}."
+    if m := _MOD.match(said):
+        a, b = int(m.group("a")), int(m.group("b"))
+        return None if b == 0 else f"That's {a % b}."
+    if m := _ANGLE.match(said):
+        n, src, dst = float(m.group("n")), m.group("from").lower().rstrip("s"), m.group("to").lower().rstrip("s")
+        if src == dst:
+            return None
+        if dst == "radian":
+            return f"{_say_num(n)} degrees is {_say_num(round(math.radians(n), 4))} radians."
+        return f"{_say_num(n)} radians is {_say_num(round(math.degrees(n), 4))} degrees."
+    return None
+
+
+# grams in one US cup (240 ml), the usual baking conversions
+_CUP_GRAMS = {"flour": 125, "plain flour": 125, "self raising flour": 125, "self-raising flour": 125, "bread flour": 130,
+              "sugar": 200, "caster sugar": 200, "granulated sugar": 200, "brown sugar": 220, "icing sugar": 120,
+              "powdered sugar": 120, "butter": 227, "rice": 185, "oats": 90, "porridge oats": 90, "rolled oats": 90,
+              "cocoa": 85, "cocoa powder": 85, "honey": 340, "golden syrup": 340, "milk": 245, "water": 240,
+              "ground almonds": 96, "grated cheese": 113, "chocolate chips": 170, "raisins": 150}
+_CUP_KINDS = "|".join(sorted(map(re.escape, _CUP_GRAMS), key=len, reverse=True))
+_CUPS_TO_GRAMS = re.compile(_NAME + r"(?:how many grams (?:is |are )?(?:in )?(?P<a>a|one|half a|\d+(?:\.\d+)?|\d+/\d+) cups? of (?P<k>" + _CUP_KINDS + r")"
+                            r"|(?:what(?:'s| is) |convert )?(?P<a2>a|one|half a|\d+(?:\.\d+)?|\d+/\d+) cups? of (?P<k2>" + _CUP_KINDS
+                            + r") (?:in|to|into) (?:grams|g))" + _END, re.I)
+_GRAMS_TO_CUPS = re.compile(_NAME + r"(?:how many cups (?:is |are )?(?:in )?(?P<g>\d+(?:\.\d+)?) ?(?:grams|g) of (?P<k>" + _CUP_KINDS + r")"
+                            r"|(?:what(?:'s| is) |convert )?(?P<g2>\d+(?:\.\d+)?) ?(?:grams|g) of (?P<k2>" + _CUP_KINDS
+                            + r") (?:in|to|into) cups)" + _END, re.I)
+
+
+def _cup_amount(text: str) -> float:
+    text = text.lower()
+    if text in ("a", "one"):
+        return 1.0
+    if text == "half a":
+        return 0.5
+    if "/" in text:
+        top, bottom = text.split("/")
+        return int(top) / int(bottom) if int(bottom) else 0.0
+    return float(text)
+
+
+def _cup_weights(said: str) -> str | None:
+    """'How many grams in a cup of flour?', '2 cups of sugar in grams', 'how many cups is 250 g of butter?'"""
+    said = spoken_numbers(said)
+    if m := _CUPS_TO_GRAMS.match(said):
+        cups, kind = _cup_amount(m.group("a") or m.group("a2")), (m.group("k") or m.group("k2")).lower()
+        if cups <= 0:
+            return None
+        grams = cups * _CUP_GRAMS[kind]
+        say_cups = "Half a cup" if cups == 0.5 else f"{_say_num(cups)} cup{'s' if cups != 1 else ''}"
+        return f"{say_cups} of {kind} is about {_say_num(round(grams))} grams."
+    if m := _GRAMS_TO_CUPS.match(said):
+        grams, kind = float(m.group("g") or m.group("g2")), (m.group("k") or m.group("k2")).lower()
+        cups = round(grams / _CUP_GRAMS[kind] * 4) / 4  # to the nearest quarter cup
+        if cups == 0:
+            return f"That's less than a quarter of a cup of {kind}."
+        whole, part = int(cups), cups - int(cups)
+        frac = {0.25: "a quarter", 0.5: "a half", 0.75: "three quarters"}.get(part)
+        said_cups = (f"{whole} and {frac} cups" if whole and frac else f"{frac} of a cup" if frac
+                     else f"{whole} cup{'s' if whole != 1 else ''}")
+        return f"{_say_num(grams)} grams of {kind} is about {said_cups}."
     return None
 
 
@@ -2268,7 +2364,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _fraction_answer(said) or _bigger_numbers(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _science_maths(said) or _cup_weights(said) or _fraction_answer(said) or _bigger_numbers(said)
             or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
