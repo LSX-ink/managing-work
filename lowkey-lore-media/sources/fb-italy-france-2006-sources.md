@@ -10,6 +10,7 @@
 | 110': Zidane headbutted Materazzi in the chest after Materazzi spoke to him; red card | AP (Ahram Online); Goal.com "Who did Zidane headbutt in the 2006 final and why"; Fox Sports "101 most memorable moments" |
 | Shoot-out: Trezeguet hit the crossbar; Grosso scored the winning penalty | Fox News "On this day"; Wikipedia "2006 FIFA World Cup final" |
 | Zidane won the Golden Ball | Fox News "On this day"; Wikipedia "2006 FIFA World Cup final" (awards) |
+| Kits in the final: Italy all blue (blue shirts, blue shorts, blue socks); France all white | historicalkits.co.uk "World Cup 2006 knock-out stages" (archive.org copy, final kit image); Wikipedia "2006 FIFA World Cup final" (kit box); switchimageproject.blogspot.com "Italy World Cup 2006 kits" (final played in the all-blue kit; white shorts were worn in earlier matches) |
 
 - 3D replays: minutes above; exact build-ups, minor players and positions are a reconstruction.
 - FC 27 cards: Zidane, Materazzi and Grosso shown by shirt number (10, 23, 3), as they are retired.
