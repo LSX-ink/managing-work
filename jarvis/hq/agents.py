@@ -500,6 +500,24 @@ def handmade_only(b) -> bool:
     return bool(b.get("settings.handmade_mockups", True))
 
 
+BARBER_EVERY = 12  # owner, 11 Nov 2026: "Make the ones to barbershops be 1/12 ration too many barbers are being emailed"
+
+
+def is_barber(p: dict) -> bool:
+    return bool(re.search(r"barber", f"{p.get('kind', '')} {p.get('name', '')}", re.I))
+
+
+def barber_allowed(b) -> bool:
+    """At most one barbershop in any BARBER_EVERY first emails in a row."""
+    recent = b.get("warden.first_kinds", []) or []
+    return not any(recent[-(BARBER_EVERY - 1):])
+
+
+def note_first_sent(b, p: dict) -> None:
+    recent = (b.get("warden.first_kinds", []) or []) + [is_barber(p)]
+    b.set("warden.first_kinds", recent[-50:])
+
+
 async def _send_first(ctx: Ctx) -> str:
     from hq import outbox
     s, b = ctx.settings, ctx.brain
@@ -508,6 +526,8 @@ async def _send_first(ctx: Ctx) -> str:
     handmade = handmade_only(b)
     for p in outbox.candidates(s, outbox.limited_companies(b)):  # 2. a first email to the best fresh lead we can email
         if b.get(f"skip.{p['id']}"):
+            continue
+        if is_barber(p) and not barber_allowed(b):  # not skipped for good: their turn comes after 11 non-barbers
             continue
         if handmade:  # owner, 11 Nov 2026: emails go only with the new bespoke 3D mock-ups ("This standard ok you can
             ready = b.get(f"ready.{p['id']}")  # start making emails to send out"); old-style pages aren't built
@@ -522,6 +542,7 @@ async def _send_first(ctx: Ctx) -> str:
             facts = {**p, "site_check": outbox.praise_and_gap(p, b)[1], "free_mockup_we_made": ready}
             said = await _vet_and_send(ctx, facts, p["name"], to, subject, body, ready, first=True)
             if said.startswith("sent"):
+                note_first_sent(b, p)
                 return said
             continue
         looked += 1
@@ -559,6 +580,7 @@ async def _send_first(ctx: Ctx) -> str:
         facts = {**p, "site_check": outbox.praise_and_gap(p, b)[1], "free_mockup_we_made": link}
         said = await _vet_and_send(ctx, facts, p["name"], to, subject, body, link, first=True)
         if said.startswith("sent"):
+            note_first_sent(b, p)
             return said
     if handmade:
         return "no hand-built 3D mock-ups waiting to be emailed"

@@ -258,3 +258,24 @@ def test_emails_found_in_page_text_and_cloudflare():
     assert {"bookings@cuts.co.uk", "hi@shop.co.uk", "bob@cuts.com"} <= set(outbox.emails_in(html))
     assert not outbox.good_address("press@linktr.ee") and not outbox.good_address("user@domain.com")
     assert outbox.good_address("info@clarksbarbers.com")
+
+
+def test_barbers_one_in_twelve_first_emails():
+    """Owner, 11 Nov 2026: at most one barbershop in every 12 first emails."""
+    from hq import agents
+
+    class B(dict):
+        def get(self, k, d=None): return dict.get(self, k, d)
+        def set(self, k, v): self[k] = v
+
+    b = B()
+    barber, cafe = {"kind": "barber shop", "name": "Fade Co"}, {"kind": "cafe", "name": "Beans"}
+    assert agents.barber_allowed(b)
+    agents.note_first_sent(b, barber)
+    for _ in range(10):
+        assert not agents.barber_allowed(b)
+        agents.note_first_sent(b, cafe)
+    assert not agents.barber_allowed(b)  # 10 non-barbers since: still blocked
+    agents.note_first_sent(b, cafe)
+    assert agents.barber_allowed(b)      # 11 non-barbers since: the 12th may be a barber
+    assert agents.is_barber({"kind": "hair salon", "name": "Joe's Barbers"})
