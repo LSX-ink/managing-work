@@ -1,0 +1,29 @@
+[
+ {
+  "slug": "watkins",
+  "file": "File:Ollie Watkins 2021.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Ollie_Watkins_2021.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Ardfern",
+  "date": "2021-09-25",
+  "credit": "Photo: Ardfern, CC BY-SA 4.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "grealish",
+  "file": "File:Jack Grealish 2021.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Jack_Grealish_2021.jpg",
+  "license": "CC BY-SA 4.0",
+  "artist": "Steffen Prößdorf",
+  "date": "2021-12-07",
+  "credit": "Photo: Steffen Prößdorf, CC BY-SA 4.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "salah",
+  "file": "File:Mohamed Salah 2018.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Mohamed_Salah_2018.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Анна Нэсси",
+  "date": "2018-06-25",
+  "credit": "Photo: Анна Нэсси, CC BY-SA 3.0, via Wikimedia Commons"
+ }
+]
