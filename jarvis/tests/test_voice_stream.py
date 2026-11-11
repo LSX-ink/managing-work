@@ -874,6 +874,25 @@ def test_sleep_cycle_times_are_instant():
         "Go to bed at 9:15 pm for six full sleep cycles, or 10:45 pm for five. That allows 15 minutes to fall asleep.")
 
 
+def test_science_maths_billions_and_cup_weights_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("what's pi", s) == "Pi is about 3.14159."
+    assert instant_answer("what's sin 30", s) == "The sine of 30 degrees is 0.5."
+    assert instant_answer("what's tan 90", s) == "The tangent of 90 degrees is undefined."
+    assert instant_answer("what's log base 2 of 8", s) == "Log base 2 of 8 is 3."
+    assert instant_answer("what's the natural log of 10", s) == "The natural log of 10 is 2.3026."
+    assert instant_answer("what's 17 mod 5", s) == "That's 2."
+    assert instant_answer("what's 45 degrees in radians", s) == "45 degrees is 0.7854 radians."
+    assert instant_answer("what's 3 times pi", s) == "That's 9.4248."
+    assert instant_answer("what's 2 to the 10", s) == "That's 1,024."
+    assert instant_answer("what's one billion divided by 1000", s) == "That's 1,000,000."
+    assert instant_answer("how many zeros in a billion", s) == "A billion has 9 zeros: 1,000,000,000."
+    assert instant_answer("how many grams in a cup of flour", s) == "1 cup of flour is about 125 grams."
+    assert instant_answer("how many grams in half a cup of butter", s) == "Half a cup of butter is about 114 grams."
+    assert instant_answer("how many cups is 300 grams of flour", s) == "300 grams of flour is about 2 and a half cups."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
