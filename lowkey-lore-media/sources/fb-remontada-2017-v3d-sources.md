@@ -1,0 +1,15 @@
+# Sources: Barcelona 6-1 PSG, 8 March 2017 (Champions League last 16, second leg; 6-5 on aggregate)
+- Wikipedia: https://en.wikipedia.org/wiki/FC_Barcelona_6%E2%80%931_Paris_Saint-Germain_FC
+- ESPN: https://www.espn.com/soccer/match/_/gameId/469090
+- First leg: PSG 4-0 Barcelona, 14 Feb 2017, Parc des Princes (Wikipedia; ESPN preview)
+- Camp Nou, attendance 96,290; referee Deniz Aytekin (Wikipedia)
+- Goals: Suárez 3', Kurzawa og 40', Messi pen 50', Cavani 62', Neymar 88' (free kick), Neymar pen 90+1', Sergi Roberto 90+5' (Wikipedia and ESPN agree)
+- After Cavani's away goal Barcelona needed three more (away-goals rule, 62' to 90' = 28 minutes)
+- Three goals from 88' to 90+5' = "in the last seven minutes"; Neymar's cross for Roberto's winner (Wikipedia)
+- Possession: ESPN 71%, Wikipedia 75% -> said as "over seventy percent", shown as "70%+"
+- Barcelona shots 20, 10 on target (ESPN and Wikipedia agree); PSG 3 on target (both agree; PSG total shots differ 8/7, so not used)
+- "The largest comeback in UEFA Champions League history", "La Remontada" (Wikipedia)
+- Neymar to PSG, 3 August 2017, €222m release clause, world record; previous record Pogba €105m (AP via theScore; Reuters; Bloomberg)
+- Joke: the ending is banter built on the transfer fact above
+- Player photos: Wikimedia Commons, free licences, credits printed on each card (img/photos.json)
+- Player cards: our own FIFA-style design (no EA artwork or logos). Ratings and the six face stats are each player's EA SPORTS FC 27 Ultimate Team launch gold item, read from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings) on 5 Nov 2026. Players not in that table (Icons, retired players, Neymar, Origi, Kroos) show their shirt number from this match instead of a rating. Card data: web/fc_cards.py
