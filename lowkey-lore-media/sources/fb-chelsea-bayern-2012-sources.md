@@ -14,3 +14,5 @@
 - 3D replays follow these descriptions; minor players and exact positions are a reconstruction.
 - FC 27 ratings (Neuer 81, Müller 80): EA SPORTS FC 27 ratings table, read 9-10 Nov 2026. Drogba and Čech are retired: shirt numbers shown.
 - Photos: Wikimedia Commons, free licences, credited on each card (img/photos.json).
+- Opening line: "the luckiest Champions League winners ever?" is a question / opinion, not a claim of fact.
+- Closing quote: Manuel Neuer after the final: "The team which played better lost." Sources: FTBL (AAP), "Neuer laments final loss" (ftbl.com.au/news/neuer-laments-final-loss-301565); SoccerNews, "Neuer laments final loss" (soccernews.com/neuer-laments-final-loss/94993). The argument over whether Chelsea deserved it: World Soccer Talk, "Despite winning Champions League, Chelsea not winning admirers" and "In defense of defense: why Chelsea's Champions League final tactics should be lauded".
