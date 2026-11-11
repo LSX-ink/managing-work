@@ -13,3 +13,5 @@
 - 3D replays follow these descriptions; minor players and exact positions are a reconstruction.
 - FC 27 ratings (Messi 89, Al-Dawsari 80): EA SPORTS FC 27 ratings table, read 5-10 Nov 2026.
 - Photos: Wikimedia Commons, free licences, credited on each card (img/photos.json).
+- Opening line: "the biggest upset in World Cup history": Nielsen Gracenote rated it the biggest shock in World Cup history (Prothom Alo "Saudi Arabia win over Argentina statistically biggest upset in World Cup history"; Onmanorama "Saudi stunning Argentina biggest World Cup upset: Gracenote").
+- Closing quote: Hervé Renard, post-match press conference, 22 Nov 2022: "Sometimes the opposition does not have the best motivation... the motivation is not the same as playing against Brazil." Sources: TNT Sports/Eurosport "'The stars in the sky aligned' – Saudi Arabia boss Herve Renard reacts..."; Oman Observer (AFP) "Saudi Arabia's Renard not dwelling on 'crazy' win". Reported as a dig at Argentina: IBTimes "Saudi Arabia boss' brutal statement about Lionel Messi after Argentina's defeat"; The Hans India.
