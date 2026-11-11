@@ -1,0 +1,18 @@
+# Sources: Brazil 1-7 Germany, 8 July 2014 (World Cup semi-final, Mineirão, Belo Horizonte)
+- Wikipedia: https://en.wikipedia.org/wiki/Brazil_v_Germany_(2014_FIFA_World_Cup)
+- ESPN: https://www.espn.com/soccer/match/_/gameId/383242
+- DFB data centre: https://www.dfb.de/en/data-center/fifa-world-cup/2014-in-brasil/semi-final/brazil-germany-513336
+- Attendance 58,141 (Wikipedia, DFB)
+- Neymar out (fractured vertebra v Colombia); Thiago Silva suspended, yellow cards (Wikipedia)
+- Goals: Müller 11', Klose 23', Kroos 24', 26', Khedira 29', Schürrle 69', 79', Oscar 90' (Wikipedia, ESPN, Eurosport)
+- Four goals in six minutes (23'-29'); 5-0 after 29 minutes (Wikipedia, Sports Mole)
+- Klose's 16th World Cup goal, passing Ronaldo as all-time top scorer (Wikipedia)
+- Possession: ESPN 51% Brazil, Wikipedia 52% -> shown as 51%, "Brazil had more of the ball"
+- Shots: Brazil 18, Germany 14 (ESPN, Wikipedia)
+- First competitive home defeat since 1975, ending a 62-match unbeaten run (Wikipedia)
+- Largest margin of victory in a World Cup semi-final (Wikipedia)
+- Germany beat Argentina 1-0 in the final (Wikipedia)
+- Joke: "you had more of the ball, Germany had seven of the goals" follows the possession stat shown
+- Player photos: Wikimedia Commons, free licences, credits printed on each card (img/photos.json)
+- Player cards: our own FIFA-style design (no EA artwork or logos). Ratings and the six face stats are each player's EA SPORTS FC 27 Ultimate Team launch gold item, read from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings) on 5 Nov 2026. Players not in that table (Icons, retired players, Neymar, Origi, Kroos) show their shirt number from this match instead of a rating. Card data: web/fc_cards.py
+- v3d build-ups (Wikipedia match article): Müller's volley from Kroos's corner; Klose's rebound; Kroos's first-time strike from Lahm's cut-back; Kroos's one-two with Khedira; Khedira's one-two with Özil; Schürrle twice; Oscar's late goal. Final: Germany 1-0 Argentina, 13 July 2014. Minor players and exact positions are a reconstruction.
