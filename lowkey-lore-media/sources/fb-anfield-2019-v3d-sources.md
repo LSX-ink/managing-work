@@ -1,0 +1,17 @@
+# Sources: Liverpool 4-0 Barcelona, 7 May 2019 (Champions League semi-final, second leg; 4-3 on aggregate)
+- ESPN: https://www.espn.com/soccer/match/_/gameId/538699
+- UEFA report: https://www.uefa.com/uefachampionsleague/match/2027160--liverpool-vs-barcelona/postmatch/report/
+- Liverpool FC match report: https://www.liverpoolfc.com/news/first-team/349380-match-report-liverpool-barcelona-champions-league
+- First leg: Barcelona 3-0 Liverpool, 1 May 2019, Camp Nou (ESPN, 11v11)
+- Salah and Firmino not in Liverpool's squad (ESPN line-ups; widely reported injuries, not stated as fact in the video)
+- Goals: Origi 7', Wijnaldum 54', Wijnaldum 56', Origi 79' (ESPN, footballcritic, fotmob)
+- Wijnaldum on for Robertson at half-time (ESPN)
+- 79': Alexander-Arnold walks away from the corner, turns back and takes it quickly to Origi (Sports Mole live commentary; Scotsman; CNN Chile)
+- Possession: ESPN 57% Barcelona, fbref 58% -> "almost sixty percent", shown as ESPN's 57%
+- Liverpool 13 shots, 7 on target (ESPN, fbref)
+- 2018: Roma 3-0 Barcelona after Barcelona won the first leg 4-1; Roma through on away goals (CBS Sports, FourFourTwo, Sky Sports)
+- Final: Tottenham 0-2 Liverpool, 1 June 2019 (Wikipedia, LFC)
+- Joke: "watch the corner" follows the quick-corner goal shown just before
+- Player photos: Wikimedia Commons, free licences, credits printed on each card (img/photos.json)
+- Player cards: our own FIFA-style design (no EA artwork or logos). Ratings and the six face stats are each player's EA SPORTS FC 27 Ultimate Team launch gold item, read from EA's official ratings table (https://www.ea.com/games/ea-sports-fc/ratings) on 5 Nov 2026. Players not in that table (Icons, retired players, Neymar, Origi, Kroos) show their shirt number from this match instead of a rating. Card data: web/fc_cards.py
+- v3d build-ups: Origi 7' rebound after Ter Stegen saved Henderson's shot; Wijnaldum 54' first-time finish from Alexander-Arnold's low cross; Wijnaldum 56' header from Shaqiri's cross (UEFA match report; Liverpool FC report). Minor players and exact positions are a reconstruction.
