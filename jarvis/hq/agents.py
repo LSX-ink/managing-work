@@ -425,8 +425,9 @@ async def warden(ctx: Ctx) -> str:
         return "outside sending hours (9:00 to 17:30)"
     # owner, 29 Oct 2026: follow-ups had filled the whole day's limit, so no new business got a first email. New first
     # emails and follow-ups now each have their own daily limit, and the two take turns.
-    caps = {"first email": weekly_new_cap(int(b.get("settings.send_per_day", 15)), outbox.uk_now().date()),
-            "follow-up": int(b.get("settings.followups_per_day", 15))}
+    # 11 Nov 2026: a blank setting (saved as null on 9 Nov) crashed every run, so no email went all morning
+    caps = {"first email": weekly_new_cap(int(b.get("settings.send_per_day") or 15), outbox.uk_now().date()),
+            "follow-up": int(b.get("settings.followups_per_day") or 15)}
     if outbox.weekend(outbox.uk_now()):  # owner, 29 Oct 2026: new emails Monday to Friday; weekends are for follow-ups
         caps["first email"] = 0
     else:  # owner, 9 Nov 2026: "you don't send follow ups during weekday, only weekend"

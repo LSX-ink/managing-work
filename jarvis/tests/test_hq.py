@@ -279,3 +279,12 @@ def test_barbers_one_in_twelve_first_emails():
     agents.note_first_sent(b, cafe)
     assert agents.barber_allowed(b)      # 11 non-barbers since: the 12th may be a barber
     assert agents.is_barber({"kind": "hair salon", "name": "Joe's Barbers"})
+
+
+def test_blank_daily_limits_fall_back_to_default():
+    """11 Nov 2026: settings.followups_per_day saved as null crashed Vera on every run."""
+    import inspect
+    from hq import agents
+    src = inspect.getsource(agents.warden)
+    assert 'b.get("settings.followups_per_day") or 15' in src
+    assert 'b.get("settings.send_per_day") or 15' in src
