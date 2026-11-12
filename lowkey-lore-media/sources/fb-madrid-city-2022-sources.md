@@ -13,3 +13,5 @@
 - 3D replays: goal times above; exact build-ups, minor players and positions are a reconstruction.
 - FC 27 ratings (Rodrygo 84, Benzema 82; Mahrez shown by shirt number 26): EA SPORTS FC 27 ratings table, read 10-11 Nov 2026.
 - Photos: Wikimedia Commons, free licences, credited on each card (img/photos.json).
+- Opening line: "City didn't lose this one... they bottled it" is an opinion; the facts (City through until the 90th minute) are sourced above.
+- Closing quote: Dietmar Hamann on Twitter, 5 May 2022: "Guardiola suffocates teams and players to make their own decisions." Sources: Football España, "Didi Hamann accuses Pep Guardiola of suffocating his players and not giving them responsibility"; SportsJoe, "Didi Hamann blames Pep Guardiola for Man City's loss to Real Madrid".
