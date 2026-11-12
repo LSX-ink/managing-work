@@ -13,3 +13,4 @@
 - Photos: Wikimedia Commons, free licences, credited on each card (img/photos.json).
 - Opening line: "United's most humiliating day ever?" is a question / opinion; the facts (third in the league, lost 7-0) are sourced above.
 - Closing quote: Gary Neville on Sky Sports about Bruno Fernandes: "Some of his behaviour in the second half has been a disgrace." Sources: Sky Sports, "Bruno Fernandes' behaviour was embarrassing and a shambles as Manchester United lost 7-0 at Liverpool, says Gary Neville"; Goal, "'Disgraceful' Bruno Fernandes ripped to shreds by Man Utd legend Gary Neville".
+- Shot map (second half, Liverpool): every shot's real position, where it ended and its result, from FotMob (Opta) match data, https://www.fotmob.com/api/data/matchDetails?matchId=3901187 (saved in data/shotmap.json). Totals check: Liverpool 18 shots / 8 on target, United 8 / 4, matching Sports Mole's match stats. Second half: 10 Liverpool shots, 6 goals.
