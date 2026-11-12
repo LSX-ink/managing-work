@@ -893,6 +893,26 @@ def test_science_maths_billions_and_cup_weights_are_instant():
     assert instant_answer("how many cups is 300 grams of flour", s) == "300 grams of flour is about 2 and a half cups."
 
 
+def test_money_sums_savings_and_years_are_instant():
+    import time
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 9, 0, 0, 4, 289, 0))
+    assert instant_answer("what's £3.50 times 4", s) == "That's £14."
+    assert instant_answer("how much is 3 pounds 50 times 4", s) == "That's £14."
+    assert instant_answer("what's 20% of £50", s) == "That's £10."
+    assert instant_answer("what's £12 plus £7.50", s) == "That's £19.50."
+    assert instant_answer("what's £60 split between 4", s) == "That's £15 each."
+    assert instant_answer("if I save £50 a week how much will I have in a year", s) == "That's £2,600 over a year."
+    assert instant_answer("how much is £10 a day for a month", s) == "That's £300 over a month."
+    assert instant_answer("how long will it take to save £1000 at £50 a week", s) == "20 weeks, about 4.6 months."
+    assert instant_answer("how long ago was 1990", s, now=now) == "1990 was 36 years ago."
+    assert instant_answer("what year will it be in 15 years", s, now=now) == "It'll be 2041."
+    assert instant_answer("what century is it", s, now=now) == "It's the 21st century."
+    assert instant_answer("what decade was 1985", s, now=now) == "That was the 1980s."
+    assert instant_answer("what's 50 plus 10%", s) == "That's 55."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
