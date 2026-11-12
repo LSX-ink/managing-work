@@ -11,3 +11,5 @@
 - 3D replays: goal times above; exact build-ups, minor players and positions are a reconstruction.
 - FC 27 ratings (Gakpo 82, Núñez 77, Salah 87): EA SPORTS FC 27 ratings table, read 10-11 Nov 2026.
 - Photos: Wikimedia Commons, free licences, credited on each card (img/photos.json).
+- Opening line: "United's most humiliating day ever?" is a question / opinion; the facts (third in the league, lost 7-0) are sourced above.
+- Closing quote: Gary Neville on Sky Sports about Bruno Fernandes: "Some of his behaviour in the second half has been a disgrace." Sources: Sky Sports, "Bruno Fernandes' behaviour was embarrassing and a shambles as Manchester United lost 7-0 at Liverpool, says Gary Neville"; Goal, "'Disgraceful' Bruno Fernandes ripped to shreds by Man Utd legend Gary Neville".
