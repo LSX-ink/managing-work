@@ -1,0 +1,16 @@
+# Kinetic follow-up email series: daily trigger only. It calls the site's /api/drip/run,
+# which sends the due emails with the site's own database and Resend key.
+# Secret (the same value as the site's DRIP_TOKEN Pages secret):  npx wrangler secret put DRIP_TOKEN
+# Deploy:  npx wrangler deploy   (in this folder)
+# On/off switch: DRIP_ENABLED in kinetic-live/wrangler.toml.
+name = "kinetic-drip"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = false
+
+# 09:00 UTC every day
+[triggers]
+crons = ["0 9 * * *"]
+
+[vars]
+SITE_URL = "https://kineticwebdesigns.co.uk"
