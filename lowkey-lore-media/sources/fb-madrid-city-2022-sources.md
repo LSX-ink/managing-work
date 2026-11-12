@@ -15,3 +15,4 @@
 - Photos: Wikimedia Commons, free licences, credited on each card (img/photos.json).
 - Opening line: "City didn't lose this one... they bottled it" is an opinion; the facts (City through until the 90th minute) are sourced above.
 - Closing quote: Dietmar Hamann on Twitter, 5 May 2022: "Guardiola suffocates teams and players to make their own decisions." Sources: Football España, "Didi Hamann accuses Pep Guardiola of suffocating his players and not giving them responsibility"; SportsJoe, "Didi Hamann blames Pep Guardiola for Man City's loss to Real Madrid".
+- Shot map (Real Madrid, whole match incl. extra time): every shot's real position, where it ended and its result, from FotMob (Opta) match data, https://www.fotmob.com/api/data/matchDetails?matchId=3846448 (saved in data/shotmap.json). Totals check: Real Madrid 14 shots / 5 on target, City 15 / 10, matching ESPN (event 634249).
