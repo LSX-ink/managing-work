@@ -1173,6 +1173,117 @@ def _amount(m: re.Match) -> float:
     return float(m.group("amt").replace(",", ""))
 
 
+_CASH_B = _CASH.replace("(?P<", "(?P<b")
+_ASK_SUM = r"(?:what(?:'s| is)|how much is|what does|work out|calculate) "
+_CASH_OP = re.compile(_NAME + _ASK_SUM + r"(?:" + _CASH + r") (?P<op>times|x|multiplied by|divided by|over|plus|add|and|minus|take away|less) (?:"
+                      + _CASH_B + r")(?: (?:come to|make|equal))?" + _END, re.I)
+_TIMES_CASH = re.compile(_NAME + _ASK_SUM + r"(?P<n>\d+(?:\.\d+)?) (?:times|x|lots of) (?:" + _CASH + r")" + _END, re.I)
+_PC_OF_CASH = re.compile(_NAME + _ASK_SUM + _PERCENT + r" of (?:" + _CASH + r")" + _END, re.I)
+_CASH_SPLIT = re.compile(_NAME + r"(?:" + _ASK_SUM + r")?(?:" + _CASH + r") (?:split|divided|shared) (?:between |among |by |into )?(?P<people>\d+)"
+                         r"(?: (?:ways|people|of us|persons|friends))?" + _END, re.I)
+_PER_YEAR = {"day": 365, "week": 52, "month": 12, "year": 1}
+_RATE = r" (?:a|per|each|every) (?P<unit>day|week|month|year)"
+_SAVE_TOTAL = re.compile(_NAME + r"(?:if I (?:save|put away|spend|earn|make|pay)|saving|spending) (?:" + _CASH + r")" + _RATE
+                         + r",? how much (?:will|would) (?:I|that) (?:have|save|spend|earn|make|be|come to|add up to)(?: saved| spent)?(?: after| in| over| for)? "
+                         r"(?P<n>a|an|one|\d+(?:\.\d+)?) (?P<span>days?|weeks?|months?|years?)" + _END
+                         + r"|" + _NAME + r"(?:what(?:'s| is)|how much is) (?:" + _CASH_B.replace("(?P<b", "(?P<c") + r") (?:a|per|each|every) (?P<cunit>day|week|month|year)"
+                         r" (?:for|over|in) (?:a|an|one|(?P<cn>\d+(?:\.\d+)?)) (?P<cspan>days?|weeks?|months?|years?)" + _END, re.I)
+_SAVE_GOAL = re.compile(_NAME + r"how long (?:will it take |would it take |does it take )?(?:me )?to (?:save|save up|pay off) (?:" + _CASH_B
+                        + r") (?:at|if I save|saving|putting away|paying) (?:" + _CASH + r")" + _RATE + _END, re.I)
+
+
+def _rate_factor(unit: str, span: str) -> float:
+    """How many of `unit` fit in one `span`; a month counts as 30 days."""
+    unit, span = unit.lower().rstrip("s"), span.lower().rstrip("s")
+    if unit == "day" and span == "month":
+        return 30.0
+    return _PER_YEAR[unit] / _PER_YEAR[span]
+
+
+def _cash_sums(said: str) -> str | None:
+    """'What's £3.50 times 4?', 'what's 20% of £50?', '£20 split 3 ways', 'if I save £50 a week how much in a year?',
+    '£10 a day for a month', 'how long to save £1000 at £50 a week?'"""
+    said = re.sub(r"\b(\d+) (?:pounds?|quid) (\d{2})\b(?! ?(?:p\b|pence))", r"£\1.\2", spoken_numbers(said), flags=re.I)
+    if (m := _CASH_OP.match(said)) and (m.group("cur") or m.group("word") or m.group("bcur") or m.group("bword")):
+        a, b, op = _amount(m), float(m.group("bamt").replace(",", "")), m.group("op").lower()
+        money_b = bool(m.group("bcur") or m.group("bword"))
+        if op in ("times", "x", "multiplied by"):
+            value = a * b
+        elif op in ("divided by", "over"):
+            if b == 0:
+                return "You can't divide by zero."
+            value = a / b
+            if money_b and (m.group("cur") or m.group("word")):
+                return f"That's {_say_num(round(value, 2))} times over."
+        elif op in ("plus", "add", "and"):
+            value = a + b
+        else:
+            value = a - b
+        if not (m.group("cur") or m.group("word")):
+            m = re.match(_CASH_B.replace("(?P<b", "(?P<"), f"{m.group('bcur') or ''}{m.group('bamt')}{' ' + m.group('bword') if m.group('bword') else ''}")
+        return f"That's {_money(round(value, 2), m)}."
+    if (m := _TIMES_CASH.match(said)) and (m.group("cur") or m.group("word")):
+        return f"That's {_money(round(float(m.group('n')) * _amount(m), 2), m)}."
+    if (m := _PC_OF_CASH.match(said)) and (m.group("cur") or m.group("word")):
+        return f"That's {_money(round(float(m.group('pc')) / 100 * _amount(m), 2), m)}."
+    if (m := _CASH_SPLIT.match(said)) and (m.group("cur") or m.group("word")) and int(m.group("people")) > 0:
+        return f"That's {_money(round(_amount(m) / int(m.group('people')), 2), m)} each."
+    if m := _SAVE_TOTAL.match(said):
+        if m.group("amt"):
+            rate, unit, n, span, cash = _amount(m), m.group("unit"), m.group("n"), m.group("span"), m
+        else:
+            rate, unit, n, span = float(m.group("camt").replace(",", "")), m.group("cunit"), m.group("cn"), m.group("cspan")
+            cash = re.match(_CASH, f"{m.group('ccur') or ''}{m.group('camt')}{' ' + m.group('cword') if m.group('cword') else ''}")
+        count = float(n) if n and n[0].isdigit() else 1.0
+        total = rate * _rate_factor(unit, span) * count
+        span_word = span.lower().rstrip("s")
+        said_span = f"{_say_num(count)} {span_word}{'s' if count != 1 else ''}" if count != 1 else f"a {span_word}"
+        return f"That's {_money(round(total, 2), cash)} over {said_span}."
+    if m := _SAVE_GOAL.match(said):
+        goal, rate, unit = float(m.group("bamt").replace(",", "")), _amount(m), m.group("unit").lower()
+        if rate <= 0:
+            return None
+        periods = math.ceil(goal / rate - 1e-9)
+        extra = ""
+        if unit in ("week", "day") and periods > 12:
+            extra = f", about {_say_num(round(periods / (52 / 12 if unit == 'week' else 30.4), 1))} months"
+        return f"{periods:,} {unit}{'s' if periods != 1 else ''}{extra}."
+    return None
+
+
+_YEARS_AGO = re.compile(_NAME + r"(?:how (?:long|many years) ago was|how many years (?:has it been )?since) (?P<y>\d{4})" + _END, re.I)
+_YEAR_OFFSET = re.compile(_NAME + r"what year (?:was it|was) (?P<a>\d+) years? ago" + _END
+                          + r"|" + _NAME + r"what year (?:will it be|is it|will be) in (?P<b>\d+) years?(?: time)?" + _END, re.I)
+_CENTURY = re.compile(_NAME + r"what (?P<kind>century|decade|millennium) (?:is it|are we in|is this)(?: now)?" + _END
+                      + r"|" + _NAME + r"what (?P<kind2>century|decade) (?:was|is) (?P<y>\d{3,4}) in" + _END
+                      + r"|" + _NAME + r"what (?P<kind3>century|decade) (?:was|is) (?P<y2>\d{3,4})" + _END, re.I)
+
+
+def _year_maths(said: str, year: int) -> str | None:
+    """'How long ago was 1990?', 'what year was it 30 years ago?', 'what year will it be in 15 years?', 'what century is it?'"""
+    said = spoken_numbers(said)
+    if m := _YEARS_AGO.match(said):
+        y = int(m.group("y"))
+        gap = year - y
+        if gap == 0:
+            return f"{y} is this year."
+        if gap < 0:
+            return f"{y} is {-gap} year{'s' if gap != -1 else ''} from now."
+        return f"{y} was {gap} year{'s' if gap != 1 else ''} ago."
+    if m := _YEAR_OFFSET.match(said):
+        return f"It was {year - int(m.group('a'))}." if m.group("a") else f"It'll be {year + int(m.group('b'))}."
+    if m := _CENTURY.match(said):
+        kind = (m.group("kind") or m.group("kind2") or m.group("kind3")).lower()
+        y = int(m.group("y") or m.group("y2") or year)
+        past = bool(m.group("y") or m.group("y2"))
+        if kind == "decade":
+            return f"{'That was' if past and y < year else "It's"} the {y // 10 * 10}s."
+        if kind == "millennium":
+            return f"It's the {_ordinal((y - 1) // 1000 + 1)} millennium."
+        return f"{'That was' if past and y < year else "It's"} the {_ordinal((y - 1) // 100 + 1)} century."
+    return None
+
+
 def _money_more(said: str) -> str | None:
     """VAT ('what's VAT on £100?', 'take VAT off £120'), percentage change, '£500 plus 20%', yearly interest and pay rates."""
     said = spoken_numbers(said)
@@ -2361,10 +2472,11 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
-    if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None:
+    if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
+            or (found := _year_maths(said, now.tm_year)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _science_maths(said) or _cup_weights(said) or _fraction_answer(said) or _bigger_numbers(said)
+            or _shopping_answer(said, settings) or _money_answer(said) or _cash_sums(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _science_maths(said) or _cup_weights(said) or _fraction_answer(said) or _bigger_numbers(said)
             or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
