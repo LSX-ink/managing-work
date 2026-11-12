@@ -15,3 +15,5 @@
 - 3D replays: minutes above; exact build-ups, minor players and positions are a reconstruction.
 - FC 27 cards: Zidane, Materazzi and Grosso shown by shirt number (10, 23, 3), as they are retired.
 - Photos: Wikimedia Commons, free licences, credited on each card (img/photos.json).
+- Opening line: "the greatest player of his generation... threw away a World Cup final" is an opinion; the facts (sent off for a headbutt in his last game) are sourced above.
+- Closing quote: Zinedine Zidane, Canal+ interview, 12 Jul 2006: "I don't regret my behaviour because regretting it would mean he was right to say what he said" (French: "Je ne peux pas regretter mon geste car cela voudrait dire qu'il avait raison de dire tout cela"). Sources: Irish Times, "Zidane breaks his silence"; Aujourd'hui Le Maroc, "Zinedine Zidane ne regrette rien"; Al Jazeera, "Zidane: Sorry, but no regrets".
