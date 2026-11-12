@@ -13,3 +13,5 @@
 - FC 27 ratings (Watkins 83, Grealish 82, Salah 87): EA SPORTS FC 27 ratings table, read 9-10 Nov 2026.
 - Photos: Wikimedia Commons, free licences, credited on each card (img/photos.json).
 | Played behind closed doors (COVID-19 restrictions) | Premier League report; AP via Washington Times |
+- Opening line: "the most embarrassing night of Klopp's Liverpool" is an opinion; the facts in it (the champions conceded seven) are sourced above.
+- Closing quote: Jürgen Klopp to Sky Sports after the game, replying to Roy Keane calling Liverpool's defending "sloppy" the week before: "Mr Keane said we were sloppy... not sloppy, just bad" (shortened; every word appears in both versions). Sources: Irish Examiner, "Klopp: 'Last week Mr Keane said we were sloppy. Tonight we were not sloppy, just bad'" (irishexaminer.com/sport/soccer/arid-40059503.html); Sporting Life, "Klopp: We lost the plot" (sportinglife.com/football/news/klopp-we-lost-the-plot/185020). The row: Goal (Neil Jones), "Forget sloppy, shambolic Liverpool..."
