@@ -53,10 +53,11 @@ MAX_NEEDS = 50
 MAX_THREADS = 200
 MAX_REPLIES_PER_POLL = 10
 MAX_REPLY = 500  # Instagram DM style: short (Instagram's own limit is 1000)
-SIGN_OFF = "— Alfred, Kinetic Web Designs"
-HOLDING = "Thanks! I'll get back to you shortly — Alfred"
-NO_AI = (f"Thanks! I'll get back to you shortly — Alfred. In the meantime you can tell us about your business at "
-         f"{st.SITE}")
+# owner rule: DMs are signed Kinetic Web Designs, never Alfred (11-13 Nov 2026)
+SIGN_OFF = "Kinetic Web Designs"
+HOLDING = "Thanks! We'll get back to you shortly. Kinetic Web Designs"
+NO_AI = (f"Thanks! We'll get back to you shortly. In the meantime you can tell us about your business at "
+         f"{st.SITE}. Kinetic Web Designs")
 NEEDS_TITLE = "Instagram — needs you"
 SETUP = ("Instagram isn't connected yet. Put a long-lived Instagram access token for @kineticwebdesigns in "
          "JARVIS_INSTAGRAM_TOKEN in .env and restart Alfred (the README has the steps).")
@@ -81,7 +82,7 @@ FORBIDDEN = re.compile(r"klarna|clearpay|instal+ments?|pay later|buy now|card (n
 URL = re.compile(r"\b((?:https?://)?(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:co\.uk|com|uk|net|org|io|shop|store|"
                  r"biz|info|co|me|online|site)(?:/[^\s]*)?)", re.I)
 HANDLE = re.compile(r"(?<![\w.])@([a-z0-9_.]{2,30})", re.I)
-PROMPT = """You are Alfred from Kinetic Web Designs, a small UK web design business, answering Instagram direct
+PROMPT = """You reply for Kinetic Web Designs (never give yourself a name or call yourself Alfred), a small UK web design business, answering Instagram direct
 messages sent to @kineticwebdesigns. Be friendly and short: Instagram DM style, plain British English, under {limit}
 characters, no headings or lists.
 
@@ -519,6 +520,14 @@ async def poll(settings: Settings, http: httpx.AsyncClient, announce=None, now: 
         if d["action"] == "reply" and sent_ok:
             s["counts"]["replied"] += 1
             done["replied"] += 1
+            # owner, 13 Nov 2026: "Why wasn't I informed someone's interested" - every real reply reaches the
+            # phone at once, with what they said and what was sent back, even when the auto-reply handled it
+            if announce:
+                try:
+                    await announce(f"@{username} replied: \"{text[:220]}\"\nAuto-reply sent: \"{reply[:160]}\"",
+                                   "instagram")
+                except Exception:
+                    pass
         elif d["action"] != "reply" and sent_ok:
             if reply:
                 s["held"].append(cid)
