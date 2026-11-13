@@ -913,6 +913,28 @@ def test_money_sums_savings_and_years_are_instant():
     assert instant_answer("what's 50 plus 10%", s) == "That's 55."
 
 
+def test_spoken_clocks_bare_hours_days_and_journeys_are_instant():
+    import time
+    from brain import instant_answer, spoken_clocks
+    s = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 9, 0, 0, 4, 289, 0))  # Friday, 9 am
+    assert spoken_clocks("how long till half past five") == "how long till 5:30"
+    assert spoken_clocks("meet at quarter to 1") == "meet at 12:45"
+    assert spoken_clocks("it's twenty five to 7") == "it's 6:35"
+    assert spoken_clocks("count from five to ten") == "count from five to ten"
+    assert spoken_clocks("set a timer for 10 to 15 minutes") == "set a timer for 10 to 15 minutes"
+    assert instant_answer("how long until 6", s, now=now) == "9 hours until 6 pm."
+    assert instant_answer("how many minutes until quarter past 10", s, now=now) == "1 hour and 15 minutes until 10:15 am."
+    assert instant_answer("what's quarter to 6 in 24 hour time", s) == "That's 05:45 in the morning, or 17:45 in the evening."
+    assert instant_answer("is it Friday", s, now=now) == "Yes, it's Friday."
+    assert instant_answer("is today Monday", s, now=now) == "No, it's Friday."
+    assert instant_answer("is it the evening", s, now=now) == "No, it's 9 am, so it's the morning."
+    assert instant_answer("what time do I need to leave to arrive at 9 if it takes 40 minutes", s, now=now) == "Leave by 8:20."
+    assert instant_answer("if I leave at half past 7 and it takes 20 minutes what time will I get there", s, now=now) == (
+        "You'll arrive at 7:50.")
+    assert instant_answer("count from five to ten", s, now=now) == "5, 6, 7, 8, 9, 10."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

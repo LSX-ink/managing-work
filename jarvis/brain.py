@@ -582,6 +582,8 @@ def _clock_format(m: re.Match) -> str | None:
     if ap:
         hour = hour % 12 + (12 if ap == "pm" else 0)
     if m.group("fmt").lower() in ("24", "twenty four"):
+        if not ap and 1 <= hour <= 11:  # a bare 'quarter to 6' could be either
+            return f"That's {hour:02d}:{minute:02d} in the morning, or {hour + 12}:{minute:02d} in the evening."
         return f"That's {hour:02d}:{minute:02d}."
     return f"That's {_say_clock(hour, minute)}."
 
@@ -1724,7 +1726,7 @@ def _date_maths(said: str, today: dt.date) -> str | None:
 
 
 _UNTIL_CLOCK = re.compile(_NAME + r"(?:how long (?:is it |have I got |do I have )?|how many (?:minutes|hours) (?:is it |have I got |do I have )?|"
-                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r"|(?P<word>midnight|midday|noon))" + _END, re.I)
+                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r"|(?P<word>midnight|midday|noon)|(?P<bh>1[0-2]|[1-9])(?::(?P<bm>[0-5]\d))?)" + _END, re.I)
 _TIME_IN = re.compile(_NAME + r"(?:what time will it be|what(?:'s| is| will be) the time|what time is it) in " + _AMOUNT
                       + r" (minutes?|mins?|hours?|hrs?)(?: time)?" + _END, re.I)
 
@@ -1938,6 +1940,63 @@ def _zone_clock(said: str) -> str | None:
     return f"When it's {_say_clock(*clock)} {where}, it's {_say_clock(total // 60, total % 60)}{day} {there}."
 
 
+_BARE = r"(?P<{0}h>\d{{1,2}})(?:[:.](?P<{0}m>[0-5]\d))? ?(?P<{0}ap>a\.?m\.?|p\.?m\.?)?"
+_ARRIVE_BY = re.compile(_NAME + r"(?:what time|when) (?:do|should|must|would) I (?:need to |have to )?(?:leave|set off|go|head off|get going)"
+                        r"(?: by)? (?:to (?:arrive|get there|be there|get in|be in) (?:by |at |for )?|for )" + _BARE.format("a")
+                        + r",? if (?:it|the journey|the drive|the trip|the walk) takes (?:" + _DUR.format("d") + r")" + _END, re.I)
+_LEAVE_AT = re.compile(_NAME + r"if I (?:leave|set off|go|head off) at " + _BARE.format("a") + r",? and (?:it|the journey|the drive|the trip|the walk)"
+                       r" takes (?:" + _DUR.format("d") + r"),? (?:what time|when) (?:will|would|do|should) I (?:arrive|get there|be there|get in|land)" + _END, re.I)
+
+
+def _bare_clock(m: re.Match, p: str) -> tuple[int, int, bool] | None:
+    """Hour, minute and whether am or pm was said; a bare '9' stays on a 12-hour face."""
+    hour, minute, ap = int(m.group(p + "h")), int(m.group(p + "m") or 0), (m.group(p + "ap") or "").lower().replace(".", "")
+    if ap:
+        if not 1 <= hour <= 12:
+            return None
+        return hour % 12 + (12 if ap == "pm" else 0), minute, True
+    return (hour, minute, hour > 12 or hour == 0) if hour <= 23 else None
+
+
+def _say_face(total_minutes: float, has_ap: bool) -> str:
+    hour, minute = divmod(round(total_minutes) % 1440, 60)
+    return _say_clock(hour, minute) if has_ap else f"{hour % 12 or 12}:{minute:02d}"
+
+
+_IS_DAY = re.compile(_NAME + r"is (?:it|today) (?P<wd>monday|tuesday|wednesday|thursday|friday|saturday|sunday)(?: today)?" + _END, re.I)
+_PART_OF_DAY = re.compile(_NAME + r"is it (?P<part>morning|the morning|afternoon|the afternoon|evening|the evening|night|night time|am or pm|a\.?m\.? or p\.?m\.?)(?: now| yet)?" + _END, re.I)
+
+
+def _part_of_day(hour: int) -> str:
+    return "morning" if 5 <= hour < 12 else "afternoon" if 12 <= hour < 17 else "evening" if 17 <= hour < 21 else "night"
+
+
+def _day_and_journey(said: str, now: time.struct_time) -> str | None:
+    """'Is it Friday?', 'is it morning?', 'what time do I need to leave to arrive at 9 if it takes 40 minutes?',
+    'if I leave at 8:15 and it takes 45 minutes, when will I arrive?'"""
+    if m := _IS_DAY.match(said):
+        today = time.strftime("%A", now)
+        asked = m.group("wd").capitalize()
+        return f"Yes, it's {today}." if asked == today else f"No, it's {today}."
+    if m := _PART_OF_DAY.match(said):
+        part = m.group("part").lower().replace(".", "")
+        actual = _part_of_day(now.tm_hour)
+        if part.endswith("pm"):
+            return f"It's {_say_clock(now.tm_hour, now.tm_min)}."
+        asked = part.replace("the ", "").replace(" time", "")
+        return (f"Yes, it's {_say_clock(now.tm_hour, now.tm_min)}." if asked == actual
+                else f"No, it's {_say_clock(now.tm_hour, now.tm_min)}, so it's {'night' if actual == 'night' else 'the ' + actual}.")
+    for pattern, sign in ((_ARRIVE_BY, -1), (_LEAVE_AT, 1)):
+        if m := pattern.match(said):
+            found = _bare_clock(m, "a")
+            if found is None:
+                return None
+            hour, minute, has_ap = found
+            when = _say_face(hour * 60 + minute + sign * _dur_minutes(m, "d"), has_ap)
+            return f"Leave by {when}." if sign < 0 else f"You'll arrive at {when}."
+    return None
+
+
 def _clock_maths(said: str, now: time.struct_time) -> str | None:
     """'How long until 5 pm?' and 'what time will it be in 3 hours?': worked out from the clock on the spot."""
     here = dt.datetime(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
@@ -1951,6 +2010,10 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
         return None
     if m.group("word"):
         hour, minute = (0 if m.group("word").lower() == "midnight" else 12), 0
+    elif m.group("bh"):  # a bare '6' or '5:30' means whichever comes next, am or pm
+        minute = int(m.group("bm") or 0)
+        hour = min((h for h in (int(m.group("bh")) % 12, int(m.group("bh")) % 12 + 12)),
+                   key=lambda h: (h * 60 + minute - here.hour * 60 - here.minute - 1) % 1440)
     elif m.group("h24"):
         hour, minute = int(m.group("h24")), int(m.group("m24"))
     else:
@@ -2383,6 +2446,40 @@ def spoken_durations(said: str) -> str:
     return said
 
 
+_HOUR_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+               "ten": 10, "eleven": 11, "twelve": 12}
+_MIN_WORDS = {"five": 5, "ten": 10, "twenty": 20, "twenty five": 25, "twenty-five": 25}
+_HOUR_SAID = r"(?P<hr>" + "|".join(_HOUR_WORDS) + r"|1[0-2]|[1-9])(?! ?(?:minutes?|mins?|hours?|seconds?|%|percent|[:.]\d))\b"
+_MIN_SAID = r"(?P<mn>twenty[- ]five|twenty|ten|five|[1-9]|1\d|2\d)"
+_HALF_PAST = re.compile(r"\b(?P<kind>half|quarter) (?P<way>past|to) " + _HOUR_SAID, re.I)
+_MINS_PAST = re.compile(r"\b" + _MIN_SAID + r" (?P<way>past) " + _HOUR_SAID, re.I)
+_MINS_TO = re.compile(r"\b(?P<ctx>(?:until|till|til|at|by|it's|before|after|about|around) )?" + _MIN_SAID
+                      + r"(?P<mins> minutes?)? to " + _HOUR_SAID, re.I)
+_OCLOCK = re.compile(r"\b" + _HOUR_SAID.replace(r"(?! ?(?:minutes?", r"(?= ?o'?clock)(?! ?(?:minutes?") + r" ?o'?clock\b", re.I)
+
+
+def _hour_of(text: str) -> int:
+    return _HOUR_WORDS.get(text.lower(), None) or int(text)
+
+
+def _min_of(text: str) -> int:
+    return _MIN_WORDS.get(text.lower().replace("-", " "), None) or int(text)
+
+
+def spoken_clocks(said: str) -> str:
+    """'half past 5' -> '5:30', 'quarter to six' -> '5:45', 'ten past 4' -> '4:10', 'six o'clock' -> '6:00',
+    so the clock answers catch times said the British way. No am or pm is added: the answers decide that."""
+    def clock(hour: int, minute: int) -> str:
+        return f"{(hour - 1) % 12 + 1}:{minute:02d}"
+
+    said = _HALF_PAST.sub(lambda m: clock(_hour_of(m["hr"]) - (m["way"].lower() == "to"),
+                                          (30 if m["kind"].lower() == "half" else 15) if m["way"].lower() != "to" else 45), said)
+    said = _MINS_PAST.sub(lambda m: clock(_hour_of(m["hr"]), _min_of(m["mn"])), said)
+    said = _MINS_TO.sub(lambda m: (m["ctx"] or "") + clock(_hour_of(m["hr"]) - 1, 60 - _min_of(m["mn"]))
+                        if m["ctx"] or m["mins"] else m[0], said)
+    return _OCLOCK.sub(lambda m: clock(_hour_of(m["hr"]), 0), said)
+
+
 def tidy_request(text: str) -> str:
     """'Um, Alfred, could you tell me what time it is please mate?' -> 'what time is it?': the plain request,
     so the instant answers catch the many ways people actually say things."""
@@ -2393,7 +2490,7 @@ def tidy_request(text: str) -> str:
     said = _TRAIL.sub(r"\1", said)
     for pattern, plain in _INDIRECT:
         said = re.sub(pattern, plain, said, flags=re.I)
-    return spoken_durations(said)
+    return spoken_durations(spoken_clocks(said))
 
 
 _WHAT_HEARD = re.compile(_NAME + r"(?:what did (?:you|u) (?:just )?hear(?: me say)?|what did I (?:just )?say|"
@@ -2473,7 +2570,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
     if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
-            or (found := _year_maths(said, now.tm_year)) is not None:
+            or (found := _year_maths(said, now.tm_year)) is not None \
+            or (found := _day_and_journey(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _cash_sums(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _science_maths(said) or _cup_weights(said) or _fraction_answer(said) or _bigger_numbers(said)
