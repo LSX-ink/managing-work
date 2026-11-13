@@ -849,5 +849,7 @@ def watch_replies(ctx) -> list[str]:
         tracker.track(s, row["name"], None, status)
         tracker.sync_prospect(s, next(r for r in st.rows_of(s, st.OUTREACH) if r["name"] == row["name"]))
         emailed.pop(sender, None)
-        notes.append(f"{row['name']} {'opted out (never contacted again)' if status == 'opted out' else 'REPLIED, answer them'}")
+        said = " ".join(text.split("On ")[0].split())[:240]  # owner, 13 Nov 2026: alert me on replies, with what they said
+        notes.append(f"{row['name']} {'opted out (never contacted again)' if status == 'opted out' else 'REPLIED, answer them'}"
+                     + (f" ({sender}): \"{said}\"" if status != 'opted out' else ""))
     return notes

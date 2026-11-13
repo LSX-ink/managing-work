@@ -333,7 +333,7 @@ async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.
 
 PUSH_FILE = ROOT / ".phone-push-topic"  # the private address Alfred posts to; git ignores it
 PUSH_TITLES = {"briefing": "Morning briefing", "instagram": "Instagram reply", "email": "New email",
-               "sales": "Follow-ups due", "mockup": "Mock-up ready", "dms": "Today's Instagram DMs", "dm": "Instagram DM to send", "health": "Alfred health check", "weekly": "Weekly report"}
+               "sales": "Follow-ups due", "mockup": "Mock-up ready", "dms": "Today's Instagram DMs", "dm": "Instagram DM to send", "health": "Alfred health check", "weekly": "Weekly report", "lead": "A lead replied"}
 PUSH_MAX_CHARS = 3500  # ntfy keeps messages up to 4,096 bytes
 
 
@@ -383,7 +383,7 @@ async def push(settings: Settings, text: str, kind: str, transport=None, topic_f
     if not url:
         return False
     headers = {"Title": PUSH_TITLES.get(kind, "Alfred"), "Tags": "tophat"}
-    if kind in ("instagram", "health"):
+    if kind in ("instagram", "health", "lead"):
         headers["Priority"] = "high"
     if transport is None and (click := await asyncio.to_thread(dashboard_url)):
         headers["Click"] = click  # tapping it opens the dashboard

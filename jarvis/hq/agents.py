@@ -419,6 +419,9 @@ async def warden(ctx: Ctx) -> str:
         return "auto-send is off"
     for note in await asyncio.to_thread(outbox.watch_replies, ctx):
         b.log("warden", note, "warn" if "REPLIED" in note else "info")
+        if "REPLIED" in note:  # owner, 13 Nov 2026: "Alert me on replies" - every email reply reaches the phone
+            import alerts
+            await alerts.push(s, f"Email reply: {note}", "lead")
     now = outbox.uk_now()
     catch_up = b.get(f"warden.catchup.{now.date().isoformat()}") and now.hour < 21  # owner, 3 Nov 2026: credit ran
     if not outbox.in_hours(now) and not catch_up:  # out mid-day, "carry on": finish the day's limit this evening
