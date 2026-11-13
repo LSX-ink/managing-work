@@ -70,7 +70,15 @@ PLACES_WORDS = {"cafes": "cafes", "restaurants": "restaurants", "takeaways": "ta
                 "jewellery": "independent jewellers", "home and gifts": "gift and homeware shops",
                 "food and drink": "independent food and drink shops", "sports shops": "sportswear and fitness shops",
                 "pet shops": "independent pet shops", "kids shops": "independent toy and children's shops",
-                "art shops": "art and craft shops"}
+                "art shops": "art and craft shops",
+                # owner, 13 Nov 2026: "contact a lot more trades companies": one real trade per search, since
+                # "tradesmen in <town>" brings back almost nothing on Google Maps
+                "plumbers": "plumbers", "electricians": "electricians", "roofers": "roofing contractors",
+                "builders": "building contractors", "landscapers": "landscaping companies",
+                "painters": "painters and decorators", "locksmiths": "locksmiths",
+                "hvac": "air conditioning and heating engineers", "carpenters": "carpenters and joiners",
+                "tilers": "tiling and flooring contractors", "fencing": "fencing and paving contractors",
+                "pest control": "pest control companies"}
 CHAINS = {"costa", "starbucks", "caffe nero", "caffè nero", "greggs", "pret a manger", "mcdonald's", "burger king",
           "kfc", "subway", "domino's", "pizza hut", "papa john's", "nando's", "wetherspoon", "toni & guy", "toni&guy",
           "rush hair", "supercuts", "great clips", "kwik fit", "halfords", "specsavers", "boots", "superdrug",
@@ -116,6 +124,14 @@ STORE_KINDS = {  # shop categories for store (Shopify) leads, any kind of store
     "art shops": [("shop", v) for v in ("art", "craft", "frame", "stationery")],
 }
 KINDS.update(STORE_KINDS)
+TRADE_KINDS = {  # one trade each (owner, 13 Nov 2026), the OpenStreetMap tags for when Google Maps isn't used
+    "plumbers": [("craft", "plumber")], "electricians": [("craft", "electrician")], "roofers": [("craft", "roofer")],
+    "builders": [("craft", "builder")], "landscapers": [("craft", "gardener")], "painters": [("craft", "painter")],
+    "locksmiths": [("shop", "locksmith"), ("craft", "locksmith")], "hvac": [("craft", "hvac")],
+    "carpenters": [("craft", "carpenter")], "tilers": [("craft", "tiler"), ("shop", "flooring")],
+    "fencing": [("craft", "fence_maker"), ("craft", "paver")], "pest control": [("craft", "pest_control")],
+}
+KINDS.update(TRADE_KINDS)
 KINDS["stores"] = list(dict.fromkeys(p for pairs in STORE_KINDS.values() for p in pairs))  # every kind of store
 STORE_WORDS = [  # (pattern, store kind), checked before KIND_WORDS so "beauty shops" isn't a salon search
     (r"\bwigs?\b|hair (?:shop|store|extension)|hair and beauty suppl", "wigs"),

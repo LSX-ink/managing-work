@@ -168,10 +168,27 @@ def test_hawk_hunts_a_different_trade_each_run(tmp_path):
     from hq import agents
     b = Brain(tmp_path / "brain.db")
     seen = []
-    for t in range(len(agents.TRADE_MIX)):
+    for t in range(2 * len(agents.TRADES)):
         b.set("scout.trade_turn", t)
         seen.append(agents._trade(b))
-    assert seen == list(agents.TRADE_MIX) and len(set(seen)) == len(seen)
+    # owner, 13 Nov 2026: every other hunt is a real trade, a different one each time
+    assert seen[1::2] == list(agents.TRADES)
+    assert seen[0::2][:len(agents.TRADE_MIX)] == list(agents.TRADE_MIX)
+    b.set("settings.trades_every_other", False)
+    b.set("scout.trade_turn", 3)
+    assert agents._trade(b) == agents.TRADE_MIX[3]
+    b.set("settings.trades_only_until", "2999-01-01")
+    assert all(agents._trade(b) in agents.TRADES for t in range(30) if not b.set("scout.trade_turn", t))
+    b.set("settings.trades_only_until", "2000-01-01")
+    b.set("scout.trade_turn", 3)
+    assert agents._trade(b) == agents.TRADE_MIX[3]
+
+
+def test_each_trade_is_its_own_search():
+    import kinetic_find as kf
+    from hq import agents
+    for t in agents.TRADES:
+        assert kf.kind_key(t) == t and t in kf.PLACES_WORDS and kf.KINDS[t]
 
 
 def test_new_emails_and_follow_ups_have_their_own_daily_limits(tmp_path, monkeypatch):

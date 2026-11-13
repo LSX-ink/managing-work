@@ -132,7 +132,7 @@ def test_find_ranks_no_website_then_broken_then_weak_and_skips_chains(s):
 
 
 def test_find_kinds_and_errors(s):
-    assert kf.kind_key("barber shops") == "hairdressers" and kf.kind_key("plumbers") == "trades"
+    assert kf.kind_key("barber shops") == "hairdressers" and kf.kind_key("plumbers") == "plumbers" and kf.kind_key("tradesmen") == "trades"
     assert kf.kind_key(None) == "mixed"
     with pytest.raises(ValueError, match="Which kind"):
         kf.kind_key("spaceships")

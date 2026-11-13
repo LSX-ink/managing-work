@@ -182,10 +182,24 @@ async def analyst(ctx: Ctx) -> str:
 TRADE_MIX = ("barbers", "beauty", "cafes", "trades", "restaurants", "garages", "fitness", "shops", "health", "cleaners")
 
 
+# owner, 13 Nov 2026: "contact a lot more trades companies to which we haven't": every other hunt is a real trade,
+# a different one each time, so trades fill much more of the DM list and the emails
+TRADES = ("plumbers", "electricians", "roofers", "builders", "landscapers", "painters", "locksmiths", "hvac",
+          "carpenters", "tilers", "fencing", "pest control")
+
+
 def _trade(b: Brain) -> str:
     mix = b.get("settings.trades") or TRADE_MIX
     if b.get("settings.trade_mix", True):
-        return mix[b.get("scout.trade_turn", 0) % len(mix)]  # its own count, so UK and world runs both get every trade
+        turn = b.get("scout.trade_turn", 0)  # its own count, so UK and world runs both get every trade
+        # owner, 13 Nov 2026: "let the next batch all be trades and we will pick up the mix the following week"
+        if str(date.today()) < str(b.get("settings.trades_only_until") or ""):
+            return TRADES[turn % len(TRADES)]
+        if b.get("settings.trades_every_other", True):
+            if turn % 2:
+                return TRADES[(turn // 2) % len(TRADES)]
+            turn //= 2
+        return mix[turn % len(mix)]
     return b.get("settings.trade", "barbers")
 
 
