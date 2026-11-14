@@ -935,6 +935,32 @@ def test_spoken_clocks_bare_hours_days_and_journeys_are_instant():
     assert instant_answer("count from five to ten", s, now=now) == "5, 6, 7, 8, 9, 10."
 
 
+def test_shopping_checks_weekday_and_later_reminders_are_instant(tmp_path):
+    import datetime as dt
+    import reminders
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    assert instant_answer("add bread to my shopping list", en) == "Added bread. 1 item on the list."
+    assert instant_answer("put bananas on the shopping list", en) == "Added bananas. 2 items on the list."
+    assert instant_answer("are bananas on the shopping list", en) == "Yes, bananas are on the list."
+    assert instant_answer("what's on my list", en) is None  # could be the to-do list: Claude decides
+    assert instant_answer("is milk on the shopping list", en) == "No, milk isn't on the list."
+    assert instant_answer("have I got bread on my shopping list", en) == "Yes, bread is on the list."
+    assert instant_answer("how many things on my shopping list", en) == "There are 2 items on the list."
+    assert instant_answer("clear the shopping list", en) is None  # emptying it stays with Claude
+    assert instant_answer("when is my next reminder", en) == "No reminders are set."
+    said = instant_answer("remind me on Friday at 9 am to pay rent", en)
+    assert said.startswith("I'll remind you ") and said.endswith("at 09:00: pay rent.")
+    said = instant_answer("remind me in 2 days to renew the car tax", en)
+    assert said.endswith(": renew the car tax.")
+    found = {r["text"]: reminders.parse_when(r["at"]) for r in reminders.load(en)}
+    assert found["pay rent"].weekday() == 4 and found["pay rent"].hour == 9
+    assert found["pay rent"] > dt.datetime.now() and found["pay rent"] - dt.datetime.now() <= dt.timedelta(days=7)
+    assert (found["renew the car tax"].date() - dt.date.today()).days == 2
+    assert instant_answer("what's my next reminder", en).startswith("Your next reminder is ")
+    assert instant_answer("remind me at 9 to call the bank", en) is None  # am or pm? Claude asks
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
