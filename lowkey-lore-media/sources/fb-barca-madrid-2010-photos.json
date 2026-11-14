@@ -1,0 +1,29 @@
+[
+ {
+  "slug": "xavi",
+  "file": "File:2012 2013 - 06 Xavi Hernández.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:2012_2013_-_06_Xavi_Hern%C3%A1ndez.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Castroquini",
+  "date": "2012-11-03",
+  "credit": "Photo: Castroquini, CC BY-SA 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "villa",
+  "file": "File:David Villa Welcome 2.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:David_Villa_Welcome_2.jpg",
+  "license": "CC BY 2.0",
+  "artist": "Oemar",
+  "date": "2010-05-21",
+  "credit": "Photo: Oemar, CC BY 2.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "pedro",
+  "file": "File:Barça - Napoli - 20140806 - Pedro Rodriguez (cropped).jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Bar%C3%A7a_-_Napoli_-_20140806_-_Pedro_Rodriguez_(cropped).jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Clément Bucco-Lechat",
+  "date": "2014-08-06",
+  "credit": "Photo: Clément Bucco-Lechat, CC BY-SA 3.0, via Wikimedia Commons"
+ }
+]
