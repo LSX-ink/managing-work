@@ -420,8 +420,9 @@ def _reminder_answer(said: str, settings: Settings) -> str | None:
 
 
 _CLOCK = r"(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>a\.?m\.?|p\.?m\.?)|(?P<h24>[01]\d|2[0-3]):(?P<m24>[0-5]\d)"
-_DAY = r"(?:(?P<day>today|tonight|tomorrow) )?"
-_REMIND_AT = re.compile(_NAME + r"(?:remind me " + _DAY + r"at (?:" + _CLOCK + r")(?: (?P<day2>today|tonight|tomorrow))?"
+_WEEKDAY_SAID = r"(?:on )?(?:next )?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
+_DAY = r"(?:(?P<day>today|tonight|tomorrow|" + _WEEKDAY_SAID + r") )?"
+_REMIND_AT = re.compile(_NAME + r"(?:remind me " + _DAY + r"at (?:" + _CLOCK + r")(?: (?P<day2>today|tonight|tomorrow|" + _WEEKDAY_SAID + r"))?"
                         r" (?:to |that |about )(?P<what>.+?))" + _END, re.I)
 _LIST_REMINDERS = re.compile(_NAME + r"(?:what reminders (?:do I have|have I got|are (?:there|set))|what are my reminders|"
                              r"(?:list|read|tell me) (?:all )?my reminders|(?:do I have )?any reminders)" + _END, re.I)
@@ -439,7 +440,12 @@ def _clock_reminder(m: re.Match, settings: Settings) -> str:
     now = dt.datetime.now().replace(second=0, microsecond=0)
     at = now.replace(hour=hour, minute=minute)
     day = (m.group("day") or m.group("day2") or "").lower()
-    if day == "tomorrow" or (not day and at <= now):  # "at 7 am" said in the evening means tomorrow
+    weekday = next((i for i, name in enumerate(_WEEKDAYS) if name in day), None)
+    if weekday is not None:  # "on Friday at 9 am": the next Friday, or today if it's Friday and still to come
+        at += dt.timedelta(days=(weekday - now.weekday()) % 7)
+        if at <= now or ("next" in day and at.date() == now.date()):
+            at += dt.timedelta(days=7)
+    elif day == "tomorrow" or (not day and at <= now):  # "at 7 am" said in the evening means tomorrow
         at += dt.timedelta(days=1)
     try:
         return reminders.add(settings, at.strftime("%Y-%m-%d %H:%M"), m.group("what").strip(),
@@ -448,10 +454,30 @@ def _clock_reminder(m: re.Match, settings: Settings) -> str:
         return str(exc)
 
 
+_REMIND_DAYS = re.compile(_NAME + r"remind me (?:in|after) (?P<n>\d+|a|an|one) (?P<unit>days?|weeks?)(?: time)? (?:to |that |about )(?P<what>.+?)" + _END, re.I)
+_NEXT_REMINDER = re.compile(_NAME + r"(?:when(?:'s| is) my next reminder|what(?:'s| is) my next reminder|what(?:'s| is) (?:the )?next reminder"
+                            r"|what(?:'s| is) next on my reminders|when(?:'s| is) the next reminder)" + _END, re.I)
+
+
 def _more_reminders(said: str, settings: Settings) -> str | None:
-    """'Remind me at 7 pm to call Mum', 'what reminders do I have?' and 'cancel the reminder about the bins'."""
+    """'Remind me at 7 pm to call Mum', 'remind me on Friday at 9 am to pay rent', 'remind me in 3 days to…',
+    'what's my next reminder?', 'what reminders do I have?' and 'cancel the reminder about the bins'."""
     if m := _REMIND_AT.match(said):
         return _clock_reminder(m, settings)
+    if m := _REMIND_DAYS.match(spoken_numbers(said)):
+        n = 1 if not m.group("n").isdigit() else int(m.group("n"))
+        now = dt.datetime.now().replace(second=0, microsecond=0)
+        at = now + dt.timedelta(days=n * (7 if m.group("unit").lower().startswith("week") else 1))
+        try:
+            return reminders.add(settings, at.strftime("%Y-%m-%d %H:%M"), m.group("what").strip(), now=now).replace("remind them", "remind you")
+        except ValueError as exc:
+            return str(exc)
+    if _NEXT_REMINDER.match(said):
+        found = reminders.load(settings)
+        if not found:
+            return "No reminders are set."
+        first = min(found, key=lambda r: r["at"])
+        return f"Your next reminder is {reminders.spoken_time(reminders.parse_when(first['at']), dt.datetime.now())}: {first['text']}."
     if _LIST_REMINDERS.match(said):
         return reminders.listing(settings)
     if m := _CANCEL_REMINDER.match(said):
@@ -465,6 +491,11 @@ _SHOP_REMOVE = re.compile(_NAME + r"(?:(?:take|cross|tick) (?P<a>.+?) off " + _L
                           r"|(?:remove|delete) (?P<b>.+?) from " + _LIST + r")" + _END, re.I)
 _SHOP_READ = re.compile(_NAME + r"(?:what(?:'s| is) on " + _LIST + r"|(?:read|show|tell me) (?:me )?" + _LIST +
                         r"|what do (?:I|we) need (?:to buy|from the shop(?:s)?))" + _END, re.I)
+
+
+_SHOP_HAVE = re.compile(_NAME + r"(?:(?:is|are) (?:there )?(?:any |some )?(?P<item>[a-z' -]+?) on " + _LIST
+                        + r"|(?:have I|have we|did I|did we) (?:got |put |added |add |put down )(?:any |some )?(?P<item2>[a-z' -]+?) (?:on|to) " + _LIST + r")" + _END, re.I)
+_SHOP_COUNT = re.compile(_NAME + r"how many (?:things|items|bits) (?:are )?(?:there )?(?:on|in) " + _LIST + _END, re.I)
 
 
 def _spoken_items(said: str) -> list[str]:
@@ -481,6 +512,17 @@ def _shopping_answer(said: str, settings: Settings) -> str | None:
             return shopping.remove(settings, _spoken_items(m.group("a") or m.group("b")))
     except ValueError as exc:
         return str(exc)
+    if m := _SHOP_HAVE.match(said):
+        said_item = (m.group("item") or m.group("item2")).strip()
+        item = said_item.lower()
+        found = [i for i in shopping.items(settings) if item in i.lower() or i.lower() in item]
+        plural = lambda w: w.lower().endswith("s") and not w.lower().endswith("ss")
+        if found:
+            return f"Yes, {found[0]} {'are' if plural(found[0]) else 'is'} on the list."
+        return f"No, {said_item} {"aren't" if plural(said_item) else "isn't"} on the list."
+    if _SHOP_COUNT.match(said):
+        n = len(shopping.items(settings))
+        return "The shopping list is empty." if not n else f"There {'is' if n == 1 else 'are'} {n} item{'s' if n != 1 else ''} on the list."
     if _SHOP_READ.match(said):
         found = shopping.items(settings)
         if not found:
