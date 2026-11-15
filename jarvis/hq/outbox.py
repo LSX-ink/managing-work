@@ -602,6 +602,7 @@ def dm_text(settings, p: dict, link: str, brain=None) -> str:
     else:
         made = (f"We made you a free concept website in your own colours, with your own photos and reviews:\n{link}\n\n"
                 "It's only a quick mock-up. Have a look at kineticwebdesigns.co.uk and we'll have your full site looking like that.")
+    made += "\n\n" + CHANGES_OFFER   # owner, 15 Nov 2026
     # yes or no, ask for a follow (owner, 26 Oct 2026: "so that if they change their mind they can always come back")
     return (f"Hi {name} team \U0001F44B\n\n{hello}{made}\n\nInterested? Just reply here and give us a follow so we can stay in "
             "touch. Not for you right now? No problem at all, give us a follow anyway, so you can always come back if you "
@@ -646,12 +647,20 @@ def split_subject(body: str) -> tuple[str, str]:
 FOLLOW_US = "You can see more of our work, and follow us, on Instagram: https://www.instagram.com/kineticwebdesigns/"
 
 
+# owner, 15 Nov 2026: "if you already have a website and wish to make monthly changes wording design and adding
+# pictures in a professional setting we do that too for 20 pounds a month", in every email and DM
+CHANGES_OFFER = ("Already have a website you're happy with? We can look after it instead: monthly changes to the "
+                 "wording and design, and adding new pictures, all done professionally, for £20 a month.")
+
+
 def with_follow_us(body: str) -> str:
-    """Every email invites them to follow us on Instagram (owner, 2 Nov 2026), just before the sign-off."""
-    if FOLLOW_US in body:
+    """Every email invites them to follow us on Instagram (owner, 2 Nov 2026), just before the sign-off, after the
+    £20-a-month changes offer (owner, 15 Nov 2026)."""
+    extra = "".join(t + "\n\n" for t in (CHANGES_OFFER, FOLLOW_US) if t not in body)
+    if not extra:
         return body
     i = body.find("Thanks,")
-    return body[:i] + FOLLOW_US + "\n\n" + body[i:] if i >= 0 else body + "\n\n" + FOLLOW_US
+    return body[:i] + extra + body[i:] if i >= 0 else body + "\n\n" + extra.rstrip()
 
 
 def possessive(text: str, name: str) -> str:

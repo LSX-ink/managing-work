@@ -175,7 +175,13 @@ async def analyst(ctx: Ctx) -> str:
     if prev != text:
         b.log("analyst", text, "info")
         b.set("numbers.last_text", text)
-    return "numbers updated"
+    # owner, 15 Nov 2026: track who cancels their hosting-and-care plan, so we stop making changes for them
+    from hq import care
+    try:
+        plans = await care.check(s, b)
+    except Exception as e:  # never let the plans check stop the numbers
+        plans = f"care plans not checked: {e}"
+    return f"numbers updated; {plans}"
 
 
 # owner, 29 Oct 2026: "just trade mix", for the DMs and the emails alike. Hawk hunts a different trade each run.
