@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shiftnote · Site diary demo</title>
+<meta name="description" content="Talk through your shift. Shiftnote writes the daily site diary, progress update and early warnings for you to check and approve.">
+<meta name="theme-color" content="#F3F2EE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Shiftnote">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta property="og:title" content="Shiftnote · Site diary demo">
+<meta property="og:description" content="Talk through your shift. Get the site diary, progress update and early warnings written for you.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316181A'/%3E%3Cpath d='M7 17h3l2-6 3 12 3-9 2 3h5' fill='none' stroke='%23F26A1B' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#F3F2EE; --surface:#FFFFFF; --sunk:#ECEAE4; --line:#E3E0D9; --line2:#D3CFC6;
+  --ink:#16181A; --ink2:#575B60; --ink3:#7C8086;
+  --hi:#E25A0E; --hi-soft:#FCE9DC; --hi-ink:#A33E05;
+  --ok:#2C7A4B; --ok-soft:#E3F1E8;
+  --r:14px; --pad:18px;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;background:var(--ground)}
+body{font-family:var(--sans);color:var(--ink);background:var(--ground);font-size:15px;line-height:1.45;min-height:100dvh;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;-webkit-tap-highlight-color:transparent}
+.app{max-width:480px;margin:0 auto;min-height:100dvh;position:relative;padding-bottom:calc(84px + var(--safe-b))}
+@media (min-width:700px){
+  body{padding:28px 0;background:#E6E4DE}
+  .app{border-radius:28px;background:var(--ground);min-height:860px;box-shadow:0 1px 0 #d6d3cb,0 30px 60px -30px rgba(0,0,0,.25);overflow:hidden}
+  .nav{border-radius:0 0 28px 28px}
+}
+
+/* shell */
+.top{display:flex;align-items:center;gap:10px;padding:14px var(--pad) 8px;position:sticky;top:0;background:var(--ground);z-index:5}
+.mark{width:30px;height:30px;flex:none}
+.brand{line-height:1.15}
+.brand b{font-weight:700;font-size:15px;letter-spacing:-.01em}
+.brand span{display:block;font-size:12px;color:var(--ink2)}
+.top .demo{margin-left:auto;font-size:12px;color:var(--ink2);border:1px solid var(--line2);border-radius:99px;padding:3px 10px;height:28px}
+.screen{display:none;padding:6px var(--pad) 24px;animation:in .35s cubic-bezier(.2,.8,.2,1)}
+.screen.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h1{font-size:24px;line-height:1.15;letter-spacing:-.02em;font-weight:600}
+h2{font-size:17px;font-weight:600;letter-spacing:-.01em}
+h3{font-size:13px;font-weight:600;color:var(--ink2)}
+.sub{color:var(--ink2);font-size:14px;margin-top:4px}
+.finding{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--hi);margin-top:6px;flex:none}
+.dot.ok{background:var(--ok)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.stack>*+*{margin-top:14px}
+.row{display:flex;align-items:center;gap:12px}
+.between{justify-content:space-between}
+.muted{color:var(--ink2)}
+.small{font-size:13px}
+.mono{font-family:var(--mono);font-size:12.5px}
+.pill{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:500;background:var(--sunk);color:var(--ink2);white-space:nowrap}
+.pill.hi{background:var(--hi-soft);color:var(--hi-ink)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 18px;border-radius:12px;font-weight:600;font-size:15px;transition:transform .12s ease,background .2s}
+.btn:active{transform:scale(.97)}
+.btn.dark{background:var(--ink);color:#fff}
+.btn.line{border:1px solid var(--line2);background:var(--surface)}
+.btn.full{width:100%}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.link{color:var(--ink);font-weight:600;font-size:14px;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+
+/* record hero */
+.rec-card{background:var(--ink);color:#fff;border-radius:20px;padding:20px;position:relative;overflow:hidden}
+.rec-card p{color:#B9BCC0;font-size:14px;margin-top:6px;max-width:30ch}
+.rec-card h2{color:#fff;font-size:20px}
+.rec-btn{margin-top:18px;display:flex;align-items:center;gap:14px;width:100%;text-align:left;color:#fff}
+.rec-btn .ring{width:64px;height:64px;border-radius:50%;background:var(--hi);display:grid;place-items:center;flex:none;box-shadow:0 0 0 0 rgba(226,90,14,.55);animation:pulse 2.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(226,90,14,.5)}70%{box-shadow:0 0 0 16px rgba(226,90,14,0)}100%{box-shadow:0 0 0 0 rgba(226,90,14,0)}}
+.rec-btn b{display:block;font-size:16px}
+.rec-btn span{font-size:13px;color:#B9BCC0}
+.wave{position:absolute;right:-30px;bottom:-18px;opacity:.10}
+
+.kv{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.kv>div{padding:12px 12px}
+.kv>div+div{border-left:1px solid var(--line)}
+.kv b{display:block;font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.1;margin-top:2px}
+.kv span{font-size:12px;color:var(--ink2)}
+
+/* list rows */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.li{display:flex;gap:12px;align-items:center;padding:13px 14px;min-height:56px;width:100%;text-align:left}
+.li+.li{border-top:1px solid var(--line)}
+.li .t{font-weight:500}
+.li .s{font-size:13px;color:var(--ink2);margin-top:1px}
+.li .end{margin-left:auto;text-align:right;flex:none}
+.chev{color:var(--ink3);flex:none}
+
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(243,242,238,.98);border-top:1px solid var(--line);padding:6px 8px calc(6px + var(--safe-b))}
+.nav-in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;font-size:11.5px;color:var(--ink3);min-height:52px}
+.nav button svg{width:22px;height:22px}
+.nav button.on{color:var(--ink);font-weight:600}
+@media (min-width:700px){.nav{position:absolute}}
+
+/* sheets / flows */
+.flow{position:fixed;inset:0;z-index:40;background:var(--ground);display:none;flex-direction:column}
+.flow.on{display:flex;animation:up .4s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.flow-in{max-width:480px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column;min-height:0}
+.flow-top{display:flex;align-items:center;gap:8px;padding:12px var(--pad);min-height:56px}
+.flow-top .x{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;margin-left:-8px}
+.flow-top .ttl{font-weight:600}
+.flow-body{flex:1;overflow-y:auto;padding:4px var(--pad) 20px;-webkit-overflow-scrolling:touch}
+.flow-foot{padding:12px var(--pad) calc(14px + var(--safe-b));border-top:1px solid var(--line);background:var(--ground)}
+
+.mic-wrap{display:flex;flex-direction:column;align-items:center;padding:18px 0 8px}
+.mic{width:96px;height:96px;border-radius:50%;background:var(--hi);display:grid;place-items:center;position:relative}
+.mic::before,.mic::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid var(--hi);opacity:0}
+.mic.live::before{animation:ripple 1.8s infinite}
+.mic.live::after{animation:ripple 1.8s .9s infinite}
+@keyframes ripple{from{transform:scale(.85);opacity:.6}to{transform:scale(1.5);opacity:0}}
+.timer{font-family:var(--mono);font-size:15px;margin-top:14px}
+.bars{display:flex;gap:3px;height:28px;align-items:center;margin-top:10px}
+.bars i{width:3px;border-radius:2px;background:var(--ink);height:4px;transition:height .12s}
+.transcript{min-height:150px;font-size:16px;line-height:1.55;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);white-space:pre-wrap}
+.transcript .caret{display:inline-block;width:2px;height:1.1em;background:var(--hi);vertical-align:-3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.transcript:empty::before{content:attr(data-empty);color:var(--ink3)}
+textarea.transcript{width:100%;resize:vertical;outline:none}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--sunk);border-radius:11px;padding:3px;gap:3px}
+.seg button{height:38px;border-radius:9px;font-size:13.5px;font-weight:500;color:var(--ink2)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg .n{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--hi);color:#fff;font-size:11px;margin-left:5px;padding:0 5px}
+
+.photos{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.ph{width:92px;height:92px;border-radius:12px;flex:none;overflow:hidden;position:relative;background:var(--sunk);border:1px solid var(--line)}
+.ph img,.ph svg{width:100%;height:100%;object-fit:cover;display:block}
+.ph em{position:absolute;left:6px;bottom:6px;font-style:normal;font-size:11px;background:rgba(22,24,26,.78);color:#fff;border-radius:6px;padding:1px 6px}
+.ph.add{display:grid;place-items:center;border:1.5px dashed var(--line2);background:transparent;color:var(--ink2);font-size:12px;text-align:center}
+
+/* writing */
+.steps{margin-top:8px}
+.step{display:flex;gap:12px;align-items:center;padding:12px 0;color:var(--ink3);transition:color .3s}
+.step+.step{border-top:1px solid var(--line)}
+.step .ic{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line2);display:grid;place-items:center;flex:none;transition:all .3s}
+.step.doing{color:var(--ink)}
+.step.doing .ic{border-color:var(--hi);border-top-color:transparent;animation:spin .8s linear infinite}
+.step.done{color:var(--ink)}
+.step.done .ic{background:var(--ok);border-color:var(--ok)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* document */
+.doc{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 14px;box-shadow:0 1px 0 var(--line)}
+.doc-head{display:grid;grid-template-columns:1fr auto;gap:2px 10px;border-bottom:2px solid var(--ink);padding-bottom:10px}
+.doc-head .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.doc-head h2{font-size:18px}
+.meta{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.meta div{padding:8px 0;font-size:13px}
+.meta div:nth-child(odd){padding-right:8px}
+.meta span{display:block;font-size:11.5px;color:var(--ink2)}
+.sec{padding:14px 0 4px}
+.sec+.sec{border-top:1px solid var(--line)}
+.sec h3{margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:7px 0;text-align:left;vertical-align:top}
+th{font-size:12px;font-weight:500;color:var(--ink2)}
+tr+tr td{border-top:1px solid var(--line)}
+td.n,th.n{text-align:right;white-space:nowrap;padding-left:10px}
+tfoot td{border-top:1px solid var(--ink)!important;font-weight:600}
+[contenteditable]{outline:none;border-radius:4px;transition:background .2s}
+[contenteditable]:focus{background:#FFF6EE;box-shadow:0 0 0 2px #FFF6EE}
+.edited{background:#FFF6EE}
+ul.plain{list-style:none}
+ul.plain li{padding:6px 0;font-size:14px}
+ul.plain li+li{border-top:1px solid var(--line)}
+.delay{border-left:3px solid var(--hi);padding:4px 0 4px 10px;margin:6px 0}
+.delay b{font-weight:600}
+.sig{display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid var(--line);margin-top:10px;padding-top:12px;font-size:13px}
+.sig .line{font-family:var(--mono);color:var(--ink3)}
+
+/* shift strip (signature element) */
+.strip{margin-top:4px}
+.strip .lane{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:8px;height:30px}
+.strip .lane span{font-size:12px;color:var(--ink2)}
+.strip .track{position:relative;height:20px;background:var(--sunk);border-radius:4px}
+.strip .blk{position:absolute;top:0;bottom:0;border-radius:4px}
+.strip .blk.work{background:#C9C5BB}
+.strip .blk.delay{background:repeating-linear-gradient(135deg,var(--hi) 0 3px,var(--hi-soft) 3px 7px);border:1px solid var(--hi)}
+.strip .blk.rain{background:repeating-linear-gradient(90deg,#9AA3AD 0 1px,transparent 1px 5px)}
+.strip .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);border-radius:1px}
+.strip .axis{display:grid;grid-template-columns:64px 1fr;gap:8px}
+.strip .axis div{display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);font-family:var(--mono);padding-top:3px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* progress */
+.bar{height:8px;background:var(--sunk);border-radius:4px;position:relative;margin-top:6px}
+.bar .a{position:absolute;left:0;top:0;bottom:0;background:var(--ink);border-radius:4px}
+.bar .a.behind{background:var(--hi)}
+.bar .p{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+
+/* approve */
+.hold{position:relative;overflow:hidden;width:100%;height:56px;border-radius:14px;background:var(--ink);color:#fff;font-weight:600;font-size:16px;user-select:none;-webkit-user-select:none;touch-action:none}
+.hold .fill{position:absolute;inset:0;background:var(--ok);transform-origin:left;transform:scaleX(0)}
+.hold span{position:relative}
+.done-mark{width:76px;height:76px;border-radius:50%;background:var(--ok);display:grid;place-items:center;margin:26px auto 14px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.center{text-align:center}
+
+/* savings */
+.big{font-size:40px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.range{margin-top:16px}
+.range label{display:flex;justify-content:space-between;font-size:14px}
+.range label b{font-weight:600}
+input[type=range]{width:100%;margin-top:8px;accent-color:var(--ink);height:28px}
+.compare{display:grid;grid-template-columns:1fr;gap:10px;margin-top:6px}
+.cbar{display:grid;grid-template-columns:96px 1fr;align-items:center;gap:10px;font-size:13px}
+.cbar .t{height:22px;background:var(--sunk);border-radius:4px;position:relative}
+.cbar .t i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--ink)}
+.cbar .t i.hi{background:var(--hi)}
+.cbar .t em{position:absolute;right:8px;top:2px;font-style:normal;font-size:12px;color:var(--ink2)}
+#cbHandT{color:#fff}
+.chart{display:flex;align-items:flex-end;gap:10px;height:120px;margin-top:10px;border-bottom:1px solid var(--line2);padding:0 4px}
+.chart .c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.chart .c i{width:100%;max-width:34px;background:var(--hi);border-radius:4px 4px 0 0;min-height:2px}
+.chart .c i.zero{background:var(--line2)}
+.chart .c em{font-style:normal;font-size:11.5px;color:var(--ink2)}
+.chart-x{display:flex;gap:10px;padding:4px 4px 0}
+.chart-x span{flex:1;text-align:center;font-size:11.5px;color:var(--ink2)}
+.search{display:flex;align-items:center;gap:8px;height:46px;border:1px solid var(--line2);border-radius:12px;padding:0 12px;background:var(--surface)}
+.search input{border:0;outline:none;flex:1;min-width:0;background:transparent;font-size:16px}
+.how{counter-reset:h}
+.how li{list-style:none;display:grid;grid-template-columns:28px 1fr;gap:10px;padding:12px 0}
+.how li+li{border-top:1px solid var(--line)}
+.how li::before{counter-increment:h;content:counter(h);width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center}
+.toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:all .3s;z-index:60;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.hide{display:none!important}
+
+/* track */
+.kv4{grid-template-columns:1fr 1fr}
+.kv4>div:nth-child(3){border-left:0}
+.kv4>div:nth-child(n+3){border-top:1px solid var(--line)}
+.kv b small{font-size:13px;font-weight:500;color:var(--ink3)}
+.chips{display:flex;gap:6px;overflow-x:auto;margin:16px calc(-1*var(--pad)) 12px;padding:0 var(--pad);scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;height:36px;padding:0 14px;border-radius:99px;border:1px solid var(--line2);background:var(--surface);font-size:14px;font-weight:500;color:var(--ink2)}
+.chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chips button .n{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--hi);color:#fff;font-size:11px;margin-left:6px;padding:0 5px}
+.vmap{width:100%;height:auto;display:block;touch-action:manipulation}
+.vmap .hit{fill:transparent;cursor:pointer}
+.vmap text{font-family:var(--mono);font-size:9px;fill:var(--ink2)}
+.vmap .sel text{fill:var(--ink);font-weight:600}
+.att{display:flex;gap:10px;align-items:flex-start}
+.att .dot{margin-top:7px}
+.hbar{display:grid;grid-template-columns:96px 1fr 56px;gap:10px;align-items:center;font-size:13px;padding:5px 0}
+.hbar .t{height:12px;background:var(--sunk);border-radius:3px;position:relative}
+.hbar .t i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--hi)}
+.hbar .v{text-align:right;font-variant-numeric:tabular-nums}
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.pipe div{padding:10px 6px;text-align:center}
+.pipe div+div{border-left:1px solid var(--line)}
+.pipe b{display:block;font-size:20px;font-weight:600}
+.pipe span{font-size:11px;color:var(--ink2)}
+.steps5{display:flex;gap:3px;margin-top:6px}
+.steps5 i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.steps5 i.on{background:var(--ink)}
+.steps5 i.now{background:var(--hi)}
+.chk{width:26px;height:26px;border-radius:8px;border:1.5px solid var(--line2);display:grid;place-items:center;flex:none;background:var(--surface)}
+.chk.on{background:var(--ok);border-color:var(--ok)}
+.done-t{text-decoration:line-through;color:var(--ink3)}
+.av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;flex:none;color:var(--ink)}
+.scurve{width:100%;height:auto;display:block}
+.scurve text{font-family:var(--mono);font-size:9px;fill:var(--ink3)}
+.sheet-bg{position:fixed;inset:0;background:rgba(22,24,26,.35);z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
+.sheet-bg.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-width:480px;margin:0 auto;background:var(--ground);border-radius:20px 20px 0 0;max-height:86dvh;overflow-y:auto;padding:8px var(--pad) calc(20px + var(--safe-b));transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.sheet.on{transform:none;visibility:visible;transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s}
+.sheet:not(.on){visibility:hidden;transition:transform .3s,visibility 0s .3s}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--line2);margin:4px auto 12px}
+.tl{position:relative;padding-left:18px}
+.tl::before{content:"";position:absolute;left:4px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.tl li{list-style:none;position:relative;padding:7px 0;font-size:14px}
+.tl li::before{content:"";position:absolute;left:-18px;top:13px;width:10px;height:10px;border-radius:50%;background:var(--surface);border:2px solid var(--ink)}
+.tl li.hi::before{border-color:var(--hi);background:var(--hi)}
+.gps{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2)}
+#printArea{display:none}
+@page{margin:14mm}
+@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{
+  body{background:#fff;padding:0}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+  .doc{border:0;box-shadow:none;padding:0}
+  .doc+.doc{break-before:page}
+  .sec{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#16181A"/><path d="M7 17h3l2-6 3 12 3-9 2 3h5" fill="none" stroke="#F26A1B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="brand"><b>Shiftnote</b><span id="scope">Northgate Rail Link · Viaduct C4</span></div>
+    <button class="demo" id="resetBtn" aria-label="Reset demo">Demo · reset</button>
+  </header>
+
+  <!-- TODAY -->
+  <section class="screen on" id="s-today" aria-label="Today">
+    <h1 id="todayTitle"></h1>
+    <div class="finding" id="todayFinding"><i class="dot"></i><div><b>Today's diary isn't written yet.</b> <span class="muted">Shift ends 17:30.</span></div></div>
+
+    <div class="stack" style="margin-top:16px">
+      <div class="rec-card" id="recCard">
+        <svg class="wave" width="200" height="120" viewBox="0 0 200 120" aria-hidden="true"><path d="M0 60h30l12-36 18 72 18-54 12 18h110" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h2>Talk through your shift</h2>
+        <p>Say what happened in your own words. Shiftnote writes the diary, progress update and any early warnings.</p>
+        <button class="rec-btn" id="openRecord">
+          <span class="ring"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+          <span><b>Start today's diary</b><span>About 2 minutes of talking</span></span>
+        </button>
+      </div>
+
+      <div id="todayFiled" class="hide"></div>
+
+      <div class="row" style="gap:10px;align-items:stretch">
+        <button class="card" id="qGate" style="flex:1;text-align:left;padding:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><div style="font-weight:600;margin-top:6px">In / Out log</div><div class="small muted" id="qGateSub">Photo plant and deliveries</div></button>
+        <button class="card" data-go="track" style="flex:1;text-align:left;padding:14px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 20V9M12 20V5M18 20v-8"/></svg><div style="font-weight:600;margin-top:6px">Site tracker</div><div class="small muted">Piers, delays, warnings</div></button>
+      </div>
+
+      <div>
+        <h3 style="margin:6px 0 8px">This week on C4</h3>
+        <div class="kv" id="weekKv"></div>
+      </div>
+
+      <div>
+        <div class="row between" style="margin:6px 0 8px"><h3>Recent diaries</h3><button class="link" data-go="records">View all</button></div>
+        <div class="list" id="recentList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRACK -->
+  <section class="screen" id="s-track" aria-label="Track">
+    <h1>Track</h1>
+    <div class="finding" id="trFinding"></div>
+    <div class="kv kv4" id="trKv" style="margin-top:14px"></div>
+    <div class="chips" id="trTabs" role="tablist"></div>
+    <div id="trBody"></div>
+  </section>
+
+  <!-- RECORDS -->
+  <section class="screen" id="s-records" aria-label="Records">
+    <h1>Records</h1>
+    <p class="sub">Every diary, delay and early warning, searchable.</p>
+    <div class="stack" style="margin-top:14px">
+      <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C8086" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search: duct, crane, pier 9, rain…" autocomplete="off"></label>
+      <div id="qChips" class="row" style="gap:6px;flex-wrap:wrap"></div>
+      <div class="list" id="allList"></div>
+      <div class="card">
+        <div class="row between"><h2>Hours lost this week</h2><span class="pill hi" id="lostTotal"></span></div>
+        <p class="small muted" style="margin-top:2px">Gang hours stood or moved, as recorded in the diaries.</p>
+        <div class="chart" id="lostChart"></div>
+        <div class="chart-x" id="lostX"></div>
+      </div>
+      <div>
+        <h3 style="margin:6px 0 8px">Early warnings register</h3>
+        <div class="list" id="ewList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAVINGS -->
+  <section class="screen" id="s-savings" aria-label="Savings">
+    <h1>What it saves</h1>
+    <p class="sub">Same supervisors, more time supervising. Move the sliders to match your job.</p>
+    <div class="card" style="margin-top:14px">
+      <span class="small muted">Paperwork time given back each year</span>
+      <div class="big" id="saveBig">£0</div>
+      <p class="small muted" id="saveSub" style="margin-top:4px"></p>
+      <div class="range"><label for="rS">Supervisors <b id="vS"></b></label><input id="rS" type="range" min="10" max="400" step="10" value="200"></div>
+      <div class="range"><label for="rM">Time saved per supervisor a day <b id="vM"></b></label><input id="rM" type="range" min="15" max="120" step="5" value="75"></div>
+      <div class="range"><label for="rR">Cost per hour <b id="vR"></b></label><input id="rR" type="range" min="20" max="60" step="1" value="35"></div>
+      <div class="range"><label for="rD">Working days a year <b id="vD"></b></label><input id="rD" type="range" min="180" max="260" step="5" value="230"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>Diary time per supervisor, per day</h2>
+      <div class="compare" style="margin-top:12px">
+        <div class="cbar"><span>By hand</span><div class="t"><i style="width:100%" id="cbHand"></i><em id="cbHandT"></em></div></div>
+        <div class="cbar"><span>Shiftnote</span><div class="t"><i class="hi" id="cbApp"></i><em id="cbAppT"></em></div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>Where else the money is</h2>
+      <ul class="plain" style="margin-top:6px">
+        <li><b>Claims.</b> <span class="muted">A delay recorded on the day, with times, photos and who was stood, is the evidence a compensation event needs.</span></li>
+        <li><b>Early warnings on time.</b> <span class="muted">Raised the same day, not found a week later in a notebook.</span></li>
+        <li><b>Less retyping.</b> <span class="muted">Document control gets one approved record in the company format, filed automatically.</span></li>
+        <li><b>Time on the tools.</b> <span class="muted">Supervisors watching the work means less rework and safer sites.</span></li>
+      </ul>
+    </div>
+    <p class="small muted" style="margin-top:12px">The figures are an estimate from the numbers above, not a measured result.</p>
+  </section>
+
+  <!-- HOW -->
+  <section class="screen" id="s-how" aria-label="How it works">
+    <h1>How it works</h1>
+    <p class="sub">Built for the cabin at the end of a shift, or the van on the way home.</p>
+    <ol class="how card" style="margin-top:14px;padding:4px 16px">
+      <li><div><b>Talk or snap</b><div class="small muted">Record a voice note in your own words. Add photos of the work.</div></div></li>
+      <li><div><b>It writes the paperwork</b><div class="small muted">Daily site diary, progress against plan, delay records and early warnings, in the company's own template.</div></div></li>
+      <li><div><b>You check and approve</b><div class="small muted">Tap any line to change it. Nothing is filed until you hold to approve.</div></div></li>
+      <li><div><b>It goes where it should</b><div class="small muted">Project manager, document control and the commercial team each get their part, and it's all searchable later.</div></div></li>
+    </ol>
+    <div class="card" style="margin-top:14px">
+      <h2>Built for big contractors</h2>
+      <ul class="plain" style="margin-top:6px">
+        <li><b>UK data hosting</b> <span class="muted">· planned for the pilot</span></li>
+        <li><b>Company sign-in (single sign-on)</b> <span class="muted">· planned for the pilot</span></li>
+        <li><b>Full audit trail</b> <span class="muted">· every edit and approval kept with time and name</span></li>
+        <li><b>Your templates</b> <span class="muted">· diary, progress and early warning formats set per project</span></li>
+      </ul>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>Pilot offer</h2>
+      <p class="muted small" style="margin-top:4px">From £40 per supervisor a month. A 4-week pilot on one section, with time saved measured against the current way.</p>
+    </div>
+    <p class="small muted" style="margin-top:14px">Shiftnote by LSX. This is a demo with made-up sample data. No company data is used.</p>
+  </section>
+</div>
+
+<nav class="nav" aria-label="Main">
+  <div class="nav-in">
+    <button data-go="today" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Today</button>
+    <button data-go="track"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 20V9M12 20V5M18 20v-8M4 9h4M10 5h4M16 12h4"/></svg>Track</button>
+    <button data-go="records"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Records</button>
+    <button data-go="savings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Savings</button>
+    <button data-go="how"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>About</button>
+  </div>
+</nav>
+
+<!-- RECORD FLOW -->
+<div class="flow" id="f-record" role="dialog" aria-label="Record">
+  <div class="flow-in">
+    <div class="flow-top"><button class="x" data-close aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><span class="ttl">Today's diary</span></div>
+    <div class="flow-body">
+      <div class="seg" id="modeSeg">
+        <button class="on" data-mode="demo">Sample note</button>
+        <button data-mode="voice">My voice</button>
+        <button data-mode="type">Type</button>
+      </div>
+      <div class="mic-wrap" id="micWrap">
+        <button class="mic" id="micBtn" aria-label="Start recording"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+        <div class="timer" id="timer">00:00</div>
+        <div class="bars" id="bars"></div>
+        <p class="small muted center" id="micHint" style="margin-top:6px">Tap to play the sample end-of-shift note</p>
+      </div>
+      <div class="transcript" id="transcript" data-empty="What you say appears here."></div>
+      <textarea class="transcript hide" id="typed" rows="8" placeholder="Type your notes, e.g. 12 on site, 4 groundworkers… finished the blinding at pier 8… crane stood 2 hours for wind…"></textarea>
+      <h3 style="margin:16px 0 8px">Photos</h3>
+      <div class="photos" id="photos">
+        <label class="ph add" for="cam"><span>+ Add<br>photo</span></label>
+      </div>
+      <input type="file" id="cam" accept="image/*" capture="environment" class="hide" multiple>
+    </div>
+    <div class="flow-foot"><button class="btn dark full" id="writeBtn" disabled>Write my diary</button></div>
+  </div>
+</div>
+
+<!-- WRITING FLOW -->
+<div class="flow" id="f-writing" role="dialog" aria-label="Writing">
+  <div class="flow-in">
+    <div class="flow-top"><span class="ttl">Writing your paperwork</span></div>
+    <div class="flow-body">
+      <p class="muted">This takes a few seconds.</p>
+      <div class="steps" id="steps"></div>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW FLOW -->
+<div class="flow" id="f-review" role="dialog" aria-label="Review">
+  <div class="flow-in">
+    <div class="flow-top"><button class="x" data-close aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button><span class="ttl">Check and approve</span><button class="pill" data-print style="margin-left:auto;height:30px;padding:0 12px;background:var(--surface);border:1px solid var(--line2);color:var(--ink)">PDF</button><span class="pill" id="draftPill">Draft</span></div>
+    <div style="padding:0 var(--pad) 10px"><div class="seg" id="docSeg"></div></div>
+    <div class="flow-body" id="docBody"></div>
+    <div class="flow-foot">
+      <p class="small muted center" style="margin-bottom:8px">Tap any line to change it. Nothing is filed until you approve.</p>
+      <button class="hold" id="holdBtn"><span class="fill" id="holdFill"></span><span id="holdTxt">Hold to approve and file</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- FILED FLOW -->
+<div class="flow" id="f-filed" role="dialog" aria-label="Filed">
+  <div class="flow-in">
+    <div class="flow-body" id="filedBody"></div>
+    <div class="flow-foot"><button class="btn dark full" id="filedDone">Done</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- sample data (fictional project) ---------- */
+/* dates: the demo always runs on the real "today", with earlier diaries on the working days before it */
+const TODAY=new Date();TODAY.setHours(12,0,0,0);
+function wdAgo(n){const d=new Date(TODAY);let k=0;while(k<n){d.setDate(d.getDate()-1);const w=d.getDay();if(w!==0&&w!==6)k++}return d}
+function wdAhead(n){const d=new Date(TODAY);let k=0;while(k<n){d.setDate(d.getDate()+1);const w=d.getDay();if(w!==0&&w!==6)k++}return d}
+const fDay=d=>d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+const fLong=d=>d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+const fFull=d=>d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+const fShort=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+const REFD=String(TODAY.getMonth()+1).padStart(2,"0")+String(TODAY.getDate()).padStart(2,"0");
+window.SN_DATES={TODAY,wdAgo,wdAhead,fDay,fShort,fLong};
+const PROJECT={name:"Northgate Rail Link",section:"Viaduct C4",contract:"NRL-C4",supervisor:"Sam Okafor",shift:["07:30","17:30"]};
+const SAMPLE_NOTE="Right, end of shift, Viaduct C4. Dry this morning, about 6 degrees, rain came in from half one. 15 on site plus me: 6 steel fixers, 6 groundworkers, 2 plant operators and 1 banksman. Plant was the 90 tonne crawler crane, two 13 tonne excavators and a 6 tonne dumper. Steel fixers finished the rebar to the pier 7 pile cap, that's done and ready for inspection tomorrow. Poured 6 cubes of blinding at pier 8, but the concrete wagon was 50 minutes late, so the 2 lads on the pour were waiting from ten past 8 to 9. Started digging pier 9, got down 1.2 metres of the 2.4, then at 10:40 we hit a live duct about 900 mil down that isn't on the drawings, looks like a BT duct. Stopped that face, CAT scanned, fenced it off. The 4 on the dig lost about three and a half hours, they moved over to backfill at pier 6 at 14:10 and got about 40 percent done. Need the utility drawings checked and probably a diversion, so the pier 9 pour next week is at risk. Toolbox talk this morning on digging near live services. One near miss: the dumper reversed near the haul road without the banksman, stopped it and briefed the driver. Client's site rep came at 2 for the pier 7 walk round.";
+
+const SAMPLE_DIARY={
+  weather:{am:"Dry, 6°C",pm:"Rain from 13:30"},
+  labour:[{trade:"Steel fixers",count:6},{trade:"Groundworkers",count:6},{trade:"Plant operators",count:2},{trade:"Banksman",count:1}],
+  plant:[{item:"90 t crawler crane",count:1,status:"Working"},{item:"13 t excavator",count:2,status:"Working"},{item:"6 t dumper",count:1,status:"Working"}],
+  works:[
+    {location:"Pier 7",activity:"Pile cap reinforcement fixed; ready for inspection next shift",status:"Complete",pct:100,planned:100},
+    {location:"Pier 8",activity:"Blinding poured, 6 m³",status:"Complete",pct:100,planned:100},
+    {location:"Pier 9",activity:"Excavation to formation, 1.2 m of 2.4 m reached",status:"Stopped",pct:50,planned:100},
+    {location:"Pier 6",activity:"Backfill to pile cap (gang moved from pier 9)",status:"In progress",pct:40,planned:0}
+  ],
+  delays:[
+    {start:"08:10",end:"09:00",hours:0.83,location:"Pier 8",cause:"Concrete wagon arrived 50 minutes late",affected:"2 groundworkers (pour gang)",owner:"Supplier"},
+    {start:"10:40",end:"14:10",hours:3.5,location:"Pier 9",cause:"Live duct (believed BT) found at 0.9 m depth, not shown on utility drawings. Face stopped, CAT scanned and fenced off.",affected:"4 groundworkers + 13 t excavator",owner:"To confirm (possible compensation event)"}
+  ],
+  safety:{toolbox:"Digging near live services",incidents:[{type:"Near miss",text:"6 t dumper reversed near the haul road without the banksman. Stopped and driver briefed."}]},
+  visitors:[{who:"Client site representative",time:"14:00",purpose:"Pier 7 walk-round"}],
+  actions:["Utility drawings to be checked for the pier 9 duct","Confirm diversion with the duct owner","Book pier 7 pile cap inspection for next shift","Re-brief plant drivers: no reversing without a banksman"],
+  earlyWarnings:[{title:"Uncharted live duct at pier 9",description:"A live duct, believed to be BT, was found at 0.9 m depth during excavation for the pier 9 pile cap. It is not shown on the utility drawings. Excavation on this face has stopped.",time:true,cost:true,quality:false,safety:true,proposed:["Check utility records and confirm the owner","Agree a diversion or protection method with the owner","Re-sequence the excavation gang to pier 6 backfill meanwhile","Review the pier 9 pile cap pour planned for 19 November"]}]
+};
+
+const PAST=[
+  {wd:1,sum:"Pier 7 rebar 70%; pier 8 excavated to formation",lost:0,tags:"rebar pier 7 pier 8 excavation dry"},
+  {wd:2,sum:"Crane stood 1.5 h for wind; pier 6 pile cap poured",lost:1.5,tags:"crane wind pier 6 pour concrete"},
+  {wd:3,sum:"Pier 6 shutters struck; rain all afternoon",lost:0,tags:"pier 6 shutters rain"},
+  {wd:4,sum:"Pier 8 dig started; late pump 0.5 h",lost:0.5,tags:"pier 8 pump late supplier excavation"}
+];
+PAST.forEach(p=>p.day=fDay(wdAgo(p.wd)));
+const PAST_EW=[{ref:"EW-C4-014",title:"Pier 6 crane lift plan wind limits",date:fShort(wdAgo(2)),state:"Open"}];
+
+/* ---------- state ---------- */
+const KEY="shiftnote-demo-v2-"+REFD;
+let S={filed:null,photos:[]};
+try{const raw=localStorage.getItem(KEY);if(raw)S.filed=JSON.parse(raw).filed||null}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({filed:S.filed}))}catch(e){}}
+let diary=null, notes="", mode="demo", startedAt=0, source="sample";
+
+/* ---------- helpers ---------- */
+const sum=(a,f)=>a.reduce((t,x)=>t+(+f(x)||0),0);
+const hrs=h=>{h=Math.round(h*100)/100; const H=Math.floor(h), M=Math.round((h-H)*60); return H&&M?`${H} h ${M} m`:H?`${H} h`:`${M} m`};
+const fmt1=n=>(Math.round(n*10)/10).toString();
+const nowHM=()=>{const d=new Date();return d.toTimeString().slice(0,5)};
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("on"),2400)}
+function showFlow(id){$$(".flow").forEach(f=>f.classList.toggle("on",f.id===id));document.body.style.overflow=id?"hidden":""}
+const toMin=t=>{const m=/^(\d{1,2}):(\d{2})$/.exec(t||"");return m?(+m[1])*60+(+m[2]):null};
+
+/* ---------- navigation ---------- */
+function go(name){
+  $$(".screen").forEach(s=>s.classList.toggle("on",s.id==="s-"+name));
+  $$(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.go===name));
+  window.scrollTo({top:0});
+}
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-go]"); if(g){go(g.dataset.go);return}
+  if(e.target.closest("[data-close]")){stopAll();showFlow(null)}
+});
+
+/* ---------- today / records render ---------- */
+function weekRows(){
+  const rows=PAST.map(p=>({...p}));
+  if(S.filed) rows.unshift({wd:0,day:fDay(TODAY),sum:S.filed.summary,lost:S.filed.lost,tags:S.filed.tags,today:true});
+  return rows;
+}
+function renderToday(){
+  const rows=weekRows();
+  const filedCount=rows.length, lost=sum(rows,r=>r.lost), ews=window.SNTrack?SNTrack.warnings().filter(w=>w.stage<4).length:PAST_EW.length+(S.filed?S.filed.ews.length:0);
+  $("#weekKv").innerHTML=`<div><span>Diaries filed</span><b>${filedCount}<span style="font-size:14px;color:var(--ink3)"> / 5</span></b></div><div><span>Hours lost</span><b>${fmt1(lost)}</b></div><div><span>Open warnings</span><b>${ews}</b></div>`;
+  $("#recentList").innerHTML=rows.slice(0,3).map(rowHTML).join("");
+  if(S.filed){
+    $("#todayFinding").innerHTML=`<i class="dot ok"></i><div><b>Diary filed at ${esc(S.filed.time)}.</b> <span class="muted">${S.filed.ews.length?S.filed.ews.length+" early warning sent to the commercial team.":"No early warnings today."}</span></div>`;
+    $("#recCard").classList.add("hide");
+    const f=$("#todayFiled");f.classList.remove("hide");
+    f.innerHTML=`<div class="card"><div class="row between"><h2>Today's shift</h2><span class="pill ok">Filed</span></div><p class="small muted" style="margin:2px 0 10px">${esc(S.filed.ref)}</p>${stripHTML(S.filed.diary)}<div class="row" style="margin-top:14px;gap:10px"><button class="btn line" id="viewToday" style="flex:1">View diary</button><button class="btn line" id="redo" style="flex:1">Record again</button></div></div>`;
+    $("#viewToday").onclick=()=>{diary=S.filed.diary;openReview(true)};
+    $("#redo").onclick=openRecord;
+  }else{
+    $("#todayFinding").innerHTML=`<i class="dot"></i><div><b>Today's diary isn't written yet.</b> <span class="muted">Shift ends 17:30.</span></div>`;
+    $("#recCard").classList.remove("hide");$("#todayFiled").classList.add("hide");
+  }
+}
+function rowHTML(r){
+  return `<button class="li" ${r.today?'data-today="1"':''}><div style="min-width:0"><div class="t">${esc(r.day)}${r.today?' <span class="pill ok" style="margin-left:4px">Today</span>':''}</div><div class="s">${esc(r.sum)}</div></div><div class="end"><div class="small ${r.lost?'':'muted'}" style="${r.lost?'color:var(--hi-ink);font-weight:600':''}">${r.lost?fmt1(r.lost)+" h lost":"No delays"}</div></div><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>`;
+}
+document.addEventListener("click",e=>{
+  const li=e.target.closest(".li");
+  if(!li||li.closest("#ewList"))return;
+  if(li.dataset.today&&S.filed){diary=S.filed.diary;openReview(true)}
+  else if(li.classList.contains("li")&&!li.dataset.ew) toast("Past diaries open in the full version");
+});
+function renderRecords(){
+  const q=($("#q").value||"").toLowerCase().trim();
+  const rows=weekRows().filter(r=>!q||(r.day+" "+r.sum+" "+(r.tags||"")).toLowerCase().includes(q));
+  $("#allList").innerHTML=rows.length?rows.map(rowHTML).join(""):`<div class="li"><div class="muted">No diaries mention “${esc(q)}”.</div></div>`;
+  const days=[4,3,2,1].map(n=>({d:wdAgo(n).toLocaleDateString("en-GB",{weekday:"short"}),v:PAST.find(p=>p.wd===n).lost})).concat([{d:"Today",v:S.filed?S.filed.lost:null}]);
+  const max=Math.max(4,...days.map(d=>d.v||0));
+  $("#lostChart").innerHTML=days.map(d=>`<div class="c"><em>${d.v==null?"–":fmt1(d.v)}</em><i class="${d.v?'':'zero'}" style="height:${d.v?Math.max(3,d.v/max*100):2}%"></i></div>`).join("");
+  $("#lostX").innerHTML=days.map(d=>`<span>${d.d}</span>`).join("");
+  const tot=sum(days,d=>d.v||0);
+  $("#lostTotal").textContent=fmt1(tot)+" h";
+  const ST=["Raised","Sent","Meeting","Agreed","Closed"];
+  const ews=window.SNTrack?SNTrack.warnings().map(w=>({ref:w.ref,title:w.title,date:fShort(wdAgo(w.wd)),state:ST[w.stage]})):[...(S.filed?S.filed.ews.map((e,i)=>({ref:`EW-C4-0${15+i}`,title:e.title,date:fShort(TODAY),state:"Sent"})):[]),...PAST_EW];
+  $("#ewList").innerHTML=ews.map(e=>`<div class="li" data-ew="1"><div style="min-width:0"><div class="t">${esc(e.title)}</div><div class="s"><span class="mono">${esc(e.ref)}</span> · ${esc(e.date)}</div></div><div class="end"><span class="pill ${e.state==="Sent"||e.state==="Raised"?"hi":e.state==="Closed"?"ok":""}">${esc(e.state)}</span></div></div>`).join("");
+}
+const CHIPS=["duct","crane","pier 8","rain","late"];
+$("#qChips").innerHTML=CHIPS.map(c=>`<button class="pill" data-q="${c}" style="height:30px;padding:0 12px">${c}</button>`).join("");
+$("#qChips").onclick=e=>{const b=e.target.closest("[data-q]");if(!b)return;$("#q").value=b.dataset.q;renderRecords()};
+$("#q").addEventListener("input",renderRecords);
+
+/* ---------- shift strip ---------- */
+function stripHTML(d){
+  const [s0,s1]=PROJECT.shift.map(toMin), span=s1-s0;
+  const pos=t=>Math.min(100,Math.max(0,(toMin(t)-s0)/span*100));
+  const delays=(d.delays||[]).filter(x=>toMin(x.start)!=null&&toMin(x.end)!=null);
+  const rainStart=/(\d{1,2}):(\d{2})/.exec(d.weather&&d.weather.pm||"");
+  const events=[];
+  if(d.safety&&d.safety.toolbox)events.push({t:"07:30",l:"Toolbox talk"});
+  (d.visitors||[]).forEach(v=>{if(toMin(v.time)!=null)events.push({t:v.time,l:v.who})});
+  return `<div class="strip" aria-label="Shift timeline">
+   <div class="lane"><span>Weather</span><div class="track">${rainStart?`<i class="blk rain" style="left:${pos(rainStart[0])}%;right:0"></i>`:""}</div></div>
+   <div class="lane"><span>Delays</span><div class="track">${delays.map(x=>`<i class="blk delay" title="${esc(x.cause)}" style="left:${pos(x.start)}%;width:${Math.max(1.5,pos(x.end)-pos(x.start))}%"></i>`).join("")}</div></div>
+   <div class="lane"><span>Events</span><div class="track">${events.map(e=>`<i class="tick" title="${esc(e.l)}" style="left:${pos(e.t)}%"></i>`).join("")}</div></div>
+   <div class="axis"><span></span><div><span>07:30</span><span>10:00</span><span>12:30</span><span>15:00</span><span>17:30</span></div></div>
+   <div class="legend"><span><i style="background:repeating-linear-gradient(135deg,var(--hi) 0 3px,var(--hi-soft) 3px 7px)"></i>Work stopped</span><span><i style="background:repeating-linear-gradient(90deg,#9AA3AD 0 1px,transparent 1px 5px)"></i>Rain</span><span><i style="background:var(--ink);width:3px"></i>Talk / visit</span></div>
+  </div>`;
+}
+
+/* ---------- record flow ---------- */
+const bars=$("#bars"); bars.innerHTML="<i></i>".repeat(28);
+let tmr=null, typer=null, rec=null, barAnim=null, sec=0, recording=false;
+function setMode(m){
+  mode=m; stopAll();
+  $$("#modeSeg button").forEach(b=>b.classList.toggle("on",b.dataset.mode===m));
+  $("#micWrap").classList.toggle("hide",m==="type");
+  $("#transcript").classList.toggle("hide",m==="type");
+  $("#typed").classList.toggle("hide",m!=="type");
+  $("#transcript").innerHTML=""; notes="";
+  $("#micHint").textContent=m==="demo"?"Tap to play the sample end-of-shift note":"Tap and talk through your shift. Tap again to stop.";
+  if(m==="voice"&&!SR) $("#micHint").textContent="Voice typing isn't available in this browser. Use Type, or the keyboard's microphone.";
+  sec=0;$("#timer").textContent="00:00";
+  if(m==="type")setTimeout(()=>$("#typed").focus(),50);
+  updWrite();
+}
+$("#modeSeg").onclick=e=>{const b=e.target.closest("[data-mode]");if(b)setMode(b.dataset.mode)};
+$("#typed").addEventListener("input",()=>{notes=$("#typed").value;updWrite()});
+function updWrite(){$("#writeBtn").disabled=(notes||"").trim().length<20||recording}
+function startClock(){sec=0;clearInterval(tmr);tmr=setInterval(()=>{sec++;$("#timer").textContent=String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")},1000);
+  const is=[...bars.children];clearInterval(barAnim);barAnim=setInterval(()=>is.forEach((b,i)=>b.style.height=(4+Math.abs(Math.sin(Date.now()/180+i*.7))*Math.random()*24)+"px"),110)}
+function stopClock(){clearInterval(tmr);clearInterval(barAnim);[...bars.children].forEach(b=>b.style.height="4px")}
+function stopAll(){
+  clearInterval(typer);stopClock();recording=false;
+  if(rec){try{rec.onend=null;rec.stop()}catch(e){} rec=null}
+  $("#micBtn").classList.remove("live");
+  const c=$("#transcript .caret");if(c)c.remove();
+  updWrite();
+}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$("#micBtn").onclick=()=>{
+  if(recording){stopAll();if(mode==="demo"){notes=SAMPLE_NOTE;$("#transcript").textContent=SAMPLE_NOTE;updWrite()}$("#micHint").textContent="Done. Check it reads right, then write the diary.";return}
+  if(!startedAt)startedAt=Date.now();
+  if(mode==="demo"){
+    recording=true;$("#micBtn").classList.add("live");startClock();source="sample";
+    $("#micHint").textContent="Playing the sample note… tap to skip to the end";
+    const words=SAMPLE_NOTE.split(" ");let i=0;const el=$("#transcript");el.innerHTML='<span class="caret"></span>';
+    clearInterval(typer);
+    typer=setInterval(()=>{i+=2;el.innerHTML=esc(words.slice(0,i).join(" "))+' <span class="caret"></span>';el.scrollTop=el.scrollHeight;
+      if(i>=words.length){stopAll();notes=SAMPLE_NOTE;el.textContent=SAMPLE_NOTE;$("#micHint").textContent="Done. Now write the diary.";updWrite()}},140);
+    updWrite();return;
+  }
+  if(mode==="voice"){
+    if(!SR){toast("Voice typing isn't supported here. Use Type.");return}
+    source="voice";
+    rec=new SR();rec.lang="en-GB";rec.continuous=true;rec.interimResults=true;
+    let finalTxt=notes?notes+" ":"";
+    rec.onresult=ev=>{let interim="";for(let k=ev.resultIndex;k<ev.results.length;k++){const r=ev.results[k];if(r.isFinal)finalTxt+=r[0].transcript.trim()+". ";else interim+=r[0].transcript}
+      notes=finalTxt.trim();$("#transcript").innerHTML=esc(finalTxt)+'<span class="muted">'+esc(interim)+'</span> <span class="caret"></span>';updWrite()};
+    rec.onerror=ev=>{toast(ev.error==="not-allowed"?"Microphone blocked. Allow it in Settings, or use Type.":"Mic stopped: "+ev.error);stopAll()};
+    rec.onend=()=>{ if(recording){try{rec.start()}catch(e){stopAll()}} };
+    try{rec.start();recording=true;$("#micBtn").classList.add("live");startClock();$("#micHint").textContent="Listening… tap to stop"}catch(e){toast("Couldn't start the microphone")}
+    updWrite();
+  }
+};
+$("#cam").addEventListener("change",e=>{
+  [...e.target.files].slice(0,6).forEach(f=>{const url=URL.createObjectURL(f);S.photos.push({url,label:"Photo "+(S.photos.length+1)})});
+  renderPhotos();e.target.value="";
+});
+function renderPhotos(){
+  const add='<label class="ph add" for="cam"><span>+ Add<br>photo</span></label>';
+  $("#photos").innerHTML=S.photos.map(p=>`<div class="ph">${p.url?`<img src="${p.url}" alt="">`:p.svg}<em>${esc(p.label)}</em></div>`).join("")+add;
+}
+const SKETCH=(path,label)=>({label,svg:`<svg viewBox="0 0 92 92" aria-hidden="true"><rect width="92" height="92" fill="#D9D5CC"/><path d="M0 70h92v22H0z" fill="#B9B3A6"/>${path}</svg>`});
+const SAMPLE_PHOTOS=[
+  SKETCH('<g stroke="#5B5348" stroke-width="2" fill="none"><path d="M14 66V36h64v30"/><path d="M14 44h64M14 52h64M14 60h64M24 36v30M36 36v30M48 36v30M60 36v30M72 36v30"/></g>',"Pier 7"),
+  SKETCH('<path d="M10 70l14-10h50l8 10z" fill="#8E877A"/><path d="M24 60h50v4H24z" fill="#6E675B"/>',"Pier 8"),
+  SKETCH('<path d="M8 70c10-22 66-22 76 0z" fill="#7D6C55"/><path d="M20 66c8-6 44-6 52 0" stroke="#E25A0E" stroke-width="4" fill="none"/><path d="M14 40h64" stroke="#E25A0E" stroke-width="2" stroke-dasharray="5 4"/>',"Pier 9 duct")
+];
+function openRecord(){
+  startedAt=0;S.photos=mode==="demo"?SAMPLE_PHOTOS.slice():[];
+  setMode("demo");S.photos=SAMPLE_PHOTOS.slice();renderPhotos();showFlow("f-record");
+}
+$("#openRecord").onclick=openRecord;
+
+/* ---------- writing ---------- */
+const STEPS=["Turning your voice into text","Pulling out labour, plant and weather","Checking progress against the plan","Finding delays and early warnings","Laying it out in the company template"];
+$("#writeBtn").onclick=async()=>{
+  stopAll();notes=(mode==="type"?$("#typed").value:notes).trim();
+  source=mode==="type"?"type":mode==="voice"?"voice":"sample";
+  if(notes.length<20)return;
+  showFlow("f-writing");
+  $("#steps").innerHTML=STEPS.map(s=>`<div class="step"><span class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="m5 12 5 5 9-10"/></svg></span>${s}</div>`).join("");
+  const els=$$("#steps .step");
+  let result=null;
+  const work=(async()=>{
+    if(mode==="demo"&&notes===SAMPLE_NOTE)return JSON.parse(JSON.stringify(SAMPLE_DIARY));
+    try{
+      const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),25000);
+      const r=await fetch("/api/write",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({notes}),signal:ctl.signal});
+      clearTimeout(to);
+      if(r.ok){const j=await r.json();if(j&&j.diary)return normalise(j.diary)}
+    }catch(e){}
+    return localDiary(notes);
+  })();
+  for(let i=0;i<els.length;i++){
+    els[i].classList.add("doing");
+    await new Promise(r=>setTimeout(r,i===els.length-1?500:750));
+    if(i===els.length-2) result=await work;
+    els[i].classList.remove("doing");els[i].classList.add("done");
+  }
+  diary=result||await work;
+  await new Promise(r=>setTimeout(r,250));
+  openReview(false);
+};
+
+function normalise(d){
+  const A=x=>Array.isArray(x)?x:[];
+  const n=v=>{const x=parseFloat(v);return isFinite(x)?x:0};
+  const out={
+    weather:{am:String(d.weather&&d.weather.am||""),pm:String(d.weather&&d.weather.pm||"")},
+    labour:A(d.labour).map(l=>({trade:String(l.trade||""),count:n(l.count)})).filter(l=>l.trade),
+    plant:A(d.plant).map(p=>({item:String(p.item||""),count:n(p.count)||1,status:String(p.status||"Working")})).filter(p=>p.item),
+    works:A(d.works).map(w=>({location:String(w.location||""),activity:String(w.activity||""),status:String(w.status||"In progress"),pct:Math.max(0,Math.min(100,n(w.pct))),planned:w.planned!=null?n(w.planned):null})).filter(w=>w.activity),
+    delays:A(d.delays).map(x=>{let h=n(x.hours);const a=toMin(x.start),b=toMin(x.end);if(!h&&a!=null&&b!=null&&b>a)h=(b-a)/60;return{start:String(x.start||""),end:String(x.end||""),hours:h,location:String(x.location||""),cause:String(x.cause||""),affected:String(x.affected||""),owner:String(x.owner||"To confirm")}}).filter(x=>x.cause),
+    safety:{toolbox:String(d.safety&&d.safety.toolbox||""),incidents:A(d.safety&&d.safety.incidents).map(i=>({type:String(i.type||"Observation"),text:String(i.text||"")})).filter(i=>i.text)},
+    visitors:A(d.visitors).map(v=>({who:String(v.who||""),time:String(v.time||""),purpose:String(v.purpose||"")})).filter(v=>v.who),
+    actions:A(d.actions).map(String).filter(Boolean),
+    earlyWarnings:A(d.earlyWarnings).map(e=>({title:String(e.title||"Early warning"),description:String(e.description||""),time:!!e.time,cost:!!e.cost,quality:!!e.quality,safety:!!e.safety,proposed:A(e.proposed).map(String)})).filter(e=>e.description||e.title)
+  };
+  return out;
+}
+
+/* local fallback: rule-based reading of the notes (used if the AI service can't be reached) */
+function localDiary(t){
+  const NUM={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,a:1,an:1,half:.5};
+  const num=s=>NUM[s]!=null?NUM[s]:parseFloat(s);
+  const sents=t.replace(/\s+/g," ").split(/(?<=[.!?])\s+|\n+/).map(s=>s.trim()).filter(Boolean);
+  const used=new Set();const take=(s)=>used.add(s);
+  const d={weather:{am:"",pm:""},labour:[],plant:[],works:[],delays:[],safety:{toolbox:"",incidents:[]},visitors:[],actions:[],earlyWarnings:[]};
+  const W="(\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)";
+  const trades=[["steel ?fixers?","Steel fixers"],["ground ?workers?","Groundworkers"],["labourers?","Labourers"],["plant operators?|operators?","Plant operators"],["banks(?:man|men)","Banksman"],["carpenters?|joiners?","Carpenters"],["electricians?|sparks","Electricians"],["scaffolders?","Scaffolders"],["engineers?","Engineers"],["fitters?","Fitters"],["welders?","Welders"],["drivers?","Drivers"]];
+  trades.forEach(([re,name])=>{const m=new RegExp(W+"\\s+(?:[a-z]+\\s+)?(?:"+re+")\\b","i").exec(t);if(m)d.labour.push({trade:name,count:num(m[1].toLowerCase())})});
+  const plants=[["crane","Crane"],["excavators?|diggers?","Excavator"],["dumpers?","Dumper"],["rollers?","Roller"],["telehandlers?","Telehandler"],["mewps?|cherry ?pickers?","MEWP"],["piling rigs?","Piling rig"],["(?:concrete )?pumps?","Concrete pump"],["generators?","Generator"]];
+  plants.forEach(([re,name])=>{const m=new RegExp("(?:"+W+"\\s+)?(?:[\\w-]+\\s+){0,3}(?:"+re+")\\b","i").exec(t);if(m)d.plant.push({item:name,count:m[1]?num(m[1].toLowerCase()):1,status:/broke|broken/i.test(t)?"Check":"Working"})});
+  sents.forEach(s=>{
+    const l=s.toLowerCase();
+    if(/(rain|dry|sunny|wind|cold|degrees|°|snow|frost|fog|wet|cloud)/.test(l)&&!d.weather.am){d.weather.am=s.replace(/^(right|ok|okay|so)[, ]+/i,"");take(s)}
+    if(/toolbox|briefing|tbt/.test(l)){d.safety.toolbox=s;take(s)}
+    if(/near miss|incident|accident|injur|first aid|unsafe/.test(l)){d.safety.incidents.push({type:/near miss/.test(l)?"Near miss":/injur|accident|first aid/.test(l)?"Incident":"Observation",text:s});take(s)}
+    if(/visit|came (?:to|on) site|walk ?round|inspector|inspection by/.test(l)){const tm=/(\d{1,2})[:.](\d{2})/.exec(s);d.visitors.push({who:s.split(/ came| visited/i)[0].slice(0,60),time:tm?tm[1].padStart(2,"0")+":"+tm[2]:"",purpose:s});take(s)}
+    if(/delay|late|stopped|stood|standing|waiting|lost|held up|hold up|couldn'?t|broke down|no access/.test(l)){
+      const hm=/(\d+(?:\.\d+)?|an?|one|two|three|four|five|half)\s*(?:and a half\s*)?(hours?|hrs?|h\b|minutes?|mins?)/i.exec(s);
+      let h=0;if(hm){h=num(hm[1].toLowerCase());if(/and a half/i.test(hm[0]))h+=.5;if(/^m/i.test(hm[2]))h=h/60}
+      const loc=/(pier|bay|grid|zone|level|block|plot|chainage|area|section)\s*[\w.-]+/i.exec(s);
+      d.delays.push({start:"",end:"",hours:Math.round(h*100)/100,location:loc?loc[0]:"",cause:s,affected:"",owner:"To confirm"});take(s);
+      if(/not on the drawing|uncharted|unknown|service|duct|cable|utilit|gas main|water main|contaminat|obstruction|design|drawing|instruction|access/.test(l))
+        d.earlyWarnings.push({title:(loc?loc[0][0].toUpperCase()+loc[0].slice(1)+": ":"")+"possible delay",description:s,time:true,cost:true,quality:false,safety:/live|gas|electric|cable/.test(l),proposed:["Confirm the cause and who owns it","Agree the next steps with the project manager"]});
+    }
+    if(/\b(need|needs|must|chase|to do|book|order|confirm)\b/.test(l)){d.actions.push(s)}
+  });
+  sents.forEach(s=>{
+    if(used.has(s))return;const l=s.toLowerCase();
+    if(/finish|complete|done|poured|fixed|installed|laid|started|dug|excavat|backfill|struck|erected|placed|cast|tested|cleared|built/.test(l)){
+      const loc=/(pier|bay|grid|zone|level|block|plot|chainage|area|section|wall|slab|base)\s*[\w.-]*/i.exec(s);
+      const pc=/(\d+)\s*(?:%|percent|per cent)/i.exec(s);
+      const st=/finish|complete|done/.test(l)?"Complete":/start/.test(l)?"Started":"In progress";
+      d.works.push({location:loc?loc[0].replace(/^./,c=>c.toUpperCase()):"",activity:s,status:st,pct:pc?+pc[1]:st==="Complete"?100:st==="Started"?10:50,planned:null});
+    }
+  });
+  if(!d.works.length&&!d.delays.length) d.works.push({location:"",activity:t.slice(0,400),status:"In progress",pct:0,planned:null});
+  return d;
+}
+
+/* ---------- review ---------- */
+let tab="diary";
+function openReview(readonly){
+  tab="diary";
+  $("#draftPill").textContent=readonly?"Filed":"Draft";
+  $("#draftPill").className="pill "+(readonly?"ok":"");
+  $(".flow#f-review .flow-foot").classList.toggle("hide",!!readonly);
+  $("#holdFill").style.transform="scaleX(0)";$("#holdTxt").textContent="Hold to approve and file";
+  renderDoc(readonly);showFlow("f-review");
+}
+function renderDoc(ro){
+  const ewN=diary.earlyWarnings.length;
+  $("#docSeg").innerHTML=`<button data-tab="diary" class="${tab==="diary"?"on":""}">Diary</button><button data-tab="progress" class="${tab==="progress"?"on":""}">Progress</button><button data-tab="ew" class="${tab==="ew"?"on":""}">Warnings${ewN?`<span class="n">${ewN}</span>`:""}</button>`;
+  const ce=ro?"":' contenteditable="true"';
+  const body=$("#docBody");
+  if(tab==="diary") body.innerHTML=diaryHTML(diary,ce);
+  if(tab==="progress") body.innerHTML=progressHTML(diary,ce);
+  if(tab==="ew") body.innerHTML=ewHTML(diary,ce);
+  body.scrollTop=0;
+}
+$("#docSeg").onclick=e=>{const b=e.target.closest("[data-tab]");if(!b)return;tab=b.dataset.tab;renderDoc($("#draftPill").textContent==="Filed")};
+$("#docBody").addEventListener("input",e=>{const c=e.target.closest("[contenteditable]");if(c)c.classList.add("edited")});
+
+function head(title,no){
+  return `<div class="doc-head"><div><div class="k">${esc(title)}</div><h2>${esc(PROJECT.name)}</h2></div><div class="mono" style="text-align:right">${esc(no)}</div></div>
+  <div class="meta"><div><span>Section</span>${esc(PROJECT.section)}</div><div><span>Contract</span><span class="mono" style="font-size:13px;color:var(--ink)">${esc(PROJECT.contract)}</span></div><div><span>Date</span>${fFull(TODAY)}</div><div><span>Shift</span>${PROJECT.shift.join("–")}</div><div><span>Supervisor</span>${esc(PROJECT.supervisor)}</div><div><span>Written from</span>${source==="sample"?"Sample voice note":source==="voice"?"Voice note":"Typed notes"}</div></div>`;
+}
+const none='<p class="small muted">None recorded.</p>';
+function diaryHTML(d,ce){
+  const lab=sum(d.labour,l=>l.count), lost=sum(d.delays,x=>x.hours);
+  return `<div class="doc">${head("Daily site diary","SD-C4-"+REFD)}
+  <div class="sec"><h3>Shift at a glance</h3>${stripHTML(d)}</div>
+  <div class="sec"><h3>Weather</h3><table><tr><td>Morning</td><td${ce}>${esc(d.weather.am||"–")}</td></tr><tr><td>Afternoon</td><td${ce}>${esc(d.weather.pm||"–")}</td></tr></table></div>
+  <div class="sec"><h3>Labour <span class="small muted">${lab} operatives + supervisor</span></h3>${d.labour.length?`<table><thead><tr><th>Trade</th><th class="n">On site</th></tr></thead><tbody>${d.labour.map(l=>`<tr><td${ce}>${esc(l.trade)}</td><td class="n"${ce}>${l.count}</td></tr>`).join("")}</tbody><tfoot><tr><td>Total</td><td class="n">${lab}</td></tr></tfoot></table>`:none}</div>
+  <div class="sec"><h3>Plant</h3>${d.plant.length?`<table><thead><tr><th>Item</th><th class="n">No.</th><th class="n">Status</th></tr></thead><tbody>${d.plant.map(p=>`<tr><td${ce}>${esc(p.item)}</td><td class="n">${p.count}</td><td class="n"${ce}>${esc(p.status)}</td></tr>`).join("")}</tbody></table>`:none}</div>
+  <div class="sec"><h3>Works carried out</h3>${d.works.length?`<table><tbody>${d.works.map(w=>`<tr><td style="width:64px;font-weight:600">${esc(w.location||"–")}</td><td${ce}>${esc(w.activity)}</td><td class="n"><span class="pill ${w.status==="Complete"?"ok":w.status==="Stopped"?"hi":""}">${esc(w.status)}</span></td></tr>`).join("")}</tbody></table>`:none}</div>
+  <div class="sec"><h3>Delays and disruption ${lost?`<span class="small" style="color:var(--hi-ink);font-weight:600">${hrs(lost)} lost</span>`:""}</h3>${d.delays.length?d.delays.map(x=>`<div class="delay"><div class="small muted">${esc([x.location,x.start&&x.end?x.start+"–"+x.end:"",x.hours?hrs(x.hours):""].filter(Boolean).join(" · "))}</div><div${ce}>${esc(x.cause)}</div><div class="small muted" style="margin-top:2px"${ce}>${esc([x.affected&&"Affected: "+x.affected,x.owner&&"Responsibility: "+x.owner].filter(Boolean).join(" · "))}</div></div>`).join(""):none}</div>
+  <div class="sec"><h3>Health, safety and environment</h3><table>${d.safety.toolbox?`<tr><td style="width:96px">Toolbox talk</td><td${ce}>${esc(d.safety.toolbox)}</td></tr>`:""}${d.safety.incidents.map(i=>`<tr><td>${esc(i.type)}</td><td${ce}>${esc(i.text)}</td></tr>`).join("")}</table>${!d.safety.toolbox&&!d.safety.incidents.length?none:""}</div>
+  <div class="sec"><h3>Visitors</h3>${d.visitors.length?`<table>${d.visitors.map(v=>`<tr><td style="width:56px" class="mono">${esc(v.time||"–")}</td><td${ce}>${esc(v.who)}${v.purpose&&v.purpose!==v.who?` <span class="muted">· ${esc(v.purpose)}</span>`:""}</td></tr>`).join("")}</table>`:none}</div>
+  ${gateSec()}
+  <div class="sec"><h3>Photos</h3><div class="photos">${(S.photos.length?S.photos:SAMPLE_PHOTOS).map(p=>`<div class="ph">${p.url?`<img src="${p.url}" alt="">`:p.svg}<em>${esc(p.label)}</em></div>`).join("")}</div></div>
+  <div class="sec"><h3>Actions for tomorrow</h3>${d.actions.length?`<ul class="plain">${d.actions.map(a=>`<li${ce}>${esc(a)}</li>`).join("")}</ul>`:none}</div>
+  <div class="sig"><div><div class="small muted">Recorded by</div>${esc(PROJECT.supervisor)}</div><div class="line">${$("#draftPill").textContent==="Filed"?"Approved "+esc(S.filed?S.filed.time:""):"Awaiting approval"}</div></div>
+  </div>`;
+}
+function gateSec(){
+  const g=window.SNGate?SNGate.today():[];if(!g.length)return "";
+  const t=d=>d.toTimeString().slice(0,5), td=new Date().toDateString();
+  return `<div class="sec"><h3>Deliveries and plant in / out <span class="small muted">from the gate log</span></h3><table><tbody>${g.map(x=>`<tr><td>${esc(x.desc)}<div class="small muted">${esc(x.cat)}${x.ref?" · "+esc(x.ref):""}</div></td><td class="n mono">${x.inAt.toDateString()===td?"In "+t(x.inAt):""}${x.outAt&&x.outAt.toDateString()===td?"<br>Out "+t(x.outAt):""}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function progressHTML(d,ce){
+  const rows=d.works;
+  const behind=rows.filter(w=>w.planned!=null&&w.pct<w.planned);
+  return `<div class="doc">${head("Progress update","PR-C4-"+REFD)}
+   <div class="sec"><h3>Summary</h3><p${ce}>${rows.filter(w=>w.status==="Complete").length} of ${rows.length} activities complete today.${behind.length?` ${esc(behind.map(w=>w.location).join(", "))} behind plan.`:""}${d.delays.length?` ${hrs(sum(d.delays,x=>x.hours))} lost to delays.`:""}</p></div>
+   <div class="sec"><h3>Activities <span class="small muted">today vs plan</span></h3>
+   ${rows.map(w=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row between"><b style="font-weight:600">${esc(w.location||"Activity")}</b><span class="small ${w.planned!=null&&w.pct<w.planned?"":"muted"}" style="${w.planned!=null&&w.pct<w.planned?"color:var(--hi-ink);font-weight:600":""}">${w.pct}%${w.planned!=null?(w.planned?` of ${w.planned}% planned`:" · not planned today"):""}</span></div><div class="small muted"${ce}>${esc(w.activity)}</div><div class="bar"><i class="a ${w.planned!=null&&w.pct<w.planned?"behind":""}" style="width:${w.pct}%"></i>${w.planned?`<i class="p" style="left:calc(${w.planned}% - 2px)"></i>`:""}</div></div>`).join("")}
+   <div class="legend"><span><i style="background:var(--ink)"></i>Done</span><span><i style="background:var(--hi)"></i>Behind plan</span><span><i style="background:var(--ink);width:2px"></i>Planned for today</span></div></div>
+   ${d===SAMPLE_DIARY||diary.works===SAMPLE_DIARY.works||source==="sample"?`<div class="sec"><h3>Programme</h3><p${ce}>Pier 9 pile cap pour (planned ${fShort(wdAhead(4))}) is at risk until the duct is diverted or protected. Pier 7 inspection due ${fShort(wdAhead(1))}.</p></div>`:""}
+  </div>`;
+}
+function ewHTML(d,ce){
+  if(!d.earlyWarnings.length) return `<div class="doc">${head("Early warning","–")}<div class="sec">${none}<p class="small muted">Nothing in today's notes looks like it could add cost or delay.</p></div></div>`;
+  return d.earlyWarnings.map((e,i)=>`<div class="doc" style="${i?"margin-top:14px":""}">${head("Early warning notice","EW-C4-0"+(15+i))}
+   <div class="sec"><h3>Matter</h3><p style="font-weight:600"${ce}>${esc(e.title)}</p><p style="margin-top:4px"${ce}>${esc(e.description)}</p></div>
+   <div class="sec"><h3>Could affect</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[["time","Completion / key dates"],["cost","Cost"],["quality","Quality"],["safety","Safety"]].map(([k,l])=>`<span class="pill ${e[k]?"hi":""}">${e[k]?"Yes":"No"} · ${l}</span>`).join("")}</div></div>
+   <div class="sec"><h3>Proposed actions</h3><ul class="plain">${e.proposed.map(p=>`<li${ce}>${esc(p)}</li>`).join("")}</ul></div>
+   <div class="sec"><h3>Goes to</h3><p class="small">Project manager · Commercial team (to review as a possible compensation event)</p></div>
+   <p class="small muted" style="margin-top:8px">Draft for the commercial team to check before it is issued under the contract.</p>
+  </div>`).join("");
+}
+
+/* ---------- print / PDF: all three documents ---------- */
+window.addEventListener("beforeprint",()=>{
+  if(!diary&&S.filed)diary=S.filed.diary;if(!diary)return;
+  let pa=$("#printArea");if(!pa){pa=document.createElement("div");pa.id="printArea";document.body.append(pa)}
+  pa.innerHTML=diaryHTML(diary,"")+progressHTML(diary,"")+ewHTML(diary,"");
+});
+window.addEventListener("afterprint",()=>{const pa=$("#printArea");if(pa)pa.innerHTML=""});
+
+/* ---------- hold to approve ---------- */
+(function(){
+  const b=$("#holdBtn"),fill=$("#holdFill");let t0=0,raf=0;const D=900;
+  const tick=()=>{const p=Math.min(1,(performance.now()-t0)/D);fill.style.transform=`scaleX(${p})`;if(p>=1){end(true);return}raf=requestAnimationFrame(tick)};
+  const start=e=>{e.preventDefault();t0=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);$("#holdTxt").textContent="Keep holding…"};
+  const end=(ok)=>{cancelAnimationFrame(raf);if(ok===true){approve()}else{fill.style.transition="transform .25s";fill.style.transform="scaleX(0)";setTimeout(()=>fill.style.transition="",260);$("#holdTxt").textContent="Hold to approve and file"}};
+  b.addEventListener("pointerdown",start);["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,()=>{if(t0&&fill.style.transform!=="scaleX(1)")end(false)}));
+  b.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();approve()}});
+})();
+function collectEdits(){
+  // keep the reviewed text as approved (edits are already in the DOM; the demo files the diary data)
+}
+function approve(){
+  collectEdits();
+  const time=nowHM(), lost=sum(diary.delays,x=>x.hours);
+  const took=startedAt?Math.max(1,Math.round((Date.now()-startedAt)/1000)):null;
+  S.filed={time,ref:"SD-C4-"+REFD+" · approved "+time,diary,lost,ews:diary.earlyWarnings.map(e=>({title:e.title})),
+    summary:(diary.works.slice(0,2).map(w=>(w.location?w.location+" ":"")+w.status.toLowerCase()).join("; ")||"Diary filed"),
+    tags:JSON.stringify(diary).toLowerCase()};
+  save();
+  const mins=took?Math.floor(took/60)+" m "+String(took%60).padStart(2,"0")+" s":null;
+  $("#filedBody").innerHTML=`<div class="done-mark"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></div>
+   <h1 class="center">Filed</h1><p class="center muted" style="margin-top:4px">Daily site diary, ${fDay(TODAY)} · <span class="mono">SD-C4-${REFD}</span></p>
+   ${mins?`<div class="card center" style="margin-top:18px"><span class="small muted">Time from first word to filed</span><div class="big" style="font-size:34px;margin-top:2px">${mins}</div><span class="small muted">Typical by hand: about an hour</span></div>`:""}
+   <h3 style="margin:18px 0 8px">Sent to</h3>
+   <div class="list">
+    <div class="li"><div><div class="t">Project manager</div><div class="s">Diary and progress update</div></div><span class="end pill ok">Sent</span></div>
+    <div class="li"><div><div class="t">Document control</div><div class="s">Filed under ${esc(PROJECT.contract)} / Site diaries</div></div><span class="end pill ok">Filed</span></div>
+    ${diary.earlyWarnings.length?`<div class="li"><div><div class="t">Commercial team</div><div class="s">${diary.earlyWarnings.length} early warning${diary.earlyWarnings.length>1?"s":""} to review</div></div><span class="end pill hi">Sent</span></div>`:""}
+   </div>
+   <button class="btn line full" id="filedPdf" style="margin-top:14px">Save or share as PDF</button>
+   <p class="small muted center" style="margin-top:14px">Demo only: nothing has actually been sent.</p>`;
+  setTimeout(()=>{const b=$("#filedPdf");if(b)b.onclick=()=>window.print()},0);
+  showFlow("f-filed");renderToday();renderRecords();if(window.SNTrack)SNTrack.render();
+}
+$("#filedDone").onclick=()=>{showFlow(null);go("today")};
+
+/* ---------- savings ---------- */
+function calc(){
+  const s=+$("#rS").value,m=+$("#rM").value,r=+$("#rR").value,d=+$("#rD").value;
+  const val=s*(m/60)*r*d, hoursYr=s*(m/60)*d, fee=s*40*12;
+  $("#vS").textContent=s;$("#vM").textContent=m+" min";$("#vR").textContent="£"+r;$("#vD").textContent=d;
+  $("#saveBig").textContent="£"+(val>=1e6?(val/1e6).toFixed(2)+"m":Math.round(val/1000)+"k");
+  $("#saveSub").textContent=`${Math.round(hoursYr).toLocaleString("en-GB")} supervisor hours a year. At £40 per supervisor a month the app costs £${Math.round(fee/1000)}k, about ${Math.max(1,Math.round(val/fee))}× less than it saves.`;
+  const hand=90, app=Math.max(5,hand-m);
+  $("#cbHandT").textContent=hand+" min";$("#cbApp").style.width=(app/hand*100)+"%";$("#cbAppT").textContent=app+" min";
+}
+["rS","rM","rR","rD"].forEach(id=>$("#"+id).addEventListener("input",calc));
+
+/* ---------- reset ---------- */
+$("#resetBtn").onclick=()=>{S.filed=null;save();try{localStorage.removeItem("shiftnote-actions")}catch(e){}renderToday();renderRecords();if(window.SNTrack)SNTrack.render();go("today");toast("Demo reset")};
+
+$("#todayTitle").textContent=fLong(TODAY);
+$("#qGate").onclick=()=>{go("track");document.querySelector('[data-tr="gate"]')&&document.querySelector('[data-tr="gate"]').click()};
+window.SN={renderToday,renderRecords,get filed(){return S.filed},toast,esc,sum,hrs,fmt1,SAMPLE_PHOTOS,go};
+renderToday();renderRecords();calc();if(window.SNTrack)SNTrack.render();
+})();
+</script>
+<script src="track.js"></script>
+</body>
+</html>
