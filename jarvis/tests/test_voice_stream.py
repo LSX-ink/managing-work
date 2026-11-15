@@ -961,6 +961,23 @@ def test_shopping_checks_weekday_and_later_reminders_are_instant(tmp_path):
     assert instant_answer("remind me at 9 to call the bank", en) is None  # am or pm? Claude asks
 
 
+def test_quick_facts_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("how many sides has an octagon got", s) == "An octagon has 8 sides."
+    assert instant_answer("what's a baker's dozen", s) == "A baker's dozen is 13."
+    assert instant_answer("how many legs do spiders have", s) == "A spider has 8 legs."
+    assert instant_answer("how many letters are there in the alphabet", s) == "There are 26 letters in the alphabet."
+    assert instant_answer("how many weeks in a year", s) == "A year has 52 weeks and 1 day, or 2 days in a leap year."
+    assert instant_answer("what's the boiling point of water", s) == "Water boils at 100 degrees Celsius, 212 Fahrenheit, at sea level."
+    assert instant_answer("what's the plural of mouse", s) == "The plural of mouse is mice."
+    assert instant_answer("what's the capital of France", s) == "The capital of France is Paris."
+    assert instant_answer("what's the capital of the usa", s) == "The capital of the USA is Washington, D.C."
+    assert instant_answer("what's Australia's capital", s) == "The capital of Australia is Canberra."
+    assert instant_answer("what's the capital of Narnia", s) is None
+    assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")

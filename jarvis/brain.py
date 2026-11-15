@@ -2598,6 +2598,113 @@ def _journey_answer(said: str) -> str | None:
     return None
 
 
+_SIDES = {"triangle": 3, "square": 4, "rectangle": 4, "quadrilateral": 4, "rhombus": 4, "parallelogram": 4, "trapezium": 4,
+          "kite": 4, "pentagon": 5, "hexagon": 6, "heptagon": 7, "septagon": 7, "octagon": 8, "nonagon": 9, "decagon": 10,
+          "hendecagon": 11, "dodecagon": 12, "circle": 0}
+_COUNTS = {"dozen": "A dozen is 12.", "baker's dozen": "A baker's dozen is 13.", "bakers dozen": "A baker's dozen is 13.",
+           "score": "A score is 20.", "gross": "A gross is 144, a dozen dozens.", "half dozen": "Half a dozen is 6.",
+           "half a dozen": "Half a dozen is 6.", "century": "A century is 100 years.", "decade": "A decade is 10 years.",
+           "millennium": "A millennium is 1,000 years.", "fortnight": "A fortnight is 14 days."}
+_LEGS = {"spider": 8, "insect": 6, "ant": 6, "bee": 6, "fly": 6, "beetle": 6, "butterfly": 6, "octopus": 8, "squid": 10,
+         "crab": 10, "lobster": 10, "dog": 4, "cat": 4, "horse": 4, "cow": 4, "bird": 2, "chicken": 2, "duck": 2,
+         "starfish": 5, "scorpion": 8, "tick": 8, "snake": 0, "fish": 0, "worm": 0, "kangaroo": 2, "human": 2, "person": 2}
+_HOW_MANY_IN = {"letters in the alphabet": "There are 26 letters in the alphabet.",
+                "letters in the english alphabet": "There are 26 letters in the English alphabet.",
+                "vowels in the alphabet": "There are 5 vowels: A, E, I, O and U.",
+                "days in a leap year": "A leap year has 366 days.", "days in a year": "A year has 365 days, or 366 in a leap year.",
+                "weeks in a year": "A year has 52 weeks and 1 day, or 2 days in a leap year.",
+                "months in a year": "A year has 12 months.", "days in a week": "A week has 7 days.",
+                "continents": "There are 7 continents.", "oceans": "There are 5 oceans.",
+                "planets": "There are 8 planets in the solar system.", "planets in the solar system": "There are 8 planets in the solar system.",
+                "players in a football team": "A football team has 11 players on the pitch.",
+                "players on a football team": "A football team has 11 players on the pitch.",
+                "cards in a deck": "A standard deck has 52 cards, plus 2 jokers if they're included.",
+                "cards in a pack": "A standard pack has 52 cards, plus 2 jokers if they're included.",
+                "squares on a chess board": "A chess board has 64 squares.", "squares on a chessboard": "A chessboard has 64 squares.",
+                "bones in the human body": "An adult human has 206 bones.", "bones in the body": "An adult human has 206 bones.",
+                "teeth does an adult have": "An adult usually has 32 teeth, including wisdom teeth.",
+                "countries in the uk": "The UK has 4 countries: England, Scotland, Wales and Northern Ireland.",
+                "states in america": "The USA has 50 states.", "states in the us": "The USA has 50 states.",
+                "states in the usa": "The USA has 50 states."}
+_PLURALS = {"mouse": "mice", "goose": "geese", "child": "children", "person": "people", "man": "men", "woman": "women",
+            "tooth": "teeth", "foot": "feet", "ox": "oxen", "cactus": "cacti", "fungus": "fungi", "octopus": "octopuses",
+            "sheep": "sheep", "fish": "fish", "deer": "deer", "moose": "moose", "louse": "lice", "die": "dice",
+            "knife": "knives", "wife": "wives", "life": "lives", "leaf": "leaves", "wolf": "wolves", "half": "halves",
+            "loaf": "loaves", "potato": "potatoes", "tomato": "tomatoes", "hero": "heroes", "crisis": "crises",
+            "analysis": "analyses", "phenomenon": "phenomena", "criterion": "criteria", "datum": "data", "medium": "media",
+            "appendix": "appendices", "index": "indices or indexes", "radius": "radii", "salmon": "salmon"}
+_CAPITALS = {"france": "Paris", "spain": "Madrid", "portugal": "Lisbon", "italy": "Rome", "germany": "Berlin",
+             "netherlands": "Amsterdam", "the netherlands": "Amsterdam", "holland": "Amsterdam", "belgium": "Brussels",
+             "ireland": "Dublin", "england": "London", "the uk": "London", "uk": "London", "united kingdom": "London",
+             "the united kingdom": "London", "scotland": "Edinburgh", "wales": "Cardiff", "northern ireland": "Belfast",
+             "switzerland": "Bern", "austria": "Vienna", "poland": "Warsaw", "greece": "Athens", "turkey": "Ankara",
+             "sweden": "Stockholm", "norway": "Oslo", "denmark": "Copenhagen", "finland": "Helsinki", "iceland": "Reykjavik",
+             "russia": "Moscow", "ukraine": "Kyiv", "czechia": "Prague", "the czech republic": "Prague", "hungary": "Budapest",
+             "romania": "Bucharest", "croatia": "Zagreb", "egypt": "Cairo", "morocco": "Rabat", "nigeria": "Abuja",
+             "kenya": "Nairobi", "ghana": "Accra", "ethiopia": "Addis Ababa", "zimbabwe": "Harare",
+             "south africa": "Pretoria (the seat of government), with Cape Town and Bloemfontein also capitals",
+             "usa": "Washington, D.C.", "the usa": "Washington, D.C.", "america": "Washington, D.C.",
+             "the united states": "Washington, D.C.", "canada": "Ottawa", "mexico": "Mexico City", "brazil": "Brasília",
+             "argentina": "Buenos Aires", "chile": "Santiago", "peru": "Lima", "colombia": "Bogotá", "jamaica": "Kingston",
+             "china": "Beijing", "japan": "Tokyo", "south korea": "Seoul", "north korea": "Pyongyang", "india": "New Delhi",
+             "pakistan": "Islamabad", "bangladesh": "Dhaka", "thailand": "Bangkok", "vietnam": "Hanoi",
+             "indonesia": "Jakarta", "malaysia": "Kuala Lumpur", "philippines": "Manila", "the philippines": "Manila",
+             "singapore": "Singapore", "australia": "Canberra", "new zealand": "Wellington", "saudi arabia": "Riyadh",
+             "the uae": "Abu Dhabi", "uae": "Abu Dhabi", "united arab emirates": "Abu Dhabi", "israel": "Jerusalem",
+             "iran": "Tehran", "iraq": "Baghdad", "qatar": "Doha"}
+_FACT_SIDES = re.compile(_NAME + r"how many (?:sides|edges|corners) (?:does|has) an? (?P<s>[a-z]+) (?:have|got)" + _END, re.I)
+_FACT_COUNT = re.compile(_NAME + r"(?:(?:what(?:'s| is)|how many is|how much is) (?:an? |one )?(?P<c>baker'?s dozen|half (?:a )?dozen|dozen|score|gross|century|decade|millennium|fortnight)"
+                         r"|how many (?:things |years |days )?(?:is |are )?(?:in )?(?:an? |one )?(?P<c2>baker'?s dozen|half (?:a )?dozen|dozen|score|gross))" + _END, re.I)
+_FACT_LEGS = re.compile(_NAME + r"(?:how many legs (?:does|has) an? (?P<a>[a-z]+) (?:have|got)|how many legs (?:do|have) (?P<a2>[a-z]+?)s? (?:have|got))" + _END, re.I)
+_FACT_HOW_MANY = re.compile(_NAME + r"how many (?P<q>" + "|".join(sorted(map(re.escape, _HOW_MANY_IN), key=len, reverse=True))
+                            + r")(?: are there)?" + _END + r"|" + _NAME + r"how many (?P<q2>" + "|".join(sorted(map(re.escape, _HOW_MANY_IN), key=len, reverse=True)).replace(r"\ in\ ", r"\ (?:are\ there\ )?in\ ")
+                            + r")" + _END, re.I)
+_FACT_WATER = re.compile(_NAME + r"(?:what(?:'s| is) the |at what temperature does water )(?P<w>boiling|freezing|boil|freeze)(?: point)?(?: of water)?" + _END, re.I)
+_FACT_PLURAL = re.compile(_NAME + r"(?:what(?:'s| is) the plural (?:of|for) (?P<w>[a-z]+)|what(?:'s| is) more than one (?P<w2>[a-z]+?) called)" + _END, re.I)
+_FACT_CAPITAL = re.compile(_NAME + r"(?:what(?:'s| is) the capital (?:city )?of (?P<c>[a-z .'-]+?)|what(?:'s| is) (?P<c2>[a-z .'-]+?)'s capital(?: city)?)" + _END, re.I)
+
+
+def _quick_facts(said: str) -> str | None:
+    """Fixed facts said on the spot: sides of shapes, a dozen or a gross, legs on a spider, letters in the alphabet,
+    weeks in a year, water's boiling point, irregular plurals and capital cities."""
+    if m := _FACT_SIDES.match(said):
+        shape = m.group("s").lower()
+        if shape not in _SIDES:
+            return None
+        n = _SIDES[shape]
+        return ("A circle has one curved side and no corners." if shape == "circle"
+                else f"{'An' if shape[0] in 'aeiou' else 'A'} {shape} has {n} sides.")
+    if m := _FACT_COUNT.match(said):
+        return _COUNTS.get((m.group("c") or m.group("c2")).lower().replace("half dozen", "half a dozen"))
+    if m := _FACT_LEGS.match(said):
+        animal = (m.group("a") or m.group("a2")).lower()
+        animal = {"spiders": "spider", "insects": "insect", "ants": "ant", "dogs": "dog", "cats": "cat", "humans": "human",
+                  "people": "person", "birds": "bird", "crabs": "crab"}.get(animal, animal)
+        if animal not in _LEGS:
+            return None
+        n = _LEGS[animal]
+        article = "An" if animal[0] in "aeiou" else "A"
+        return f"{article} {animal} has no legs." if n == 0 else f"{article} {animal} has {n} legs."
+    if m := _FACT_HOW_MANY.match(said):
+        key = re.sub(r" are there in ", " in ", (m.group("q") or m.group("q2")).lower())
+        return _HOW_MANY_IN.get(key)
+    if m := _FACT_WATER.match(said):
+        boil = m.group("w").lower().startswith("boil")
+        return ("Water boils at 100 degrees Celsius, 212 Fahrenheit, at sea level." if boil
+                else "Water freezes at 0 degrees Celsius, 32 Fahrenheit.")
+    if m := _FACT_PLURAL.match(said):
+        word = (m.group("w") or m.group("w2")).lower()
+        return f"The plural of {word} is {_PLURALS[word]}." if word in _PLURALS else None
+    if m := _FACT_CAPITAL.match(said):
+        place = (m.group("c") or m.group("c2")).lower().strip(" .")
+        if place not in _CAPITALS:
+            return None
+        name = " ".join(w.upper() if w in ("uk", "usa", "uae", "us") else w if w in ("the", "of") else w.capitalize() for w in place.split())
+        city = _CAPITALS[place]
+        return f"The capital of {name} is {city}{'' if city.endswith('.') else '.'}"
+    return None
+
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -2617,7 +2724,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _cash_sums(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _science_maths(said) or _cup_weights(said) or _fraction_answer(said) or _bigger_numbers(said)
-            or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _quick_facts(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
 
