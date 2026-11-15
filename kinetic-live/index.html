@@ -1299,7 +1299,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   <div class="wrap">
     <a class="logo" href="#top"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic</a>
     <nav aria-label="Main">
-      <a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#account">Client area</a><a href="#about">About</a><a href="#faq">FAQ</a>
+      <a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#changes">Changes</a><a href="#account">Client area</a><a href="#about">About</a><a href="#faq">FAQ</a>
     </nav>
     <div class="right"><a class="btn accent" href="#vision">Start a project</a>
       <button class="menu-btn" type="button" id="menu-open" aria-expanded="false" aria-controls="menu"><span class="burger" aria-hidden="true"></span>Menu</button></div>
@@ -1416,6 +1416,17 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
         <small class="vat-note">This is the full price. We are not VAT registered, so no VAT is added.</small>
         <a class="btn" href="#vision">Add to my brief</a>
       </aside>
+    </div>
+  </div>
+</section>
+
+<section id="changes" aria-labelledby="changes-title">
+  <div class="wrap">
+    <div class="head"><h2 id="changes-title">Want only a few changes to your website?</h2>
+      <p class="lede">Already have a website? Join our hosting and care plan, starting at £20 a month, and we'll make your changes for you: new wording, design tweaks and new pictures, all done professionally.</p></div>
+    <div class="account">
+      <article><h3>Join from £20 a month</h3><p>Send us what you want changed and we'll do it. Paid monthly by card. No long contract: cancel whenever you like.</p>
+        <a class="btn accent" id="changes-join" href="#">Join our hosting · £20 a month</a></article>
     </div>
   </div>
 </section>
@@ -1544,7 +1555,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
 <footer>
   <div class="wrap">
     <a class="logo" href="#top"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic Web Designs</a>
-    <nav aria-label="Footer"><a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#about">About</a><a href="#faq">FAQ</a><a href="#account">Client area</a><a href="#vision">Start a project</a><a href="#legal">Legal &amp; privacy</a></nav>
+    <nav aria-label="Footer"><a href="#styles">Styles</a><a href="#lab">Colour lab</a><a href="#quote">Quote</a><a href="#about">About</a><a href="#faq">FAQ</a><a href="#changes">Website changes</a><a href="#account">Client area</a><a href="#vision">Start a project</a><a href="#legal">Legal &amp; privacy</a></nav>
     <span>Email <a class="addr" href="mailto:alfredw.lsx@gmail.com">alfredw.lsx@gmail.com</a></span>
     <span class="socials"><a class="social" href="https://www.instagram.com/kineticwebdesigns/" target="_blank" rel="noopener" aria-label="Kinetic Web Designs on Instagram"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg>Instagram</a>
     <a class="social" href="https://www.tiktok.com/@kineticwebdesigns" target="_blank" rel="noopener" aria-label="Kinetic Web Designs on TikTok"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14 3c.4 2.6 2.2 4.3 5 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>TikTok</a></span>
@@ -1570,6 +1581,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   const PLAN_PORTAL_LINK = "";
   const mailto = subject => "mailto:alfredw.lsx@gmail.com?subject=" + encodeURIComponent(subject);
   [["#plan-start", PLAN_SUBSCRIBE_LINK, "Start my hosting and care plan"],
+   ["#changes-join", PLAN_SUBSCRIBE_LINK, "Join the £20 a month hosting and changes plan"],
    ["#plan-start-business", PLAN_SUBSCRIBE_BUSINESS, "Start my hosting and care plan (Business)"],
    ["#plan-start-shop", PLAN_SUBSCRIBE_SHOP, "Start my hosting and care plan (Online shop)"],
    ["#plan-manage", PLAN_PORTAL_LINK, "My hosting and care plan"],
@@ -3244,6 +3256,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     ["#styles", "Styles", "Ten full front pages to try", "photo-1441986300917-64674bd600d8"],
     ["#lab", "Colour lab", "Test your three colours", "photo-1716471330459-063b3baf247e"],
     ["#quote", "Quote", "See your price before you ask", "photo-1504608245011-62d9758c1bb9"],
+    ["#changes", "Website changes", "Only a few changes? From £20 a month", "photo-1524561506982-601111bed7a6"],
     ["#account", "Client area", "Hosting and care plan", "photo-1524561506982-601111bed7a6"],
     ["#faq", "FAQ", "Good to know before you start", "photo-1518473537958-1d1b23cac484"],
     ["#vision", "Start a project", "Tell us your vision", "photo-1759134248487-e8baaf31e33e"]

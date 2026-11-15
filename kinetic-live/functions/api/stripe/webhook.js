@@ -2,6 +2,9 @@
 // Set STRIPE_WEBHOOK_SECRET (whsec_...) as a Pages secret. Subscribe the endpoint to:
 //   charge.succeeded, charge.pending, charge.failed, charge.refunded, charge.refund.updated,
 //   refund.created, refund.updated, refund.failed
+// and, for the hosting-and-care plans (owner, 15 Nov 2026: track who unsubscribes so we stop making changes):
+//   checkout.session.completed, customer.subscription.created, customer.subscription.updated,
+//   customer.subscription.deleted  (rows go in the subscriptions table: kinetic-kit/migrations-subscriptions.sql)
 import { json, err } from "../../_lib/util.js";
 import { verifyStripeSignature } from "../../_lib/stripe.js";
 
@@ -36,6 +39,47 @@ function upsert(DB, row) {
     .bind(row.id, row.kind, row.status, row.amount, row.currency, row.description, row.customer, row.charge_id, row.charge_id, row.created, row.livemode, Date.now(), row.email);
 }
 
+const ms = s => (s ? s * 1000 : null);
+const clip = (v, n) => (v == null ? null : String(v).trim().slice(0, n) || null);
+
+// A Payment Link's custom field (e.g. "Your website address"), whatever its key is called
+function websiteField(session) {
+  for (const f of session.custom_fields || []) {
+    const v = f.text && f.text.value;
+    if (v && /web|site|url|domain/i.test((f.key || "") + " " + ((f.label && f.label.custom) || ""))) return clip(v, 200);
+  }
+  return null;
+}
+
+function subscriptionStmt(DB, s) {
+  const item = s.items && s.items.data && s.items.data[0];
+  const price = item && item.price;
+  const customer = typeof s.customer === "string" ? s.customer : s.customer && s.customer.id;
+  return DB.prepare(
+    `INSERT INTO subscriptions (id, customer, status, amount, currency, cancel_at, canceled_at, created, updated, livemode)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET status = excluded.status, amount = COALESCE(excluded.amount, amount),
+       currency = COALESCE(excluded.currency, currency), cancel_at = excluded.cancel_at,
+       canceled_at = excluded.canceled_at, customer = COALESCE(excluded.customer, customer), updated = excluded.updated`)
+    .bind(s.id, customer || null, clip(s.status, 30), price && price.unit_amount != null ? price.unit_amount : null,
+      clip(price && price.currency, 8), ms(s.cancel_at), ms(s.canceled_at || s.ended_at), ms(s.created) || Date.now(),
+      Date.now(), s.livemode ? 1 : 0);
+}
+
+function checkoutStmt(DB, c) {
+  const sub = typeof c.subscription === "string" ? c.subscription : c.subscription && c.subscription.id;
+  if (c.mode !== "subscription" || !sub) return null;
+  const d = c.customer_details || {};
+  const customer = typeof c.customer === "string" ? c.customer : c.customer && c.customer.id;
+  return DB.prepare(
+    `INSERT INTO subscriptions (id, customer, email, name, website, status, created, updated, livemode)
+     VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET email = COALESCE(excluded.email, email), name = COALESCE(excluded.name, name),
+       website = COALESCE(excluded.website, website), customer = COALESCE(excluded.customer, customer), updated = excluded.updated`)
+    .bind(sub, customer || null, (clip(d.email, 200) || "").toLowerCase() || null, clip(d.name, 120), websiteField(c),
+      ms(c.created) || Date.now(), Date.now(), c.livemode ? 1 : 0);
+}
+
 export async function onRequestPost({ request, env }) {
   if (!env.STRIPE_WEBHOOK_SECRET) return err("Stripe isn't connected for this website", 503);
   if (+(request.headers.get("Content-Length") || 0) > MAX_BODY) return err("Too large", 413);
@@ -57,6 +101,14 @@ export async function onRequestPost({ request, env }) {
       break;
     case "refund.created": case "refund.updated": case "refund.failed": case "charge.refund.updated":
       rows.push(refundRow(obj, null)); break;
+    case "checkout.session.completed":
+    case "customer.subscription.created": case "customer.subscription.updated": case "customer.subscription.deleted": {
+      const stmt = event.type === "checkout.session.completed" ? checkoutStmt(DB, obj) : subscriptionStmt(DB, obj);
+      if (!stmt) return json({ received: true, ignored: "not a subscription checkout" });
+      await DB.batch([stmt, DB.prepare("INSERT OR IGNORE INTO stripe_events (id, type, received) VALUES (?, ?, ?)")
+        .bind(event.id, event.type, Date.now())]);
+      return json({ received: true, stored: 1 });
+    }
     default:
       return json({ received: true, ignored: event.type });
   }
