@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My account | Kinetic Web Designs</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/client.css">
+</head>
+<body>
+<main class="card wide" aria-labelledby="t">
+  <a class="brand" href="/">Kinetic Web Designs</a>
+  <h1 id="t">My account</h1>
+  <p class="lede">Signed in as <strong id="who">…</strong></p>
+
+  <section aria-labelledby="p-t">
+    <h2 id="p-t">My hosting and care plan</h2>
+    <div id="plans"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section aria-labelledby="b-t" id="buy">
+    <h2 id="b-t">Start a plan</h2>
+    <p class="muted">Monthly changes to your wording and design, and new pictures, done for you. Priced by the size of your website.</p>
+    <div class="choices">
+      <a class="choice" href="/api/client/buy?plan=single"><b>Single page</b><span>£20 a month</span></a>
+      <a class="choice" href="/api/client/buy?plan=five"><b>Up to 5 pages</b><span>£25 a month</span></a>
+      <a class="choice" href="/api/client/buy?plan=more"><b>More than 5 pages</b><span>£30 a month</span></a>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-t">
+    <h2 id="h-t">Payments, receipts and cancelling</h2>
+    <p><a class="btn ghost" id="portal" href="#">Manage payments and receipts</a></p>
+  </section>
+
+  <p class="small"><button class="link" id="out" type="button">Sign out</button> · <a href="/">Back to the website</a></p>
+</main>
+<script src="/client.js"></script>
+<script>
+  KC.accountPage();
+</script>
+</body>
+</html>

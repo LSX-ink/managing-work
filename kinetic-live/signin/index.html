@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in | Kinetic Web Designs</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/client.css">
+</head>
+<body>
+<main class="card" aria-labelledby="t">
+  <a class="brand" href="/">Kinetic Web Designs</a>
+  <h1 id="t">Sign in to continue</h1>
+  <p class="lede" id="why">Sign in or create your account. It takes a few seconds and there's no password to remember.</p>
+  <p class="plan" id="plan" hidden></p>
+  <p class="msg bad" id="err" role="alert" hidden></p>
+
+  <div id="google-wrap" hidden>
+    <div id="google-btn"></div>
+    <div class="or"><span>or use your email</span></div>
+  </div>
+
+  <form id="form" novalidate>
+    <label for="email">Email address</label>
+    <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@yourbusiness.co.uk">
+    <button class="btn" id="send" type="submit">Email me a sign-in link</button>
+  </form>
+
+  <div id="sent" hidden>
+    <p class="msg good" role="status"><strong>Check your inbox.</strong> We've sent a sign-in link to <span id="sent-to"></span>. Tap it on this device to carry on. It runs out in 20 minutes.</p>
+    <button class="link" id="again" type="button">Use a different email</button>
+  </div>
+
+  <p class="small">New here? The same button creates your account. By signing in you agree to our <a href="/privacy.html">privacy notice</a>.</p>
+</main>
+<script src="/client.js"></script>
+<script>
+  KC.signinPage();
+</script>
+</body>
+</html>

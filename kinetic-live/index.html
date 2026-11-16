@@ -1312,7 +1312,7 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
     <div class="menu-top"><span class="logo"><svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="var(--accent)"/><path d="M10 7.5v13M10 15 17.5 7.5M13.2 12.3 18.5 20.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Kinetic</span>
       <button class="menu-btn" type="button" id="menu-close">Close</button></div>
     <nav class="menu-links" id="menu-links" aria-label="Site menu links"></nav>
-    <div class="menu-foot"><span>Email <span class="addr">alfredw.lsx@gmail.com</span></span><a class="owner-login" href="/owner" style="display:inline-flex;align-items:center;gap:8px;border:1.5px solid rgba(255,255,255,.45);border-radius:10px;padding:8px 14px;text-decoration:none;font-weight:600"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Owner's log in</a></div>
+    <div class="menu-foot"><span>Email <span class="addr">alfredw.lsx@gmail.com</span></span><a class="client-login" href="/account/" style="display:inline-flex;align-items:center;gap:8px;border:1.5px solid rgba(255,255,255,.45);border-radius:10px;padding:8px 14px;text-decoration:none;font-weight:600;margin-right:8px">Client sign in</a><a class="owner-login" href="/owner" style="display:inline-flex;align-items:center;gap:8px;border:1.5px solid rgba(255,255,255,.45);border-radius:10px;padding:8px 14px;text-decoration:none;font-weight:600"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Owner's log in</a></div>
   </div>
 </div>
 
@@ -1580,18 +1580,21 @@ dialog.legal .legal-x { position: absolute; top: 0; right: 0; }
   const PLAN_SUBSCRIBE_SHOP = "https://buy.stripe.com/dRm3cwaMNbnx2SRgqe7wA02";
   const PLAN_PORTAL_LINK = "";
   const mailto = subject => "mailto:alfredw.lsx@gmail.com?subject=" + encodeURIComponent(subject);
-  [["#plan-start", PLAN_SUBSCRIBE_LINK, "Start my hosting and care plan"],
-   ["#changes-join", PLAN_SUBSCRIBE_LINK, "Join the £20 a month hosting and changes plan (single page)"],
-   ["#changes-join-5", PLAN_SUBSCRIBE_BUSINESS, "Join the £25 a month hosting and changes plan (up to 5 pages)"],
-   ["#changes-join-more", PLAN_SUBSCRIBE_SHOP, "Join the £30 a month hosting and changes plan (more than 5 pages)"],
-   ["#plan-start-business", PLAN_SUBSCRIBE_BUSINESS, "Start my hosting and care plan (Business)"],
-   ["#plan-start-shop", PLAN_SUBSCRIBE_SHOP, "Start my hosting and care plan (Online shop)"],
-   ["#plan-manage", PLAN_PORTAL_LINK, "My hosting and care plan"],
-   ["#plan-cancel", PLAN_PORTAL_LINK, "Cancel my hosting and care plan"]].forEach(([id, link, subject]) => {
+  // owner, 16 Nov 2026: clients sign in (email link or Google) before they can buy; /api/client/buy then sends
+  // them on to the Stripe Payment Link with their email filled in
+  const BUY = plan => "/api/client/buy?plan=" + plan;
+  [["#plan-start", BUY("single"), "Start my hosting and care plan"],
+   ["#changes-join", BUY("single"), "Join the £20 a month hosting and changes plan (single page)"],
+   ["#changes-join-5", BUY("five"), "Join the £25 a month hosting and changes plan (up to 5 pages)"],
+   ["#changes-join-more", BUY("more"), "Join the £30 a month hosting and changes plan (more than 5 pages)"],
+   ["#plan-start-business", BUY("five"), "Start my hosting and care plan (Business)"],
+   ["#plan-start-shop", BUY("more"), "Start my hosting and care plan (Online shop)"],
+   ["#plan-manage", "/account/", "My hosting and care plan"],
+   ["#plan-cancel", "/account/", "Cancel my hosting and care plan"]].forEach(([id, link, subject]) => {
     const a = document.querySelector(id);
     if (!a) return;
     a.href = link || mailto(subject);
-    if (link) { a.target = "_blank"; a.rel = "noopener"; }
+    if (link && /^https?:/.test(link)) { a.target = "_blank"; a.rel = "noopener"; }
   });
   const $ = (s, el = document) => el.querySelector(s);
   const store = {
