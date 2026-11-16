@@ -662,7 +662,9 @@ FOLLOW_US = "You can see more of our work, and follow us, on Instagram: https://
 # owner, 15 Nov 2026: "if you already have a website and wish to make monthly changes wording design and adding
 # pictures in a professional setting we do that too for 20 pounds a month", in every email and DM
 CHANGES_OFFER = ("Already have a website you're happy with? We can look after it instead: monthly changes to the "
-                 "wording and design, and adding new pictures, all done professionally, for £20 a month.")
+                 "wording and design, and adding new pictures, all done professionally. It's £20 a month if your "
+                 "website is a single page, £25 for up to 5 pages and £30 for more than 5 pages.")
+# owner, 16 Nov 2026: single page £20, up to 5 pages £25, more than 5 pages £30
 
 
 def with_follow_us(body: str) -> str:
