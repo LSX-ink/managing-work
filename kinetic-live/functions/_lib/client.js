@@ -21,6 +21,14 @@ export function safeNext(next, fallback = "/account/") {
   return n;
 }
 
+// Their own website, as a clean https URL (or "" when blank or not a web address)
+export function cleanSite(raw) {
+  let s = String(raw || "").trim().slice(0, 300);
+  if (!s) return "";
+  if (!/^https?:\/\//i.test(s)) s = "https://" + s;
+  try { const u = new URL(s); return /\./.test(u.hostname) && ["http:", "https:"].includes(u.protocol) ? u.toString() : ""; } catch { return ""; }
+}
+
 export function clientCookie(token, maxAge) {
   // Lax, not Strict: the sign-in link is opened from an email app, and the redirect after it must carry the cookie
   return `${CLIENT_COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;

@@ -50,7 +50,7 @@ window.KC = (() => {
       mode = m; showErr("");
       $("#tab-in").setAttribute("aria-selected", String(m === "in"));
       $("#tab-new").setAttribute("aria-selected", String(m === "new"));
-      show($("#name-field"), m === "new"); show($("#pw-hint"), m === "new");
+      show($("#name-field"), m === "new"); show($("#site-field"), m === "new"); show($("#pw-hint"), m === "new");
       $("#password").autocomplete = m === "new" ? "new-password" : "current-password";
       $("#go").textContent = m === "new" ? "Create account" : "Sign in";
       $("#t").textContent = m === "new" ? "Create your account" : "Sign in to continue";
@@ -72,7 +72,7 @@ window.KC = (() => {
       if (mode === "new" && password.length < 10) { showErr("Choose a password of at least 10 characters."); $("#password").focus(); return; }
       if (!password) { showErr("Enter your password."); $("#password").focus(); return; }
       showErr(""); const b = $("#go"); const label = b.textContent; busy(b, true, mode === "new" ? "Creating your account…" : "Signing in…");
-      const r = await post(mode === "new" ? "/api/client/register" : "/api/client/login", { email, password, name: $("#name").value.trim(), next });
+      const r = await post(mode === "new" ? "/api/client/register" : "/api/client/login", { email, password, name: $("#name").value.trim(), website: $("#website").value.trim(), next });
       busy(b, false, label);
       if (r.ok) { location.href = r.d.next || next; return; }
       if (r.d.exists) setMode("in");
@@ -104,6 +104,23 @@ window.KC = (() => {
     const who = await me();
     if (!who.signedIn) { location.replace("/signin/?next=/account/"); return; }
     $("#who").textContent = who.email;
+
+    // their own website (owner, 16 Nov 2026)
+    let mySite = who.website || ((who.plans || []).find(p => p.website) || {}).website || "";
+    const pretty = u => u.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const drawSite = () => {
+      show($("#site-show"), !!mySite); show($("#site-form"), !mySite);
+      if (mySite) { $("#site-link").href = mySite; $("#site-link").textContent = pretty(mySite); }
+      if (mySite && !$("#ch-site").value) $("#ch-site").value = mySite;
+    };
+    drawSite();
+    $("#site-edit").addEventListener("click", () => { $("#site-input").value = mySite; show($("#site-show"), false); show($("#site-form"), true); $("#site-input").focus(); });
+    $("#site-form").addEventListener("submit", async ev => {
+      ev.preventDefault();
+      const r = await post("/api/client/website", { website: $("#site-input").value.trim() });
+      if (!r.ok) { $("#site-err").textContent = r.d.error || "That didn't save."; show($("#site-err"), true); return; }
+      show($("#site-err"), false); mySite = r.d.website; $("#ch-site").value = mySite; drawSite();
+    });
 
     // after "Forgot your password?" (or a Google account with no password yet): choose a password
     const reset = q.get("reset") === "1";

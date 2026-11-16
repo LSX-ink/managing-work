@@ -53,3 +53,7 @@ h3.sub{font-size:15px;margin:22px 0 8px}
 .req p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 .tag.wait{background:var(--accent-soft);color:var(--accent)}
 .btn.ghost{line-height:1.3;padding:12px 18px;text-align:center}
+.siteline{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0;font-weight:600;overflow-wrap:anywhere}
+#mysite{border:1px solid var(--line);border-radius:12px;padding:2px 16px 16px;margin:12px 0}
+#mysite h2{margin-top:14px}
+#site-link{color:var(--accent)}

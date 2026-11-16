@@ -15,6 +15,17 @@
   <h1 id="t">My account</h1>
   <p class="lede">Signed in as <strong id="who">…</strong></p>
 
+  <section id="mysite" aria-labelledby="s-t">
+    <h2 id="s-t">Your website</h2>
+    <div id="site-show" hidden><p class="siteline"><a id="site-link" href="#" target="_blank" rel="noopener"></a> <button class="link" id="site-edit" type="button">Change</button></p></div>
+    <form id="site-form" novalidate hidden>
+      <label for="site-input">Website address</label>
+      <input id="site-input" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk">
+      <p class="msg bad" id="site-err" role="alert" hidden></p>
+      <button class="btn" type="submit">Save</button>
+    </form>
+  </section>
+
   <section id="setpw" aria-labelledby="setpw-t" hidden>
     <h2 id="setpw-t">Choose a new password</h2>
     <p class="muted" id="setpw-p">You'll use it with your email to sign in from now on.</p>
