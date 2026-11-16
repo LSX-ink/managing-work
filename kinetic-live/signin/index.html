@@ -13,27 +13,55 @@
 <main class="card" aria-labelledby="t">
   <a class="brand" href="/">Kinetic Web Designs</a>
   <h1 id="t">Sign in to continue</h1>
-  <p class="lede" id="why">Sign in or create your account. It takes a few seconds and there's no password to remember.</p>
+  <p class="lede" id="why">Sign in, or create your account. It takes a few seconds.</p>
   <p class="plan" id="plan" hidden></p>
+
+  <div class="tabs" role="tablist" aria-label="Sign in or create an account">
+    <button role="tab" id="tab-in" aria-selected="true" aria-controls="form" type="button">Sign in</button>
+    <button role="tab" id="tab-new" aria-selected="false" aria-controls="form" type="button">Create account</button>
+  </div>
+
   <p class="msg bad" id="err" role="alert" hidden></p>
 
   <div id="google-wrap" hidden>
     <div id="google-btn"></div>
-    <div class="or"><span>or use your email</span></div>
+    <div class="or"><span>or with your email</span></div>
   </div>
 
   <form id="form" novalidate>
-    <label for="email">Email address</label>
-    <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@yourbusiness.co.uk">
-    <button class="btn" id="send" type="submit">Email me a sign-in link</button>
+    <div class="field" id="name-field" hidden>
+      <label for="name">Your name <span class="muted">(optional)</span></label>
+      <input id="name" name="name" type="text" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="email">Email address</label>
+      <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@yourbusiness.co.uk">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="pw">
+        <input id="password" name="password" type="password" autocomplete="current-password" required minlength="10">
+        <button class="link" id="show" type="button" aria-controls="password" aria-pressed="false">Show</button>
+      </div>
+      <p class="hint" id="pw-hint" hidden>At least 10 characters.</p>
+    </div>
+    <button class="btn" id="go" type="submit">Sign in</button>
+    <p class="small left"><button class="link" id="forgot" type="button">Forgot your password?</button></p>
   </form>
 
-  <div id="sent" hidden>
-    <p class="msg good" role="status"><strong>Check your inbox.</strong> We've sent a sign-in link to <span id="sent-to"></span>. Tap it on this device to carry on. It runs out in 20 minutes.</p>
-    <button class="link" id="again" type="button">Use a different email</button>
-  </div>
+  <form id="reset" novalidate hidden>
+    <p class="lede">Enter your email and we'll send you a link to choose a new password.</p>
+    <div class="field">
+      <label for="reset-email">Email address</label>
+      <input id="reset-email" type="email" autocomplete="email" inputmode="email" required>
+    </div>
+    <button class="btn" id="reset-go" type="submit">Email me a reset link</button>
+    <p class="small left"><button class="link" id="back" type="button">Back to sign in</button></p>
+  </form>
 
-  <p class="small">New here? The same button creates your account. By signing in you agree to our <a href="/privacy.html">privacy notice</a>.</p>
+  <p class="msg good" id="sent" role="status" hidden></p>
+
+  <p class="small">By signing in you agree to our <a href="/privacy.html">privacy notice</a>.</p>
 </main>
 <script src="/client.js"></script>
 <script>

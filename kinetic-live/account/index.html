@@ -15,6 +15,18 @@
   <h1 id="t">My account</h1>
   <p class="lede">Signed in as <strong id="who">…</strong></p>
 
+  <section id="setpw" aria-labelledby="setpw-t" hidden>
+    <h2 id="setpw-t">Choose a new password</h2>
+    <p class="muted" id="setpw-p">You'll use it with your email to sign in from now on.</p>
+    <form id="setpw-form" novalidate>
+      <label for="newpw">New password</label>
+      <input id="newpw" type="password" autocomplete="new-password" minlength="10" required>
+      <p class="hint">At least 10 characters.</p>
+      <p class="msg bad" id="setpw-msg" role="alert" hidden></p>
+      <button class="btn" type="submit">Save password</button>
+    </form>
+  </section>
+
   <section aria-labelledby="p-t">
     <h2 id="p-t">My hosting and care plan</h2>
     <div id="plans"><p class="muted">Loading…</p></div>
