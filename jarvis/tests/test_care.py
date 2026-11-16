@@ -25,3 +25,9 @@ def test_cancelled_plans_alert_once_and_block_changes(tmp_path, monkeypatch):
     data[0]["status"] = "active"  # Bob rejoins
     asyncio.run(care.check(None, b, push))
     assert care.may_change(b, "bobplumbing.com")
+
+
+def test_village_is_not_a_stay():
+    from hq import outbox
+    assert not outbox.stay({"name": "Village Plumbing, Air & Electric", "kind": "plumber"})
+    assert outbox.stay({"name": "Sea View Villa", "kind": ""})

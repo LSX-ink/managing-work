@@ -530,7 +530,7 @@ def plain(problem: str) -> str:
 BUSY = 150  # Google reviews: past this a shop is usually fully booked, so "more customers" isn't the pitch
 
 
-STAY = re.compile(r"guest ?house|lodge|villa|\bstay|apartment|b&b|bed and breakfast|cottage|self.catering|airbnb|holiday|retreat|"
+STAY = re.compile(r"guest ?house|lodge|\bvillas?\b|\bstay|apartment|b&b|bed and breakfast|cottage|self.catering|airbnb|holiday|retreat|"
                   r"wine estate|wine farm|safari|game reserve|boutique hotel|manor house", re.I)
 
 
@@ -768,7 +768,7 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "it is addressed to the right business; every claim about their website is plausible from the facts; "
               "it is polite, professional, honest and specific; British English; no made-up facts, prices or "
               "promises beyond: websites from £395 (or the local equivalent), half when we start building and half "
-              "once complete (a Shopify store redesign is from £595 or the local equivalent), a free home page mock-up we really made for them (its link is in the facts as free_mockup_we_made), 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), an invitation to follow "
+              "once complete (a Shopify store redesign is from £595 or the local equivalent), a free home page mock-up we really made for them (its link is in the facts as free_mockup_we_made), 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), the offer to look after a website they already have (monthly changes to the wording, design and pictures for £20 a month for a single page, £25 for up to 5 pages, £30 for more than 5 pages: our real hosting-and-care plans, owner 15-16 Nov 2026), an invitation to follow "
               "Kinetic Web Designs on Instagram (instagram.com/kineticwebdesigns, our real account); it is signed by "
               "Alfred; it has an opt-out line. Our own phone number and website in the signature are real (8 Nov 2026: "
               "follow-ups were held for them); a postal address is NOT required (only US emails carry one), and 'from about £395' or its local equivalent is fine. A price in the business's own currency (e.g. $499 or €459) is the "
