@@ -2705,6 +2705,78 @@ def _quick_facts(said: str) -> str | None:
     return None
 
 
+_OPPOSITE_PAIRS = ("hot cold", "big small", "up down", "left right", "in out", "open closed", "fast slow", "happy sad",
+                   "good bad", "light dark", "day night", "old new", "young old", "tall short", "long short", "high low",
+                   "rich poor", "full empty", "wet dry", "hard soft", "heavy light", "early late", "first last",
+                   "push pull", "buy sell", "win lose", "start finish", "begin end", "yes no", "true false",
+                   "right wrong", "love hate", "strong weak", "thick thin", "wide narrow", "clean dirty", "loud quiet",
+                   "easy difficult", "cheap expensive", "safe dangerous", "near far", "inside outside", "above below",
+                   "before after", "front back", "top bottom", "north south", "east west", "black white", "sweet sour",
+                   "brave cowardly", "friend enemy", "arrive leave", "remember forget", "accept refuse", "add subtract",
+                   "always never", "asleep awake", "come go", "give take", "laugh cry", "lend borrow", "max min",
+                   "maximum minimum", "on off", "over under", "plus minus", "positive negative", "question answer",
+                   "rise fall", "smooth rough", "sharp blunt", "sink float", "summer winter", "tight loose",
+                   "together apart", "upstairs downstairs", "victory defeat", "wake sleep", "polite rude",
+                   "generous mean", "calm angry", "present absent", "public private", "major minor", "entrance exit",
+                   "import export", "increase decrease", "inhale exhale", "success failure", "ancient modern",
+                   "boy girl", "man woman", "king queen", "husband wife", "brother sister", "uncle aunt")
+_OPPOSITES: dict[str, str] = {}
+for _pair in _OPPOSITE_PAIRS:
+    _a, _b = _pair.split()
+    _OPPOSITES.setdefault(_a, _b)
+    _OPPOSITES.setdefault(_b, _a)
+_OPPOSITES.update({"short": "tall or long", "light": "dark or heavy", "old": "new or young", "right": "left or wrong",
+                   "hard": "soft or easy", "mean": "kind or generous", "kind": "unkind or cruel", "sad": "happy",
+                   "difficult": "easy", "go": "come or stop", "stop": "go or start", "fat": "thin", "less": "more",
+                   "more": "less", "most": "least", "least": "most", "same": "different", "different": "same",
+                   "best": "worst", "worst": "best", "better": "worse", "worse": "better", "possible": "impossible",
+                   "impossible": "possible", "like": "dislike", "dislike": "like", "agree": "disagree",
+                   "disagree": "agree", "honest": "dishonest", "visible": "invisible", "legal": "illegal",
+                   "patient": "impatient", "lucky": "unlucky", "fair": "unfair", "tidy": "messy", "messy": "tidy"})
+_SYNONYMS = {
+    "happy": "glad, cheerful or delighted", "sad": "unhappy, down or miserable", "big": "large, huge or massive",
+    "small": "little, tiny or compact", "good": "great, fine or excellent", "bad": "poor, awful or terrible",
+    "fast": "quick, rapid or speedy", "slow": "unhurried, gradual or sluggish", "smart": "clever, bright or sharp",
+    "clever": "smart, bright or sharp", "angry": "cross, annoyed or furious", "tired": "sleepy, worn out or exhausted",
+    "beautiful": "lovely, gorgeous or stunning", "pretty": "lovely, attractive or cute", "ugly": "unattractive or unsightly",
+    "nice": "pleasant, lovely or kind", "funny": "amusing, hilarious or witty", "scared": "afraid, frightened or nervous",
+    "easy": "simple, straightforward or effortless", "hard": "difficult, tough or tricky", "difficult": "hard, tough or tricky",
+    "important": "key, vital or crucial", "interesting": "fascinating, engaging or intriguing", "boring": "dull, tedious or dreary",
+    "rich": "wealthy, well off or affluent", "poor": "hard up, broke or needy", "cold": "chilly, freezing or icy",
+    "hot": "warm, boiling or scorching", "quiet": "silent, calm or hushed", "loud": "noisy, booming or deafening",
+    "said": "stated, replied or remarked", "say": "state, tell or mention", "walk": "stroll, wander or march",
+    "run": "jog, sprint or dash", "look": "glance, watch or gaze", "eat": "dine, munch or devour",
+    "help": "assist, support or aid", "start": "begin, launch or kick off", "end": "finish, close or conclude",
+    "finish": "complete, end or wrap up", "make": "build, create or produce", "use": "apply, employ or utilise",
+    "get": "receive, obtain or gain", "show": "display, reveal or present", "change": "alter, adjust or modify",
+    "improve": "boost, enhance or upgrade", "amazing": "incredible, brilliant or outstanding",
+    "great": "excellent, brilliant or superb", "very": "really, extremely or highly", "many": "lots, plenty or loads",
+    "strong": "powerful, sturdy or tough", "weak": "feeble, frail or fragile", "brave": "bold, fearless or courageous",
+    "kind": "caring, generous or thoughtful", "rude": "impolite, cheeky or disrespectful", "old": "aged, elderly or ancient",
+    "new": "fresh, modern or brand new", "cheap": "inexpensive, low cost or affordable", "expensive": "pricey, costly or dear",
+    "busy": "occupied, hectic or swamped", "calm": "relaxed, peaceful or chilled", "quick": "fast, speedy or swift",
+    "problem": "issue, snag or difficulty", "idea": "thought, plan or notion", "job": "role, post or position",
+    "money": "cash, funds or dosh", "friend": "mate, pal or buddy", "house": "home, place or dwelling",
+    "excited": "thrilled, eager or buzzing", "worried": "anxious, concerned or uneasy", "sure": "certain, confident or positive",
+}
+_WORD_OPPOSITE = re.compile(_NAME + r"(?:what(?:'s| is) the opposite (?:of|to) (?:the word )?(?P<w>[a-z]+)"
+                            r"|what(?:'s| is) (?:an?|the) (?:antonym|opposite word) (?:of|for) (?P<w2>[a-z]+))" + _END, re.I)
+_WORD_SYNONYM = re.compile(_NAME + r"(?:what(?:'s| is) (?:an?other|a different|a better|a) (?:word|way to say) for (?:the word )?(?P<w>[a-z]+)"
+                           r"|(?:what(?:'s| is|'re| are) )?(?:an? |some )?synonyms? (?:of|for) (?P<w2>[a-z]+)"
+                           r"|(?:give me |tell me )?(?:an?other|a different) word for (?P<w3>[a-z]+)"
+                           r"|what(?:'s| is) a word that means (?P<w4>[a-z]+))" + _END, re.I)
+
+
+def _word_meanings(said: str) -> str | None:
+    """Opposites and other words for common words ("what's the opposite of hot?", "another word for happy")."""
+    if m := _WORD_OPPOSITE.match(said):
+        word = (m.group("w") or m.group("w2")).lower()
+        return f"The opposite of {word} is {_OPPOSITES[word]}." if word in _OPPOSITES else None
+    if m := _WORD_SYNONYM.match(said):
+        word = (m.group("w") or m.group("w2") or m.group("w3") or m.group("w4")).lower()
+        return f"Another word for {word} is {_SYNONYMS[word]}." if word in _SYNONYMS else None
+    return None
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -2724,7 +2796,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _cash_sums(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _science_maths(said) or _cup_weights(said) or _fraction_answer(said) or _bigger_numbers(said)
-            or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _quick_facts(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _quick_facts(said) or _word_meanings(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
 

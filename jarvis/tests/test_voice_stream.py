@@ -974,6 +974,19 @@ def test_quick_facts_are_instant():
     assert instant_answer("what's the capital of France", s) == "The capital of France is Paris."
     assert instant_answer("what's the capital of the usa", s) == "The capital of the USA is Washington, D.C."
     assert instant_answer("what's Australia's capital", s) == "The capital of Australia is Canberra."
+
+
+def test_opposites_and_other_words_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("what's the opposite of hot", s) == "The opposite of hot is cold."
+    assert instant_answer("what is the opposite of short", s) == "The opposite of short is tall or long."
+    assert instant_answer("Alfred, what's an antonym for brave?", s) == "The opposite of brave is cowardly."
+    assert instant_answer("what's another word for happy", s) == "Another word for happy is glad, cheerful or delighted."
+    assert instant_answer("synonym for tired", s) == "Another word for tired is sleepy, worn out or exhausted."
+    assert instant_answer("what's a word that means angry", s) == "Another word for angry is cross, annoyed or furious."
+    assert instant_answer("what's the opposite of banana", s) is None
+    assert instant_answer("what's another word for banana", s) is None
     assert instant_answer("what's the capital of Narnia", s) is None
     assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."
 
