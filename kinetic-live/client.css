@@ -57,3 +57,24 @@ h3.sub{font-size:15px;margin:22px 0 8px}
 #mysite{border:1px solid var(--line);border-radius:12px;padding:2px 16px 16px;margin:12px 0}
 #mysite h2{margin-top:14px}
 #site-link{color:var(--accent)}
+.tips{background:var(--sunk);border-radius:12px;padding:12px 16px;margin:0 0 16px;font-size:14px}
+.tips ul{margin:6px 0 0;padding-left:18px}.tips li{margin:4px 0}
+.label{display:block;font-weight:600;font-size:14px;margin:0 0 6px}
+.drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:96px;border:2px dashed var(--line);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.drop-t{font-weight:600;color:var(--accent)}.drop-s{font-size:13px;color:var(--muted)}
+.files{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px}
+.files li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:14px;min-width:0}
+.files img{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:none}
+.files .pdf{width:44px;height:44px;border-radius:6px;background:var(--bad-soft);color:var(--bad);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.files .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.files button{flex:none;min-height:44px;min-width:44px}
+.danger{margin-top:32px;padding-top:20px;border-top:1px solid var(--line)}
+.btn.red{background:#c62828;color:#fff}
+.btn.red:hover{background:#b71c1c}
+#cancel-box{border:1.5px solid #c62828;border-radius:12px;padding:4px 16px 16px;margin-top:14px}
+#cancel-box h2{color:#c62828;margin-top:14px}
+#cancel-box .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+#cancel-box .row .btn{width:auto;flex:1 1 200px;margin-top:8px}

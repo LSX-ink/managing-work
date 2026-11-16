@@ -46,6 +46,15 @@
   <section aria-labelledby="c-t" id="changes">
     <h2 id="c-t">Request a change</h2>
     <p class="muted">Tell us what you'd like changed on your website. We'll email you when it's done.</p>
+    <div class="tips">
+      <b>To get it right first time, please include:</b>
+      <ul>
+        <li><b>Where:</b> which page and which part, for example "home page, the opening hours at the bottom".</li>
+        <li><b>What it says now</b> and <b>what it should say</b> (or what should change).</li>
+        <li><b>Screenshots</b> of how that part of your website looks now. Circle or mark the spot if you can.</li>
+        <li>Any new <b>photos</b>, logos or documents (PDF) to use.</li>
+      </ul>
+    </div>
     <form id="change-form" novalidate>
       <div class="field">
         <label for="ch-site">Your website</label>
@@ -58,13 +67,22 @@
         </select>
       </div>
       <div class="field">
-        <label for="ch-details">What would you like changed?</label>
-        <textarea id="ch-details" rows="5" required placeholder="For example: change our opening hours on the home page to Mon to Sat, 9am to 6pm."></textarea>
+        <label for="ch-details">What changes do you need, and where?</label>
+        <textarea id="ch-details" rows="6" required placeholder="For example: On the home page, near the bottom, our opening hours say Mon to Fri 9 to 5. Please change them to Mon to Sat, 9am to 6pm. Screenshot attached."></textarea>
       </div>
       <div class="field">
-        <label for="ch-links">Links to photos or examples <span class="muted">(optional)</span></label>
-        <input id="ch-links" type="text" placeholder="A Google Drive, Dropbox or Instagram link">
-        <p class="hint">Photos can also be emailed to alfredw.lsx@gmail.com.</p>
+        <span class="label" id="ch-files-l">Screenshots, photos and PDFs <span class="muted">(optional)</span></span>
+        <label class="drop" for="ch-files">
+          <input id="ch-files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" aria-describedby="ch-files-h">
+          <span class="drop-t">Tap to add screenshots, photos or PDFs</span>
+          <span class="drop-s">Up to 6 files, 8 MB each</span>
+        </label>
+        <ul class="files" id="ch-file-list" aria-live="polite"></ul>
+        <p class="hint" id="ch-files-h">A screenshot of how your website looks now helps us find the exact spot.</p>
+      </div>
+      <div class="field">
+        <label for="ch-links">Links to examples <span class="muted">(optional)</span></label>
+        <input id="ch-links" type="text" placeholder="A Google Drive, Dropbox or Instagram link, or a website you like">
       </div>
       <p class="msg bad" id="ch-err" role="alert" hidden></p>
       <p class="msg good" id="ch-ok" role="status" hidden></p>
@@ -85,8 +103,24 @@
   </section>
 
   <section aria-labelledby="h-t">
-    <h2 id="h-t">Payments, receipts and cancelling</h2>
+    <h2 id="h-t">Payments and receipts</h2>
     <p><a class="btn ghost" id="portal" href="#">Manage payments and receipts</a></p>
+  </section>
+
+  <section class="danger" aria-labelledby="x-t" id="cancel">
+    <button class="btn red" id="cancel-open" type="button" aria-expanded="false" aria-controls="cancel-box">Cancel subscription</button>
+    <div id="cancel-box" hidden>
+      <h2 id="x-t">Cancel your subscription?</h2>
+      <p>We'll stop your monthly plan and email you to confirm, usually within one working day. After that we stop making changes and looking after your website.</p>
+      <label for="cancel-why">Why are you leaving? <span class="muted">(optional, it helps us improve)</span></label>
+      <textarea id="cancel-why" rows="3"></textarea>
+      <p class="msg bad" id="cancel-err" role="alert" hidden></p>
+      <div class="row">
+        <button class="btn red" id="cancel-go" type="button">Yes, cancel my subscription</button>
+        <button class="btn ghost" id="cancel-keep" type="button">Keep my plan</button>
+      </div>
+    </div>
+    <p class="msg good" id="cancel-ok" role="status" hidden></p>
   </section>
 
   <p class="small"><button class="link" id="out" type="button">Sign out</button> · <a href="/">Back to the website</a></p>

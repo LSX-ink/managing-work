@@ -178,23 +178,90 @@ window.KC = (() => {
         d.innerHTML = '<div class="top"><span></span><span class="tag"></span></div><p></p>';
         d.querySelector(".top span").textContent = q.kind + " · " + new Date(q.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
         const t = d.querySelector(".tag"); t.textContent = label; if (cls) t.classList.add(cls);
-        d.querySelector("p").textContent = q.details;
+        d.querySelector("p").textContent = q.details + (q.files ? "\n\nAttached: " + q.files : "");
         list.append(d);
       }
     }
     listChanges();
+    // screenshots, photos and PDFs (owner, 16 Nov 2026)
+    const OK_TYPES = /^(image\/(jpeg|png|webp|gif|heic|heif)|application\/pdf)$/;
+    const MAX_FILES = 6, MAX_FILE = 8 * 1024 * 1024, MAX_TOTAL = 20 * 1024 * 1024;
+    let files = [];
+    const mb = n => (n / 1048576).toFixed(n < 1048576 ? 2 : 1) + " MB";
+    const fileErr = msg => { const e = $("#ch-err"); e.textContent = msg; show(e, true); };
+    function drawFiles() {
+      const ul = $("#ch-file-list"); ul.innerHTML = "";
+      files.forEach((f, i) => {
+        const li = document.createElement("li");
+        if (f.type === "application/pdf") { const t = document.createElement("span"); t.className = "pdf"; t.textContent = "PDF"; li.append(t); }
+        else { const img = document.createElement("img"); img.alt = ""; img.src = URL.createObjectURL(f); img.onload = () => URL.revokeObjectURL(img.src); li.append(img); }
+        const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = f.name + " · " + mb(f.size); li.append(nm);
+        const x = document.createElement("button"); x.type = "button"; x.className = "link"; x.textContent = "Remove";
+        x.setAttribute("aria-label", "Remove " + f.name); x.onclick = () => { files.splice(i, 1); drawFiles(); }; li.append(x);
+        ul.append(li);
+      });
+    }
+    function addFiles(list) {
+      show($("#ch-err"), false);
+      for (const f of list) {
+        const type = f.type || (/\.hei[cf]$/i.test(f.name) ? "image/heic" : /\.pdf$/i.test(f.name) ? "application/pdf" : "");
+        if (!OK_TYPES.test(type)) { fileErr("“" + f.name + "” isn't a picture or PDF."); continue; }
+        if (f.size > MAX_FILE) { fileErr('"' + f.name + '" is over 8 MB. Make it smaller, or email it to us.'); continue; }
+        if (files.length >= MAX_FILES) { fileErr("You can attach up to 6 files at once."); break; }
+        if (files.reduce((a, x) => a + x.size, 0) + f.size > MAX_TOTAL) { fileErr("That's over 20 MB in total. Send the rest in another request."); break; }
+        files.push(f);
+      }
+      drawFiles(); $("#ch-files").value = "";
+    }
+    $("#ch-files").addEventListener("change", e => addFiles(e.target.files));
+    const drop = $(".drop");
+    ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+    ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+    drop.addEventListener("drop", e => addFiles(e.dataTransfer.files));
+
     $("#change-form").addEventListener("submit", async ev => {
       ev.preventDefault();
       const e = $("#ch-err"), ok = $("#ch-ok"); show(e, false); show(ok, false);
       const details = $("#ch-details").value.trim();
-      if (details.length < 5) { e.textContent = "Tell us what you'd like changed, in a sentence or two."; show(e, true); $("#ch-details").focus(); return; }
-      const b = $("#ch-go"); busy(b, true, "Sending…");
-      const r = await post("/api/client/changes", { website: $("#ch-site").value.trim(), kind: $("#ch-kind").value, details, links: $("#ch-links").value.trim() });
+      if (details.length < 5) { e.textContent = "Tell us what you'd like changed, and where on your website."; show(e, true); $("#ch-details").focus(); return; }
+      const fd = new FormData();
+      fd.append("website", $("#ch-site").value.trim()); fd.append("kind", $("#ch-kind").value);
+      fd.append("details", details); fd.append("links", $("#ch-links").value.trim());
+      files.forEach(f => fd.append("files", f, f.name));
+      const b = $("#ch-go"); busy(b, true, files.length ? "Uploading…" : "Sending…");
+      let r;
+      try {
+        const res = await fetch("/api/client/changes", { method: "POST", body: fd, credentials: "same-origin" });
+        r = { ok: res.ok, d: await res.json().catch(() => ({})) };
+      } catch { r = { ok: false, d: { error: "We couldn't reach the server. Check your connection and try again." } }; }
       busy(b, false, "Send request");
       if (!r.ok) { e.textContent = r.d.error || "That didn't send. Please try again."; show(e, true); return; }
-      $("#ch-details").value = ""; $("#ch-links").value = "";
-      ok.textContent = "Thanks, we've got it (request #" + r.d.id + "). We'll email you when it's done."; show(ok, true);
+      $("#ch-details").value = ""; $("#ch-links").value = ""; files = []; drawFiles();
+      ok.textContent = r.d.filesNotSent
+        ? "We've got your request (#" + r.d.id + "), but your files didn't come through. Please email them to alfredw.lsx@gmail.com."
+        : "Thanks, we've got it (request #" + r.d.id + "). We'll email you when it's done.";
+      show(ok, true);
       listChanges();
+    });
+
+    // cancel subscription (owner, 16 Nov 2026: at the bottom, a red block in white writing)
+    const open = $("#cancel-open"), box = $("#cancel-box");
+    open.addEventListener("click", () => {
+      if (who.portal) { window.open(who.portal, "_blank", "noopener"); return; }
+      const on = box.hidden; show(box, on); open.setAttribute("aria-expanded", String(on)); show(open, !on);
+      if (on) $("#cancel-why").focus();
+    });
+    $("#cancel-keep").addEventListener("click", () => { show(box, false); show(open, true); open.setAttribute("aria-expanded", "false"); });
+    $("#cancel-go").addEventListener("click", async () => {
+      const b = $("#cancel-go"); busy(b, true, "Sending…");
+      const why = $("#cancel-why").value.trim();
+      const r = await post("/api/client/changes", { website: mySite, kind: "Cancel subscription",
+        details: "Please cancel my subscription." + (why ? "\n\nWhy: " + why : "") });
+      busy(b, false, "Yes, cancel my subscription");
+      if (!r.ok) { $("#cancel-err").textContent = r.d.error || "That didn't send. Please try again, or email us."; show($("#cancel-err"), true); return; }
+      show(box, false); const ok = $("#cancel-ok");
+      ok.textContent = "We've got your cancellation (request #" + r.d.id + "). We'll stop your subscription and email you to confirm, usually within one working day.";
+      show(ok, true); listChanges();
     });
   }
   return { signinPage, accountPage };

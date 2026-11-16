@@ -6,13 +6,13 @@ export const EMAIL = /^[^\s@<>()",;:]{1,64}@([a-z0-9-]{1,63}\.)+[a-z]{2,24}$/i;
 
 export const mailReady = env => !!(env.RESEND_API_KEY && env.MAIL_FROM);
 
-export async function sendMail(env, { to, subject, text, html, replyTo }) {
+export async function sendMail(env, { to, subject, text, html, replyTo, attachments }) {
   if (!mailReady(env)) return false;
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: env.MAIL_FROM, to: [to], subject, text, html, ...(replyTo ? { reply_to: replyTo } : {}) })
+      body: JSON.stringify({ from: env.MAIL_FROM, to: [to], subject, text, html, ...(replyTo ? { reply_to: replyTo } : {}), ...(attachments && attachments.length ? { attachments } : {}) })
     });
     if (!res.ok) console.error("Resend", res.status, (await res.text()).slice(0, 300));
     return res.ok;
