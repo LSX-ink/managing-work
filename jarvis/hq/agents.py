@@ -646,7 +646,8 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
                   **({"free_mockup_we_made": link} if link else {})}
     ok, why = await outbox.ai_check(ctx, facts, subject, body)
     if not ok:
-        if p:
+        # 16 Nov 2026: an API hiccup ("the AI check couldn't run") dropped ready leads for good; they wait instead
+        if p and not why.startswith("the AI check couldn't run"):
             b.set(f"skip.{p['id']}", "editor said no: " + why)
         b.log("warden", f"held back the email to {name}. Editor's note: {why}", "warn")
         return f"held back {name}"
