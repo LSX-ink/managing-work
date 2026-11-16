@@ -174,13 +174,25 @@ def trade_group(p: dict) -> str:
     return next((g for g, rx in TRADE_GROUPS if re.search(rx, k)), "other")
 
 
+# owner, 16 Nov 2026: "stop vera making australian leads": no first emails to Australian businesses
+NO_EMAIL_COUNTRIES = {"AU"}
+AU_TOWNS = re.compile(r"\b(sydney|melbourne|brisbane|adelaide|gold coast|canberra|hobart|darwin)\b|australia", re.I)
+
+
+def no_email_country(p: dict) -> bool:
+    if str(p.get("country") or "").upper() in NO_EMAIL_COUNTRIES:
+        return True
+    where = f"{p.get('town') or ''} {p.get('address') or ''}"
+    return "AU" in NO_EMAIL_COUNTRIES and not p.get("country") and bool(AU_TOWNS.search(where))
+
+
 def candidates(settings, ltd: set | None = None) -> list[dict]:
     """Fresh, busy, money-making leads with a website where a cold email is allowed: most likely to reply first.
     Quiet businesses (few reviews, low rating) are left out entirely. ltd: UK leads Companies House shows are
     limited companies (PECR allows a cold email to them even when the name doesn't say Ltd)."""
     out = []
     for p in _fresh_busy(settings):
-        if not p.get("website") or kf.social_only(p):
+        if not p.get("website") or kf.social_only(p) or no_email_country(p):
             continue
         country = p.get("country") or world.HOME
         if not (world.cold_email_ok(country, p["name"]) or (ltd and p["id"] in ltd)):

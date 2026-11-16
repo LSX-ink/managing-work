@@ -26,12 +26,13 @@ UK_CITIES = ["Birmingham", "Manchester", "Leeds", "London", "Liverpool", "Bristo
              "Leicester", "Croydon", "Glasgow", "Cardiff", "Newcastle", "Coventry", "Bradford", "Brighton"]
 # The owner (23 Oct 2026): "we aren't limited to the UK". Half of Hawk's searches go abroad, to English-speaking
 # places; kinetic_world still decides per country whether Vera may email or it goes on the DM list.
-WORLD_CITIES = ["Dublin, Ireland", "New York, USA", "Sydney, Australia", "Lagos, Nigeria", "Houston, USA",
-                "Cork, Ireland", "Melbourne, Australia", "Atlanta, USA", "Johannesburg, South Africa", "Chicago, USA",
-                "Auckland, New Zealand", "Galway, Ireland", "Los Angeles, USA", "Accra, Ghana", "Brisbane, Australia",
+# owner, 16 Nov 2026: "stop vera making australian leads": no Australian cities
+WORLD_CITIES = ["Dublin, Ireland", "New York, USA", "Lagos, Nigeria", "Houston, USA",
+                "Cork, Ireland", "Atlanta, USA", "Johannesburg, South Africa", "Chicago, USA",
+                "Auckland, New Zealand", "Galway, Ireland", "Los Angeles, USA", "Accra, Ghana", 
                 "Dallas, USA", "Nairobi, Kenya", "Miami, USA", "Dubai, UAE", "Cape Town, South Africa",
-                "Perth, Australia", "Wellington, New Zealand", "Singapore", "Phoenix, USA", "Durban, South Africa",
-                "Abu Dhabi, UAE", "Adelaide, Australia", "Seattle, USA", "Pretoria, South Africa", "Limerick, Ireland",
+                "Wellington, New Zealand", "Singapore", "Phoenix, USA", "Durban, South Africa",
+                "Abu Dhabi, UAE", "Seattle, USA", "Pretoria, South Africa", "Limerick, Ireland",
                 # owner, 3 Nov 2026: "South African, American, Asia, everywhere" (English-speaking Asian cities)
                 "Mumbai, India", "Kuala Lumpur, Malaysia", "Manila, Philippines", "Hong Kong", "Bangalore, India",
                 "Bangkok, Thailand", "Gqeberha, South Africa", "Bloemfontein, South Africa", "San Diego, USA",
