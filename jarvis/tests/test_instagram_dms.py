@@ -333,3 +333,26 @@ def test_reply_within_a_minute_is_automated():
     late = {"id": "c", "from": {"id": "2", "username": "x"}, "message": "Sounds good", "created_time": "2026-11-16T14:12:00+0000"}
     assert ig.automated([ours, bot], [bot], me)
     assert not ig.automated([ours, late], [late], me)
+
+
+def test_uk_weekday():
+    from datetime import datetime, timezone
+    import instagram_dms as ig
+    assert REAL_UK_WEEKDAY(datetime(2026, 11, 16, 14, 0, tzinfo=timezone.utc))      # Monday
+    assert not REAL_UK_WEEKDAY(datetime(2026, 11, 21, 14, 0, tzinfo=timezone.utc))  # Saturday
+
+
+import pytest as _pytest
+import instagram_dms as _ig
+REAL_UK_WEEKDAY = _ig.uk_weekday
+
+
+@_pytest.fixture(autouse=True)
+def _weekend_for_reply_tests(monkeypatch):
+    """The reply tests are about how Alfred answers, so they run as if it were the weekend."""
+    monkeypatch.setattr(_ig, "uk_weekday", lambda now: False)
+
+
+def test_weekday_reply_goes_to_owner(monkeypatch):
+    import inspect, instagram_dms as ig
+    assert "weekday: Alfred stays silent, you reply" in inspect.getsource(ig.poll)

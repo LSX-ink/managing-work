@@ -280,6 +280,12 @@ def mine(m: dict, me: dict) -> bool:
 AUTO_SECONDS = 60
 
 
+def uk_weekday(now: datetime) -> bool:
+    """Monday to Friday in UK time."""
+    from zoneinfo import ZoneInfo
+    return now.astimezone(ZoneInfo("Europe/London")).weekday() < 5
+
+
 def automated(msgs: list[dict], new_in: list[dict], me: dict) -> bool:
     """Their new messages all came within a minute of our last message before them: an auto-responder, not a person
     (owner, 16 Nov 2026: "If u get a response within a minute don't respond as that's an automated response")."""
@@ -505,9 +511,12 @@ async def poll(settings: Settings, http: httpx.AsyncClient, announce=None, now: 
                                                    "automated response)", now)
             continue
         open_need = next((n for n in s["needs_you"] if n.get("thread") == cid), None)
-        if open_need or s["paused"] or not settings.instagram_autoreply:
+        # owner, 16 Nov 2026: no follow-ups on weekdays, so Monday to Friday Alfred sends nothing on Instagram;
+        # every reply goes to the owner instead
+        weekday = uk_weekday(now)
+        if open_need or s["paused"] or not settings.instagram_autoreply or weekday:
             reason = "already waiting for you" if open_need else "auto-reply is paused" if s["paused"] else \
-                "auto-reply is off"
+                "auto-reply is off" if not settings.instagram_autoreply else "weekday: Alfred stays silent, you reply"
             await _need(settings, s, cid, username, text, reason, now, announce)
             done["notified"] += 1
             continue
