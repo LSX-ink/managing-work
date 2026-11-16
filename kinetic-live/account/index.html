@@ -32,6 +32,37 @@
     <div id="plans"><p class="muted">Loading…</p></div>
   </section>
 
+  <section aria-labelledby="c-t" id="changes">
+    <h2 id="c-t">Request a change</h2>
+    <p class="muted">Tell us what you'd like changed on your website. We'll email you when it's done.</p>
+    <form id="change-form" novalidate>
+      <div class="field">
+        <label for="ch-site">Your website</label>
+        <input id="ch-site" type="url" inputmode="url" placeholder="https://yourbusiness.co.uk" autocomplete="url">
+      </div>
+      <div class="field">
+        <label for="ch-kind">What kind of change?</label>
+        <select id="ch-kind">
+          <option>Wording</option><option>Pictures</option><option>Design</option><option>New page</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ch-details">What would you like changed?</label>
+        <textarea id="ch-details" rows="5" required placeholder="For example: change our opening hours on the home page to Mon to Sat, 9am to 6pm."></textarea>
+      </div>
+      <div class="field">
+        <label for="ch-links">Links to photos or examples <span class="muted">(optional)</span></label>
+        <input id="ch-links" type="text" placeholder="A Google Drive, Dropbox or Instagram link">
+        <p class="hint">Photos can also be emailed to alfredw.lsx@gmail.com.</p>
+      </div>
+      <p class="msg bad" id="ch-err" role="alert" hidden></p>
+      <p class="msg good" id="ch-ok" role="status" hidden></p>
+      <button class="btn" id="ch-go" type="submit">Send request</button>
+    </form>
+    <h3 class="sub">Your requests</h3>
+    <div id="ch-list"><p class="muted">No requests yet.</p></div>
+  </section>
+
   <section aria-labelledby="b-t" id="buy">
     <h2 id="b-t">Start a plan</h2>
     <p class="muted">Monthly changes to your wording and design, and new pictures, done for you. Priced by the size of your website.</p>

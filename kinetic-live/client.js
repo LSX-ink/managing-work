@@ -145,6 +145,40 @@ window.KC = (() => {
     if (who.portal) { portal.href = who.portal; portal.target = "_blank"; portal.rel = "noopener"; }
     else { portal.href = "mailto:alfredw.lsx@gmail.com?subject=" + encodeURIComponent("My hosting and care plan (" + who.email + ")"); portal.textContent = "Email us about payments or cancelling"; }
     $("#out").addEventListener("click", async () => { await fetch("/api/client/logout", { method: "POST" }); location.href = "/"; });
+
+    // change requests (owner, 16 Nov 2026)
+    const site = (who.plans || []).find(p => p.website);
+    if (site && !$("#ch-site").value) $("#ch-site").value = site.website;
+    const STATUS = { received: ["Received", "wait"], "in progress": ["In progress", "wait"], done: ["Done", ""] };
+    async function listChanges() {
+      const r = await fetch("/api/client/changes", { credentials: "same-origin" }).then(x => x.json()).catch(() => ({}));
+      const list = $("#ch-list"); const reqs = r.requests || [];
+      if (!reqs.length) { list.innerHTML = '<p class="muted">No requests yet.</p>'; return; }
+      list.innerHTML = "";
+      for (const q of reqs) {
+        const d = document.createElement("div"); d.className = "req";
+        const [label, cls] = STATUS[q.status] || [q.status, "wait"];
+        d.innerHTML = '<div class="top"><span></span><span class="tag"></span></div><p></p>';
+        d.querySelector(".top span").textContent = q.kind + " · " + new Date(q.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+        const t = d.querySelector(".tag"); t.textContent = label; if (cls) t.classList.add(cls);
+        d.querySelector("p").textContent = q.details;
+        list.append(d);
+      }
+    }
+    listChanges();
+    $("#change-form").addEventListener("submit", async ev => {
+      ev.preventDefault();
+      const e = $("#ch-err"), ok = $("#ch-ok"); show(e, false); show(ok, false);
+      const details = $("#ch-details").value.trim();
+      if (details.length < 5) { e.textContent = "Tell us what you'd like changed, in a sentence or two."; show(e, true); $("#ch-details").focus(); return; }
+      const b = $("#ch-go"); busy(b, true, "Sending…");
+      const r = await post("/api/client/changes", { website: $("#ch-site").value.trim(), kind: $("#ch-kind").value, details, links: $("#ch-links").value.trim() });
+      busy(b, false, "Send request");
+      if (!r.ok) { e.textContent = r.d.error || "That didn't send. Please try again."; show(e, true); return; }
+      $("#ch-details").value = ""; $("#ch-links").value = "";
+      ok.textContent = "Thanks, we've got it (request #" + r.d.id + "). We'll email you when it's done."; show(ok, true);
+      listChanges();
+    });
   }
   return { signinPage, accountPage };
 })();
