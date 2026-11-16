@@ -323,3 +323,13 @@ def test_tool_definition_is_registered():
     assert ig in tools.ABILITIES
     names = [t["name"] for t in ig.tool_definitions()]
     assert names == ["instagram_dms"]
+
+
+def test_reply_within_a_minute_is_automated():
+    import instagram_dms as ig
+    me = {"id": "1", "user_id": "1", "username": "kineticwebdesigns"}
+    ours = {"id": "a", "from": {"id": "1", "username": "kineticwebdesigns"}, "message": "Hi", "created_time": "2026-11-16T14:07:00+0000"}
+    bot = {"id": "b", "from": {"id": "2", "username": "x"}, "message": "Thanks for contacting us", "created_time": "2026-11-16T14:07:40+0000"}
+    late = {"id": "c", "from": {"id": "2", "username": "x"}, "message": "Sounds good", "created_time": "2026-11-16T14:12:00+0000"}
+    assert ig.automated([ours, bot], [bot], me)
+    assert not ig.automated([ours, late], [late], me)

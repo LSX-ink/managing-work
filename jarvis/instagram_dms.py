@@ -277,6 +277,23 @@ def mine(m: dict, me: dict) -> bool:
         bool(me.get("username")) and str(who.get("username") or "").lower() == me["username"].lower())
 
 
+AUTO_SECONDS = 60
+
+
+def automated(msgs: list[dict], new_in: list[dict], me: dict) -> bool:
+    """Their new messages all came within a minute of our last message before them: an auto-responder, not a person
+    (owner, 16 Nov 2026: "If u get a response within a minute don't respond as that's an automated response")."""
+    if not new_in:
+        return False
+    first = when(new_in[0].get("created_time"))
+    ours = [when(m.get("created_time")) for m in msgs if mine(m, me) and m not in new_in]
+    ours = [t for t in ours if t and first and t <= first]
+    if not first or not ours:
+        return False
+    newest = max(when(m.get("created_time")) or first for m in new_in)
+    return (newest - max(ours)).total_seconds() <= AUTO_SECONDS
+
+
 def handoff_reason(text: str) -> str:
     return next((why for why, rx in HANDOFF if rx.search(text)), "")
 
@@ -483,6 +500,10 @@ async def poll(settings: Settings, http: httpx.AsyncClient, announce=None, now: 
         text = "\n".join(str(m.get("message") or "").strip() for m in new_in if str(m.get("message") or "").strip())
         if not text:
             continue  # only a photo, sticker or reaction: nothing to answer
+        if automated(msgs, new_in, me):  # owner, 16 Nov 2026: an answer within a minute of our message is a bot
+            log_line(settings, username, "Alfred", "(no reply: that came within a minute of our message, so it's an "
+                                                   "automated response)", now)
+            continue
         open_need = next((n for n in s["needs_you"] if n.get("thread") == cid), None)
         if open_need or s["paused"] or not settings.instagram_autoreply:
             reason = "already waiting for you" if open_need else "auto-reply is paused" if s["paused"] else \
