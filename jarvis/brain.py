@@ -1507,7 +1507,27 @@ def _units_answer(said: str) -> str | None:
         said_back = calcunits.convert(value, a, b)
     except ValueError:
         return None  # a word that isn't a unit: not a conversion after all
-    return said_back.replace("°C", " degrees Celsius").replace("°F", " degrees Fahrenheit")
+    return _spoken_units(said_back.replace("°C", " degrees Celsius").replace("°F", " degrees Fahrenheit"))
+
+
+_UNIT_WORDS = {"g": ("gram", "grams"), "oz": ("ounce", "ounces"), "lb": ("pound", "pounds"), "ml": ("millilitre", "millilitres"),
+               "tsp": ("teaspoon", "teaspoons"), "tbsp": ("tablespoon", "tablespoons"), "sq m": ("square metre", "square metres"),
+               "sq ft": ("square foot", "square feet"), "fl oz": ("fluid ounce", "fluid ounces")}
+_SAID_UNIT = re.compile(r"(?P<n>-?[\d,]+(?:\.\d+)?) (?P<u>fl oz|sq m|sq ft|tbsp|tsp|oz|lb|ml|g)\b")
+_LONG_DECIMAL = re.compile(r"(?<= is )(?P<n>-?[\d,]+\.\d+)(?= )")
+
+
+def _spoken_units(text: str) -> str:
+    """Make a conversion easy to hear: '16.0934 km' becomes 'about 16.1 km', '28.3495 g' 'about 28.3 grams'."""
+    def tidy(m: re.Match) -> str:
+        value = float(m.group("n").replace(",", ""))
+        digits = len(m.group("n").replace(",", "").replace(".", "").replace("-", "").lstrip("0"))
+        if digits <= 3:
+            return m.group("n")
+        rounded = round(value) if abs(value) >= 100 else float(f"{value:.3g}")
+        return "about " + (f"{rounded:,}" if isinstance(rounded, int) else f"{rounded:g}")
+    text = _LONG_DECIMAL.sub(tidy, text, count=1)
+    return _SAID_UNIT.sub(lambda m: f"{m.group('n')} {_UNIT_WORDS[m.group('u')][m.group('n') != '1']}", text)
 
 
 _WORLD_TIME = re.compile(_NAME + r"(?:what(?:'s| is) the time|what time is it|what's the time now|time) in (?P<where>[a-z .]+?)"
