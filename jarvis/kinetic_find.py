@@ -895,10 +895,26 @@ def biggest_problem(p: dict) -> dict:
     return {}
 
 
+def built_mockups(settings: Settings) -> set:
+    """Prospects HQ has already built a mock-up for (ready.<id> in the HQ brain). They are never let go to make room:
+    17 Nov 2026, Halo Plumbing's finished page was dropped from the list, so its email could never go."""
+    import sqlite3
+    import memory
+    path = memory.root(settings) / "LSX HQ" / "brain.db"
+    if not path.exists():
+        return set()
+    try:
+        with sqlite3.connect(path, timeout=10) as db:
+            keys = [k for (k,) in db.execute("SELECT key FROM facts WHERE key LIKE 'ready.%'")]
+    except sqlite3.Error:
+        return set()
+    return {int(k.split(".", 1)[1]) for k in keys if k.split(".", 1)[1].isdigit()}
+
+
 def make_room(settings: Settings, rows: list[dict]) -> bool:
     """A full list (29 Oct 2026: it had sat at the limit, so nothing new was being added) lets the least promising
     untouched prospect go: never messaged or drafted, fewest reviews, then the oldest found."""
-    tracked = {r.get("prospect") for r in st.rows_of(settings, st.OUTREACH)}
+    tracked = {r.get("prospect") for r in st.rows_of(settings, st.OUTREACH)} | built_mockups(settings)
     spare = [r for r in rows if r.get("status") == "new" and r.get("id") not in tracked]
     if not spare:
         return False

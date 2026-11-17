@@ -235,7 +235,10 @@ def _base_name(p: dict) -> str:
     name = re.split(r"\s+[|\-–]\s+|\s*\|\s*", p["name"])[0]
     town = str(p.get("town") or "").strip()
     if town and name.lower().endswith(" " + town.lower()):
-        name = name[: -len(town) - 1]
+        short = name[: -len(town) - 1]
+        # "Quigley Heating & Air Conditioning of Dallas" keeps its town: cutting it would leave "... of" (17 Nov 2026)
+        if not re.search(r"\s(of|in|at|the|and|&|on|by|for)$", short.strip(), re.I):
+            name = short
     return name.strip()
 
 
@@ -771,7 +774,7 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "once complete (a Shopify store redesign is from £595 or the local equivalent), a free home page mock-up we really made for them (its link is in the facts as free_mockup_we_made), 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), the offer to look after a website they already have (monthly changes to the wording, design and pictures for £20 a month for a single page, £25 for up to 5 pages, £30 for more than 5 pages: our real hosting-and-care plans, owner 15-16 Nov 2026), an invitation to follow "
               "Kinetic Web Designs on Instagram (instagram.com/kineticwebdesigns, our real account); it is signed by "
               "Alfred; it has an opt-out line. Our own phone number and website in the signature are real (8 Nov 2026: "
-              "follow-ups were held for them); a postal address is NOT required (only US emails carry one), and 'from about £395' or its local equivalent is fine. A price in the business's own currency (e.g. $499 or €459) is the "
+              "follow-ups were held for them); our own postal address in the signature is real and allowed (US and Canadian law require one, so emails to the US and Canada carry it; 17 Nov 2026: one was wrongly held for it), and 'from about £395' or its local equivalent is fine. A price in the business's own currency (e.g. $499 or €459) is the "
               "local equivalent of £395 and is fine. For a follow-up, the date of our first email is in the facts "
               "(first_email_sent) and is real, and when made_them_an_updated_mockup is true the new design and its link are real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
               f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far', 'made_them_an_updated_mockup', 'site_check', 'free_mockup_we_made') if p.get(k) not in (None, '')})}\n\n"
