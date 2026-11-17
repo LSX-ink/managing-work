@@ -336,7 +336,7 @@ def test_sums_said_in_words_are_worked_out_instantly():
     assert instant_answer("work out three point five plus one point two five", en) == "That's 4.75."
     assert instant_answer("what is twelve thousand three hundred and forty five plus five", en) == "That's 12,350."
     assert instant_answer("what's a hundred plus 7", en) == "That's 107."
-    assert instant_answer("how many grams in three ounces", en) == "3 oz is 85.0486 g."
+    assert instant_answer("how many grams in three ounces", en) == "3 ounces is about 85 grams."
     assert instant_answer("what's seven and five", en) is None  # "and" only joins after hundred/thousand
     assert instant_answer("what is one", en) is None
 
@@ -618,7 +618,7 @@ def test_heights_and_weights_the_british_way_are_instant():
     assert instant_answer("how tall is 180 cm in feet?", en) == "180 cm is 5 foot 11."
     assert instant_answer("Alfred, what's 70 kg in stone?", en) == "70 kg is 11 stone."
     assert instant_answer("what's 85 kilos in stone and pounds?", en) == "85 kg is 13 stone 5 pounds."
-    assert instant_answer("what's 30 mph in km/h?", en) == "30 mph is 48.2803 km/h."
+    assert instant_answer("what's 30 mph in km/h?", en) == "30 mph is about 48.3 km/h."
 
 
 def test_word_tools_are_instant():
@@ -986,6 +986,17 @@ def test_opposites_and_other_words_are_instant():
     assert instant_answer("synonym for tired", s) == "Another word for tired is sleepy, worn out or exhausted."
     assert instant_answer("what's a word that means angry", s) == "Another word for angry is cross, annoyed or furious."
     assert instant_answer("what's the opposite of banana", s) is None
+
+
+def test_conversions_are_rounded_and_said_in_full():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("how many pints in a litre", s) == "1 litre is about 1.76 pints."
+    assert instant_answer("how many grams in an ounce", s) == "1 ounce is about 28.3 grams."
+    assert instant_answer("what's 1 acre in square metres", s) == "1 acre is about 4,047 square metres."
+    assert instant_answer("what's 1 inch in cm", s) == "1 inch is 2.54 cm."
+    assert instant_answer("how many teaspoons in a tablespoon", s) == "1 tablespoon is 3 teaspoons."
+    assert instant_answer("what's 100 f in celsius", s) == "100 degrees Fahrenheit is about 37.8 degrees Celsius."
     assert instant_answer("what's another word for banana", s) is None
     assert instant_answer("what's the capital of Narnia", s) is None
     assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."
@@ -994,8 +1005,8 @@ def test_opposites_and_other_words_are_instant():
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
-    assert instant_answer("What's 10 miles in km?", en) == "10 miles is 16.0934 km."
-    assert instant_answer("how many grams in 3 ounces", en) == "3 oz is 85.0486 g."
+    assert instant_answer("What's 10 miles in km?", en) == "10 miles is about 16.1 km."
+    assert instant_answer("how many grams in 3 ounces", en) == "3 ounces is about 85 grams."
     assert instant_answer("Alfred, what is 20 degrees in Fahrenheit", en) == "20 degrees Celsius is 68 degrees Fahrenheit."
     assert instant_answer("how many feet in a mile", en) == "1 mile is 5,280 feet."
     assert instant_answer("what is 75 kilos in stone", en) == "75 kg is 11 stone 11 pounds."
