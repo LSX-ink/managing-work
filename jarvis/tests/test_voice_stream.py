@@ -997,6 +997,18 @@ def test_conversions_are_rounded_and_said_in_full():
     assert instant_answer("what's 1 inch in cm", s) == "1 inch is 2.54 cm."
     assert instant_answer("how many teaspoons in a tablespoon", s) == "1 tablespoon is 3 teaspoons."
     assert instant_answer("what's 100 f in celsius", s) == "100 degrees Fahrenheit is about 37.8 degrees Celsius."
+
+
+def test_more_spoken_sums_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("what's 2 to the power of 0.5", s) == "That's 1.4142."
+    assert instant_answer("what's 12 point 5 times 4", s) == "That's 50."
+    assert instant_answer("what's negative 5 plus 3", s) == "That's minus 2."
+    assert instant_answer("what's minus 5 times 2", s) == "That's minus 10."
+    assert instant_answer("what's 100 minus 15 percent", s) == "That's 85."
+    assert instant_answer("what's 6 lots of 7", s) == "That's 42."
+    assert instant_answer("what's 4 times ( 2", s) is None  # a sum he can't read goes to Claude
     assert instant_answer("what's another word for banana", s) is None
     assert instant_answer("what's the capital of Narnia", s) is None
     assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."

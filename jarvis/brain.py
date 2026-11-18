@@ -564,15 +564,16 @@ def spoken_numbers(said: str) -> str:
     """'twenty five times four' -> '25 times 4', 'two hundred and fifty' -> '250', 'three point five' -> '3.5',
     so sums and conversions said in words are answered on the spot."""
     said = _SPOKEN_NUMBER.sub(lambda m: _number_value(m[0]), said)
+    said = re.sub(r"(?<![\d.])(\d+) point (\d+)(?![\d.])", r"\1.\2", said)  # "12 point 5" -> "12.5"
     # "1 million" and "2.5 million" arrive as "1 1000000" and "2.5 1000000": multiply them out
     return re.sub(r"(?<![\d.])(\d+(?:\.\d+)?) (1000|1000000|1000000000|1000000000000)(?![\d.])",
                   lambda m: calcmaths.fmt(float(m[1]) * int(m[2])).replace(",", "") if float(m[1]) * int(m[2]) < 1e15 else m[0], said)
 
 
-_SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?(?:[\d(]|pi\b)[\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
-_SPOKEN_MATHS = ((r"(\d(?:[\d.,]*\d)?) ?(?:%|per ?cent) of ", r"\1/100*"), (r"divided by|over|÷", "/"),
-                 (r"(?:multiplied )?by|times|x|×", "*"), (r"plus|add", "+"), (r"minus|take away", "-"),
-                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the (?:power (?:of )?)?(\d+)(?:st|nd|rd|th)?(?: power)?", r"**\1"),
+_SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:minus |negative )?(?:the )?(?:square root of )?(?:[\d(]|pi\b)[\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
+_SPOKEN_MATHS = ((r"(\d(?:[\d.,]*\d)?) ?(?:%|per ?cent) of ", r"\1/100*"), (r"per ?cent", "%"), (r"divided by|over|÷", "/"),
+                 (r"(?:multiplied )?by|times|lots of|x|×", "*"), (r"plus|add", "+"), (r"minus|take away|negative", "-"),
+                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the (?:power (?:of )?)?(\d+(?:\.\d+)?)(?:st|nd|rd|th)?(?: power)?", r"**\1"),
                  (r"to the power of", "**"),
                  (r"the square root of|square root of", "sqrt"))
 
@@ -592,10 +593,10 @@ def _maths_answer(said: str) -> str | None:
     try:
         value = calcmaths.calculate(text).rsplit(" = ", 1)[1]
     except ValueError as exc:
-        return str(exc)
+        return None if "couldn't read" in str(exc) else str(exc)  # a sum he can't read: Claude works it out
     if "." in value and "e" not in value:  # said aloud, four decimal places is plenty
         value = calcmaths.fmt(round(float(value.replace(",", "")), 4))
-    return f"That's {value}."
+    return f"That's {'minus ' + value[1:] if value.startswith('-') else value}."
 
 
 _NUM = r"(?P<n>-?\d[\d,]*(?:\.\d+)?)"
