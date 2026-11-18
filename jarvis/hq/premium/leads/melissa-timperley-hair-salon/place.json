@@ -1,0 +1,354 @@
+{
+ "id": "ChIJKYDpLrmxe0gRdfdUbb4XPQs",
+ "nationalPhoneNumber": "0161 834 5945",
+ "internationalPhoneNumber": "+44 161 834 5945",
+ "formattedAddress": "City Centre, 67 Tib St, Manchester M4 1LS, UK",
+ "location": {
+  "latitude": 53.484644499999995,
+  "longitude": -2.2337237
+ },
+ "rating": 4.9,
+ "googleMapsUri": "https://maps.google.com/?cid=809829614642067317&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+ "websiteUri": "http://www.melissa-salons.com/?utm_source=gmb&utm_medium=Organic&utm_campaign=gmb%20traffic",
+ "regularOpeningHours": {
+  "openNow": true,
+  "periods": [
+   {
+    "open": {
+     "day": 1,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 1,
+     "hour": 17,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 2,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 2,
+     "hour": 17,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 3,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 3,
+     "hour": 20,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 4,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 4,
+     "hour": 20,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 5,
+     "hour": 9,
+     "minute": 30
+    },
+    "close": {
+     "day": 5,
+     "hour": 17,
+     "minute": 30
+    }
+   },
+   {
+    "open": {
+     "day": 6,
+     "hour": 8,
+     "minute": 30
+    },
+    "close": {
+     "day": 6,
+     "hour": 16,
+     "minute": 30
+    }
+   }
+  ],
+  "weekdayDescriptions": [
+   "Monday: 9:00 AM – 5:00 PM",
+   "Tuesday: 9:00 AM – 5:00 PM",
+   "Wednesday: 9:00 AM – 8:00 PM",
+   "Thursday: 9:00 AM – 8:00 PM",
+   "Friday: 9:30 AM – 5:30 PM",
+   "Saturday: 8:30 AM – 4:30 PM",
+   "Sunday: Closed"
+  ],
+  "nextCloseTime": "2026-10-26T17:00:00Z"
+ },
+ "userRatingCount": 674,
+ "displayName": {
+  "text": "Melissa Timperley Hair Salon",
+  "languageCode": "en"
+ },
+ "reviews": [
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/reviews/Ci9DQUlRQUNvZENodHljRjlvT2pkQ2RGUlRlVTlZVVRaVVkxcHFSV3R5WldFelZuYxAB",
+   "relativePublishTimeDescription": "7 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I was at the Melissa Timperley salon for seven hours yesterday. The team there are great, really friendly and very supportive. At every point of my hair transformation journey I was consulted and felt very much part of all the decision-making.\nThe atmosphere in the salon is really warm and welcoming, a nice place to spend the day.  Special thanks to Ellie who did such a great job on my hair, I’m looking forward to the next session that we have together.",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I was at the Melissa Timperley salon for seven hours yesterday. The team there are great, really friendly and very supportive. At every point of my hair transformation journey I was consulted and felt very much part of all the decision-making.\nThe atmosphere in the salon is really warm and welcoming, a nice place to spend the day.  Special thanks to Ellie who did such a great job on my hair, I’m looking forward to the next session that we have together.",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Kerry Levene",
+    "uri": "https://www.google.com/maps/contrib/117386414502139921453/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocIonBkun1sJxRRZUtG9BqwsG4c0T3DfCBwnDr6QKRQti-UTpg=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-03-21T11:48:56.075248175Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2pkQ2RGUlRlVTlZVVRaVVkxcHFSV3R5WldFelZuYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2pkQ2RGUlRlVTlZVVRaVVkxcHFSV3R5WldFelZuYxAB!2m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/reviews/Ci9DQUlRQUNvZENodHljRjlvT21aZmFsWmhSMjF6WmtSRlVrNWxkREp0U2pWaGJGRRAB",
+   "relativePublishTimeDescription": "3 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I’m absolutely delighted with my visit to the salon. The atmosphere was so warm, welcoming, and friendly, and I’m especially thrilled with my transformation by Dawid. ☺️\n\nDawid was incredibly helpful, professional, and kind throughout the whole appointment. For a few years, I had always worn a cool blonde because I was too afraid to try anything different. Thanks to his professional consultation and expert advice, he convinced me to go for a beautiful golden blonde shade and I couldn’t be happier with the result!\n\nThe change I had always been afraid of turned out to be the best decision I could have made. Thanks to Dawid’s professionalism and the trust he inspired, I now have the most beautiful hair I’ve ever had.\n\nI wholeheartedly recommend both the salon and Dawid. ☺️",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I’m absolutely delighted with my visit to the salon. The atmosphere was so warm, welcoming, and friendly, and I’m especially thrilled with my transformation by Dawid. ☺️\n\nDawid was incredibly helpful, professional, and kind throughout the whole appointment. For a few years, I had always worn a cool blonde because I was too afraid to try anything different. Thanks to his professional consultation and expert advice, he convinced me to go for a beautiful golden blonde shade and I couldn’t be happier with the result!\n\nThe change I had always been afraid of turned out to be the best decision I could have made. Thanks to Dawid’s professionalism and the trust he inspired, I now have the most beautiful hair I’ve ever had.\n\nI wholeheartedly recommend both the salon and Dawid. ☺️",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Paulina Feter",
+    "uri": "https://www.google.com/maps/contrib/110556676937989491132/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW2sB20n0Xp74sz2WXLKaHq3hcPIXRYUPH76xwvKpC00nfBSrt_=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-07-12T17:29:12.458356767Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT21aZmFsWmhSMjF6WmtSRlVrNWxkREp0U2pWaGJGRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT21aZmFsWmhSMjF6WmtSRlVrNWxkREp0U2pWaGJGRRAB!2m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/reviews/Ci9DQUlRQUNvZENodHljRjlvT2s1TmMyMUJXRGR2ZW5aUGNWaDVWM05wZVVRNWNtYxAB",
+   "relativePublishTimeDescription": "2 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I hadn't been to a salon in years after getting used to cutting my own hair during covid... I then went to Melissa Timperley Hair Salon last week for a wash, styling cut and dry, and my experience was genuinely amazing!\n\nMillie was my stylist and did a fantastic job, she used a shampoo specific to my hair needs, and explained all of the products which were used. Let me also add that these products were high quality and from a sustainable brand. Following a short consultation on the cut I wanted, Millie delivered exactly what I had asked for and even showed me how to heat style my hair to achieve the look we used as inspiration.\n\nAll in all, it was an incredibly relaxing and lovely experience, and I would especially recommend if you are a nervous salon-goer!\n\nThanks so much Melissa and Millie x",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I hadn't been to a salon in years after getting used to cutting my own hair during covid... I then went to Melissa Timperley Hair Salon last week for a wash, styling cut and dry, and my experience was genuinely amazing!\n\nMillie was my stylist and did a fantastic job, she used a shampoo specific to my hair needs, and explained all of the products which were used. Let me also add that these products were high quality and from a sustainable brand. Following a short consultation on the cut I wanted, Millie delivered exactly what I had asked for and even showed me how to heat style my hair to achieve the look we used as inspiration.\n\nAll in all, it was an incredibly relaxing and lovely experience, and I would especially recommend if you are a nervous salon-goer!\n\nThanks so much Melissa and Millie x",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Amelia M",
+    "uri": "https://www.google.com/maps/contrib/109556762743793594205/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocIgdCFpXx6tbfsyqLrl93Q-LayIK0ARWJEjXdVFWWZ39Woevcgk=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-08-03T20:06:27.396610598Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2s1TmMyMUJXRGR2ZW5aUGNWaDVWM05wZVVRNWNtYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2s1TmMyMUJXRGR2ZW5aUGNWaDVWM05wZVVRNWNtYxAB!2m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/reviews/Ci9DQUlRQUNvZENodHljRjlvT2xkSU1VcG9iM1J0V1RZek4zUkhhRkpJUzNoaU1tYxAB",
+   "relativePublishTimeDescription": "4 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I came to Melissa feeling completely fed up with my hair. I was stuck in that awkward growing out stage after many disappointing haircuts and I didn’t even know what I wanted - I just knew it wasn’t the horrid mushroom cut I had.\n\nMelissa dedicated the whole appointment to me, looking at how my hair naturally behaves, the bits that drive me mental, and making sure the cut would actually work for me day to day, not just look good for five minutes when I left the salon.\n\nShe also spent loads of time showing me how to style it myself, both straight and curly. Usually I leave a salon with lovely hair and absolutely no clue how to recreate it at home.\n\nThe whole experience felt so personal and thoughtful.\n\nMelissa’s talent and skills are obvious and undeniable if you look are her work, but she's also just a genuinely lovely person who makes you feel completely comfortable. I’m really glad I booked. I feel like I’ve found my long time hairdresser!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I came to Melissa feeling completely fed up with my hair. I was stuck in that awkward growing out stage after many disappointing haircuts and I didn’t even know what I wanted - I just knew it wasn’t the horrid mushroom cut I had.\n\nMelissa dedicated the whole appointment to me, looking at how my hair naturally behaves, the bits that drive me mental, and making sure the cut would actually work for me day to day, not just look good for five minutes when I left the salon.\n\nShe also spent loads of time showing me how to style it myself, both straight and curly. Usually I leave a salon with lovely hair and absolutely no clue how to recreate it at home.\n\nThe whole experience felt so personal and thoughtful.\n\nMelissa’s talent and skills are obvious and undeniable if you look are her work, but she's also just a genuinely lovely person who makes you feel completely comfortable. I’m really glad I booked. I feel like I’ve found my long time hairdresser!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Melissa Cooper",
+    "uri": "https://www.google.com/maps/contrib/103433089601640276273/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocIc8vcl3IBw2M6H34spphlPwbobE6l8L5C7l1x7pF8sLmN_=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-06-25T20:54:43.427196054Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2xkSU1VcG9iM1J0V1RZek4zUkhhRkpJUzNoaU1tYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2xkSU1VcG9iM1J0V1RZek4zUkhhRkpJUzNoaU1tYxAB!2m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/reviews/Ci9DQUlRQUNvZENodHljRjlvT21rNVEyVnFPRlJPTFhkUGNuUlpNVTFvVG05eGVHYxAB",
+   "relativePublishTimeDescription": "a month ago",
+   "rating": 5,
+   "text": {
+    "text": "I visited this salon a couple of weeks ago and just wanted to express how brilliant my appointment with Victoria was! I've been struggling with my hair for the past year (hair loss, growing back curly) and Victoria encouraged me to try train my curls, blow drying my hair with the diffuser for the first time. I've been continuing with her method/training and absolutely loving my hair!! Thank you so much, I'll be back\nSarah",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I visited this salon a couple of weeks ago and just wanted to express how brilliant my appointment with Victoria was! I've been struggling with my hair for the past year (hair loss, growing back curly) and Victoria encouraged me to try train my curls, blow drying my hair with the diffuser for the first time. I've been continuing with her method/training and absolutely loving my hair!! Thank you so much, I'll be back\nSarah",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Sarah Clements",
+    "uri": "https://www.google.com/maps/contrib/104232702420861762488/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocICHNYX03jPfka_gZgQ6Pqy7vV_QBaoZU4g7ETY1CK5prplrg=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-09-03T10:48:56.955798277Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT21rNVEyVnFPRlJPTFhkUGNuUlpNVTFvVG05eGVHYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT21rNVEyVnFPRlJPTFhkUGNuUlpNVTFvVG05eGVHYxAB!2m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  }
+ ],
+ "photos": [
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMab1P4hg7Ny2FAqXjANL3kOqT52zY0i4X7xWIe1Kc9ogU11nTm5dZWn3lYAlBfx9GymWuojGs0jKbT6oPFuyGGK8TqEKfDsfozmsBM8YyXp8hFUy7JGjwRDGRKjLPzRd2lLEoqADKsu47dAgtXy53cG36PTiP-JaQcGS9yqkG_-E5Efqs9vQHXpZzQjSScEHJt38bTsvKyFzCQ7JaqHM6WBmamcJ8bmA99WwmiYI_TRCXmj8VL_nHl5o3bfVgQxiwNU6ptQ5BGm3Ryjh74l6ieuSmsA0TiGwcKxhkoMsuaSA8Ok2pJpbpgluaWtC9YdNXr8sPBdTPtAs2MvEkmxAu4ngz7Jtmij9lqA9IQAs8c1CYilEKhVS9Ry2osKunyGeahBDAZsOZqbikH1KGwm1tdDXA",
+   "widthPx": 1600,
+   "heightPx": 901,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIC67Oy6Ig&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIC67Oy6Ig!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMbT1W50eAFvNc77KxVeQt1l8iB5WEfpL1B_Swq3fthpHL9qGZ4s0m8_Er_foKu7CQ-jGev3dOh5-EV6Lx_qf-rsLQ6m30NZBTjemu-CfgXLrnmrU1GulXKy3nezj1I6UmTFzwwDQiAJyFv0cns46DjsSiqkLnbkpVJ4YzTi5iX_YIgdr2a-tRPzP0TxRhcRrmCk5a7UzNZL06NHwl2lbAfjG_hClEdQY4QZMdCZHDUFrwOjSG2SuCei5ghoJ1pMLsDivcrcuVIHFSjx72FpXDGEKe-Dch6NNAqu_b_ChxTPEpk5AKGWtO9aaoag0GAASanlxlJ843tyEcAC_eclCM7-v4PZtCaRgHxqDWFImpWW1-k3xls4fKtHaLT31ZIiwr2gtt0x-AfGBdNTE6ljL05X7YZRqRY",
+   "widthPx": 2688,
+   "heightPx": 4032,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDiiIqXzwE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDiiIqXzwE!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMbcNiz_cbgWS3K-FEEwGqjKeuj-w7_PparEKFikbAH-gyfGdzF9GwJXZXtJqRx6_jbBonkqPpTrt5R7Z_Kc34vFtuuFXBCiHDao9P1y8npv3gX4O1_nv3Jnak2pM1XJQfBa4dGeTj9aFf9ZAE5njeMugHEmWytpcPT1mpdmH0PMtehoJjD0poXF1W5qMnA6lrBcVLoCa6kY_Iy_WfnQ639vEjC1IvBH0Eg8cvk5S72tx39IzKfhLOpgnXwQm1hFA5p_s_zRfydh69kodiTHSMCjp5Q38P8RWbiKsJRiABNEGV4HmDvO27sHkUkBAtiyEbVmeIVowwwpeZw0o7U7MUWPojvkNxw4wPSdDIoIYT_5KzVKkUj2GQEbG0UTjwr7w1cSe42bXAEY6hZEQqq0xxp8m6soRK8",
+   "widthPx": 1840,
+   "heightPx": 1228,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDiiJKsogE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDiiJKsogE!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMZy3uV_dOKVe3QdrBKTdud1HJwsjdukVb7Siw-96jpe05Wyr4JofiOTpGYHv6EIX5fxfxstYrnanca9CoCMIAV1ovTDQgYELvjNebzZzjU2-Z3j4ttpLMFfwpUGi2kDqthpikWZU209I5Qnz-ZZHBe8f198D45qNp3hZKsXE5RHprcJ2J8zvxPej8eOuI2GkvgoIgYWGv8anRbVSoBYAX73eGotgKntruYBsmTxWeB2rRCGhWOTXpDqTRQwkvXyBInmgpQdoJeOpm0W4kSB6fkMxr0mtzUIdazqO1fi2CEid-IfViIc9oe7mcOQEsXx2D-HueCGxh6H7LghqOQC4sfLwIya0XvCZMoI5sMv-XRQ_JTqz0Q-o4fE7j8YZiGmb-86qRwVW8xeIms8_rkZMkxGX80",
+   "widthPx": 1797,
+   "heightPx": 1200,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDiiNKKAg&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDiiNKKAg!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMacuO43wr1U3AKJ0oAlJsyjgJzSo3HV6cjXhvKaEca7YwuHM6pxVNcvyHnq6iXatRZpCmf6RUdG-mxYWllF5klopTVLesQdG67EfyyHAK_l-50FmArh3Y56h7ICIYcXAn5-5NCj1FaHGVoe9egHc0nEpv-kGQQktaXM5ke5xRy35FHgKgbQUGxckPy1sHOz8JGA9qW6_r53ZL-2euSa7xjeEOD1ZnnV-Vj2OEGKfBixy2rI6t0YBbUhORNlDjP6J31xZRNBQPCVXLaCEU1jU_k0KZDoaZMKqvcgbdNBJEaJM_aBEKFxcmXrYEwKMSIiM1K10ppV-Rd_DL297wSAcISRif1Sdc7hy0wdwHK3Rdz3s7-VgddNvu0PdKCjG_hu2G8HnzFeQmjmEV_yrxuFlwoJHzGeQz0_jaKelzH6hn3CTw",
+   "widthPx": 3840,
+   "heightPx": 4800,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhADycKzLghhtWfK-XQABydN&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhADycKzLghhtWfK-XQABydN!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMbGxAwBaTB5XwvEasMLmxxmqAYwp0vn1sfg5WH6TZpgt6M-5VISVVY84k7UEbgvMndIJ2Sf5-dK44aYF_Oj_yJanVkdJItp3V7t74HMTq6sOz2KK8pINLvozHUp99741MDszOG6v2bSPpFd8w14ruMfPNznSyhnGSY8qsJ5n8-OlnkqU-BtojgNDfTjK2hNsJvUekeDZCs3a-h0uLjoh571be4MPn1I28BN-lkZgaCcVdjtRde126ZUR78Qia_w0Y_YvLvn4Vmo4NArHvY1saLQY9G4Hi9hjz6QqaiKbR6G2VctdtxodslM2nsGtD55ORdnNmIs67GndXcKbT7AGmroWwdaXkQIFYx-qzrxX_PSkt8uRt7edKIPq1XVKCZLhDwzLkhRqbFGc0FRAdc_Quq2nA",
+   "widthPx": 1817,
+   "heightPx": 1213,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDiiJLcYA&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDiiJLcYA!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMZ9FTR2817AIu0nymAHHDYqdSRVLgYIRHAcCByI3lQwKu75ef4Gbhx-zYt0p2gMZXun7Bo5pYV04twvKEEe9PIXcTKx1HHF3TtSiycwQfUENGUGTSDxKjUozLhLptUE3BYWx6LIwjEioi9D0ey6tSG2yvcTwINUu9v04RlPAomWGZ_T9lyOGSEuLhe3cWGPuIYdauA1-pRmkAO5KF43-wtpy5LQ1Xr49QppqCUQHo8982ne-W9gJNsoRuF2Lt7tXPyhdAAlPudMyAR5GqePV3ZvfC8l4WEZcToKiUgi3yhZZLVs5M8kZl33h-8oNLMoLopfowkg8s_XpwRj_my3ABGBe_Bp4sVDLKu3_A8AOMPEgn2ZQQPNZRtXtk9M2jRCLNcu7k0KNU1822yTB7gqHvPda77R6onvq12Fek9wDDW9",
+   "widthPx": 2677,
+   "heightPx": 4024,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhB9JVpMk675verAPWB-A9Zs&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhB9JVpMk675verAPWB-A9Zs!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMbbwOuhtaBXbX5P-j6a1ShCHymxQHK0VjwGtVWWaHi2JaJw12DZvPplb6ql1ZsTmFScnRtrk2qdaSXyq__Bjfe_mLYyFdEFOpg9HB0hoGHZlfNfjj2vZM6HMNRR5rRPKZUw1qDxok1hqgIrhYli8Chnv73DEHDJ0GBUl4FOUQWCaT9VnkLR3RoMjoKLV6eLx7kZk0pEro4XtNC9Yie2DfiUOciLJL-hOQFGVGZIlDISu9LQPE2fBPelA3SEleaIcF6iXGu9VevFnyfzYyroRx3Z6aEQMAJYbfAYZ8MOmZU6UVDYfUrn72yEaT5-apah4fThE1PyDujfsatZht3n4dgSIcG5pv56cVh_I5Yt4Yw3k7JeTdg1bkx6wUyBPPefEgaYYPleFJumgLP4mtiz-ok9x6_v",
+   "widthPx": 3000,
+   "heightPx": 4000,
+   "authorAttributions": [
+    {
+     "displayName": "Samantha Hammersley",
+     "uri": "https://maps.google.com/maps/contrib/111243441046796915155",
+     "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocLjynEMa6HhATH6sgOXFpuwiVfvExvXifg0Mr8EKEMjJ3M8oA=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIC9v7PktwE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIC9v7PktwE!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMZuysdL5PmqqC7ti2JOR9elY5nyQHfThDpvHqycbpX1emL2ag1sQUo4egRhLg4U5CBZKfG8_k5xwQIquJXo32ZEjGrfOyBXRuE15XQAru0lO5gRI82QZQ1vS3R9GAxrGlVVwhu6HmQ-20WbhT4U5KIyINNpZDQbbdwiLgH7XHG5exWIR-eFhWKgh61J2VtWzraLfzVow-c43YvElgjbXjO3HF4eFr6d8Rz_vabI9VjnytdFGZQf4iLOHvIjSeap83sR_As37Kp7zqwckAo0QH5K3giEnDY8C2lOWy5OEVHm7UbAprrVGaTDeSeiBY_opST6SAOdcFv7113sE5MzXI5UYJ5-DkL1RzsdJPMpara5-QOUsoANa0uAbfpuiTUIKVOMrCwTWR_yBbU2IQAqNL5-eOE",
+   "widthPx": 4256,
+   "heightPx": 2832,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDiiIaXEw&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDiiIaXEw!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  },
+  {
+   "name": "places/ChIJKYDpLrmxe0gRdfdUbb4XPQs/photos/Aa-ngMb2c8Q2Ep177k_pkw0aK6UAUUoFyIAW8g_oHqb46dcsVgvbjBmFQzLRqajcWLRSdVgBTn4_BXfjwaNhn2q29U4REONo8I2EC4qec0fmAIH4uQUxlF7eyRTKxqWJFiv6ri39MYRB1OHhgOorN3E-LBLr3xZrmXLqZl_4CWc0ak9AIKbDkpuAmz0MrNOFx0wu17bISvXdBzJmhEE_4swqK5GM2IznNbQ0OBL4rplYKfYnxpKWfvdAGX0vMAKz5aHo8htLhijSgnw-t3XzAT7dWjeqzNNi8v_XixgnA1bZ6TaQ2KL06KpJO55JLUBHC_FEdVCxG4qfacjFZcjW8N_pEUGK9D62aAEc9vl7oomabwYO24YBLvC5amRkD8D5FKjaYXy1Q7eEUYpadHm7THWI_vBjEFt4ZKM",
+   "widthPx": 2643,
+   "heightPx": 2769,
+   "authorAttributions": [
+    {
+     "displayName": "Melissa Timperley Hair Salon",
+     "uri": "https://maps.google.com/maps/contrib/112585994932396941691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjW9Y9dKmN0Q2UDRPcSbe570dPUvgEC5qcmmQOSFs6BF6dw-d-Ya=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDiiMainAE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDiiMainAE!2e10!4m2!3m1!1s0x487bb1b92ee98029:0xb3d17be6d54f775"
+  }
+ ]
+}

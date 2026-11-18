@@ -11,11 +11,11 @@ import hmac
 import html
 import ipaddress
 import itertools
+import re
 import time
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, urlparse
 
-import anthropic
 import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -23,14 +23,20 @@ from fastapi.staticfiles import StaticFiles
 from starlette.requests import ClientDisconnect
 
 import alerts
+import alfredmem
+import health
 import helpers
+import instagram_dms
+import kinetic_briefing
+import kinetic_calendar
+import kinetic_outreach
 import tiktokstudio
 import tiktokstudio_store
 import memory
 import nowplaying
+import omniroute
 import pc
 import screen
-import station
 import reminders
 import timers
 import tiktok
@@ -65,18 +71,29 @@ MAX_ALERTS = 30  # notifications kept for the page
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.client = anthropic.AsyncAnthropic(max_retries=4)  # ride out short busy spells before giving up
+    app.state.client = omniroute.make_client(settings, max_retries=4)  # ride out short busy spells before giving up
     app.state.http = httpx.AsyncClient(timeout=30)
     app.state.pages = {}  # open pages: id(WebSocket) -> (WebSocket, its speak function, its Brain)
     app.state.alerts = []  # notifications shown on the page, newest last
     app.state.alert_ids = itertools.count(1)
     memory.starter_extras(settings)
+    asyncio.get_running_loop().run_in_executor(None, alfredmem.take_snapshot, settings)  # starts his memory too
     watchers = alerts.start(settings, lambda text, kind: announce(app, text, kind))
     timers.set_announcer(lambda text, kind: announce(app, text, kind))
     helpers.set_context(app.state.client, lambda text, kind: announce(app, text, kind))
     watchers.append(asyncio.create_task(reminders.watch(settings, lambda text, kind: announce(app, text, kind),
                                                         lambda: bool(app.state.pages))))
+    watchers.append(asyncio.create_task(kinetic_outreach.watch(settings, lambda text, kind: announce(app, text, kind),
+                                                               lambda: bool(app.state.pages))))  # daily follow-ups
+    watchers.append(asyncio.create_task(kinetic_briefing.watch(
+        settings, lambda text, kind, shown=None: announce(app, text, kind, shown), lambda: bool(app.state.pages))))
+    watchers.append(asyncio.create_task(kinetic_calendar.watch(settings, lambda text, kind: announce(app, text, kind),
+                                                               lambda: bool(app.state.pages))))  # post-day reminders
+    watchers.append(asyncio.create_task(instagram_dms.watch(settings, app.state.http,  # replies to Instagram DMs
+                                                            lambda text, kind: announce(app, text, kind))))
     watchers.append(tiktokstudio.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
+    if settings.health_alerts:  # the drive filling up, HQ or the website going down
+        watchers.append(asyncio.create_task(health.watch(settings, lambda text, kind: announce(app, text, kind))))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
     yield
@@ -130,14 +147,18 @@ async def always_fresh(request: Request, call_next):
     return response
 
 
-async def announce(app: FastAPI, text: str, kind: str = "phone") -> None:
-    """Add a heads-up (a delivery, a call) to the notifications and say it on every open page."""
-    item = {"id": next(app.state.alert_ids), "kind": kind, "text": text, "at": time.strftime("%H:%M")}
+async def announce(app: FastAPI, text: str, kind: str = "phone", shown: str | None = None) -> None:
+    """Add a heads-up (a delivery, a call) to the notifications and say it on every open page.
+
+    shown, when given, is what the notification says instead (e.g. a longer briefing); text is still what's spoken."""
+    item = {"id": next(app.state.alert_ids), "kind": kind, "text": shown or text, "at": time.strftime("%H:%M")}
     app.state.alerts = [*app.state.alerts, item][-MAX_ALERTS:]
+    if alerts.pushes(settings, kind):  # the ones that matter reach the phone too, in the background
+        asyncio.get_running_loop().create_task(alerts.push(settings, shown or text, kind))
     if not app.state.pages:
         print(f"  Jarvis (no page open): {text}", flush=True)
     for ws, speak, brain in list(app.state.pages.values()):
-        brain.note(text)
+        brain.note(shown or text)
         try:
             await ws.send_json({"type": "alert", **item})
             if kind == "timer":
@@ -185,14 +206,16 @@ input, button { padding: 12px 14px; border-radius: 8px; border: 1px solid #2a354
 button { background: #16202e; cursor: pointer; }
 p { margin: 0; color: #ff7a7a; min-height: 1.2em; }
 </style></head>
-<body><form method="post" action="/login">
+<body><form method="post" action="/loginNEXT">
 <input type="password" name="password" placeholder="Password" autofocus required>
 <button type="submit">Unlock</button><p>ERROR</p>
 </form></body></html>"""
 
 
-def login_page(error: str = "", status: int = 200) -> HTMLResponse:
-    return HTMLResponse(LOGIN_PAGE.replace("ERROR", error), status_code=status)
+def login_page(error: str = "", status: int = 200, query: str = "") -> HTMLResponse:
+    """The password page. `query` (e.g. "listen", from the hands-free shortcut) is kept through the login."""
+    keep = "?" + query if re.fullmatch(r"[A-Za-z0-9_=&-]{1,100}", query or "") else ""
+    return HTMLResponse(LOGIN_PAGE.replace("ERROR", error).replace("NEXT", keep), status_code=status)
 
 
 PHONE_NEEDS_PASSWORD = """<!DOCTYPE html>
@@ -216,7 +239,7 @@ async def require_password(request: Request, call_next):
     if logged_in(request.cookies) or request.url.path == "/login":
         return await call_next(request)
     if request.url.path == "/":
-        return login_page()
+        return login_page(query=request.url.query)
     return Response("Log in first.", status_code=401)
 
 
@@ -254,15 +277,16 @@ def login_locked(address: str, now: float) -> int:
 async def login(request: Request):
     address = login_address(request)
     if wait := login_locked(address, time.time()):
-        return login_page(f"Too many wrong passwords. Try again in {wait // 60 + 1} minutes.", status=429)
+        return login_page(f"Too many wrong passwords. Try again in {wait // 60 + 1} minutes.", status=429, query=request.url.query)
     password = parse_qs((await request.body()).decode(errors="replace")).get("password", [""])[0]
     if not settings.password or not hmac.compare_digest(password.encode(), settings.password.encode()):
         _login_fails.setdefault(address, []).append(time.time())
         print(f"[jarvis] Wrong password from {address}", flush=True)
         await asyncio.sleep(1)  # slows down guessing
-        return login_page("Wrong password.", status=401)
+        return login_page("Wrong password.", status=401, query=request.url.query)
     _login_fails.pop(address, None)
-    response = RedirectResponse("/", status_code=303)
+    query = request.url.query if re.fullmatch(r"[A-Za-z0-9_=&-]{1,100}", request.url.query or "") else ""
+    response = RedirectResponse("/?" + query if query else "/", status_code=303)
     https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
     response.set_cookie(SESSION_COOKIE, session_token(), max_age=SESSION_DAYS * 86400,
                         httponly=True, samesite="strict", secure=https)
@@ -274,6 +298,27 @@ async def index():
     return FileResponse(FRONTEND / "index.html")
 
 
+# The dashboard from LSX HQ (127.0.0.1:8341), passed through here so it works on the phone too, behind Alfred's own
+# login (owner, 27 Oct 2026). Only the dashboard: the HQ controls (run, pause, settings) stay on the PC.
+HQ_URL = "http://127.0.0.1:8341/"
+HQ_PATHS = {("GET", "dashboard"), ("GET", "api/dashboard"), ("POST", "api/dm/sent")}
+
+
+@app.api_route("/hq/{path:path}", methods=["GET", "POST"])
+async def hq_dashboard(path: str, request: Request):
+    if (request.method, path) not in HQ_PATHS:
+        return Response("Not here.", status_code=404)
+    try:
+        r = await app.state.http.request(request.method, HQ_URL + path, content=await request.body(),
+                                         headers={"content-type": request.headers.get("content-type", "application/json")},
+                                         timeout=60)
+    except httpx.HTTPError:
+        return Response("LSX HQ isn't answering on the PC just now. It starts with Windows; try again in a minute.",
+                        status_code=503)
+    return Response(r.content, status_code=r.status_code, media_type=r.headers.get("content-type"),
+                    headers={"Cache-Control": "no-store"})
+
+
 @app.get("/config")
 async def client_config():
     return {
@@ -283,10 +328,10 @@ async def client_config():
         "serverVoice": bool(settings.elevenlabs_api_key),
         "computer": computer_enabled(settings),
         "theme": settings.theme,
-        "model": settings.model,
+        # until the first answer names the model that gave it (cost saver: the cheap one for simple turns)
+        "model": f"{settings.cheap_model} / {settings.big_model}" if settings.cost_saver else settings.big_model,
         "city": settings.city,
         "wakeWord": settings.wake_word,
-        "station": settings.station,
     }
 
 
@@ -466,12 +511,6 @@ async def creator_video_action(video_id: str, action: str, request: Request):
         return JSONResponse({"ok": False, "said": str(exc)}, status_code=400)
     card = await asyncio.to_thread(lambda: tiktokstudio.studio_card(settings, tiktokstudio_store.load(settings)))
     return {"ok": True, "said": said, "card": card}
-
-
-@app.get("/station/state")
-async def station_state():
-    """What the HUD's station world shows: videos being made, waiting for approval at LSX, and approved lately."""
-    return await asyncio.to_thread(station.state, settings)
 
 
 @app.get("/tiktok/connect")
@@ -657,7 +696,7 @@ async def websocket(ws: WebSocket):
 if __name__ == "__main__":
     import uvicorn
 
-    print(f"J.A.R.V.I.S. on http://{settings.host}:{settings.port}  (model: {settings.model})", flush=True)
+    print(f"J.A.R.V.I.S. on http://{settings.host}:{settings.port}  (model: {settings.big_model}{f', simple turns: {settings.cheap_model}' if settings.cost_saver else ''})", flush=True)
     # Browsers only allow the microphone on https or localhost, so point at the address that works.
     print(f"  Open  http://localhost:{settings.port}  on this PC (the microphone only works on localhost or https)", flush=True)
     uvicorn.run(app, host=settings.host, port=settings.port)

@@ -46,7 +46,7 @@ def add(settings: Settings, new: list[str]) -> str:
     if len(found) > MAX_ITEMS:
         raise ValueError("The shopping list is full; clear some items first.")
     _write(settings, found)
-    return (f"Added {', '.join(added)}." if added else "Those are already on the list.") + f" {len(found)} items on the list."
+    return (f"Added {', '.join(added)}." if added else "Those are already on the list.") + f" {len(found)} item{'s' if len(found) != 1 else ''} on the list."
 
 
 def remove(settings: Settings, gone: list[str]) -> str:

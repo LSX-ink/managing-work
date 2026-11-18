@@ -1,0 +1,354 @@
+{
+ "id": "ChIJM-azoeXDeUgRRX9BUC2kSd8",
+ "nationalPhoneNumber": "0115 958 3999",
+ "internationalPhoneNumber": "+44 115 958 3999",
+ "formattedAddress": "5 Heathcoat St, Nottingham NG1 3AF, UK",
+ "location": {
+  "latitude": 52.953983199999996,
+  "longitude": -1.1435691000000001
+ },
+ "rating": 5,
+ "googleMapsUri": "https://maps.google.com/?cid=16089571658284760901&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+ "websiteUri": "http://www.thedandygent.co.uk/",
+ "regularOpeningHours": {
+  "openNow": true,
+  "periods": [
+   {
+    "open": {
+     "day": 1,
+     "hour": 10,
+     "minute": 30
+    },
+    "close": {
+     "day": 1,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 2,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 2,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 3,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 3,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 4,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 4,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 5,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 5,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 6,
+     "hour": 10,
+     "minute": 0
+    },
+    "close": {
+     "day": 6,
+     "hour": 17,
+     "minute": 0
+    }
+   }
+  ],
+  "weekdayDescriptions": [
+   "Monday: 10:30 AM – 6:00 PM",
+   "Tuesday: 10:00 AM – 6:00 PM",
+   "Wednesday: 10:00 AM – 6:00 PM",
+   "Thursday: 10:00 AM – 6:00 PM",
+   "Friday: 10:00 AM – 6:00 PM",
+   "Saturday: 10:00 AM – 5:00 PM",
+   "Sunday: Closed"
+  ],
+  "nextCloseTime": "2026-10-26T18:00:00Z"
+ },
+ "userRatingCount": 631,
+ "displayName": {
+  "text": "The Dandy Gent Barber Shop Nottm",
+  "languageCode": "en"
+ },
+ "reviews": [
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/reviews/Ci9DQUlRQUNvZENodHljRjlvT2t4bVEzTlFXVmRDTTBJMlVWWlFTSGhyVVZWaU1HYxAB",
+   "relativePublishTimeDescription": "6 months ago",
+   "rating": 5,
+   "text": {
+    "text": "I’ve been going to the same barber for years, so I was honestly quite anxious about trying someone new—but I couldn’t be happier with my experience with Josh. From the start, he really took the time to listen to everything I said about my hair, especially regarding my head shape and how I like my fade done.\n\nWhat stood out most was how attentive and precise he was. He didn’t just rush through the cut—he understood exactly what I wanted and executed it perfectly. It’s genuinely one of the best haircuts I’ve had, and it felt so refreshing to have someone pay that level of attention to detail.\n\nOn top of that, Josh is genuinely down to earth and easy to talk to. The whole experience felt relaxed and natural— which really helped settle my nerves.\n\nReally impressed with both the result and the overall experience. I’ll definitely be coming back to Josh again. Highly recommend!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "I’ve been going to the same barber for years, so I was honestly quite anxious about trying someone new—but I couldn’t be happier with my experience with Josh. From the start, he really took the time to listen to everything I said about my hair, especially regarding my head shape and how I like my fade done.\n\nWhat stood out most was how attentive and precise he was. He didn’t just rush through the cut—he understood exactly what I wanted and executed it perfectly. It’s genuinely one of the best haircuts I’ve had, and it felt so refreshing to have someone pay that level of attention to detail.\n\nOn top of that, Josh is genuinely down to earth and easy to talk to. The whole experience felt relaxed and natural— which really helped settle my nerves.\n\nReally impressed with both the result and the overall experience. I’ll definitely be coming back to Josh again. Highly recommend!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "James Russell",
+    "uri": "https://www.google.com/maps/contrib/104114174669919884218/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocKvukJMzQ5TleDjDcTeiIdByP6pYW6gsYO2Nu7i4FUVP4PHUw=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-04-08T13:01:50.780272162Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2t4bVEzTlFXVmRDTTBJMlVWWlFTSGhyVVZWaU1HYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2t4bVEzTlFXVmRDTTBJMlVWWlFTSGhyVVZWaU1HYxAB!2m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/reviews/Ci9DQUlRQUNvZENodHljRjlvT21keGFXRkJPRVpNY1dsMmJrVkRSRkZ4ZURsVlNXYxAB",
+   "relativePublishTimeDescription": "3 months ago",
+   "rating": 5,
+   "text": {
+    "text": "It was my 1st visit to The Dandy Gent for a High Skin Fade, and I must say Josh is very friendly and polite, and his standard level of work is exceptional. I will definitely be going back again. Thank you Josh",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "It was my 1st visit to The Dandy Gent for a High Skin Fade, and I must say Josh is very friendly and polite, and his standard level of work is exceptional. I will definitely be going back again. Thank you Josh",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Matt Mahjouri",
+    "uri": "https://www.google.com/maps/contrib/113332693369579926866/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjX_XhshRnKpacUW2gfUgcL8YIfttY_DiPUuxr-nx5NuhW6i27wU=s128-c0x00000000-cc-rp-mo-ba2"
+   },
+   "publishTime": "2026-07-01T14:24:50.189505616Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT21keGFXRkJPRVpNY1dsMmJrVkRSRkZ4ZURsVlNXYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT21keGFXRkJPRVpNY1dsMmJrVkRSRkZ4ZURsVlNXYxAB!2m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/reviews/Ci9DQUlRQUNvZENodHljRjlvT20xNFNFbGZSM3BSU2tWbmRHNU9aalJCUVVSTWNVRRAB",
+   "relativePublishTimeDescription": "5 months ago",
+   "rating": 5,
+   "text": {
+    "text": "Wonderful. Was anxious before because I had the same barber for 10 years and he had to move. Charlie was so great, talk throug the process and listened to exactly what I needed. So so happy, thank you",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "Wonderful. Was anxious before because I had the same barber for 10 years and he had to move. Charlie was so great, talk throug the process and listened to exactly what I needed. So so happy, thank you",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Vean 99",
+    "uri": "https://www.google.com/maps/contrib/115289389860980245930/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUZYb5kB2LVh_xJ1qMFTj9H1__hCaOI-GS0SnP3lSyqWBTCeYn8CA=s128-c0x00000000-cc-rp-mo-ba2"
+   },
+   "publishTime": "2026-04-29T16:47:17.131894647Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT20xNFNFbGZSM3BSU2tWbmRHNU9aalJCUVVSTWNVRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT20xNFNFbGZSM3BSU2tWbmRHNU9aalJCUVVSTWNVRRAB!2m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/reviews/Ci9DQUlRQUNvZENodHljRjlvT2tzMGEyWTNWV1YyVGs5R1UxaDZSVXQ2UTB0U2NIYxAB",
+   "relativePublishTimeDescription": "4 months ago",
+   "rating": 5,
+   "text": {
+    "text": "Charlie was a pleasure to have cut my hair.\n. Its a shame I don't live locally, else id be back every other week. Very happy. Cheers!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "Charlie was a pleasure to have cut my hair.\n. Its a shame I don't live locally, else id be back every other week. Very happy. Cheers!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Owen Morris",
+    "uri": "https://www.google.com/maps/contrib/106592437383431441025/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocL3JBkhrl6u1gnElskqV2Bwr6VR3QJNO-kfH3JhWl2bvaGcvA=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-06-25T13:20:09.652538965Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2tzMGEyWTNWV1YyVGs5R1UxaDZSVXQ2UTB0U2NIYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2tzMGEyWTNWV1YyVGs5R1UxaDZSVXQ2UTB0U2NIYxAB!2m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/reviews/Ci9DQUlRQUNvZENodHljRjlvT2pCTGFubG1Sa1poTjNwb2VHaEJibkF5TWtWcFZHYxAB",
+   "relativePublishTimeDescription": "4 months ago",
+   "rating": 1,
+   "text": {
+    "text": "The haircut was nowhere near to what reference photo I showed. Did not spend a minute more over the 30-minute mark. Traditional barber-place that does not specialise in styling. Strands of longer hair still left on my head that the barber did not care enough to check since the mandated 30-minute haircut was over.",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "The haircut was nowhere near to what reference photo I showed. Did not spend a minute more over the 30-minute mark. Traditional barber-place that does not specialise in styling. Strands of longer hair still left on my head that the barber did not care enough to check since the mandated 30-minute haircut was over.",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Amartya Karmakar",
+    "uri": "https://www.google.com/maps/contrib/100185183826853451768/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWyCaX7MkwTMou2GKjZMktElczVMXh3wMNtsVBPY6thJkZreHhbGQ=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-06-24T02:36:26.449711143Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2pCTGFubG1Sa1poTjNwb2VHaEJibkF5TWtWcFZHYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2pCTGFubG1Sa1poTjNwb2VHaEJibkF5TWtWcFZHYxAB!2m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  }
+ ],
+ "photos": [
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMYgD5iX4P51G5A96UKoMe-h7NKTmkp6aUvN2MvGtd6QEL8cEIDjyHnpEiNF_Jo8ovarIAAU7ggprxTpVFW0FIpaKUlggSUDpWKwQQZ2cyLZTMw1v_NvRf43UevJi8JDMmCdIEFqvXfSQd-l2lIueF5LPHK2hr0Nmp_zwIJ_Wx4oUPPVD5vcDwVxXTpnRZz_iFk66q36JUA5lSg4gTz_6S6dYDzrTJfgq5zcl3P2IV521F877qFOaigAItO0NFBxXawWC15d3Lld6lhHidQj4jhwKZuBcwGLAlGR-OHGMw7f_yQcaHvBpA0WgIKGy4znkzsnbwWRzks6ptFNufxnN9KCGJYSlfQcvCncD3KXRVGMisQdSrGtR1C3qBjiPMNOi32mCyMyqD8ong4Yb6NQDrS1BeI",
+   "widthPx": 3842,
+   "heightPx": 2162,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIC205icQQ&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIC205icQQ!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMa-gAYK9hDPn6X6tUVffiXcFWJbGOkB_zuJLGlcnc_c1NwI6c35-LU_h-i5qacLp0fnUnu8qXsA5bGN_NsY2ZKclKGaddd52uKE_S6d3q6aw720eEfz_Nwk_YrdXxnZJc2FiXw9CQ-xoIAWY0jWpqzczrlX9KmBNjfNJRtShFr-FIEdEikbqczPhB4MqBHz0t8svSVRwy8nXMJfht0Ej6z6rlhK2p0mMkd5ZA2nQg3JX8OXE5IUcwgF8Wg_lO_oEJlMLlwzZd6rddjBdHPyVfslbjpuXNowPZvgT18FRBmv8zowrV-H0b5vlhfyeAZUrls69n0W5LC0Ns1DVO_5-FdNeynUxL2GWFMNInuVUTWkg-Yjo5mG4PVj8vCeDA_4L8D8oxtRKS99SaXmdS4fngNLP-TYDGX_CxyLmqCtmBIYvw",
+   "widthPx": 2316,
+   "heightPx": 3088,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhA5-j7QER1UUPJp0MxtRGDI&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhA5-j7QER1UUPJp0MxtRGDI!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMa72WbHHf58Pld2Wpj-SRyjftX06KaiQnNjsn1CrdTEdpxsjwNxAgnEadz3cSma5FeE1AWPGolERFcptjc-zNS--nJy8Uwp72hDYHoC78XtBPpMCbSo2OkQNjEhEMmL_iO99i-3CgivIjLSQ_1zjiEaZ6T32wEAAAQaQ0kW-ynD_jBIIYtZjjzKAi7ugKnb9iizxknRMsEs-tm7f8zDGQ_C_YLm6OBaM5dFzN-ISBs0CbbeJX-mhgUoukoPnH24XUedhVQxAFuOjnAuwKb_KUjTwc5-2H4sfJgHZtAsh-9h3mBYQbXWL8v9gb0kAFts9f7uWhm8UfiX6IzujmWPPHEXsKChI8IYrnbwrs5xbIq_NojJwq5Sk3FQPAV3pLwL477mIseDYib-_X_A84dcniQczr44",
+   "widthPx": 3024,
+   "heightPx": 3024,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDT8oWh2gE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDT8oWh2gE!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMaLJBlGWyvRmHPccb9895fKx6iOW5BA5Q9rqW6sU2ExudXMP-MK8gVWE4lkJSEpK9RsaOJW1gyQ-38bhlTgluorFAq4LlTnZ5Lt3_mt0H6MJ2e6WtOtuXMeAIDTJEBOxxe7mItiHGZST-puT-KXHpzJAWAB7SyYgsNXsugVCeXoQZa8UP1_FrrYXeW5AOJryhsiew5GM_7xefIhQKmKJXLoagkVFl0OW5SFti-0allx9Ryi0TJSAxiS4Wq_7bk3nd_XVcYRWiTB-v7MiyTL2XS8NJTyMMlVMpecIWwGk8_0D2LJgI1MXjCjiq8HvWMp8-9o0IBlI3lx9-qp4It0Tf4RXy0enwq08T4jH3xthUql5LusKOA_XhVV0ZGKG60vIW_BMwJHuIlGsqR7w2hJrqXXVpc",
+   "widthPx": 4032,
+   "heightPx": 3024,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDimv6oRg&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDimv6oRg!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMZTTLmvj7EF8NxNzosC9e7Q6TEcVzoCk63FO6A03Kaz_E5Hj21EQ5Sw3V1cxERC7ZigfbSnukX6FRcQeL2-3nhjRBDHR94mYERZEMcJhDfkksGUZAJcLUZHRBPmB9hlr_tFbM3PJx_00RikBKdg1Nw1_FiJGDz0dLD8nvhhODx-FWe3Z8HbMKBBs9RkdarR8nwqrobFt7oY1R3-9ST_2D1nLYZzsOdPXsqVqIJSOKCE_QaBwG4N8JJ_fYnErLQyFrdqwju1vb03KIq3OmAK4xMEvaBmgeN3k59lMmqcWD7CJSD47iTs7l156kpJ0Qyj-S9VUEQg8pBwFXyGROHqgAY2z2EYK_L3lag50sB8c2TXCp-R-GK4z9KbpQT3ME73hKZVkhGBKJwRP_RLYgOJ_RCBlpl9F5Q",
+   "widthPx": 4032,
+   "heightPx": 3024,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICBkPvihgE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICBkPvihgE!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMZ-T2Occsvf-vtbxPLnVSEJYAShiXC-mxs35N9bhVyLNnTbfQtxmgJjRpRc6oGCx6Y6ZB59tPEFmz79BlnFvkSiKzOfJjM9AickGE41fHxny7eHPArLjqj6tvzgwlIDt0UXq6ckKDiAzHd6BAAg4RnvrwS2nzpOH-h6U6gTaUPxaoSn6TQ7TtFMVD1-rW8UkmEB4yloY3hHaYwk2gv3Kxw3V7VdZ3vIjni-geSFnL7X7NiFpChJ_21PzqzwuxGoi8AfLMEh1SQhMM4HFNv8xP9NnugIWLMH2fk-sMRaRjGk-_FmJM8tgx8uLMPKunWNiA61EyLqNSqTB9cZG8KtmlPGo1D2x0YyRL5ef76TexI5jmhNAqJZOe3J22Wnb4GDIJGd8D7mfu9k2sGz7HaGa4RheAU",
+   "widthPx": 3024,
+   "heightPx": 4032,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIDJzfqaLQ&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIDJzfqaLQ!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMZ9oeIZ2r2WPS3e2bZnncdyVx-ey371d6zIcIAvCcexefaSjpYCPln4TxAwVGzAfPmRVduENsdJvpHQdG2vl5DbshycFi0GiHhMv1OkNhW14BtWwPzVfdccThmo5D3RC60nq3dcjs10iH5soo6KAeNzWxAQZWXQQyWqqLdtnTxdMkTVD8abMPjYDkWzmFwEanVHtn-wtN_4DuicZzcsjZnBc3g2T5tbwFjCvboXEWHA1ZWypo0Fr4fApifxgovG6bW4M47Qta8DsQziCRAWE-7ojm7tmX6j254CwJrT74Igsncj4B2RZhmxRBoDTLqLUhlmduS2gDz68ZH0Tvy1qk0pUTWBF4_vCVqhYPeh9WrYIn9lmlht7QgxspHM7FmJPbL9DAv1NFI4PMVkLP7PU0rTibo",
+   "widthPx": 3842,
+   "heightPx": 2727,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIC20-ibHQ&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIC20-ibHQ!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMaUNQus0cQlhQcD5_veE4oPr9TYMN4AoWad1SxNjINLLNfkR4fTYfHxKA1SSVxf4IFdYoMJJLridcjcjNibWb5f9Y4gJeTKGubC_u9lLJkivJb_p4BSTyntJortNZYiUy8MxRLJz4jXbjEK05PmsZp3_uVJwnVQZYYanZvHFordPqDa0aEe-X3RivCXyyESBFzSrCTJEb85dVXqLxp1Cx8BjXSYILgTzvXwyfKn3dUIdcYGg2lrCvuu9c5j9L-My8kiLp9gMeP1EsF9UNxelKg3zMHGbQQkFnvHYWmB715VVakt2gkJ_xyeMu0tChVPnYk_fqYUR1W54R_g-ILUesbXBFhSAZ7Xzna1YXb2Kpv29BMN-KV0irGGlWC5TF7pxarfu2J7AIWrgeKaW3kiHSHNu7k",
+   "widthPx": 4032,
+   "heightPx": 3024,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgIC19OjuXw&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgIC19OjuXw!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMZQXroY6tNOCUWqGpLZ6fiP0l9o3TNWj51TkIyLleaKX7LqQOMgVwqaRx9MVPD9U0oFJ425ZqcZmyqkXQ9pD49AW9carUaOxSs09bdQFQqnYPqEu9GeUnYyrzvQyZQL4I4mA6IAeUXbfhZnJOykVPw1UohR3eBrF6qkKRSAWJ8zPcEcyWuoB0QPegPP1CznsH8viuT8c8JXkjyPuKblyX0rhd1JQYws7n3YMa916LjswgU6xoYoZMB7v_q5iZpubjELjz5abkvyPFn0B4Yrwr1kOTdivd_XSIfWtZkmW8BwKiR-w8iCrB-75yv2im4EO0YICL7Jh5GmfOZ89q1Wn3zEIWBF3LGPa312pjYs1cdPahsmslb5Cr50XGKWprRJUi88YLK9XJbQvm7y4Lh7pErm76Q",
+   "widthPx": 2448,
+   "heightPx": 3264,
+   "authorAttributions": [
+    {
+     "displayName": "The Dandy Gent Barber Shop Nottm",
+     "uri": "https://maps.google.com/maps/contrib/110182692732586321314",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjVbGOAkpTMPCc-ReGHuP2isFmLGUcylPCL0R9I0XpHbPt5JQqDO=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgID84cL8cw&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgID84cL8cw!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  },
+  {
+   "name": "places/ChIJM-azoeXDeUgRRX9BUC2kSd8/photos/Aa-ngMajZxgCht_Iu8SPlskgzaP9uBVvJ9EedvkGloncRL_7wyPrP_eA6YcTgCnrIeGj5E7oRBfjSxUQyfdOmPeW2XXjJMTNNcdnbT69giyhMCPjGyu8nmo_cgwF6bTOHOtHG7d2PPnqf942kKlJtru5iBNL0sIY6KZAe-LZZ91jJ3jo3EMprMqHwcC6-HBc6p2-E8QxGBIngRLZQCyCvkbAa9vj7Nvu4OHIsXe4HImEllHtAEn4IZZXqiFrMx0DvPxoY8Jkjn5f5aT0HhgixSqdFAKLg3G9z1VjT0VNhxCab-zb_76_OjF6QxPNrNovjiUYhfgW5LP2W9J_YOmGwNd7E1n5zhpCyZcaDZqumKAXBuNkSSrvJZFKo1_QrE_eGXyxueU65MtHy0on7wcpe3Yeh-ZsbjyZ9ms",
+   "widthPx": 4080,
+   "heightPx": 3072,
+   "authorAttributions": [
+    {
+     "displayName": "Faith Elisabeth Lilley",
+     "uri": "https://maps.google.com/maps/contrib/105954582666944917691",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjXmJljwc2T1k4a2d_9Og-9rHdnqda5mNuEEnGmIYD65olm7UDAl=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICH3rzoiAE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICH3rzoiAE!2e10!4m2!3m1!1s0x4879c3e5a1b3e633:0xdf49a42d50417f45"
+  }
+ ]
+}

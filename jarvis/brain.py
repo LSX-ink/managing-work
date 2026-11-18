@@ -1,8 +1,10 @@
 """Jarvis's brain: a Claude conversation with a manual tool-use loop."""
 
 import asyncio
+import calendar
 import datetime as dt
 import json
+import math
 import re
 import time
 from pathlib import Path
@@ -15,10 +17,12 @@ import aboutyou
 import calcmaths
 import calcunits
 import agenda
+import alfredmem
 import alerts
 import computer
 import dates
 import fun
+import omniroute
 import reminders
 import shopping
 import timers
@@ -35,6 +39,7 @@ STUCK_EFFORT = {"low": "medium", "medium": "high"}  # think harder for the rest 
 MAX_IMAGES_KEPT = 12
 MAX_DOCUMENTS_KEPT = 6
 MAX_TURNS_KEPT = 20
+TRIMMED_TO = 12  # history is cut back to this many exchanges at once, so the cached prefix lasts several turns
 CARRY_OVER_TURNS = 10  # exchanges remembered across restarts and page reloads
 
 # Fixed lines Jarvis says without asking Claude, by language code.
@@ -53,6 +58,9 @@ LINES = {
         "busy": "Claude is busy or rate-limiting me just now. Give it a minute and try again.",
         "bad_model": "Claude doesn't recognise the model in my settings, or this account can't use it. Check "
                      "JARVIS_MODEL in the dot env file.",
+        "no_credit_free": "My thinking credit has run out and the free AI isn't connected — add the free Gemini key "
+                          "in OmniRoute.",
+        "still_no_credit": "Still no thinking credit, I'm afraid.",
         "loop": "I seem to be going round in circles. Let's try that another way.",
         "declined": "The user declined these actions. Do not retry them; ask what they would like instead.",
     },
@@ -68,6 +76,9 @@ LINES = {
                          "werknetwerk kan 'n firewall api dot anthropic dot com blokkeer.",
         "busy": "Claude is nou besig. Wag 'n minuut en probeer weer.",
         "bad_model": "Claude ken nie die model in my instellings nie. Kyk na JARVIS_MODEL in die dot env-lêer.",
+        "no_credit_free": "My dinkkrediet is op en die gratis KI is nie gekoppel nie — voeg die gratis Gemini-sleutel "
+                          "in OmniRoute by.",
+        "still_no_credit": "Steeds geen dinkkrediet nie, ongelukkig.",
         "loop": "Dit lyk of ek in sirkels draai. Kom ons probeer dit anders.",
         "declined": "The user declined these actions. Do not retry them; ask what they would like instead.",
     },
@@ -80,6 +91,8 @@ def line(settings: Settings, key: str) -> str:
 
 def error_key(exc: Exception) -> str:
     """Which fixed line names a failed Claude call, so the user hears what to fix instead of a vague error."""
+    if isinstance(exc, omniroute.NoThinkingCredit):  # Claude's credit is out and OmniRoute failed too
+        return "no_credit_free"
     if "credit balance is too low" in str(exc):
         return "no_credit"
     if isinstance(exc, TypeError) and "authentication" in str(exc):  # the SDK's error for a missing key
@@ -101,14 +114,14 @@ _NEW_WEB_TOOLS = ("claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude
 _NO_EFFORT = ("claude-haiku-4-5", "claude-sonnet-4-5")
 # Models that take adaptive thinking (they decide how much to think; effort sets the depth). Older ones would
 # need a fixed thinking budget, so they go without.
-_ADAPTIVE_THINKING = _NEW_WEB_TOOLS + ("claude-fable-5",)
-_NO_TOOL_SEARCH = ("claude-haiku", "claude-3")
+_ADAPTIVE_THINKING = _NEW_WEB_TOOLS + ("claude-fable-5", "claude-haiku-5")
+_NO_TOOL_SEARCH = ("claude-haiku-4", "claude-haiku-3", "claude-3")  # Haiku 5 and later search tools too
 _SERVER_FALLBACK = ("claude-opus-5", "claude-fable-5")
-_COMPUTER_TOOLSET = ("claude-opus-5", "claude-fable-5")
+_COMPUTER_TOOLSET = ("claude-opus-5", "claude-fable-5", "claude-haiku-5")
 
 
-def computer_enabled(settings: Settings) -> bool:
-    return settings.enable_computer and settings.model.startswith(_COMPUTER_TOOLSET)
+def computer_enabled(settings: Settings, model: str | None = None) -> bool:
+    return settings.enable_computer and (model or settings.big_model).startswith(_COMPUTER_TOOLSET)
 
 
 PERSONAS = {
@@ -171,7 +184,7 @@ Timers and reminders: use set_timer for "set a timer…" or "in 10 minutes", che
 
 Listening: the user can say "stop" or "quiet" while you speak to cut you off. If they ask you to only listen when they say your name (or to answer everything again), use listen_for_name.
 
-More abilities: making and posting TikTok videos (tiktok_studio) and the station and ship (station_view) are always loaded, so use them directly. Besides the tools you can see, you have many more that load on demand (games and quizzes, words and definitions, calculators and conversions, dates, birthdays and countdowns, news, air quality and other live info, home trackers such as meals, recipes, pantry, bins, bills, plants and diary, wellbeing logs, goals, workouts, flashcards, reading lists, and PC controls such as brightness, clipboard, Wi-Fi and windows). When no visible tool fits, search for one with tool_search_tool_bm25 using a few plain key words before saying you can't.
+More abilities: making and posting TikTok videos (tiktok_studio) is always loaded, so use it directly. Besides the tools you can see, you have many more that load on demand (games and quizzes, words and definitions, calculators and conversions, dates, birthdays and countdowns, news, air quality and other live info, home trackers such as meals, recipes, pantry, bins, bills, plants and diary, wellbeing logs, goals, workouts, flashcards, reading lists, and PC controls such as brightness, clipboard, Wi-Fi and windows). When no visible tool fits, search for one with tool_search_tool_bm25 using a few plain key words before saying you can't.
 
 {PROBLEM_SOLVING}
 
@@ -179,7 +192,20 @@ Showing things: when the user asks to see or show something, or it's easier to r
 
 New abilities: if the user asks for something none of your tools (including ones found by search) can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
-{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}"""
+{identity_section(settings)}{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}{alfredmem.prompt_section(settings)}"""
+
+
+def identity_section(settings: Settings) -> str:
+    """Alfred's own email address is his identity for every account he has or signs up for."""
+    if not settings.alfred_email_address:
+        return ""
+    return (f"Your identity: your own email address is {settings.alfred_email_address}. It is the email for everything "
+            "that is yours: TikTok, YouTube, Kick, Higgsfield, every website or app you sign up for, newsletters, and "
+            "Kinetic Web Designs papers. Always give this address when a form or person asks for your email, never "
+            "the user's own address. Check it with alfred_inbox (codes finds sign-up codes; the user types them in). "
+            "You announce new emails to it yourself: tell the user what an email says in a sentence or two and "
+            "suggest a reply, then draft it when they want one. Never send an email until the user has said yes "
+            "to that exact draft.\n\n")
 
 
 def deliveries_section(settings: Settings) -> str:
@@ -215,9 +241,9 @@ def pc_section(settings: Settings) -> str:
     return "Computer: " + " ".join(parts) + "\n\n"
 
 
-def tool_search_enabled(settings: Settings) -> bool:
+def tool_search_enabled(settings: Settings, model: str | None = None) -> bool:
     """Tool search lets Alfred keep hundreds of abilities without reading them all every turn."""
-    return settings.tool_search and not settings.model.startswith(_NO_TOOL_SEARCH)
+    return settings.tool_search and not (model or settings.big_model).startswith(_NO_TOOL_SEARCH)
 
 
 EFFORTS = ("low", "medium", "high")
@@ -252,14 +278,54 @@ def turn_effort(settings: Settings, text: str) -> str:
     return max(settings.effort, question_effort(text), key=EFFORTS.index)
 
 
-def request_options(settings: Settings, effort: str | None = None) -> dict:
-    """Model-dependent request parameters. `effort` overrides JARVIS_EFFORT for this turn."""
-    model = settings.model
+# Cost saver: which turns earn the smart (expensive) model. Everything else goes to the cheap one.
+_BEST_BRAIN = re.compile(r"\b(?:think (?:really )?(?:hard|harder|carefully|deeply)|(?:use )?your (?:best|biggest|smartest|"
+                         r"big) brain|best brain|use (?:opus|the smart model|the big model)|full power)\b", re.I)
+_SMART_JOB = re.compile(
+    r"\b(?:essay|report|proposal|cover letter|blog(?: post)?|article|newsletter|chapter|story|speech|"
+    r"business plan|(?:write|draft|compose)\b.{0,40}\b(?:letter|email|post|page|copy|bio|caption|pitch|script|"
+    r"description|review|plan)|"
+    r"code|coding|script|program(?:me|ming)?|python|javascript|typescript|html|css|sql|regex|function|debug|"
+    r"bug|refactor|api|excel formula|spreadsheet formula|"
+    r"plan (?:out|my|the|a|for)|planning|strategy|roadmap|step by step|itinerary|schedule (?:out|my week)|"
+    r"design|redesign|logo|branding|wireframe|layout|mock-?up|landing page|"
+    r"video script|tiktok script|youtube script|storyboard|hooks? for|"
+    r"outreach|cold (?:email|message|call)|sales (?:email|pitch)|pitch deck|follow-?up email|prospects?|"
+    r"compare|comparison|pros and cons|analy[sz]e|analysis|research|in detail|detailed)\b", re.I)
+_SCREEN_JOB = re.compile(r"\b(?:click|mouse|on (?:the|my) screen|type (?:in|into)|scroll)\b", re.I)
+_FOLLOW_ON = re.compile(r"^(?:\W*(?:yes|yeah|yep|ok(?:ay)?|sure|please|go (?:on|ahead)|do (?:it|that)|carry on|continue|"
+                        r"keep going|more|again|another|redo|change|make it|shorter|longer|fix|tweak|add|instead|"
+                        r"and|now|also|but)\b)", re.I)
+SMART_WORDS = 60  # a request this long is a job, not chit-chat
+
+
+def turn_model(settings: Settings, text: str, last: str | None = None) -> str:
+    """The Claude model for one turn. With JARVIS_COST_SAVER on, simple turns (chit-chat, quick facts, time,
+    weather, music, timers, reminders) go to the cheap model; clearly hard jobs, "think hard" and follow-ups to a
+    hard job ("yes, make it shorter") go to the smart one. `last` is the model the previous turn used."""
+    smart = settings.big_model
+    if not settings.cost_saver or not settings.cheap_model:
+        return smart
+    if text.startswith("[activate]"):
+        return settings.cheap_model  # the greeting: weather, tasks and a light remark
+    said = text.strip()
+    if _BEST_BRAIN.search(said) or _SMART_JOB.search(said) or len(said.split()) > SMART_WORDS:
+        return smart
+    if computer_enabled(settings) and _SCREEN_JOB.search(said):
+        return smart
+    if last == smart and _FOLLOW_ON.match(said) and len(said.split()) <= 15:
+        return smart  # "yes, do it" after a hard job carries on with the same brain
+    return settings.cheap_model
+
+
+def request_options(settings: Settings, effort: str | None = None, model: str | None = None) -> dict:
+    """Model-dependent request parameters. `effort` overrides JARVIS_EFFORT for this turn, `model` JARVIS_MODEL."""
+    model = model or settings.big_model
     new_web = model.startswith(_NEW_WEB_TOOLS)
     every = list(tools.client_tool_definitions(settings))
     loaded = [t for t in every if not t.get("defer_loading")]
     deferred = [t for t in every if t.get("defer_loading")]
-    if not tool_search_enabled(settings):
+    if not tool_search_enabled(settings, model):
         loaded, deferred = every, []
         loaded = [{k: v for k, v in t.items() if k != "defer_loading"} for t in loaded]
     # The loaded tools are the same every turn, so cache them: faster and cheaper replies.
@@ -272,7 +338,7 @@ def request_options(settings: Settings, effort: str | None = None) -> dict:
             {"type": "web_search_20260209" if new_web else "web_search_20250305", "name": "web_search", "max_uses": 3},
             {"type": "web_fetch_20260209" if new_web else "web_fetch_20250910", "name": "web_fetch", "max_uses": 2},
         ]
-    if computer_enabled(settings):
+    if computer_enabled(settings) and computer_enabled(settings, model):
         tool_list.append({"type": "computer_toolset_20260801"})
     system = system_prompt(settings)
     if deferred:  # name every ability, so Alfred knows all he can do and never says he can't without looking
@@ -280,9 +346,10 @@ def request_options(settings: Settings, effort: str | None = None) -> dict:
                    "name or plain key words, then use it): " + ", ".join(t["name"] for t in deferred) + ". "
                    "Never tell the user you can't do something, or that you lack a tool, until you've checked this "
                    "list and searched. When a request needs several abilities, combine them to deliver the result.")
-    # Cache the conversation too, not just the tools: every tool round resends the whole history, and cached
-    # tokens cost about a tenth. The breakpoint moves to the newest message on its own each request.
-    opts: dict = {"model": model, "max_tokens": 16000, "system": system, "tools": tool_list,
+    # Caching: tools and this system prompt are the same every turn (cached up to here), and the top-level marker
+    # caches the conversation so far, so each tool round and each new turn re-reads it at a tenth of the price.
+    opts: dict = {"model": model, "max_tokens": 16000, "tools": tool_list,
+                  "system": [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
                   "cache_control": {"type": "ephemeral"}}
     if not model.startswith(_NO_EFFORT):
         opts["output_config"] = {"effort": effort or settings.effort}
@@ -295,8 +362,10 @@ def request_options(settings: Settings, effort: str | None = None) -> dict:
     return opts
 
 
-def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT) -> list[dict]:
-    """Keep the last `max_turns` exchanges, cutting only where a user utterance begins.
+def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT, keep: int | None = None) -> list[dict]:
+    """Once there are more than `max_turns` exchanges, keep only the last `keep` (default `max_turns`), cutting
+    only where a user utterance begins. Cutting back further than the limit in one go means the start of the
+    conversation stays the same for several turns, so it keeps being read from the cache.
 
     A turn begins at a user message with plain string content; tool results are lists,
     so tool_use / tool_result pairs are never split.
@@ -304,7 +373,7 @@ def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT) -> list[
     starts = [i for i, m in enumerate(messages) if m["role"] == "user" and isinstance(m["content"], str)]
     if len(starts) <= max_turns:
         return messages
-    return messages[starts[-max_turns]:]
+    return messages[starts[-min(keep or max_turns, max_turns)]:]
 
 
 _NAME = r"(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )?"
@@ -351,8 +420,9 @@ def _reminder_answer(said: str, settings: Settings) -> str | None:
 
 
 _CLOCK = r"(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>a\.?m\.?|p\.?m\.?)|(?P<h24>[01]\d|2[0-3]):(?P<m24>[0-5]\d)"
-_DAY = r"(?:(?P<day>today|tonight|tomorrow) )?"
-_REMIND_AT = re.compile(_NAME + r"(?:remind me " + _DAY + r"at (?:" + _CLOCK + r")(?: (?P<day2>today|tonight|tomorrow))?"
+_WEEKDAY_SAID = r"(?:on )?(?:next )?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
+_DAY = r"(?:(?P<day>today|tonight|tomorrow|" + _WEEKDAY_SAID + r") )?"
+_REMIND_AT = re.compile(_NAME + r"(?:remind me " + _DAY + r"at (?:" + _CLOCK + r")(?: (?P<day2>today|tonight|tomorrow|" + _WEEKDAY_SAID + r"))?"
                         r" (?:to |that |about )(?P<what>.+?))" + _END, re.I)
 _LIST_REMINDERS = re.compile(_NAME + r"(?:what reminders (?:do I have|have I got|are (?:there|set))|what are my reminders|"
                              r"(?:list|read|tell me) (?:all )?my reminders|(?:do I have )?any reminders)" + _END, re.I)
@@ -370,7 +440,12 @@ def _clock_reminder(m: re.Match, settings: Settings) -> str:
     now = dt.datetime.now().replace(second=0, microsecond=0)
     at = now.replace(hour=hour, minute=minute)
     day = (m.group("day") or m.group("day2") or "").lower()
-    if day == "tomorrow" or (not day and at <= now):  # "at 7 am" said in the evening means tomorrow
+    weekday = next((i for i, name in enumerate(_WEEKDAYS) if name in day), None)
+    if weekday is not None:  # "on Friday at 9 am": the next Friday, or today if it's Friday and still to come
+        at += dt.timedelta(days=(weekday - now.weekday()) % 7)
+        if at <= now or ("next" in day and at.date() == now.date()):
+            at += dt.timedelta(days=7)
+    elif day == "tomorrow" or (not day and at <= now):  # "at 7 am" said in the evening means tomorrow
         at += dt.timedelta(days=1)
     try:
         return reminders.add(settings, at.strftime("%Y-%m-%d %H:%M"), m.group("what").strip(),
@@ -379,10 +454,30 @@ def _clock_reminder(m: re.Match, settings: Settings) -> str:
         return str(exc)
 
 
+_REMIND_DAYS = re.compile(_NAME + r"remind me (?:in|after) (?P<n>\d+|a|an|one) (?P<unit>days?|weeks?)(?: time)? (?:to |that |about )(?P<what>.+?)" + _END, re.I)
+_NEXT_REMINDER = re.compile(_NAME + r"(?:when(?:'s| is) my next reminder|what(?:'s| is) my next reminder|what(?:'s| is) (?:the )?next reminder"
+                            r"|what(?:'s| is) next on my reminders|when(?:'s| is) the next reminder)" + _END, re.I)
+
+
 def _more_reminders(said: str, settings: Settings) -> str | None:
-    """'Remind me at 7 pm to call Mum', 'what reminders do I have?' and 'cancel the reminder about the bins'."""
+    """'Remind me at 7 pm to call Mum', 'remind me on Friday at 9 am to pay rent', 'remind me in 3 days to…',
+    'what's my next reminder?', 'what reminders do I have?' and 'cancel the reminder about the bins'."""
     if m := _REMIND_AT.match(said):
         return _clock_reminder(m, settings)
+    if m := _REMIND_DAYS.match(spoken_numbers(said)):
+        n = 1 if not m.group("n").isdigit() else int(m.group("n"))
+        now = dt.datetime.now().replace(second=0, microsecond=0)
+        at = now + dt.timedelta(days=n * (7 if m.group("unit").lower().startswith("week") else 1))
+        try:
+            return reminders.add(settings, at.strftime("%Y-%m-%d %H:%M"), m.group("what").strip(), now=now).replace("remind them", "remind you")
+        except ValueError as exc:
+            return str(exc)
+    if _NEXT_REMINDER.match(said):
+        found = reminders.load(settings)
+        if not found:
+            return "No reminders are set."
+        first = min(found, key=lambda r: r["at"])
+        return f"Your next reminder is {reminders.spoken_time(reminders.parse_when(first['at']), dt.datetime.now())}: {first['text']}."
     if _LIST_REMINDERS.match(said):
         return reminders.listing(settings)
     if m := _CANCEL_REMINDER.match(said):
@@ -396,6 +491,11 @@ _SHOP_REMOVE = re.compile(_NAME + r"(?:(?:take|cross|tick) (?P<a>.+?) off " + _L
                           r"|(?:remove|delete) (?P<b>.+?) from " + _LIST + r")" + _END, re.I)
 _SHOP_READ = re.compile(_NAME + r"(?:what(?:'s| is) on " + _LIST + r"|(?:read|show|tell me) (?:me )?" + _LIST +
                         r"|what do (?:I|we) need (?:to buy|from the shop(?:s)?))" + _END, re.I)
+
+
+_SHOP_HAVE = re.compile(_NAME + r"(?:(?:is|are) (?:there )?(?:any |some )?(?P<item>[a-z' -]+?) on " + _LIST
+                        + r"|(?:have I|have we|did I|did we) (?:got |put |added |add |put down )(?:any |some )?(?P<item2>[a-z' -]+?) (?:on|to) " + _LIST + r")" + _END, re.I)
+_SHOP_COUNT = re.compile(_NAME + r"how many (?:things|items|bits) (?:are )?(?:there )?(?:on|in) " + _LIST + _END, re.I)
 
 
 def _spoken_items(said: str) -> list[str]:
@@ -412,6 +512,17 @@ def _shopping_answer(said: str, settings: Settings) -> str | None:
             return shopping.remove(settings, _spoken_items(m.group("a") or m.group("b")))
     except ValueError as exc:
         return str(exc)
+    if m := _SHOP_HAVE.match(said):
+        said_item = (m.group("item") or m.group("item2")).strip()
+        item = said_item.lower()
+        found = [i for i in shopping.items(settings) if item in i.lower() or i.lower() in item]
+        plural = lambda w: w.lower().endswith("s") and not w.lower().endswith("ss")
+        if found:
+            return f"Yes, {found[0]} {'are' if plural(found[0]) else 'is'} on the list."
+        return f"No, {said_item} {"aren't" if plural(said_item) else "isn't"} on the list."
+    if _SHOP_COUNT.match(said):
+        n = len(shopping.items(settings))
+        return "The shopping list is empty." if not n else f"There {'is' if n == 1 else 'are'} {n} item{'s' if n != 1 else ''} on the list."
     if _SHOP_READ.match(said):
         found = shopping.items(settings)
         if not found:
@@ -424,10 +535,10 @@ _ONES = {"zero": 0, "nought": 0, "one": 1, "two": 2, "three": 3, "four": 4, "fiv
          "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
          "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
          "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90}
-_SCALES = {"hundred": 100, "thousand": 1000, "million": 1000000}
+_SCALES = {"hundred": 100, "thousand": 1000, "million": 1000000, "billion": 10 ** 9, "trillion": 10 ** 12}
 _NUM_WORD = r"(?:" + "|".join(list(_ONES) + list(_SCALES)) + r")"
-_AFTER_SCALE = r"(?:(?<=hundred)|(?<=thousand)|(?<=million))"
-_SPOKEN_NUMBER = re.compile(r"\b(?:an? (?=hundred|thousand|million))?" + _NUM_WORD
+_AFTER_SCALE = r"(?:(?<=hundred)|(?<=thousand)|(?<=million)|(?<=billion)|(?<=trillion))"
+_SPOKEN_NUMBER = re.compile(r"\b(?:an? (?=hundred|thousand|million|billion|trillion))?" + _NUM_WORD
                             + r"(?:(?: |-|" + _AFTER_SCALE + r" and )" + _NUM_WORD + r"|" + _AFTER_SCALE
                             + r"(?: and)? \d{1,2}(?![\d.,]))*(?: point(?: " + _NUM_WORD + r")+)?\b", re.I)
 
@@ -452,13 +563,17 @@ def _number_value(words: str) -> str:
 def spoken_numbers(said: str) -> str:
     """'twenty five times four' -> '25 times 4', 'two hundred and fifty' -> '250', 'three point five' -> '3.5',
     so sums and conversions said in words are answered on the spot."""
-    return _SPOKEN_NUMBER.sub(lambda m: _number_value(m[0]), said)
+    said = _SPOKEN_NUMBER.sub(lambda m: _number_value(m[0]), said)
+    # "1 million" and "2.5 million" arrive as "1 1000000" and "2.5 1000000": multiply them out
+    return re.sub(r"(?<![\d.])(\d+(?:\.\d+)?) (1000|1000000|1000000000|1000000000000)(?![\d.])",
+                  lambda m: calcmaths.fmt(float(m[1]) * int(m[2])).replace(",", "") if float(m[1]) * int(m[2]) < 1e15 else m[0], said)
 
 
-_SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?[\d(][\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
+_SUM = re.compile(_NAME + r"(?:what(?:'s| is)|what does|work out|calculate|how much is) (?P<sum>(?:the )?(?:square root of )?(?:[\d(]|pi\b)[\w\s.,%()*/+x×÷^-]*?)(?: equal| make)?" + _END, re.I)
 _SPOKEN_MATHS = ((r"(\d(?:[\d.,]*\d)?) ?(?:%|per ?cent) of ", r"\1/100*"), (r"divided by|over|÷", "/"),
                  (r"(?:multiplied )?by|times|x|×", "*"), (r"plus|add", "+"), (r"minus|take away", "-"),
-                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the power of", "**"),
+                 (r"squared", "**2"), (r"cubed", "**3"), (r"to the (?:power (?:of )?)?(\d+)(?:st|nd|rd|th)?(?: power)?", r"**\1"),
+                 (r"to the power of", "**"),
                  (r"the square root of|square root of", "sqrt"))
 
 
@@ -470,7 +585,9 @@ def _maths_answer(said: str) -> str | None:
     for words, symbol in _SPOKEN_MATHS:
         text = re.sub(r"(?<![a-z])(?:" + words + r")(?![a-z])", f" {symbol} " if symbol[0] != "\\" else symbol, text)
     text = re.sub(r"sqrt\s+([\d.]+)", r"sqrt(\1)", text).strip()
-    if re.search(r"[a-z]", text.replace("sqrt", "")) or not re.search(r"\d\s*(?:\*\*?|/|\+|-)\s*[\d(s]|sqrt\(", text):
+    if p := re.fullmatch(r"([\d.,]+)\s*([+-])\s*([\d.]+)\s*%", text):  # "50 plus 10%" means 55, not 50.1
+        text = f"{p.group(1)} * (1 {p.group(2)} {p.group(3)} / 100)"
+    if re.search(r"[a-z]", re.sub(r"\bpi\b", "", text.replace("sqrt", ""))) or not re.search(r"(?:\d|pi)\s*(?:\*\*?|/|\+|-)\s*(?:[\d(s]|pi)|sqrt\(", text):
         return None  # words left over, or no sum at all: Claude handles it
     try:
         value = calcmaths.calculate(text).rsplit(" = ", 1)[1]
@@ -479,6 +596,561 @@ def _maths_answer(said: str) -> str | None:
     if "." in value and "e" not in value:  # said aloud, four decimal places is plenty
         value = calcmaths.fmt(round(float(value.replace(",", "")), 4))
     return f"That's {value}."
+
+
+_NUM = r"(?P<n>-?\d[\d,]*(?:\.\d+)?)"
+_FRACTION = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?:(?P<part>half|a half|one half|a third|one third|"
+                       r"a quarter|one quarter|two thirds|2 thirds|three quarters|3 quarters|a fifth|a tenth|double|twice|triple|treble) (?:of )?)"
+                       + _NUM + _END, re.I)
+_PRIME = re.compile(_NAME + r"is " + _NUM + r" (?:a )?prime(?: number)?" + _END, re.I)
+_FACTORIAL = re.compile(_NAME + r"(?:what(?:'s| is) )?(?:" + _NUM + r" factorial|(?:the )?factorial of " + _NUM.replace("<n>", "<n2>") + r")" + _END, re.I)
+_ROUND = re.compile(_NAME + r"(?:what(?:'s| is) )?round(?:ed)? " + _NUM + r"(?: to (?:the nearest (?P<nearest>whole number|ten|10|hundred|100|thousand|1000)|"
+                    r"(?P<dp>\d+|one|two|three|four) (?:decimal places?|dp))| up| down)?" + _END, re.I)
+_PARTS = {"half": 0.5, "a half": 0.5, "one half": 0.5, "a third": 1 / 3, "one third": 1 / 3, "a quarter": 0.25,
+          "one quarter": 0.25, "two thirds": 2 / 3, "2 thirds": 2 / 3, "three quarters": 0.75, "3 quarters": 0.75, "a fifth": 0.2, "a tenth": 0.1,
+          "double": 2, "twice": 2, "triple": 3, "treble": 3}
+
+
+_CLOCK_FORMAT = re.compile(_NAME + r"(?:what(?:'s| is) |convert |change )?(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>am|pm|a\.m\.|p\.m\.)?"
+                           r" (?:in|to|as) (?:the )?(?P<fmt>12|24|twelve|twenty four)[ -]hour(?: time| clock| format)?" + _END, re.I)
+_AVERAGE = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?:the )?(?:average|mean) of (?P<nums>-?\d[\d,.]*(?:(?:,? and |, | )-?\d[\d,.]*)+)"
+                      + _END, re.I)
+
+
+def _clock_format(m: re.Match) -> str | None:
+    hour, minute, ap = int(m.group("h")), int(m.group("m") or 0), (m.group("ap") or "").lower().replace(".", "")
+    if minute > 59 or hour > 23 or (ap and not 1 <= hour <= 12):
+        return None
+    if ap:
+        hour = hour % 12 + (12 if ap == "pm" else 0)
+    if m.group("fmt").lower() in ("24", "twenty four"):
+        if not ap and 1 <= hour <= 11:  # a bare 'quarter to 6' could be either
+            return f"That's {hour:02d}:{minute:02d} in the morning, or {hour + 12}:{minute:02d} in the evening."
+        return f"That's {hour:02d}:{minute:02d}."
+    return f"That's {_say_clock(hour, minute)}."
+
+
+_TO_ROMAN = re.compile(_NAME + r"(?:what(?:'s| is) |write |convert |how do you write )?(?P<n>\d[\d,]*) (?:in|to|as) roman(?: numerals?)?" + _END, re.I)
+_FROM_ROMAN = re.compile(_NAME + r"(?:(?:what number is|what(?:'s| is) the roman numeral|convert the roman numeral) (?P<r>[MDCLXVI]+)"
+                         r"|(?:what(?:'s| is) |convert )(?P<r2>[MDCLXVI]+) (?:in|to|as) (?:numbers?|normal numbers|digits))" + _END)
+_TO_BASE = re.compile(_NAME + r"(?:what(?:'s| is) |convert |write )?(?P<n>\d[\d,]*) (?:in|to|as|into) (?P<base>binary|hex|hexadecimal|octal)" + _END, re.I)
+_ROMAN = ((1000, "M"), (900, "CM"), (500, "D"), (400, "CD"), (100, "C"), (90, "XC"), (50, "L"), (40, "XL"),
+          (10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I"))
+
+
+def _to_roman(n: int) -> str:
+    out = ""
+    for value, letters in _ROMAN:
+        count, n = divmod(n, value)
+        out += letters * count
+    return out
+
+
+def _from_roman(text: str) -> int | None:
+    values = {"M": 1000, "D": 500, "C": 100, "L": 50, "X": 10, "V": 5, "I": 1}
+    total = sum(-values[a] if values[a] < values[b] else values[a] for a, b in zip(text, text[1:])) + values[text[-1]]
+    return total if 0 < total < 4000 and _to_roman(total) == text else None  # only properly written numerals
+
+
+def _number_bases(said: str) -> str | None:
+    """'What's 1984 in Roman numerals?', 'what number is MMXXVI?', 'what's 10 in binary?'"""
+    if m := _TO_ROMAN.match(said):
+        n = int(m.group("n").replace(",", ""))
+        return f"{n:,} is {', '.join(_to_roman(n))}." if 0 < n < 4000 else None
+    if (m := _FROM_ROMAN.match(said)) and (n := _from_roman(text := m.group("r") or m.group("r2"))):
+        return f"{text} is {n:,}."
+    if m := _TO_BASE.match(said):
+        n, base = int(m.group("n").replace(",", "")), m.group("base").lower()
+        digits = format(n, "b" if base == "binary" else "o" if base == "octal" else "X")
+        return f"{n:,} in {'hex' if base.startswith('hex') else base} is {' '.join(digits)}." if len(digits) <= 16 else None
+    return None
+
+
+_REPEAT = re.compile(r"(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )?(?:please )?(?:repeat after me|repeat this|repeat the following|say after me)[,:]? (?P<words>.+)$", re.I)
+_COUNT = re.compile(_NAME + r"(?:can you |please )?count (?:(?P<down>down )?from (?P<a>\d+)(?: (?:to|down to) (?P<b>\d+))?|(?:up )?to (?P<to>\d+))" + _END, re.I)
+
+
+def _echo_and_count(said: str, raw: str) -> str | None:
+    """'Repeat after me: …' says the words back exactly; 'count to 10', 'count down from 10'."""
+    if m := _REPEAT.match(raw.strip()):
+        words = m.group("words").strip()
+        return words if words and len(words) <= 300 else None
+    if not (m := _COUNT.match(spoken_numbers(said))):
+        return None
+    if m.group("to"):
+        a, b = 1, int(m.group("to"))
+    else:
+        a = int(m.group("a"))
+        b = int(m.group("b")) if m.group("b") else (0 if m.group("down") else None)
+        if b is None:
+            return None  # "count from 5": to what? Claude asks
+    if abs(b - a) > 30:
+        return None  # too long to be worth saying aloud
+    lift_off = b == 0 and a > 0 and not m.group("b")  # "count down from 10" ends in a lift off, not a zero
+    b = 1 if lift_off else b
+    step = 1 if b >= a else -1
+    return ", ".join(str(n) for n in range(a, b + step, step)) + (". Lift off!" if lift_off else ".")
+
+
+_N1 = r"(?P<a>-?\d[\d,]*(?:\.\d+)?)"
+_N2 = r"(?P<b>-?\d[\d,]*(?:\.\d+)?)"
+_PERCENT_OF = re.compile(_NAME + r"(?:what(?:'s| is) " + _N1 + r" as a percent(?:age)? of " + _N2
+                         + r"|what percent(?:age)? (?:is|of) " + _N1.replace("a>", "a2>") + r" (?:is |of |out of )" + _N2.replace("b>", "b2>")
+                         + r"|what percent(?:age)? is " + _N1.replace("a>", "a3>") + r" out of " + _N2.replace("b>", "b3>") + r")" + _END, re.I)
+_CHANGE_BY = re.compile(_NAME + r"(?:what(?:'s| is) )?(?P<way>increase|decrease|raise|reduce|lower) " + _N1 + r" by " + _N2 + r" ?(?:%|percent)" + _END, re.I)
+_ODD_EVEN = re.compile(_NAME + r"is " + _N1 + r" (?:an? )?(?P<kind>odd|even)(?: number)?" + _END, re.I)
+_ROOT_SQUARE = re.compile(_NAME + r"what(?:'s| is) (?:the )?(?P<kind>cube root|square|cube) of " + _N1 + _END, re.I)
+_GOES_INTO = re.compile(_NAME + r"(?:how many times (?:does|will|can) " + _N1 + r" go into " + _N2
+                        + r"|what(?:'s| is) the remainder (?:of|when|if) " + _N2.replace("b>", "b2>") + r" (?:is )?divided by " + _N1.replace("a>", "a2>") + r")" + _END, re.I)
+
+
+def _say_num(x: float) -> str:
+    return f"{round(x, 4):,g}" if abs(x) < 1e15 else f"{x:g}"
+
+
+_FRACTION_WORDS = {"half": 2, "halves": 2, "third": 3, "thirds": 3, "quarter": 4, "quarters": 4, "fifth": 5, "fifths": 5,
+                   "sixth": 6, "sixths": 6, "eighth": 8, "eighths": 8, "tenth": 10, "tenths": 10}
+_QUANTITY = (r"(?P<{0}a>\d+)/(?P<{0}b>\d+)|(?P<{0}p>\d+(?:\.\d+)?) ?(?:%|percent|per cent)|(?P<{0}d>\d*\.\d+)"
+             r"|(?P<{0}w>(?:a|an|one|two|three|four|five|six|seven|eight|nine|\d+) (?:" + "|".join(_FRACTION_WORDS) + r"))")
+_AS_FORM = re.compile(_NAME + r"(?:what(?:'s| is) |convert |write |turn )?(?:" + _QUANTITY.format("") + r") (?:as|in|to|into) (?:a |an )?"
+                      r"(?P<to>percentage|percent|per cent|decimal|fraction)s?" + _END, re.I)
+_SIMPLIFY = re.compile(_NAME + r"(?:simplify|reduce|what(?:'s| is) (?:the simplest form of|(?P<a2>\d+)/(?P<b2>\d+) simplified)) ?"
+                       r"(?:(?P<a>\d+)/(?P<b>\d+))?" + _END, re.I)
+
+
+def _quantity(m: re.Match) -> "Fraction | None":
+    from fractions import Fraction
+    if m.group("a"):
+        return Fraction(int(m.group("a")), int(m.group("b"))) if int(m.group("b")) else None
+    if m.group("p"):
+        return Fraction(m.group("p")) / 100
+    if m.group("d"):
+        return Fraction(m.group("d"))
+    count, word = m.group("w").lower().split()
+    n = 1 if count in ("a", "an", "one") else int(count) if count.isdigit() else {w: k for k, w in _WORD_FOR.items()}[count]
+    return Fraction(n, _FRACTION_WORDS[word])
+
+
+def _say_fraction(f) -> str:
+    """3/4 -> 'three quarters', 1/2 -> 'a half', 7/16 -> '7/16'."""
+    if f.denominator == 1:
+        return f"{f.numerator:,}"
+    names = {2: ("a half", "halves"), 3: ("a third", "thirds"), 4: ("a quarter", "quarters"), 5: ("a fifth", "fifths"),
+             8: ("an eighth", "eighths"), 10: ("a tenth", "tenths")}
+    if f.denominator in names and 0 < f.numerator < f.denominator:
+        one, many = names[f.denominator]
+        return one if f.numerator == 1 else f"{_WORD_FOR.get(f.numerator, f.numerator)} {many}"
+    return f"{f.numerator}/{f.denominator}"
+
+
+_WORD_FOR = {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
+
+
+_ONES_SAID = ("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen "
+         "seventeen eighteen nineteen").split()
+_TENS_SAID = "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()
+
+
+def _number_words(n: int) -> str:
+    """1234 -> 'one thousand, two hundred and thirty-four', the British way."""
+    if n < 0:
+        return "minus " + _number_words(-n)
+    if n < 20:
+        return _ONES_SAID[n]
+    if n < 100:
+        return _TENS_SAID[n // 10] + (f"-{_ONES_SAID[n % 10]}" if n % 10 else "")
+    if n < 1000:
+        return f"{_ONES_SAID[n // 100]} hundred" + (f" and {_number_words(n % 100)}" if n % 100 else "")
+    for size, name in ((10 ** 12, "trillion"), (10 ** 9, "billion"), (10 ** 6, "million"), (1000, "thousand")):
+        if n >= size:
+            head, rest = divmod(n, size)
+            tail = "" if not rest else f" and {_number_words(rest)}" if rest < 100 else f", {_number_words(rest)}"
+            return f"{_number_words(head)} {name}{tail}"
+    return str(n)
+
+
+_NUMBER_OR = r"(?P<{0}>-?\d[\d,]*(?:\.\d+)?(?:/\d+)?)"
+_IN_WORDS = re.compile(_NAME + r"(?:what(?:'s| is)|how do (?:you|I) (?:say|write)|(?:can you )?write|say) (?:the number )?(?P<n>-?\d[\d,]*)"
+                       r" (?:in words|in full|out(?: in words)?)" + _END, re.I)
+_BIGGER = re.compile(_NAME + r"(?:which is|which(?:'s| one is)|what(?:'s| is) the) (?P<way>bigger|larger|greater|higher|smaller|lower|less)"
+                     r"(?: number)?,? " + _NUMBER_OR.format("a") + r" or " + _NUMBER_OR.format("b") + _END, re.I)
+_IS_BIGGER = re.compile(_NAME + r"is " + _NUMBER_OR.format("a") + r" (?P<way>bigger|larger|greater|more|smaller|less|lower) than "
+                        + _NUMBER_OR.format("b") + _END, re.I)
+_NEXT_PRIME = re.compile(_NAME + r"what(?:'s| is) the (?:next|first) prime(?: number)? (?:after|above|bigger than) (?P<n>\d[\d,]*)" + _END, re.I)
+_ZEROS = re.compile(_NAME + r"how many (?:zeros|zeroes|noughts) (?:are )?(?:there )?(?:in|does) (?:a |one )?(?P<w>thousand|million|billion|trillion)"
+                    r"(?: have)?" + _END, re.I)
+
+
+def _number_of(text: str):
+    from fractions import Fraction
+    text = text.replace(",", "")
+    try:
+        return Fraction(text)
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
+def _bigger_numbers(said: str) -> str | None:
+    """'What's 1234 in words?', 'which is bigger, 3/4 or 2/3?', 'is 0.5 more than 0.45?', 'next prime after 13', 'zeros in a million'."""
+    if m := _IN_WORDS.match(spoken_numbers(said)):
+        text = m.group("n").replace(",", "")
+        return f"{text} is {_number_words(int(text))}." if len(text.lstrip("-")) <= 15 else None
+    if m := _ZEROS.match(said):
+        n = {"thousand": 3, "million": 6, "billion": 9, "trillion": 12}[m.group("w").lower()]
+        return f"A {m.group('w').lower()} has {n} zeros: 1{',000' * (n // 3)}."
+    said = spoken_numbers(said)
+    if m := _NEXT_PRIME.match(said):
+        n = int(m.group("n").replace(",", ""))
+        if n > 10 ** 9:
+            return None
+        k = n + 1
+        while k < 2 or any(k % f == 0 for f in range(2, int(k ** 0.5) + 1)):
+            k += 1
+        return f"The next prime after {n:,} is {k:,}."
+    for pattern in (_BIGGER, _IS_BIGGER):
+        if m := pattern.match(said):
+            a, b = _number_of(m.group("a")), _number_of(m.group("b"))
+            if a is None or b is None:
+                return None
+            way = m.group("way").lower()
+            small = way in ("smaller", "lower", "less")
+            if a == b:
+                return f"They're the same: {m.group('a')} and {m.group('b')} are equal."
+            if pattern is _BIGGER:
+                pick = m.group("a") if (a < b) == small else m.group("b")
+                return f"{pick} is {way}."
+            yes = (a < b) if small else (a > b)
+            return f"{'Yes' if yes else 'No'}, {m.group('a')} is {way if yes else ('more' if small else 'less')} than {m.group('b')}."
+    return None
+
+
+def _fraction_answer(said: str) -> str | None:
+    """'What's 3/4 as a percentage?', 'what's 0.25 as a fraction?', 'a third as a decimal', 'simplify 6/8'."""
+    from fractions import Fraction
+    if m := _AS_FORM.match(said):
+        if (f := _quantity(m)) is None:
+            return None
+        to = m.group("to").lower()
+        what = m.group(0)[m.start("a") if m.group("a") else m.start("p") if m.group("p") else m.start("d") if m.group("d") else m.start("w"):]
+        what = re.split(r" (?:as|in|to|into) ", what, maxsplit=1)[0]
+        what = what[0].upper() + what[1:]
+        if to == "fraction":
+            g = f.limit_denominator(1000)
+            return f"{what} is {_say_fraction(g)}{f' ({g.numerator}/{g.denominator})' if '/' not in _say_fraction(g) and g.denominator != 1 else ''}."
+        if to == "decimal":
+            exact = f.denominator in (2 ** i * 5 ** j for i in range(12) for j in range(12))
+            return f"{what} is {_say_num(float(f)) if exact else f'about {float(f):.3g}'} as a decimal."
+        pct = float(f * 100)
+        return f"{what} is {_say_num(pct) if Fraction(round(pct, 4)) == f * 100 else f'about {pct:.1f}'}%."
+    if (m := _SIMPLIFY.match(said)) and (m.group("a") or m.group("a2")):
+        a, b = int(m.group("a") or m.group("a2")), int(m.group("b") or m.group("b2"))
+        if not b:
+            return None
+        f = Fraction(a, b)
+        if f.denominator == b:
+            return f"{a}/{b} is already as simple as it goes."
+        return f"{a}/{b} simplifies to {f.numerator}/{f.denominator}."
+    return None
+
+
+def _more_maths(said: str) -> str | None:
+    """'What percentage is 30 of 120?', 'increase 80 by 10%', 'is 12 even?', 'cube root of 27', 'how many times does 7 go into 50?'"""
+    said = spoken_numbers(said)
+    num = lambda m, *names: next(float(m.group(n).replace(",", "")) for n in names if m.group(n))
+    if m := _PERCENT_OF.match(said):
+        part, whole = num(m, "a", "a2", "a3"), num(m, "b", "b2", "b3")
+        return None if whole == 0 else f"{_say_num(part)} is {_say_num(part / whole * 100)}% of {_say_num(whole)}."
+    if m := _CHANGE_BY.match(said):
+        value, pc = num(m, "a"), num(m, "b")
+        up = m.group("way").lower() in ("increase", "raise")
+        return f"That's {_say_num(value * (1 + pc / 100) if up else value * (1 - pc / 100))}."
+    if m := _ODD_EVEN.match(said):
+        n = num(m, "a")
+        if n != int(n):
+            return f"{_say_num(n)} isn't a whole number, so it's neither odd nor even."
+        actual = "even" if int(n) % 2 == 0 else "odd"
+        return f"{'Yes' if actual == m.group('kind').lower() else 'No'}, {_say_num(n)} is {actual}."
+    if m := _ROOT_SQUARE.match(said):
+        n, kind = num(m, "a"), m.group("kind").lower()
+        if kind == "cube root":
+            root = math.copysign(round(abs(n) ** (1 / 3), 10), n)
+            return f"The cube root of {_say_num(n)} is {_say_num(root)}."
+        return f"{_say_num(n)} {'squared' if kind == 'square' else 'cubed'} is {_say_num(n ** (2 if kind == 'square' else 3))}."
+    if m := _GOES_INTO.match(said):
+        d, n = num(m, "a", "a2"), num(m, "b", "b2")
+        if d == 0 or d != int(d) or n != int(n):
+            return None
+        q, r = divmod(int(n), int(d))
+        if m.group("b2"):
+            return f"The remainder is {r}. {int(n)} divided by {int(d)} is {q:,} remainder {r}."
+        return f"{q:,} time{'s' if q != 1 else ''}{f', with {r} left over' if r else ' exactly'}."
+    return None
+
+
+_LIST_NUMS = r"(?P<nums>-?\d[\d,.]*(?:(?:,? and |, | )-?\d[\d,.]*)+)"
+_LIST_STAT = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate |find |give me )?(?:the )?(?P<stat>median|mode|range|sum|total"
+                        r"|biggest|largest|highest|maximum|max|smallest|lowest|minimum|min)(?: number| value)? (?:of|in|out of|from) "
+                        + _LIST_NUMS + _END, re.I)
+_ADD_UP = re.compile(_NAME + r"(?:what(?:'s| is| do)|what does|can you)? ?(?:add up|add together|total(?: up)?) " + _LIST_NUMS
+                     + r"(?: add up to| come to| make)?" + _END, re.I)
+_SORT_NUMS = re.compile(_NAME + r"(?:can you |please )?(?:sort|order|put) " + _LIST_NUMS
+                        + r"(?: in order)?(?: (?:from )?(?P<way>smallest to (?:biggest|largest)|lowest to highest|biggest to smallest"
+                        r"|largest to smallest|highest to lowest|in ascending order|in descending order|ascending|descending))?(?: in order)?"
+                        + _END, re.I)
+_FACTORS = re.compile(_NAME + r"(?:what are |list |tell me |give me )?(?:the |all the )?(?:factors|divisors) of (?P<n>\d[\d,]*)" + _END, re.I)
+_COMMON = re.compile(_NAME + r"(?:what(?:'s| is) |work out |find )?(?:the )?(?P<kind>lowest common multiple|least common multiple|lcm"
+                     r"|highest common factor|greatest common (?:factor|divisor)|hcf|gcd|gcf) (?:of )?" + _LIST_NUMS + _END, re.I)
+_FROM_BASE = re.compile(_NAME + r"(?:what(?:'s| is) |convert )?(?:(?P<base>binary|hex|hexadecimal|octal) (?P<v>[0-9a-f]+)"
+                        r"|(?P<v2>[0-9a-f]+) (?:from|in) (?P<base2>binary|hex|hexadecimal|octal))"
+                        r"(?: (?:in|to|as|into) (?:decimal|normal numbers?|numbers?|denary))?" + _END, re.I)
+
+
+def _list_of(m: re.Match) -> list[float]:
+    return [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", re.sub(r"(?<=\d),(?=\d{3}\b)", "", m.group("nums")))]
+
+
+def _number_lists(said: str) -> str | None:
+    """'What's the median of 3, 9 and 1?', 'add up 4, 5 and 6', 'sort 5, 2, 9', 'factors of 12', 'LCM of 4 and 6', 'binary 1010'."""
+    said = spoken_numbers(said)
+    if m := _LIST_STAT.match(said):
+        nums, stat = _list_of(m), m.group("stat").lower()
+        if stat == "median":
+            s, mid = sorted(nums), len(nums) // 2
+            return f"The median is {_say_num(s[mid] if len(s) % 2 else (s[mid - 1] + s[mid]) / 2)}."
+        if stat == "mode":
+            counts = {n: nums.count(n) for n in nums}
+            top = max(counts.values())
+            if top == 1:
+                return "There's no mode. Every number appears once."
+            modes = [n for n in dict.fromkeys(nums) if counts[n] == top]
+            return f"The mode is {' and '.join(_say_num(n) for n in modes)}, appearing {'twice' if top == 2 else f'{top} times'}."
+        if stat == "range":
+            return f"The range is {_say_num(max(nums) - min(nums))}, from {_say_num(min(nums))} to {_say_num(max(nums))}."
+        if stat in ("sum", "total"):
+            return f"That adds up to {_say_num(sum(nums))}."
+        big = stat in ("biggest", "largest", "highest", "maximum", "max")
+        return f"The {'biggest' if big else 'smallest'} is {_say_num(max(nums) if big else min(nums))}."
+    if m := _ADD_UP.match(said):
+        return f"That adds up to {_say_num(sum(_list_of(m)))}."
+    if m := _SORT_NUMS.match(said):
+        way = (m.group("way") or "").lower()
+        down = way.startswith(("biggest", "largest", "highest")) or "descending" in way
+        return f"In order: {', '.join(_say_num(n) for n in sorted(_list_of(m), reverse=down))}."
+    if m := _FACTORS.match(said):
+        n = int(m.group("n").replace(",", ""))
+        if not 1 <= n <= 10 ** 7:
+            return None
+        small = [f for f in range(1, int(n ** 0.5) + 1) if n % f == 0]
+        found = sorted(set(small + [n // f for f in small]))
+        if len(found) > 24:
+            return f"{n:,} has {len(found)} factors, from {found[1]:,} up to {found[-2]:,}."
+        return f"The factors of {n:,} are {', '.join(f'{f:,}' for f in found[:-1])} and {found[-1]:,}." if len(found) > 1 \
+            else "The only factor of 1 is 1."
+    if m := _COMMON.match(said):
+        nums = _list_of(m)
+        if any(n != int(n) or n <= 0 for n in nums):
+            return None
+        whole = [int(n) for n in nums]
+        lowest = m.group("kind").lower() in ("lowest common multiple", "least common multiple", "lcm")
+        return f"The {'lowest common multiple' if lowest else 'highest common factor'} is {(math.lcm if lowest else math.gcd)(*whole):,}."
+    if m := _FROM_BASE.match(said):
+        base, value = (m.group("base") or m.group("base2")).lower(), (m.group("v") or m.group("v2")).replace(" ", "")
+        radix = 2 if base == "binary" else 8 if base == "octal" else 16
+        try:
+            n = int(value, radix)
+        except ValueError:
+            return None
+        return f"{'Hex' if radix == 16 else base.capitalize()} {value.upper() if radix == 16 else value} is {n:,}."
+    return None
+
+
+_SLEEP_CYCLE, _FALL_ASLEEP = 90, 15
+_BEDTIME = re.compile(_NAME + r"(?:if I (?:go to bed|go to sleep|sleep|fall asleep) (?:at|now)|I'm going to bed (?:at|now)) ?"
+                      r"(?P<clock>(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>am|pm|a\.m\.|p\.m\.)?|midnight)?,? "
+                      r"(?:when|what time) should I (?:wake up|get up|set my alarm(?: for)?)" + _END, re.I)
+_WAKE_TIME = re.compile(_NAME + r"(?:if I (?:need|have|want) to (?:wake up|get up|be up) at|I (?:need|have) to (?:wake up|get up|be up) at) "
+                        r"(?P<clock>(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>am|pm|a\.m\.|p\.m\.)?|midnight),? "
+                        r"(?:when|what time) should I (?:go to bed|go to sleep|sleep|be in bed)" + _END
+                        + r"|" + _NAME + r"(?:when|what time) should I (?:go to bed|go to sleep|be in bed) (?:if I (?:need|have|want) to"
+                        r" (?:wake up|get up|be up)|to (?:wake up|get up|be up)) at (?P<clock2>(?P<h2>\d{1,2})(?:[:.](?P<m2>\d{2}))? ?"
+                        r"(?P<ap2>am|pm|a\.m\.|p\.m\.)?|midnight)" + _END, re.I)
+
+
+def _sleep_clock(m: re.Match, suffix: str, evening: bool) -> int | None:
+    """Minutes after midnight; a bare hour means evening for bedtimes and morning for alarms."""
+    if (m.group("clock" + (suffix or "")) or "").lower() == "midnight":
+        return 0
+    hour, minute = int(m.group("h" + suffix)), int(m.group("m" + suffix) or 0)
+    ap = (m.group("ap" + suffix) or "").lower().replace(".", "")
+    if minute > 59 or hour > 23 or (ap and not 1 <= hour <= 12):
+        return None
+    if ap:
+        hour = hour % 12 + (12 if ap == "pm" else 0)
+    elif hour <= 12 and evening and hour >= 6:
+        hour = hour % 12 + 12
+    elif hour == 12 and not evening:
+        hour = 12
+    return hour * 60 + minute
+
+
+def _sleep_answer(said: str, now: time.struct_time) -> str | None:
+    """'If I go to bed at 11, when should I wake up?' and 'what time should I go to bed to wake up at 7?' in 90-minute sleep cycles."""
+    said = spoken_numbers(said)
+    if m := _BEDTIME.match(said):
+        start = _sleep_clock(m, "", True) if m.group("clock") else now.tm_hour * 60 + now.tm_min
+        if start is None:
+            return None
+        times = [_say_clock(*divmod((start + _FALL_ASLEEP + n * _SLEEP_CYCLE) % 1440, 60)) for n in (6, 5)]
+        return (f"Try waking at {times[0]} for six full sleep cycles, or {times[1]} for five. "
+                f"That allows {_FALL_ASLEEP} minutes to fall asleep.")
+    if m := _WAKE_TIME.match(said):
+        suffix = "" if m.group("h") or m.group("clock") else "2"
+        wake = _sleep_clock(m, suffix, False)
+        if wake is None:
+            return None
+        times = [_say_clock(*divmod((wake - _FALL_ASLEEP - n * _SLEEP_CYCLE) % 1440, 60)) for n in (6, 5)]
+        return (f"Go to bed at {times[0]} for six full sleep cycles, or {times[1]} for five. "
+                f"That allows {_FALL_ASLEEP} minutes to fall asleep.")
+    return None
+
+
+_CONSTANT = re.compile(_NAME + r"what(?:'s| is) (?:the value of |the number )?(?P<c>pi|e|the golden ratio|euler's number)(?: to (?P<dp>\d{1,2}) decimal places)?" + _END, re.I)
+_CONSTANTS = {"pi": ("Pi", math.pi), "e": ("E", math.e), "euler's number": ("Euler's number", math.e),
+              "the golden ratio": ("The golden ratio", (1 + 5 ** 0.5) / 2)}
+_TRIG = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?:the )?(?P<f>sin|sine|cos|cosine|tan|tangent) (?:of )?"
+                   r"(?P<n>-?\d+(?:\.\d+)?)(?: degrees?| °)?" + _END, re.I)
+_LOG = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?:the )?(?:(?P<ln>natural log(?:arithm)?|ln)|log(?:arithm)?"
+                  r"(?: base (?P<b>\d+(?:\.\d+)?))?) (?:of )?(?P<n>\d+(?:\.\d+)?)(?:,? (?:to|in) base (?P<b2>\d+(?:\.\d+)?))?" + _END, re.I)
+_MOD = re.compile(_NAME + r"(?:what(?:'s| is) |work out |calculate )?(?P<a>-?\d+) (?:mod|modulo|modulus) (?P<b>-?\d+)" + _END, re.I)
+_ANGLE = re.compile(_NAME + r"(?:what(?:'s| is) |convert )?(?P<n>-?\d+(?:\.\d+)?) (?P<from>degrees?|radians?) (?:in|to|into|as) (?P<to>degrees|radians)" + _END, re.I)
+
+
+def _science_maths(said: str) -> str | None:
+    """'What's pi?', 'what's sin 30?', 'log of 100', 'natural log of 10', '17 mod 5', '45 degrees in radians'."""
+    said = spoken_numbers(said)
+    if m := _CONSTANT.match(said):
+        name, value = _CONSTANTS[m.group("c").lower()]
+        dp = min(int(m.group("dp") or 5), 15)
+        return f"{name} is about {value:.{dp}f}."
+    if m := _TRIG.match(said):
+        f, n = m.group("f").lower()[:3], float(m.group("n"))
+        if f == "tan" and abs(n % 180) == 90:
+            return f"The tangent of {_say_num(n)} degrees is undefined."
+        value = {"sin": math.sin, "cos": math.cos, "tan": math.tan}[f](math.radians(n))
+        name = {"sin": "sine", "cos": "cosine", "tan": "tangent"}[f]
+        return f"The {name} of {_say_num(n)} degrees is {_say_num(round(value, 4) + 0.0)}."
+    if m := _LOG.match(said):
+        n, base = float(m.group("n")), m.group("b") or m.group("b2")
+        if n <= 0 or (base and (float(base) <= 0 or float(base) == 1)):
+            return None
+        if m.group("ln"):
+            return f"The natural log of {_say_num(n)} is {_say_num(round(math.log(n), 4))}."
+        b = float(base) if base else 10.0
+        return f"Log base {_say_num(b)} of {_say_num(n)} is {_say_num(round(math.log(n, b), 4) + 0.0)}."
+    if m := _MOD.match(said):
+        a, b = int(m.group("a")), int(m.group("b"))
+        return None if b == 0 else f"That's {a % b}."
+    if m := _ANGLE.match(said):
+        n, src, dst = float(m.group("n")), m.group("from").lower().rstrip("s"), m.group("to").lower().rstrip("s")
+        if src == dst:
+            return None
+        if dst == "radian":
+            return f"{_say_num(n)} degrees is {_say_num(round(math.radians(n), 4))} radians."
+        return f"{_say_num(n)} radians is {_say_num(round(math.degrees(n), 4))} degrees."
+    return None
+
+
+# grams in one US cup (240 ml), the usual baking conversions
+_CUP_GRAMS = {"flour": 125, "plain flour": 125, "self raising flour": 125, "self-raising flour": 125, "bread flour": 130,
+              "sugar": 200, "caster sugar": 200, "granulated sugar": 200, "brown sugar": 220, "icing sugar": 120,
+              "powdered sugar": 120, "butter": 227, "rice": 185, "oats": 90, "porridge oats": 90, "rolled oats": 90,
+              "cocoa": 85, "cocoa powder": 85, "honey": 340, "golden syrup": 340, "milk": 245, "water": 240,
+              "ground almonds": 96, "grated cheese": 113, "chocolate chips": 170, "raisins": 150}
+_CUP_KINDS = "|".join(sorted(map(re.escape, _CUP_GRAMS), key=len, reverse=True))
+_CUPS_TO_GRAMS = re.compile(_NAME + r"(?:how many grams (?:is |are )?(?:in )?(?P<a>a|one|half a|\d+(?:\.\d+)?|\d+/\d+) cups? of (?P<k>" + _CUP_KINDS + r")"
+                            r"|(?:what(?:'s| is) |convert )?(?P<a2>a|one|half a|\d+(?:\.\d+)?|\d+/\d+) cups? of (?P<k2>" + _CUP_KINDS
+                            + r") (?:in|to|into) (?:grams|g))" + _END, re.I)
+_GRAMS_TO_CUPS = re.compile(_NAME + r"(?:how many cups (?:is |are )?(?:in )?(?P<g>\d+(?:\.\d+)?) ?(?:grams|g) of (?P<k>" + _CUP_KINDS + r")"
+                            r"|(?:what(?:'s| is) |convert )?(?P<g2>\d+(?:\.\d+)?) ?(?:grams|g) of (?P<k2>" + _CUP_KINDS
+                            + r") (?:in|to|into) cups)" + _END, re.I)
+
+
+def _cup_amount(text: str) -> float:
+    text = text.lower()
+    if text in ("a", "one"):
+        return 1.0
+    if text == "half a":
+        return 0.5
+    if "/" in text:
+        top, bottom = text.split("/")
+        return int(top) / int(bottom) if int(bottom) else 0.0
+    return float(text)
+
+
+def _cup_weights(said: str) -> str | None:
+    """'How many grams in a cup of flour?', '2 cups of sugar in grams', 'how many cups is 250 g of butter?'"""
+    said = spoken_numbers(said)
+    if m := _CUPS_TO_GRAMS.match(said):
+        cups, kind = _cup_amount(m.group("a") or m.group("a2")), (m.group("k") or m.group("k2")).lower()
+        if cups <= 0:
+            return None
+        grams = cups * _CUP_GRAMS[kind]
+        say_cups = "Half a cup" if cups == 0.5 else f"{_say_num(cups)} cup{'s' if cups != 1 else ''}"
+        return f"{say_cups} of {kind} is about {_say_num(round(grams))} grams."
+    if m := _GRAMS_TO_CUPS.match(said):
+        grams, kind = float(m.group("g") or m.group("g2")), (m.group("k") or m.group("k2")).lower()
+        cups = round(grams / _CUP_GRAMS[kind] * 4) / 4  # to the nearest quarter cup
+        if cups == 0:
+            return f"That's less than a quarter of a cup of {kind}."
+        whole, part = int(cups), cups - int(cups)
+        frac = {0.25: "a quarter", 0.5: "a half", 0.75: "three quarters"}.get(part)
+        said_cups = (f"{whole} and {frac} cups" if whole and frac else f"{frac} of a cup" if frac
+                     else f"{whole} cup{'s' if whole != 1 else ''}")
+        return f"{_say_num(grams)} grams of {kind} is about {said_cups}."
+    return None
+
+
+def _number_facts(said: str) -> str | None:
+    """'Half of 90', 'is 97 a prime number?', 'what's 7 factorial?', 'round 3.14159 to 2 decimal places'."""
+    said = spoken_numbers(said)
+    if (found := _number_bases(said)) is not None:
+        return found
+    if m := _CLOCK_FORMAT.match(said):
+        return _clock_format(m)
+    if m := _AVERAGE.match(said):
+        nums = [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", re.sub(r"(?<=\d),(?=\d{3}\b)", "", m.group("nums")))]
+        return f"The average is {calcmaths.fmt(round(sum(nums) / len(nums), 4))}."
+    if m := _FRACTION.match(said):
+        value = float(m.group("n").replace(",", "")) * _PARTS[m.group("part").lower()]
+        return f"That's {calcmaths.fmt(round(value, 4))}."
+    if m := _PRIME.match(said):
+        text = m.group("n").replace(",", "")
+        if not text.lstrip("-").isdigit() or len(text) > 13:
+            return None
+        n = int(text)
+        if n < 2:
+            return f"No, {n:,} isn't a prime number."
+        factor = next((f for f in range(2, int(n ** 0.5) + 1) if n % f == 0), None)
+        return f"Yes, {n:,} is a prime number." if factor is None \
+            else f"No, {n:,} isn't prime. It's {factor:,} times {n // factor:,}."
+    if m := _FACTORIAL.match(said):
+        text = (m.group("n") or m.group("n2")).replace(",", "")
+        if not text.isdigit() or int(text) > 20:
+            return None  # too big to say aloud: Claude explains
+        return f"That's {math.factorial(int(text)):,}."
+    if m := _ROUND.match(said):
+        value = float(m.group("n").replace(",", ""))
+        if m.group("nearest"):
+            step = {"whole number": 1, "ten": 10, "hundred": 100, "thousand": 1000}.get(m.group("nearest").lower()) \
+                or int(m.group("nearest"))
+            return f"That's {calcmaths.fmt(float(math.floor(value / step + 0.5) * step))}."
+        if m.group("dp"):
+            places = {"one": 1, "two": 2, "three": 3, "four": 4}.get(m.group("dp").lower()) or int(m.group("dp"))
+            return f"That's {round(value, places):,.{places}f}." if places <= 10 else None
+        word = said.lower().rstrip("?.! ").split()[-1]
+        rounded = math.ceil(value) if word == "up" else math.floor(value) if word == "down" else math.floor(value + 0.5)
+        return f"That's {rounded:,}."
+    return None
 
 
 _CASH = r"(?P<cur>[£$€])?(?P<amt>\d[\d,]*(?:\.\d{1,2})?)(?: ?(?P<word>pounds?|quid|dollars?|euros?|bucks))?"
@@ -516,10 +1188,303 @@ def _money_answer(said: str) -> str | None:
     return None
 
 
+_VAT_RATE = 20  # UK standard rate
+_VAT_ON = re.compile(_NAME + r"(?:what(?:'s| is)|how much is|work out|calculate) (?:the )?VAT (?:on|for) " + _CASH + _END, re.I)
+_VAT_ADD = re.compile(_NAME + r"(?:add VAT to |put VAT on |(?:what(?:'s| is)|how much is) )" + _CASH
+                      + r"(?: (?:plus|with|including|inc|incl|and|add) VAT)?" + _END, re.I)
+_VAT_OFF = re.compile(_NAME + r"(?:take (?:the )?VAT off |remove (?:the )?VAT from |how much VAT is (?:there )?in |(?:what(?:'s| is)|how much is) )"
+                      + _CASH + r"(?P<off> (?:without|minus|excluding|exc|excl|ex|before|less) VAT)?" + _END, re.I)
+_NUM_A = r"(?P<a>-?\d[\d,]*(?:\.\d+)?)"
+_NUM_B = r"(?P<b>-?\d[\d,]*(?:\.\d+)?)"
+_PC_CHANGE = re.compile(_NAME + r"what(?:'s| is) the (?:percentage|percent|%) (?P<kind>change|increase|decrease|rise|drop|fall|difference) (?:from|between) "
+                        + r"[£$€]?" + _NUM_A + r" (?:to|and) [£$€]?" + _NUM_B + _END, re.I)
+_DIFFERENCE = re.compile(_NAME + r"what(?:'s| is) the difference between [£$€]?" + _NUM_A + r" and [£$€]?" + _NUM_B + _END, re.I)
+_CASH_PC = re.compile(_NAME + r"(?:what(?:'s| is)|how much is) " + _CASH + r" (?P<way>plus|add|with|minus|less|take away) " + _PERCENT + _END, re.I)
+_INTEREST = re.compile(_NAME + r"(?:what(?:'s| is)|how much is) (?:the )?" + _PERCENT + r" (?:interest )?(?:on|of) " + _CASH
+                       + r" (?:for|over|after|in) (?P<years>\d+) years?" + _END, re.I)
+_INTEREST_AT = re.compile(_NAME + r"(?:what(?:'s| is)|how much is|what does) " + _CASH + r" (?:at|with) " + _PERCENT
+                          + r"(?: interest)?(?: make| grow to| come to)? (?:for|over|after|in) (?P<years>\d+) years?" + _END, re.I)
+_YEARLY_TO_HOURLY = re.compile(_NAME + r"(?:what(?:'s| is) (?:the )?hourly (?:rate|pay|wage) (?:for|of|on) |(?:what(?:'s| is)|how much is) )"
+                               + _CASH + r" (?:a|per) year(?: (?:an|per|a) hour)?" + _END, re.I)
+_HOURLY_TO_YEARLY = re.compile(_NAME + r"(?:what(?:'s| is)|how much is) " + _CASH + r" (?:an|per|a) hour (?:a|per) (?P<per>year|month|week)" + _END, re.I)
+_HOURS_PAY = re.compile(_NAME + r"if I (?:earn|get|make|am paid|get paid) " + _CASH + r" (?:an|per|a) hour,? how much (?:is|are|do I get for|will I get for|for) "
+                        r"(?P<h>\d+(?:\.\d+)?) hours?" + _END, re.I)
+_HOURS_AT = re.compile(_NAME + r"(?:what(?:'s| is)|how much is) (?P<h>\d+(?:\.\d+)?) hours? at " + _CASH + r" (?:an|per|a) hour" + _END, re.I)
+_WEEK_HOURS = 37.5
+
+
+def _amount(m: re.Match) -> float:
+    return float(m.group("amt").replace(",", ""))
+
+
+_CASH_B = _CASH.replace("(?P<", "(?P<b")
+_ASK_SUM = r"(?:what(?:'s| is)|how much is|what does|work out|calculate) "
+_CASH_OP = re.compile(_NAME + _ASK_SUM + r"(?:" + _CASH + r") (?P<op>times|x|multiplied by|divided by|over|plus|add|and|minus|take away|less) (?:"
+                      + _CASH_B + r")(?: (?:come to|make|equal))?" + _END, re.I)
+_TIMES_CASH = re.compile(_NAME + _ASK_SUM + r"(?P<n>\d+(?:\.\d+)?) (?:times|x|lots of) (?:" + _CASH + r")" + _END, re.I)
+_PC_OF_CASH = re.compile(_NAME + _ASK_SUM + _PERCENT + r" of (?:" + _CASH + r")" + _END, re.I)
+_CASH_SPLIT = re.compile(_NAME + r"(?:" + _ASK_SUM + r")?(?:" + _CASH + r") (?:split|divided|shared) (?:between |among |by |into )?(?P<people>\d+)"
+                         r"(?: (?:ways|people|of us|persons|friends))?" + _END, re.I)
+_PER_YEAR = {"day": 365, "week": 52, "month": 12, "year": 1}
+_RATE = r" (?:a|per|each|every) (?P<unit>day|week|month|year)"
+_SAVE_TOTAL = re.compile(_NAME + r"(?:if I (?:save|put away|spend|earn|make|pay)|saving|spending) (?:" + _CASH + r")" + _RATE
+                         + r",? how much (?:will|would) (?:I|that) (?:have|save|spend|earn|make|be|come to|add up to)(?: saved| spent)?(?: after| in| over| for)? "
+                         r"(?P<n>a|an|one|\d+(?:\.\d+)?) (?P<span>days?|weeks?|months?|years?)" + _END
+                         + r"|" + _NAME + r"(?:what(?:'s| is)|how much is) (?:" + _CASH_B.replace("(?P<b", "(?P<c") + r") (?:a|per|each|every) (?P<cunit>day|week|month|year)"
+                         r" (?:for|over|in) (?:a|an|one|(?P<cn>\d+(?:\.\d+)?)) (?P<cspan>days?|weeks?|months?|years?)" + _END, re.I)
+_SAVE_GOAL = re.compile(_NAME + r"how long (?:will it take |would it take |does it take )?(?:me )?to (?:save|save up|pay off) (?:" + _CASH_B
+                        + r") (?:at|if I save|saving|putting away|paying) (?:" + _CASH + r")" + _RATE + _END, re.I)
+
+
+def _rate_factor(unit: str, span: str) -> float:
+    """How many of `unit` fit in one `span`; a month counts as 30 days."""
+    unit, span = unit.lower().rstrip("s"), span.lower().rstrip("s")
+    if unit == "day" and span == "month":
+        return 30.0
+    return _PER_YEAR[unit] / _PER_YEAR[span]
+
+
+def _cash_sums(said: str) -> str | None:
+    """'What's £3.50 times 4?', 'what's 20% of £50?', '£20 split 3 ways', 'if I save £50 a week how much in a year?',
+    '£10 a day for a month', 'how long to save £1000 at £50 a week?'"""
+    said = re.sub(r"\b(\d+) (?:pounds?|quid) (\d{2})\b(?! ?(?:p\b|pence))", r"£\1.\2", spoken_numbers(said), flags=re.I)
+    if (m := _CASH_OP.match(said)) and (m.group("cur") or m.group("word") or m.group("bcur") or m.group("bword")):
+        a, b, op = _amount(m), float(m.group("bamt").replace(",", "")), m.group("op").lower()
+        money_b = bool(m.group("bcur") or m.group("bword"))
+        if op in ("times", "x", "multiplied by"):
+            value = a * b
+        elif op in ("divided by", "over"):
+            if b == 0:
+                return "You can't divide by zero."
+            value = a / b
+            if money_b and (m.group("cur") or m.group("word")):
+                return f"That's {_say_num(round(value, 2))} times over."
+        elif op in ("plus", "add", "and"):
+            value = a + b
+        else:
+            value = a - b
+        if not (m.group("cur") or m.group("word")):
+            m = re.match(_CASH_B.replace("(?P<b", "(?P<"), f"{m.group('bcur') or ''}{m.group('bamt')}{' ' + m.group('bword') if m.group('bword') else ''}")
+        return f"That's {_money(round(value, 2), m)}."
+    if (m := _TIMES_CASH.match(said)) and (m.group("cur") or m.group("word")):
+        return f"That's {_money(round(float(m.group('n')) * _amount(m), 2), m)}."
+    if (m := _PC_OF_CASH.match(said)) and (m.group("cur") or m.group("word")):
+        return f"That's {_money(round(float(m.group('pc')) / 100 * _amount(m), 2), m)}."
+    if (m := _CASH_SPLIT.match(said)) and (m.group("cur") or m.group("word")) and int(m.group("people")) > 0:
+        return f"That's {_money(round(_amount(m) / int(m.group('people')), 2), m)} each."
+    if m := _SAVE_TOTAL.match(said):
+        if m.group("amt"):
+            rate, unit, n, span, cash = _amount(m), m.group("unit"), m.group("n"), m.group("span"), m
+        else:
+            rate, unit, n, span = float(m.group("camt").replace(",", "")), m.group("cunit"), m.group("cn"), m.group("cspan")
+            cash = re.match(_CASH, f"{m.group('ccur') or ''}{m.group('camt')}{' ' + m.group('cword') if m.group('cword') else ''}")
+        count = float(n) if n and n[0].isdigit() else 1.0
+        total = rate * _rate_factor(unit, span) * count
+        span_word = span.lower().rstrip("s")
+        said_span = f"{_say_num(count)} {span_word}{'s' if count != 1 else ''}" if count != 1 else f"a {span_word}"
+        return f"That's {_money(round(total, 2), cash)} over {said_span}."
+    if m := _SAVE_GOAL.match(said):
+        goal, rate, unit = float(m.group("bamt").replace(",", "")), _amount(m), m.group("unit").lower()
+        if rate <= 0:
+            return None
+        periods = math.ceil(goal / rate - 1e-9)
+        extra = ""
+        if unit in ("week", "day") and periods > 12:
+            extra = f", about {_say_num(round(periods / (52 / 12 if unit == 'week' else 30.4), 1))} months"
+        return f"{periods:,} {unit}{'s' if periods != 1 else ''}{extra}."
+    return None
+
+
+_YEARS_AGO = re.compile(_NAME + r"(?:how (?:long|many years) ago was|how many years (?:has it been )?since) (?P<y>\d{4})" + _END, re.I)
+_YEAR_OFFSET = re.compile(_NAME + r"what year (?:was it|was) (?P<a>\d+) years? ago" + _END
+                          + r"|" + _NAME + r"what year (?:will it be|is it|will be) in (?P<b>\d+) years?(?: time)?" + _END, re.I)
+_CENTURY = re.compile(_NAME + r"what (?P<kind>century|decade|millennium) (?:is it|are we in|is this)(?: now)?" + _END
+                      + r"|" + _NAME + r"what (?P<kind2>century|decade) (?:was|is) (?P<y>\d{3,4}) in" + _END
+                      + r"|" + _NAME + r"what (?P<kind3>century|decade) (?:was|is) (?P<y2>\d{3,4})" + _END, re.I)
+
+
+def _year_maths(said: str, year: int) -> str | None:
+    """'How long ago was 1990?', 'what year was it 30 years ago?', 'what year will it be in 15 years?', 'what century is it?'"""
+    said = spoken_numbers(said)
+    if m := _YEARS_AGO.match(said):
+        y = int(m.group("y"))
+        gap = year - y
+        if gap == 0:
+            return f"{y} is this year."
+        if gap < 0:
+            return f"{y} is {-gap} year{'s' if gap != -1 else ''} from now."
+        return f"{y} was {gap} year{'s' if gap != 1 else ''} ago."
+    if m := _YEAR_OFFSET.match(said):
+        return f"It was {year - int(m.group('a'))}." if m.group("a") else f"It'll be {year + int(m.group('b'))}."
+    if m := _CENTURY.match(said):
+        kind = (m.group("kind") or m.group("kind2") or m.group("kind3")).lower()
+        y = int(m.group("y") or m.group("y2") or year)
+        past = bool(m.group("y") or m.group("y2"))
+        if kind == "decade":
+            return f"{'That was' if past and y < year else "It's"} the {y // 10 * 10}s."
+        if kind == "millennium":
+            return f"It's the {_ordinal((y - 1) // 1000 + 1)} millennium."
+        return f"{'That was' if past and y < year else "It's"} the {_ordinal((y - 1) // 100 + 1)} century."
+    return None
+
+
+def _money_more(said: str) -> str | None:
+    """VAT ('what's VAT on £100?', 'take VAT off £120'), percentage change, '£500 plus 20%', yearly interest and pay rates."""
+    said = spoken_numbers(said)
+    if m := _VAT_ON.match(said):
+        vat = round(_amount(m) * _VAT_RATE / 100, 2)
+        return f"VAT at {_VAT_RATE}% on {_money(_amount(m), m)} is {_money(vat, m)}, making {_money(_amount(m) + vat, m)}."
+    if (m := _VAT_OFF.match(said)) and (m.group("off") or not said.lower().startswith(("what", "how much is"))):
+        before = round(_amount(m) / (1 + _VAT_RATE / 100), 2)
+        return f"{_money(_amount(m), m)} with VAT is {_money(before, m)} before VAT, so the VAT is {_money(round(_amount(m) - before, 2), m)}."
+    if (m := _VAT_ADD.match(said)) and re.search(r"\bVAT\b", said, re.I):
+        return f"{_money(_amount(m), m)} plus VAT is {_money(round(_amount(m) * (1 + _VAT_RATE / 100), 2), m)}."
+    if m := _PC_CHANGE.match(said):
+        a, b = float(m.group("a").replace(",", "")), float(m.group("b").replace(",", ""))
+        if a == 0:
+            return None
+        change = (b - a) / abs(a) * 100
+        word = "increase" if change > 0 else "decrease"
+        return f"From {calcmaths.fmt(a)} to {calcmaths.fmt(b)} is " + ("no change." if change == 0 else f"a {calcmaths.fmt(round(abs(change), 2))}% {word}.")
+    if m := _DIFFERENCE.match(said):
+        a, b = float(m.group("a").replace(",", "")), float(m.group("b").replace(",", ""))
+        return f"The difference is {calcmaths.fmt(round(abs(a - b), 6))}."
+    if (m := _CASH_PC.match(said)) and (m.group("cur") or m.group("word")):  # plain '50 plus 10%' is a sum
+        sign = -1 if m.group("way").lower() in ("minus", "less", "take away") else 1
+        result = round(_amount(m) * (1 + sign * float(m.group("pc")) / 100), 2)
+        return f"{_money(_amount(m), m)} {'minus' if sign < 0 else 'plus'} {calcmaths.fmt(float(m.group('pc')))}% is {_money(result, m)}."
+    if m := _INTEREST.match(said) or _INTEREST_AT.match(said):
+        years = int(m.group("years"))
+        if not 1 <= years <= 100:
+            return None
+        total = round(_amount(m) * (1 + float(m.group("pc")) / 100) ** years, 2)
+        return (f"After {years} year{'s' if years != 1 else ''} at {calcmaths.fmt(float(m.group('pc')))}% a year, {_money(_amount(m), m)} grows to "
+                f"{_money(total, m)}, so {_money(round(total - _amount(m), 2), m)} in interest (paid yearly).")
+    if (m := _YEARLY_TO_HOURLY.match(said)) and "hour" in said.lower():
+        hourly = _amount(m) / (52 * _WEEK_HOURS)
+        return f"{_money(_amount(m), m)} a year is about {_money(round(hourly, 2), m)} an hour, at {calcmaths.fmt(_WEEK_HOURS)} hours a week."
+    if m := _HOURLY_TO_YEARLY.match(said):
+        weeks = {"year": 52, "month": 52 / 12, "week": 1}[m.group("per").lower()]
+        pay = round(_amount(m) * _WEEK_HOURS * weeks, 2)
+        return f"{_money(_amount(m), m)} an hour is {_money(pay, m)} a {m.group('per').lower()}, at {calcmaths.fmt(_WEEK_HOURS)} hours a week."
+    if m := _HOURS_PAY.match(said) or _HOURS_AT.match(said):
+        hours = float(m.group("h"))
+        return f"{calcmaths.fmt(hours)} hours at {_money(_amount(m), m)} an hour is {_money(round(_amount(m) * hours, 2), m)}."
+    return None
+
+
 _QTY = r"(?P<n>-?\d[\d,]*(?:\.\d+)?|" + _AMOUNT[1:-1] + r") ?(?P<a>[a-z°][a-z°23 .]{0,24}?)"
 _CONVERT = re.compile(_NAME + r"(?:(?:what(?:'s| is)|convert|change|how much is|how (?:long|far|heavy|big|hot|cold) is) )?"
-                      + _QTY + r" (?:in|to|into|in to) (?P<b>[a-z°][a-z°23 .]{0,24}?)" + _END, re.I)
+                      + _QTY + r" (?:in|to|into|in to) (?P<b>[a-z°][a-z°23 ./]{0,24}?)" + _END, re.I)
 _HOW_MANY = re.compile(_NAME + r"how many (?P<b>[a-z°][a-z°23 .]{0,24}?) (?:is|are|in|make|makes|to) (?:a |an )?" + _QTY + _END, re.I)
+
+
+_FEET_INCHES = re.compile(_NAME + r"(?:what(?:'s| is)|convert|how (?:tall|much|long) is) (?P<ft>\d+) (?:feet|foot|ft)(?: and)?(?: (?P<inch>\d+(?:\.\d+)?)(?: inch(?:es)?| in)?)?"
+                          r" (?:in|to|into) (?:cm|centimet(?:re|er)s|met(?:re|er)s|m)" + _END, re.I)
+_TO_FEET = re.compile(_NAME + r"(?:what(?:'s| is)|convert|how tall is) (?P<n>\d+(?:\.\d+)?) ?(?P<unit>cm|centimet(?:re|er)s|m|met(?:re|er)s)"
+                      r"(?: tall)? (?:in|to|into) (?:feet(?: and inches)?|ft)" + _END, re.I)
+_TO_STONE = re.compile(_NAME + r"(?:what(?:'s| is)|convert|how much is) (?P<n>\d+(?:\.\d+)?) ?(?:kg|kilos?|kilograms?) (?:in|to|into) stones?(?: and pounds)?" + _END, re.I)
+
+
+_WEIGHT = (r"(?:(?P<kg>\d+(?:\.\d+)?) ?(?:kg|kilos?|kilograms?)|(?P<st>\d+) ?(?:stone|st)(?: (?:and )?(?P<lb>\d+(?:\.\d+)?) ?(?:pounds?|lbs?))?)")
+_HEIGHT = (r"(?:(?P<cm>\d+(?:\.\d+)?) ?(?:cm|centimet(?:re|er)s)|(?P<m>[12](?:\.\d+)?) ?(?:m|met(?:re|er)s?)"
+           r"|(?P<ft>\d) ?(?:foot|feet|ft)(?: (?:and )?(?P<inch>\d+(?:\.\d+)?)(?: ?(?:inch(?:es)?|in))?)?)")
+_BMI = re.compile(_NAME + r"(?:what(?:'s| is) (?:my |the )?BMI|work out my BMI|calculate my BMI)(?: (?:if|when|for)(?: I(?:'m| am| weigh)| someone| a person)?)? "
+                  r"(?:" + _WEIGHT + r"(?:,? (?:and|at)?,? ?" + _HEIGHT + r"(?: tall)?)|" + _HEIGHT.replace("(?P<", "(?P<h") + r"(?: tall)?,? (?:and )?"
+                  + _WEIGHT.replace("(?P<", "(?P<w") + r")" + _END, re.I)
+_ROAST_TIMES = {"chicken": (20, 500, 20), "beef": (20, 450, 20), "lamb": (25, 500, 25), "pork": (30, 500, 30)}  # minutes per weight + extra
+_ROAST = re.compile(_NAME + r"how long (?:do I|should I|to|does it take to|will it take to|do you) (?:cook|roast) (?:a |an |my |the )?"
+                    r"(?P<n>\d+(?:\.\d+)?) ?(?P<unit>kg|kilos?|kilograms?|g|grams?|lbs?|pounds?) (?:of )?(?P<meat>chicken|beef|lamb|pork)(?: joint| leg| shoulder)?" + _END, re.I)
+_SCALE = re.compile(_NAME + r"(?:what(?:'s| is) )?(?P<how>double|twice|triple|treble|half|halve|half of) (?P<n>\d+(?:\.\d+)?) ?"
+                    r"(?P<unit>g|grams?|kg|ml|millilit(?:re|er)s|l|lit(?:re|er)s|oz|ounces?|cups?|tsp|teaspoons?|tbsp|tablespoons?)" + _END, re.I)
+
+
+def _kitchen_answer(said: str) -> str | None:
+    """'What's my BMI if I'm 70 kg and 175 cm?', 'how long do I roast a 1.5 kg chicken?' and 'double 250 g'."""
+    said = spoken_numbers(said)
+    if m := _BMI.match(said):
+        p = "" if (m.group("kg") or m.group("st")) else "w"
+        q = "" if (m.group("cm") or m.group("m") or m.group("ft")) else "h"
+        kg = float(m.group(p + "kg")) if m.group(p + "kg") else (int(m.group(p + "st")) * 14 + float(m.group(p + "lb") or 0)) * 0.45359237
+        if m.group(q + "cm"):
+            metres = float(m.group(q + "cm")) / 100
+        elif m.group(q + "m"):
+            metres = float(m.group(q + "m"))
+        else:
+            metres = (int(m.group(q + "ft")) * 12 + float(m.group(q + "inch") or 0)) * 0.0254
+        if not (0.5 < metres < 2.6 and 10 < kg < 400):
+            return None
+        bmi = kg / metres ** 2
+        band = ("underweight (under 18.5)" if bmi < 18.5 else "the healthy range (18.5 to 24.9)" if bmi < 25
+                else "the overweight range (25 to 29.9)" if bmi < 30 else "the obese range (30 or more)")
+        return f"That's a BMI of {bmi:.1f}, which is in {band}." if not band.startswith("under") else f"That's a BMI of {bmi:.1f}, which is {band}."
+    if m := _ROAST.match(said):
+        unit = m.group("unit").lower()
+        grams = float(m.group("n")) * (1000 if unit.startswith("k") else 453.59237 if unit.startswith(("lb", "pound")) else 1)
+        if not 200 <= grams <= 10000:
+            return None
+        per, weight, extra = _ROAST_TIMES[m.group("meat").lower()]
+        minutes = math.ceil(grams / weight * per + extra)
+        doneness = " for medium" if m.group("meat").lower() in ("beef", "lamb") else ""
+        check = "until the juices run clear" if m.group("meat").lower() in ("chicken", "pork") else "then rest it before carving"
+        return (f"Roast it for about {_say_minutes(minutes)}{doneness} at 190 C (170 fan, gas mark 5), {check}. "
+                f"That's {per} minutes per {weight} grams plus {extra}.")
+    if m := _SCALE.match(said):
+        how = m.group("how").lower()
+        factor = 2 if how in ("double", "twice") else 3 if how in ("triple", "treble") else 0.5
+        return f"That's {calcmaths.fmt(float(m.group('n')) * factor)} {m.group('unit')}."
+    return None
+
+
+def _height_weight(said: str) -> str | None:
+    """'5 feet 10 in cm', '180 cm in feet', '70 kg in stone': heights and weights the British way."""
+    said = spoken_numbers(said)
+    if m := _FEET_INCHES.match(said):
+        inches = int(m.group("ft")) * 12 + float(m.group("inch") or 0)
+        cm = inches * 2.54
+        extra = float(m.group("inch") or 0)
+        said_back = f"{m.group('ft')} foot" + (f" {_say_num(extra)}" if extra else "")
+        return f"{said_back} is {cm:.0f} cm, or {cm / 100:.2f} metres."
+    if m := _TO_FEET.match(said):
+        cm = float(m.group("n")) * (1 if m.group("unit").lower().startswith(("cm", "centi")) else 100)
+        feet, inches = divmod(round(cm / 2.54), 12)
+        return f"{_say_num(float(m.group('n')))} {m.group('unit').lower()} is {feet} foot{f' {inches}' if inches else ''}."
+    if m := _TO_STONE.match(said):
+        pounds = round(float(m.group("n")) * 2.20462)
+        stone, lbs = divmod(pounds, 14)
+        return f"{_say_num(float(m.group('n')))} kg is {stone} stone{f' {lbs} pound' + ('s' if lbs != 1 else '') if lbs else ''}."
+    return None
+
+
+_GAS_MARKS = {"1/4": 110, "1/2": 120, "1": 140, "2": 150, "3": 170, "4": 180, "5": 190, "6": 200, "7": 220, "8": 230, "9": 240}
+_GAS_TO = re.compile(_NAME + r"(?:what(?:'s| is) |convert )?gas (?:mark )?(?P<g>[1-9]|1/4|1/2|a quarter|a half|quarter|half)"
+                     r" (?:in|to|as) (?P<to>celsius|centigrade|c|degrees|fahrenheit|f|fan)(?: oven)?" + _END, re.I)
+_TO_GAS = re.compile(_NAME + r"(?:what(?:'s| is) |convert )?(?P<t>\d{2,3}) ?(?:degrees ?)?(?P<unit>c|celsius|centigrade|f|fahrenheit)?"
+                     r"(?: fan)? (?:in|to|as) gas(?: mark)?" + _END, re.I)
+
+
+def _gas_mark(said: str) -> str | None:
+    """'What's gas mark 6 in Celsius?' (200, 180 fan, 400 F) and 'what's 180 C in gas mark?' for UK oven dials."""
+    if m := _GAS_TO.match(said):
+        g = {"a quarter": "1/4", "quarter": "1/4", "a half": "1/2", "half": "1/2"}.get(m.group("g").lower(), m.group("g"))
+        c, to = _GAS_MARKS[g], m.group("to").lower()
+        f = round((c * 9 / 5 + 32) / 25) * 25
+        mark = {"1/4": "a quarter", "1/2": "a half"}.get(g, g)
+        if to in ("fahrenheit", "f"):
+            return f"Gas mark {mark} is about {f} degrees Fahrenheit."
+        if to == "fan":
+            return f"Gas mark {mark} is {c - 20} degrees in a fan oven."
+        return f"Gas mark {mark} is {c} degrees Celsius, or {c - 20} in a fan oven."
+    if m := _TO_GAS.match(said):
+        t = int(m.group("t"))
+        unit = (m.group("unit") or ("f" if t > 260 else "c")).lower()[0]
+        c = (t - 32) * 5 / 9 if unit == "f" else t + (20 if " fan" in said.lower() else 0)
+        if not 100 <= c <= 260:
+            return None
+        g = min(_GAS_MARKS, key=lambda k: abs(_GAS_MARKS[k] - c))
+        mark = {"1/4": "a quarter", "1/2": "a half"}.get(g, g)
+        return f"{m.group('t')} {'Fahrenheit' if unit == 'f' else 'Celsius'}{' fan' if ' fan' in said.lower() else ''} is about gas mark {mark}."
+    return None
 
 
 def _units_answer(said: str) -> str | None:
@@ -537,18 +1502,118 @@ def _units_answer(said: str) -> str | None:
         if not (calcunits._key(a) in temps and calcunits._key(b) in temps):
             if calcunits.find(a)[0] != calcunits.find(b)[0]:
                 return None  # cups to grams and the like need the ingredient: Claude asks
+        if calcunits._key(a) == calcunits._key(b) and calcunits._key(a) not in temps:
+            return f"That's {n} {b}."  # '3 hours 20 minutes in minutes' arrives here as '200 minutes in minutes'
         said_back = calcunits.convert(value, a, b)
     except ValueError:
         return None  # a word that isn't a unit: not a conversion after all
-    return said_back.replace("°C", " degrees Celsius").replace("°F", " degrees Fahrenheit")
+    return _spoken_units(said_back.replace("°C", " degrees Celsius").replace("°F", " degrees Fahrenheit"))
+
+
+_UNIT_WORDS = {"g": ("gram", "grams"), "oz": ("ounce", "ounces"), "lb": ("pound", "pounds"), "ml": ("millilitre", "millilitres"),
+               "tsp": ("teaspoon", "teaspoons"), "tbsp": ("tablespoon", "tablespoons"), "sq m": ("square metre", "square metres"),
+               "sq ft": ("square foot", "square feet"), "fl oz": ("fluid ounce", "fluid ounces")}
+_SAID_UNIT = re.compile(r"(?P<n>-?[\d,]+(?:\.\d+)?) (?P<u>fl oz|sq m|sq ft|tbsp|tsp|oz|lb|ml|g)\b")
+_LONG_DECIMAL = re.compile(r"(?<= is )(?P<n>-?[\d,]+\.\d+)(?= )")
+
+
+def _spoken_units(text: str) -> str:
+    """Make a conversion easy to hear: '16.0934 km' becomes 'about 16.1 km', '28.3495 g' 'about 28.3 grams'."""
+    def tidy(m: re.Match) -> str:
+        value = float(m.group("n").replace(",", ""))
+        digits = len(m.group("n").replace(",", "").replace(".", "").replace("-", "").lstrip("0"))
+        if digits <= 3:
+            return m.group("n")
+        rounded = round(value) if abs(value) >= 100 else float(f"{value:.3g}")
+        return "about " + (f"{rounded:,}" if isinstance(rounded, int) else f"{rounded:g}")
+    text = _LONG_DECIMAL.sub(tidy, text, count=1)
+    return _SAID_UNIT.sub(lambda m: f"{m.group('n')} {_UNIT_WORDS[m.group('u')][m.group('n') != '1']}", text)
 
 
 _WORLD_TIME = re.compile(_NAME + r"(?:what(?:'s| is) the time|what time is it|what's the time now|time) in (?P<where>[a-z .]+?)"
                          r"(?: (?:right )?now)?" + _END, re.I)
+_TIME_DIFF = re.compile(_NAME + r"(?:what(?:'s| is) the |how big is the |how much is the )?time difference (?:between (?P<a>[a-z .]+?) and "
+                        r"|(?:from|with|to) (?:here (?:to|and) )?)(?P<b>[a-z .]+?)" + _END, re.I)
+_AHEAD = re.compile(_NAME + r"how (?:many hours|far) (?:ahead|behind) (?:is|are) (?P<b>[a-z .]+?)(?: (?:of|from|than) (?P<a>[a-z .]+?))?(?: right now| now)?" + _END, re.I)
+
+
+def _offset_hours(where: str | None) -> tuple[float, str] | None:
+    """Hours ahead of UTC right now, and the place's spoken name; None for 'here'."""
+    from zoneinfo import ZoneInfo
+    if where is None or where.strip().lower() in ("here", "me", "us", "home", "my time"):
+        offset = dt.datetime.now().astimezone().utcoffset()
+        return offset.total_seconds() / 3600, "here"
+    name = dates.CITY_ZONES.get(where.strip().lower().removeprefix("the "))
+    if not name:
+        return None
+    return dt.datetime.now(ZoneInfo(name)).utcoffset().total_seconds() / 3600, where.strip().title()
+
+
+def _time_difference(said: str) -> str | None:
+    """'What's the time difference between London and Tokyo?', 'how many hours ahead is Sydney?'"""
+    m = _TIME_DIFF.match(said) or _AHEAD.match(said)
+    if not m:
+        return None
+    try:
+        a, b = _offset_hours(m.group("a")), _offset_hours(m.group("b"))
+    except Exception:  # no time zone data on this PC: Claude's tool asks the internet
+        return None
+    if not a or not b:
+        return None  # somewhere less common: Claude looks it up
+    gap = b[0] - a[0]
+    hours = f"{abs(gap):g} hour{'s' if abs(gap) != 1 else ''}"
+    if gap == 0:
+        return f"{b[1]} and {a[1]} are on the same time right now." if a[1] != "here" else f"{b[1]} is on the same time as here right now."
+    than = (f" of {a[1]}" if gap > 0 else f" {a[1]}") if a[1] != "here" else ""
+    return f"{b[1]} is {hours} {'ahead' if gap > 0 else 'behind'}{than}{' right now' if not than else ''}."
+
+
 _FIXED_DAYS = {"christmas": (12, 25), "christmas day": (12, 25), "christmas eve": (12, 24), "boxing day": (12, 26),
                "new year": (1, 1), "new year's": (1, 1), "new year's day": (1, 1), "new year's eve": (12, 31),
                "halloween": (10, 31), "valentine's day": (2, 14), "valentines day": (2, 14), "valentine's": (2, 14),
                "bonfire night": (11, 5), "guy fawkes night": (11, 5)}
+_EASTER_OFFSETS = {"easter": 0, "easter sunday": 0, "easter day": 0, "good friday": -2, "easter monday": 1, "palm sunday": -7,
+                   "pancake day": -47, "shrove tuesday": -47, "ash wednesday": -46, "mother's day": -21, "mothers day": -21,
+                   "mothering sunday": -21}
+
+
+def _easter(year: int) -> dt.date:
+    """Easter Sunday (Western), by the anonymous Gregorian algorithm."""
+    a, b, c = year % 19, year // 100, year % 100
+    d, e = divmod(b, 4)
+    g = (8 * b + 13) // 25
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = divmod(c, 4)
+    l = (32 + 2 * e + 2 * i - h - k) % 7  # noqa: E741
+    m = (a + 11 * h + 22 * l) // 451
+    month, day = divmod(h + l - 7 * m + 114, 31)
+    return dt.date(year, month, day + 1)
+
+
+def _named_day(key: str, year: int) -> dt.date | None:
+    """Christmas, Easter, Pancake Day, Mother's Day (UK), Father's Day... in a given year."""
+    if key in _FIXED_DAYS:
+        return dt.date(year, *_FIXED_DAYS[key])
+    if key in _EASTER_OFFSETS:
+        return _easter(year) + dt.timedelta(days=_EASTER_OFFSETS[key])
+    if key in ("father's day", "fathers day", "remembrance sunday"):  # 3rd Sunday of June, 2nd Sunday of November
+        month, nth = (6, 3) if key.startswith("father") else (11, 2)
+        first = dt.date(year, month, 1)
+        return first + dt.timedelta(days=(6 - first.weekday()) % 7 + 7 * (nth - 1))
+    return None
+
+
+def _next_named_day(key: str, today: dt.date) -> dt.date | None:
+    t = _named_day(key, today.year)
+    return t if t is None or t >= today else _named_day(key, today.year + 1)
+
+
+def _day_title(key: str) -> str:
+    return key.title().replace("'S", "'s")
+
+
+_WHEN_IS = re.compile(_NAME + r"(?:when(?:'s| is) |what(?:'s| is) the date (?:of |for )?|what date is )(?:the )?(?P<day>[a-z' ]+?)"
+                      r"(?: this year| next year| (?P<y>\d{4}))?" + _END, re.I)
 _DAYS_UNTIL = re.compile(_NAME + r"(?:how (?:many|long) (?:days |sleeps |weeks )?(?:is it |are there |left )?(?:until|till|til|to|before)"
                          r"|how long (?:is it )?(?:until|till|to)) (?P<day>[a-z' ]+?)" + _END, re.I)
 _TOMORROW = re.compile(_NAME + r"(?:what(?:'s| is) (?:the date |the day )?tomorrow|what day is (?:it )?tomorrow|"
@@ -575,8 +1640,7 @@ _AGE = re.compile(_NAME + r"how old (?:is|would be|will be) (?:someone|somebody|
 
 def _said_date(m: re.Match, year: int) -> dt.date | None:
     if "named" in m.re.groupindex and m.group("named"):
-        key = m.group("named").strip().lower().removeprefix("the ")
-        return dt.date(year, *_FIXED_DAYS[key]) if key in _FIXED_DAYS else None
+        return _named_day(m.group("named").strip().lower().removeprefix("the "), year)
     word = (m.group("mon") or m.group("mon2") or "").lower()
     if not word:
         return None
@@ -612,6 +1676,82 @@ def _since_and_age(said: str, today: dt.date) -> str | None:
     return None
 
 
+_LEAP = re.compile(_NAME + r"is (?:(?P<y>\d{4})|(?P<rel>it|this year|next year|last year)) (?:a )?leap year" + _END, re.I)
+_DAYS_IN = re.compile(_NAME + r"how many days (?:are there |is there |are |is )?in (?:the month of )?(?:(?P<this>this month|the month|"
+                      r"this year|the year|next month)|" + _MONTH + r")(?: (?P<y>\d{4}))?" + _END, re.I)
+_DAYS_LEFT = re.compile(_NAME + r"how many (?P<unit>days|weeks) (?:are )?(?:left|remaining|to go) (?:in|of|until the end of) "
+                        r"(?:this|the) (?P<span>year|month)" + _END, re.I)
+_WEEK_NO = re.compile(_NAME + r"(?:what(?:'s| is) (?:the |this )?week number|what week (?:number )?(?:of the year )?is (?:it|this)"
+                      r"(?: of the year)?|which week (?:of the year )?is (?:it|this))(?: today| now)?" + _END, re.I)
+_DAY_OF_YEAR = re.compile(_NAME + r"what day of the year is (?:it|today)" + _END, re.I)
+
+
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+_DATE_OF_DAY = re.compile(_NAME + r"(?:what(?:'s| is) the date|what date is it|what date is|what's the date|when is|when's|what date will it be|(?P<was>what was the date|what date was))"
+                          r"(?: on)? (?P<which>this |next |last |coming |this coming )?(?P<day>" + "|".join(_WEEKDAYS)
+                          + r")(?P<week> week| after next)?" + _END, re.I)
+_YESTERDAY = re.compile(_NAME + r"(?:what was the date yesterday|what was yesterday's date|what day was (?:it )?yesterday|"
+                        r"what was yesterday)" + _END, re.I)
+
+
+def _weekday_date(said: str, today: dt.date) -> str | None:
+    """'What's the date on Friday?', 'when is next Monday?', 'what was the date yesterday?'"""
+    if _YESTERDAY.match(said):
+        t = today - dt.timedelta(days=1)
+        return f"Yesterday was {t:%A} the {_ordinal(t.day)} of {t:%B}."
+    if not (m := _DATE_OF_DAY.match(said)):
+        return None
+    which = (m.group("which") or "").strip().lower()
+    ahead = (_WEEKDAYS.index(m.group("day").lower()) - today.weekday()) % 7
+    if which == "last" or (m.group("was") and not which):
+        t = today - dt.timedelta(days=(7 - ahead) % 7 or 7)
+        return f"Last {t:%A} was the {_ordinal(t.day)} of {t:%B}."
+    t = today + dt.timedelta(days=ahead or 7)  # "Friday" on a Friday means next week's
+    if (m.group("week") or "").strip().lower() == "after next":
+        t += dt.timedelta(days=7)
+    return f"{t:%A} is the {_ordinal(t.day)} of {t:%B}{f' {t.year}' if t.year != today.year else ''}."
+
+
+def _calendar_facts(said: str, today: dt.date) -> str | None:
+    """'Is 2028 a leap year?', 'how many days in February?', 'what week number is it?', 'how many days left this year?'"""
+    if m := _LEAP.match(said):
+        rel = (m.group("rel") or "").lower()
+        year = int(m.group("y")) if m.group("y") else today.year + {"next year": 1, "last year": -1}.get(rel, 0)
+        verb = ("was" if year < today.year else "is") + ("" if calendar.isleap(year) else "n't")
+        return f"{year} {verb} a leap year." if m.group("y") or rel in ("it", "this year") \
+            else f"{rel.capitalize()}, {year}, {verb} a leap year."
+    if m := _DAYS_IN.match(said):
+        year = int(m.group("y") or today.year)
+        this = (m.group("this") or "").lower()
+        if this.endswith("year"):
+            return f"{year} has {366 if calendar.isleap(year) else 365} days."
+        if this:
+            month = today.month + (this == "next month")
+            year, month = (year + 1, 1) if month == 13 else (year, month)
+        else:
+            word = m.group("mon").lower()
+            month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+        days = calendar.monthrange(year, month)[1]
+        when = f" {year}" if m.group("y") or year != today.year or month == 2 else ""
+        return f"{_MONTH_NAMES[month - 1].title()}{when} has {days} days."
+    if m := _DAYS_LEFT.match(said):
+        if m.group("span").lower() == "year":
+            end, span = dt.date(today.year, 12, 31), "the year"
+        else:
+            end, span = dt.date(today.year, today.month, calendar.monthrange(today.year, today.month)[1]), f"{today:%B}"
+        days = (end - today).days
+        if m.group("unit").lower() == "weeks":
+            extra = f" and {days % 7} day{'s' if days % 7 != 1 else ''}" if days % 7 else ""
+            return f"{days // 7} week{'s' if days // 7 != 1 else ''}{extra} left in {span}, not counting today."
+        return f"{days} day{'s' if days != 1 else ''} left in {span}, not counting today."
+    if _WEEK_NO.match(said):
+        return f"It's week {today.isocalendar()[1]} of {today.isocalendar()[0]}."
+    if _DAY_OF_YEAR.match(said):
+        n = today.timetuple().tm_yday
+        return f"Today is day {n} of {calendar.isleap(today.year) and 366 or 365}."
+    return None
+
+
 def _date_maths(said: str, today: dt.date) -> str | None:
     """'What's the date in 2 weeks?' and 'what day is the 25th of December?': worked out from the calendar on the spot."""
     said = spoken_numbers(said)
@@ -625,9 +1765,13 @@ def _date_maths(said: str, today: dt.date) -> str | None:
     if not (m := _WEEKDAY_OF.match(said)):
         return None
     if m.group("named"):
-        if (key := m.group("named").strip().lower().removeprefix("the ")) not in _FIXED_DAYS:
-            return None  # "what day is it", "what day is Easter": the others or Claude
-        month, day = _FIXED_DAYS[key]
+        key = m.group("named").strip().lower().removeprefix("the ")
+        t = _named_day(key, int(m.group("y"))) if m.group("y") else _next_named_day(key, today)
+        if t is None:
+            return None  # "what day is it": the others or Claude
+        verb = "was" if t < today else "is"
+        return f"{_day_title(key)}{f' {t.year}' if m.group('y') else ''} {verb} on a {t:%A}, the {_ordinal(t.day)} of {t:%B}" \
+               f"{f' {t.year}' if t.year != today.year and not m.group('y') else ''}."
     else:
         word = (m.group("mon") or m.group("mon2")).lower()
         month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
@@ -644,7 +1788,7 @@ def _date_maths(said: str, today: dt.date) -> str | None:
 
 
 _UNTIL_CLOCK = re.compile(_NAME + r"(?:how long (?:is it |have I got |do I have )?|how many (?:minutes|hours) (?:is it |have I got |do I have )?|"
-                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r")" + _END, re.I)
+                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r"|(?P<word>midnight|midday|noon)|(?P<bh>1[0-2]|[1-9])(?::(?P<bm>[0-5]\d))?)" + _END, re.I)
 _TIME_IN = re.compile(_NAME + r"(?:what time will it be|what(?:'s| is| will be) the time|what time is it) in " + _AMOUNT
                       + r" (minutes?|mins?|hours?|hrs?)(?: time)?" + _END, re.I)
 
@@ -653,16 +1797,286 @@ def _say_clock(hour: int, minute: int) -> str:
     return f"{hour % 12 or 12}{f':{minute:02d}' if minute else ''} {'am' if hour < 12 else 'pm'}"
 
 
+_COUNTDOWN = re.compile(_NAME + r"(?:how many (?P<unit>days|weeks|working days|work days|weekdays|school days)|how long) "
+                        r"(?:is it |are there |are left |left |have I got |do I have )?(?:until|till|til|to|before) (?:"
+                        + _DATE_SAID + r"|(?P<next>next )?(?P<wd>monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
+                        r"|(?P<named>[a-z' ]+?))(?: (?P<y>\d{4}))?" + _END, re.I)
+
+
+def _countdown(said: str, today: dt.date) -> str | None:
+    """'How many weeks until Christmas?', 'how many working days until Friday?', 'how long until the 30th of October?'"""
+    if not (m := _COUNTDOWN.match(said)):
+        return None
+    unit = (m.group("unit") or "days").lower()
+    if m.group("wd"):
+        ahead = (_WEEKDAYS.index(m.group("wd").lower()) - today.weekday()) % 7 or 7
+        target = today + dt.timedelta(days=ahead)
+        name = f"{target:%A}, the {_ordinal(target.day)} of {target:%B}"
+    else:
+        if m.group("named") and unit == "days":
+            return None  # 'how many days until Christmas' has its own answer
+        year = int(m.group("y")) if m.group("y") else today.year
+        if not (target := _said_date(m, year)):
+            return None
+        if target < today and not m.group("y"):
+            target = _said_date(m, year + 1)
+        if not target or target < today:
+            return None
+        key = (m.group("named") or "").strip().lower().removeprefix("the ")
+        when = f"{target:%A} the {_ordinal(target.day)} of {target:%B}{f' {target.year}' if target.year != today.year else ''}"
+        name = f"{key.title().replace(chr(39) + 'S', chr(39) + 's')}, on {when}" if key else when.replace(" the ", ", the ", 1)
+    days = (target - today).days
+    if days == 0:
+        return "That's today!"
+    if unit in ("working days", "work days", "weekdays", "school days"):
+        work = sum((today + dt.timedelta(days=i)).weekday() < 5 for i in range(1, days))
+        word = "school days" if unit == "school days" else "working days"
+        short = name.split(",")[0] if m.group("wd") or m.group("named") else f"the {_ordinal(target.day)} of {target:%B}"
+        return f"{work} {word[:-1] if work == 1 else word} before {short}, not counting today or bank holidays."
+    if unit == "weeks":
+        weeks, extra = divmod(days, 7)
+        if not weeks:
+            return f"Less than a week: {days} day{'s' if days != 1 else ''} until {name}."
+        rest = f" and {extra} day{'s' if extra != 1 else ''}" if extra else ""
+        return f"{weeks} week{'s' if weeks != 1 else ''}{rest} until {name}."
+    return f"{days} day{'s' if days != 1 else ''} until {name}."
+
+
+_DAY_AFTER = re.compile(_NAME + r"what(?:'s| is| was| will be) (?:the )?(?:date |day )?(?:on )?the day (?P<way>after tomorrow|before yesterday)"
+                        r"|" + _NAME + r"what (?:date|day) (?:is|was|will be) (?:it )?(?:on )?the day (?P<way2>after tomorrow|before yesterday)" + _END, re.I)
+_AGO = re.compile(_NAME + r"what (?:date |day )?(?:was it|was the date|was the day|date was it|day was it|was) (?P<n>\d+|a|an|one) "
+                  r"(?P<unit>days?|weeks?) ago" + _END, re.I)
+_THIS_MONTH = re.compile(_NAME + r"what (?P<what>month|year) (?:is it|are we in|is this)(?: now| right now)?" + _END, re.I)
+_WEEKEND = re.compile(_NAME + r"is it (?:the )?(?P<what>weekend|a weekday|a work day|a working day)(?: today| yet)?" + _END, re.I)
+_MONTH_END = re.compile(_NAME + r"what(?:'s| is) the (?P<which>last|first) day of (?:the|this|next) month" + _END, re.I)
+
+
+def _relative_day(said: str, today: dt.date) -> str | None:
+    """'What's the day after tomorrow?', 'what was the date 3 days ago?', 'what month is it?', 'is it the weekend?'"""
+    def full(t: dt.date) -> str:
+        return f"{t:%A} the {_ordinal(t.day)} of {t:%B}{f' {t.year}' if t.year != today.year else ''}"
+    if m := _DAY_AFTER.match(said):
+        after = (m.group("way") or m.group("way2")).lower().startswith("after")
+        t = today + dt.timedelta(days=2 if after else -2)
+        return f"The day {'after tomorrow is' if after else 'before yesterday was'} {full(t)}."
+    if m := _AGO.match(said):
+        n = 1 if m.group("n").lower() in ("a", "an", "one") else int(m.group("n"))
+        days = n * (7 if m.group("unit").lower().startswith("week") else 1)
+        if days > 3660:
+            return None
+        amount = f"A {m.group('unit').lower().rstrip('s')}" if n == 1 else f"{n} {m.group('unit').lower().rstrip('s')}s"
+        return f"{amount} ago was {full(today - dt.timedelta(days=days))}."
+    if m := _THIS_MONTH.match(said):
+        return f"It's {today:%B} {today.year}." if m.group("what").lower() == "month" else f"It's {today.year}."
+    if m := _WEEKEND.match(said):
+        weekend = today.weekday() >= 5
+        if m.group("what").lower() == "weekend":
+            if weekend:
+                return f"Yes, it's {today:%A}."
+            left = 5 - today.weekday()
+            return f"Not yet, it's {today:%A}. The weekend starts {'tomorrow' if left == 1 else f'in {left} days'}."
+        return f"{'No' if weekend else 'Yes'}, it's {today:%A}."
+    if m := _MONTH_END.match(said):
+        first = (today.replace(day=1) + dt.timedelta(days=32)).replace(day=1)
+        if "next" in said.lower():
+            t = first if m.group("which").lower() == "first" else (first + dt.timedelta(days=32)).replace(day=1) - dt.timedelta(days=1)
+        else:
+            t = today.replace(day=1) if m.group("which").lower() == "first" else first - dt.timedelta(days=1)
+        return f"The {m.group('which').lower()} day of {t:%B} is {t:%A} the {_ordinal(t.day)}."
+    return None
+
+
+_DUR = (r"(?:(?P<{0}h>\d+(?:\.\d+)?|an?|one) (?:hours?|hrs?)(?P<{0}half> and a half)?(?:,? (?:and )?(?P<{0}m>\d+)(?: minutes?| mins?)?)?"
+        r"|(?P<{0}m2>\d+) (?:minutes?|mins?)|(?P<{0}hh>half an hour))")
+_CLOCK_AT = _CLOCK.replace("(?P<", "(?P<c") + r"|(?P<cword>midnight|midday|noon)"
+_OFFSET_CLOCK = re.compile(_NAME + r"(?:what(?:'s| is| was| will be)(?: the time)?|what time (?:is|was|will it be|will be)) (?:"
+                           + _DUR.format("a") + r") (?P<way>before|after|from|past) (?:" + _CLOCK_AT + r")" + _END, re.I)
+_CLOCK_PLUS = re.compile(_NAME + r"what(?:'s| is) (?:" + _CLOCK_AT + r") (?P<way>plus|minus|add|take away|\+|-) (?:"
+                         + _DUR.format("a") + r")" + _END, re.I)
+_AGO_CLOCK = re.compile(_NAME + r"what time was it (?:" + _DUR.format("a") + r") ago" + _END, re.I)
+_DUR_SUM = re.compile(_NAME + r"what(?:'s| is) (?:" + _DUR.format("a") + r") (?P<way>plus|minus|add|take away|and) (?:"
+                      + _DUR.format("b") + r")" + _END, re.I)
+_DUR_IN = re.compile(_NAME + r"(?:what(?:'s| is) |how many minutes (?:is|are|in) )(?:" + _DUR.format("a") + r")(?: in minutes)?" + _END, re.I)
+
+
+def _dur_minutes(m: re.Match, p: str) -> float:
+    if m.group(p + "hh"):
+        return 30
+    if m.group(p + "m2"):
+        return int(m.group(p + "m2"))
+    h = m.group(p + "h").lower()
+    hours = 1 if h in ("a", "an", "one") else float(h)
+    return hours * 60 + (30 if m.group(p + "half") else 0) + int(m.group(p + "m") or 0)
+
+
+def _say_minutes(total: float) -> str:
+    hours, minutes = divmod(round(total), 60)
+    parts = [f"{n} {unit}{'s' if n != 1 else ''}" for n, unit in ((hours, "hour"), (minutes, "minute")) if n]
+    return " and ".join(parts) or "no time at all"
+
+
+def _clock_from(m: re.Match) -> tuple[int, int] | None:
+    if m.group("cword"):
+        return (0 if m.group("cword").lower() == "midnight" else 12), 0
+    if m.group("ch24"):
+        return int(m.group("ch24")), int(m.group("cm24"))
+    hour, minute = int(m.group("ch")), int(m.group("cm") or 0)
+    if not 1 <= hour <= 12 or minute > 59:
+        return None
+    return hour % 12 + (12 if m.group("cap").lower().startswith("p") else 0), minute
+
+
+def _time_offsets(said: str, here: dt.datetime) -> str | None:
+    """'What's 4 hours before 2 pm?', 'what's 9 am plus 8 hours?', 'what time was it 3 hours ago?',
+    'what's 2 hours 30 minutes plus 45 minutes?' and 'what's 1 hour 20 in minutes?'."""
+    said = spoken_numbers(said)
+    for pattern in (_OFFSET_CLOCK, _CLOCK_PLUS):
+        if (m := pattern.match(said)) and (clock := _clock_from(m)):
+            back = m.group("way").lower() in ("before", "minus", "take away", "-")
+            start = here.replace(hour=clock[0], minute=clock[1])
+            t = start + dt.timedelta(minutes=_dur_minutes(m, "a") * (-1 if back else 1))
+            day = "" if t.date() == start.date() or (m.group("cword") or "").lower() == "midnight" else \
+                " the day before" if t.date() < start.date() else " the next day"  # "2 hours before midnight" is just 10 pm
+            return f"That's {_say_clock(t.hour, t.minute)}{day}."
+    if m := _AGO_CLOCK.match(said):
+        t = here - dt.timedelta(minutes=_dur_minutes(m, "a"))
+        return f"It was {_say_clock(t.hour, t.minute)}{'' if t.date() == here.date() else ' yesterday'}."
+    if m := _DUR_SUM.match(said):
+        a, b = _dur_minutes(m, "a"), _dur_minutes(m, "b")
+        total = a - b if m.group("way").lower() in ("minus", "take away") else a + b
+        return None if total < 0 else f"That's {_say_minutes(total)}."
+    if (m := _DUR_IN.match(said)) and (m.group("ah") and (m.group("am") or m.group("ahalf"))):
+        return f"That's {_say_num(_dur_minutes(m, 'a'))} minutes."
+    return None
+
+
+_CLOCK_D = _CLOCK.replace("(?P<", "(?P<d") + r"|(?P<dword>midnight|midday|noon)"
+_PLACE = r"[a-z .']+?"
+_ZONE_WHEN = re.compile(_NAME + r"(?:if|when) it(?:'s| is) (?:" + _CLOCK_AT + r")(?: (?:in (?P<a>" + _PLACE + r")|here|(?P<a2>" + _PLACE
+                        + r") time))?,? what time (?:is it|will it be|would it be|is that) in (?P<b>" + _PLACE + r")" + _END, re.I)
+_ZONE_WHAT = re.compile(_NAME + r"what(?:'s| is) (?:" + _CLOCK_AT + r") (?:(?P<a>" + _PLACE + r") time )?in (?P<b>" + _PLACE
+                        + r")(?: time)?" + _END, re.I)
+_ZONE_AT = re.compile(_NAME + r"what time (?:is it|will it be|would it be) in (?P<b>" + _PLACE + r") at (?:" + _CLOCK_AT
+                      + r")(?: (?P<a>" + _PLACE + r") time| here| my time)?" + _END, re.I)
+_BETWEEN_CLOCKS = re.compile(_NAME + r"how (?:many hours|many minutes|long) (?:is it |is there |are there )?(?:between|from) (?:" + _CLOCK_AT
+                             + r") (?:and|to|until|till) (?:" + _CLOCK_D + r")" + _END, re.I)
+
+
+def _clock_d(m: re.Match) -> tuple[int, int] | None:
+    """The second clock of a 'between 9 am and 5 pm' question (the d-prefixed groups)."""
+    if m.group("dword"):
+        return (0 if m.group("dword").lower() == "midnight" else 12), 0
+    if m.group("dh24"):
+        return int(m.group("dh24")), int(m.group("dm24"))
+    hour, minute = int(m.group("dh")), int(m.group("dm") or 0)
+    if not 1 <= hour <= 12 or minute > 59:
+        return None
+    return hour % 12 + (12 if m.group("dap").lower().startswith("p") else 0), minute
+
+
+def _zone_clock(said: str) -> str | None:
+    """'If it's 3 pm in London, what time is it in Tokyo?', 'what's 5 pm London time in New York?' and
+    'how many hours between 9 am and 5 pm?'."""
+    said = re.sub(r"(?<![\d:])(\d):(\d\d)(?! ?[ap]\.?m)", r"0\1:\2", said)  # "9:30" is a 24-hour clock too
+    if m := _BETWEEN_CLOCKS.match(said):
+        start, end = _clock_from(m), _clock_d(m)
+        if not start or not end:
+            return None
+        gap = (end[0] * 60 + end[1] - start[0] * 60 - start[1]) % 1440
+        return f"From {_say_clock(*start)} to {_say_clock(*end)} is {_say_minutes(gap)}."
+    m = _ZONE_WHEN.match(said) or _ZONE_WHAT.match(said) or _ZONE_AT.match(said)
+    if not m or not (clock := _clock_from(m)):
+        return None
+    source = m.groupdict().get("a") or m.groupdict().get("a2")
+    try:
+        a, b = _offset_hours(source), _offset_hours(m.group("b"))
+    except Exception:  # no time zone data on this PC: Claude's tool asks the internet
+        return None
+    if not a or not b or b[1] == "here" and a[1] == "here":
+        return None  # somewhere less common: Claude looks it up
+    total = clock[0] * 60 + clock[1] + round((b[0] - a[0]) * 60)
+    day = "" if 0 <= total < 1440 else " the next day" if total >= 1440 else " the day before"
+    total %= 1440
+    there = "here" if b[1] == "here" else f"in {b[1]}"
+    where = "here" if a[1] == "here" else f"in {a[1]}"
+    return f"When it's {_say_clock(*clock)} {where}, it's {_say_clock(total // 60, total % 60)}{day} {there}."
+
+
+_BARE = r"(?P<{0}h>\d{{1,2}})(?:[:.](?P<{0}m>[0-5]\d))? ?(?P<{0}ap>a\.?m\.?|p\.?m\.?)?"
+_ARRIVE_BY = re.compile(_NAME + r"(?:what time|when) (?:do|should|must|would) I (?:need to |have to )?(?:leave|set off|go|head off|get going)"
+                        r"(?: by)? (?:to (?:arrive|get there|be there|get in|be in) (?:by |at |for )?|for )" + _BARE.format("a")
+                        + r",? if (?:it|the journey|the drive|the trip|the walk) takes (?:" + _DUR.format("d") + r")" + _END, re.I)
+_LEAVE_AT = re.compile(_NAME + r"if I (?:leave|set off|go|head off) at " + _BARE.format("a") + r",? and (?:it|the journey|the drive|the trip|the walk)"
+                       r" takes (?:" + _DUR.format("d") + r"),? (?:what time|when) (?:will|would|do|should) I (?:arrive|get there|be there|get in|land)" + _END, re.I)
+
+
+def _bare_clock(m: re.Match, p: str) -> tuple[int, int, bool] | None:
+    """Hour, minute and whether am or pm was said; a bare '9' stays on a 12-hour face."""
+    hour, minute, ap = int(m.group(p + "h")), int(m.group(p + "m") or 0), (m.group(p + "ap") or "").lower().replace(".", "")
+    if ap:
+        if not 1 <= hour <= 12:
+            return None
+        return hour % 12 + (12 if ap == "pm" else 0), minute, True
+    return (hour, minute, hour > 12 or hour == 0) if hour <= 23 else None
+
+
+def _say_face(total_minutes: float, has_ap: bool) -> str:
+    hour, minute = divmod(round(total_minutes) % 1440, 60)
+    return _say_clock(hour, minute) if has_ap else f"{hour % 12 or 12}:{minute:02d}"
+
+
+_IS_DAY = re.compile(_NAME + r"is (?:it|today) (?P<wd>monday|tuesday|wednesday|thursday|friday|saturday|sunday)(?: today)?" + _END, re.I)
+_PART_OF_DAY = re.compile(_NAME + r"is it (?P<part>morning|the morning|afternoon|the afternoon|evening|the evening|night|night time|am or pm|a\.?m\.? or p\.?m\.?)(?: now| yet)?" + _END, re.I)
+
+
+def _part_of_day(hour: int) -> str:
+    return "morning" if 5 <= hour < 12 else "afternoon" if 12 <= hour < 17 else "evening" if 17 <= hour < 21 else "night"
+
+
+def _day_and_journey(said: str, now: time.struct_time) -> str | None:
+    """'Is it Friday?', 'is it morning?', 'what time do I need to leave to arrive at 9 if it takes 40 minutes?',
+    'if I leave at 8:15 and it takes 45 minutes, when will I arrive?'"""
+    if m := _IS_DAY.match(said):
+        today = time.strftime("%A", now)
+        asked = m.group("wd").capitalize()
+        return f"Yes, it's {today}." if asked == today else f"No, it's {today}."
+    if m := _PART_OF_DAY.match(said):
+        part = m.group("part").lower().replace(".", "")
+        actual = _part_of_day(now.tm_hour)
+        if part.endswith("pm"):
+            return f"It's {_say_clock(now.tm_hour, now.tm_min)}."
+        asked = part.replace("the ", "").replace(" time", "")
+        return (f"Yes, it's {_say_clock(now.tm_hour, now.tm_min)}." if asked == actual
+                else f"No, it's {_say_clock(now.tm_hour, now.tm_min)}, so it's {'night' if actual == 'night' else 'the ' + actual}.")
+    for pattern, sign in ((_ARRIVE_BY, -1), (_LEAVE_AT, 1)):
+        if m := pattern.match(said):
+            found = _bare_clock(m, "a")
+            if found is None:
+                return None
+            hour, minute, has_ap = found
+            when = _say_face(hour * 60 + minute + sign * _dur_minutes(m, "d"), has_ap)
+            return f"Leave by {when}." if sign < 0 else f"You'll arrive at {when}."
+    return None
+
+
 def _clock_maths(said: str, now: time.struct_time) -> str | None:
     """'How long until 5 pm?' and 'what time will it be in 3 hours?': worked out from the clock on the spot."""
     here = dt.datetime(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
+    if (found := _time_offsets(said, here)) is not None:
+        return found
     if m := _TIME_IN.match(said):
         later = here + dt.timedelta(seconds=_seconds(m.group(1), m.group(2)))
         day = "" if later.date() == here.date() else " tomorrow" if (later.date() - here.date()).days == 1 else f" on {later:%A}"
         return f"It'll be {_say_clock(later.hour, later.minute)}{day}."
     if not (m := _UNTIL_CLOCK.match(said)):
         return None
-    if m.group("h24"):
+    if m.group("word"):
+        hour, minute = (0 if m.group("word").lower() == "midnight" else 12), 0
+    elif m.group("bh"):  # a bare '6' or '5:30' means whichever comes next, am or pm
+        minute = int(m.group("bm") or 0)
+        hour = min((h for h in (int(m.group("bh")) % 12, int(m.group("bh")) % 12 + 12)),
+                   key=lambda h: (h * 60 + minute - here.hour * 60 - here.minute - 1) % 1440)
+    elif m.group("h24"):
         hour, minute = int(m.group("h24")), int(m.group("m24"))
     else:
         hour, minute = int(m.group("h")), int(m.group("m") or 0)
@@ -674,13 +2088,170 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
         target += dt.timedelta(days=1)
     hours, minutes = divmod(int((target - here).total_seconds() // 60), 60)
     parts = [f"{n} {unit}{'s' if n != 1 else ''}" for n, unit in ((hours, "hour"), (minutes, "minute")) if n]
-    return f"{' and '.join(parts)} until {_say_clock(hour, minute)}."
+    return f"{' and '.join(parts)} until {m.group('word').lower() if m.group('word') else _say_clock(hour, minute)}."
+
+
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+_CLOCKS = re.compile(_NAME + r"when (?:do|does|will) (?:the )?clocks? (?P<way>go back|go forward|change|go forwards)(?: this year| next)?" + _END, re.I)
+_SEASON = re.compile(_NAME + r"what season is it(?: now)?" + _END, re.I)
+_QUARTER = re.compile(_NAME + r"what (?:quarter|financial quarter) (?:is it|are we in)(?: now)?" + _END, re.I)
+_NTH_DAY = re.compile(_NAME + r"what(?:'s| is) (?:the )?(?P<n>\d{1,3})(?:st|nd|rd|th) day of (?:the|this) year" + _END, re.I)
+_NTH_WEEKDAY = re.compile(_NAME + r"(?:what(?:'s| is)|when is) the (?P<nth>first|second|third|fourth|last|1st|2nd|3rd|4th) (?P<wd>"
+                          + "|".join(_WEEKDAYS) + r") (?:in|of) " + _MONTH + r"(?: (?P<y>\d{4}))?" + _END, re.I)
+_WEEKDAYS_LEFT = re.compile(_NAME + r"how many (?P<wd>" + "|".join(_WEEKDAYS) + r")s (?:are )?(?:there )?(?:left|remaining) "
+                            r"(?:this|in the) (?P<span>year|month)" + _END, re.I)
+
+
+def _last_sunday(year: int, month: int) -> dt.date:
+    last = dt.date(year, month, calendar.monthrange(year, month)[1])
+    return last - dt.timedelta(days=(last.weekday() + 1) % 7)
+
+
+def _nth_weekday(year: int, month: int, weekday: int, nth: int) -> dt.date | None:
+    if nth == -1:
+        last = dt.date(year, month, calendar.monthrange(year, month)[1])
+        return last - dt.timedelta(days=(last.weekday() - weekday) % 7)
+    first = dt.date(year, month, 1)
+    day = first + dt.timedelta(days=(weekday - first.weekday()) % 7 + 7 * (nth - 1))
+    return day if day.month == month else None
+
+
+def _calendar_more(said: str, today: dt.date) -> str | None:
+    """'When do the clocks go back?', 'what season is it?', 'what quarter is it?', 'the 100th day of the year',
+    'the first Monday in December', 'how many Fridays are left this year?'."""
+    if m := _CLOCKS.match(said):
+        way = m.group("way").lower()
+        changes = [(d, "forward") for y in (today.year, today.year + 1) for d in [_last_sunday(y, 3)]] + \
+                  [(d, "back") for y in (today.year, today.year + 1) for d in [_last_sunday(y, 10)]]
+        wanted = [c for c in sorted(changes) if c[0] >= today and (way == "change" or c[1] in way)]
+        day, which = wanted[0]
+        when = "today" if day == today else f"on Sunday the {_ordinal(day.day)} of {day:%B}{f' {day.year}' if day.year != today.year else ''}"
+        return f"The clocks go {which} an hour {when}, at {'1 am' if which == 'forward' else '2 am'}."
+    if _SEASON.match(said):
+        season = ("winter", "spring", "summer", "autumn")[today.month % 12 // 3]
+        return f"It's {season}."
+    if _QUARTER.match(said):
+        q = (today.month - 1) // 3 + 1
+        return f"It's Q{q}, quarter {q} of {today.year}."
+    if m := _NTH_DAY.match(said):
+        n = int(m.group("n"))
+        if not 1 <= n <= (366 if calendar.isleap(today.year) else 365):
+            return None
+        d = dt.date(today.year, 1, 1) + dt.timedelta(days=n - 1)
+        return f"Day {n} of {today.year} is {d:%A} the {_ordinal(d.day)} of {d:%B}."
+    if m := _NTH_WEEKDAY.match(said):
+        word = m.group("mon").lower()
+        month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+        nth = {"first": 1, "1st": 1, "second": 2, "2nd": 2, "third": 3, "3rd": 3, "fourth": 4, "4th": 4, "last": -1}[m.group("nth").lower()]
+        year = int(m.group("y")) if m.group("y") else today.year + (month < today.month)
+        d = _nth_weekday(year, month, _WEEKDAYS.index(m.group("wd").lower()), nth)
+        if d is None:
+            return None
+        return f"The {m.group('nth').lower()} {m.group('wd').capitalize()} in {d:%B}{f' {year}' if year != today.year else ''} is the {_ordinal(d.day)}."
+    if m := _WEEKDAYS_LEFT.match(said):
+        wd = _WEEKDAYS.index(m.group("wd").lower())
+        end = dt.date(today.year, 12, 31) if m.group("span").lower() == "year" else \
+            dt.date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
+        first = today + dt.timedelta(days=(wd - today.weekday()) % 7 or 7)  # not counting today
+        n = 0 if first > end else (end - first).days // 7 + 1
+        return f"There {'is' if n == 1 else 'are'} {n} {m.group('wd').capitalize()}{'' if n == 1 else 's'} left this {m.group('span').lower()}, not counting today."
+    return None
+
+
+def _date_at(p: str) -> str:
+    """A date said aloud with p-prefixed groups: 'the 1st of March', 'March 1st 2027', 'today', 'Christmas'."""
+    said = _DATE_SAID.replace("(?P<", "(?P<" + p)
+    return r"(?:(?:" + said + r")(?:,? (?P<" + p + r"y>\d{4}))?|(?P<" + p + r"named>[a-z' ]+?))"
+
+
+_DATES_BETWEEN = re.compile(_NAME + r"how many (?P<unit>days|weeks|nights)(?: are there| is it| is that)? (?:between|from) " + _date_at("a")
+                            + r" (?:and|to|until|till) " + _date_at("b") + _END, re.I)
+_DATE_FROM = re.compile(_NAME + r"(?:what(?:'s| is)(?: the date)?|what date is|what day is|when is) (?P<n>\d+|a|an) (?P<unit>days?|weeks?) "
+                        r"(?P<way>from|after|before) " + _date_at("a") + _END, re.I)
+_WEEKENDS_UNTIL = re.compile(_NAME + r"how many (?P<unit>weekends|saturdays|sundays|mondays|tuesdays|wednesdays|thursdays|fridays)"
+                             r"(?: are there| are left| have I got| is it)? (?:until|till|before) " + _date_at("a") + _END, re.I)
+_AGE_IN = re.compile(_NAME + r"how old will I be (?:in|by) (?P<y>\d{4}),? if I (?:was|were|am) born (?:in )?(?P<by>\d{4})" + _END, re.I)
+
+
+def _date_from(m: re.Match, p: str, today: dt.date) -> tuple[dt.date, bool] | None:
+    """The date in p-prefixed groups, and whether a year was said."""
+    if m.group(p + "named"):
+        key = m.group(p + "named").strip().lower().removeprefix("the ")
+        if key in ("today", "now", "here"):
+            return today, True
+        if key == "tomorrow":
+            return today + dt.timedelta(days=1), True
+        if key == "yesterday":
+            return today - dt.timedelta(days=1), True
+        day = _named_day(key, today.year)
+        return (day, False) if day else None
+    word = (m.group(p + "mon") or m.group(p + "mon2") or "").lower()
+    month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+    try:
+        return dt.date(int(m.group(p + "y") or today.year), month, int(m.group(p + "d") or m.group(p + "d2"))), bool(m.group(p + "y"))
+    except ValueError:
+        return None
+
+
+def _long_date(day: dt.date, today: dt.date) -> str:
+    return f"{day:%A} the {_ordinal(day.day)} of {day:%B}{f' {day.year}' if day.year != today.year else ''}"
+
+
+def _date_spans(said: str, today: dt.date) -> str | None:
+    """'How many days between the 1st of March and the 25th of December?', 'what's 6 weeks from the 1st of December?',
+    'how many weekends until Christmas?' and 'how old will I be in 2030 if I was born in 1990?'."""
+    said = spoken_numbers(said)
+    if m := _DATES_BETWEEN.match(said):
+        a, b = _date_from(m, "a", today), _date_from(m, "b", today)
+        if not a or not b:
+            return None
+        (start, a_year), (end, b_year) = a, b
+        if end < start and not b_year:  # "from the 1st of December to the 1st of March" crosses New Year
+            end = _named_day(m.group("bnamed").strip().lower().removeprefix("the "), end.year + 1) if m.group("bnamed") \
+                else end.replace(year=end.year + 1)
+        days = abs((end - start).days)
+        if m.group("unit").lower() == "weeks":
+            weeks, rest = divmod(days, 7)
+            return f"That's {weeks} week{'s' if weeks != 1 else ''}" + (f" and {rest} day{'s' if rest != 1 else ''}" if rest else "") + "."
+        word = "night" if m.group("unit").lower() == "nights" else "day"
+        return f"From {_long_date(start, today)} to {_long_date(end, today)} is {days:,} {word}{'s' if days != 1 else ''}."
+    if m := _DATE_FROM.match(said):
+        found = _date_from(m, "a", today)
+        if not found:
+            return None
+        n = 1 if not m.group("n").isdigit() else int(m.group("n"))
+        days = n * (7 if m.group("unit").lower().startswith("w") else 1) * (-1 if m.group("way").lower() == "before" else 1)
+        if abs(days) > 36500:
+            return None
+        return f"That's {_long_date(found[0] + dt.timedelta(days=days), today)}."
+    if m := _WEEKENDS_UNTIL.match(said):
+        found = _date_from(m, "a", today)
+        if not found:
+            return None
+        end = found[0]
+        if end < today and not found[1]:
+            end = end.replace(year=end.year + 1)
+        unit = m.group("unit").lower()
+        wanted = 5 if unit in ("weekends", "saturdays") else ("mondays tuesdays wednesdays thursdays fridays saturdays sundays".split().index(unit))
+        count = sum(1 for i in range(1, (end - today).days) if (today + dt.timedelta(days=i)).weekday() == wanted)
+        unit = unit if unit == "weekends" else unit.capitalize()
+        return f"There {'is' if count == 1 else 'are'} {count} {unit if count != 1 else unit[:-1]} before {_long_date(end, today)}."
+    if m := _AGE_IN.match(said):
+        age = int(m.group("y")) - int(m.group("by"))
+        if not 0 <= age <= 150:
+            return None
+        return f"You'll turn {age} in {m.group('y')}."
+    return None
 
 
 def _calendar_answer(said: str, now: time.struct_time) -> str | None:
     """'What's the time in Tokyo?', 'how many days until Christmas?', 'what's the date tomorrow?'"""
     today = dt.date(now.tm_year, now.tm_mon, now.tm_mday)
-    if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)) is not None:
+    if (found := _clock_maths(said, now) or _date_maths(said, today) or _since_and_age(said, today)
+                  or _calendar_facts(said, today) or _weekday_date(said, today) or _countdown(said, today)
+                  or _relative_day(said, today) or _calendar_more(said, today) or _date_spans(said, today)) is not None:
+        return found
+    if (found := _zone_clock(said) or _time_difference(said)) is not None:
         return found
     if m := _WORLD_TIME.match(said):
         name = dates.CITY_ZONES.get(m.group("where").strip().lower().removeprefix("the "))
@@ -697,19 +2268,26 @@ def _calendar_answer(said: str, now: time.struct_time) -> str | None:
         return f"It's {hour}:{there.minute:02d} {'am' if there.hour < 12 else 'pm'}{when} in {m.group('where').strip().title()}."
     if m := _DAYS_UNTIL.match(said):
         key = m.group("day").strip().lower().removeprefix("the ")
-        if key not in _FIXED_DAYS:
+        if (target := _next_named_day(key, today)) is None:
             return None
-        month, day = _FIXED_DAYS[key]
-        target = dt.date(today.year, month, day)
-        if target < today:
-            target = dt.date(today.year + 1, month, day)
-        n, name = (target - today).days, key.title().replace("'S", "'s")
+        n, name = (target - today).days, _day_title(key)
         if n == 0:
             return f"{name} is today!"
-        return f"{n} day{'s' if n != 1 else ''} until {name}, on {target:%A} the {_ordinal(target.day)} of {target:%B}."
+        return (f"{n} day{'s' if n != 1 else ''} until {name}, on {target:%A} the {_ordinal(target.day)} of {target:%B}"
+                f"{f' {target.year}' if target.year != today.year else ''}.")
     if _TOMORROW.match(said):
         t = today + dt.timedelta(days=1)
         return f"Tomorrow is {t:%A} the {_ordinal(t.day)} of {t:%B}."
+    if m := _WHEN_IS.match(said):
+        key = m.group("day").strip().lower()
+        year = int(m.group("y")) if m.group("y") else today.year + ("next year" in said.lower())
+        t = _named_day(key, year) if m.group("y") or "year" in said.lower() else _next_named_day(key, today)
+        if t is None:
+            return None  # "when is my dentist appointment": Claude or the calendar
+        if t == today:
+            return f"{_day_title(key)} is today!"
+        verb = "was" if t < today else "is"
+        return f"{_day_title(key)} {verb} on {t:%A} the {_ordinal(t.day)} of {t:%B}{f' {t.year}' if t.year != today.year else ''}."
     return None
 
 
@@ -738,6 +2316,85 @@ def _spelt(word: str) -> str:
             out.append(letters[i])
             i += 1
     return ", ".join(out)
+
+
+_LETTER_NEXT = re.compile(_NAME + r"what (?:letter )?(?:comes |is |goes )?(?P<way>after|before) (?:the letter )?[\"']?(?P<l>[a-z])[\"']?"
+                          r"(?: in the alphabet)?" + _END, re.I)
+_LETTER_NTH = re.compile(_NAME + r"what(?:'s| is) the (?P<n>\d{1,2})(?:st|nd|rd|th) letter (?:of|in) the alphabet" + _END, re.I)
+_LETTER_POS = re.compile(_NAME + r"(?:what (?:number|position) (?:letter )?is (?:the letter )?[\"']?(?P<l>[a-z])[\"']?(?: in the alphabet)?"
+                         r"|where (?:is|does) (?:the letter )?(?P<l2>[a-z])(?: come| sit)? in the alphabet)" + _END, re.I)
+
+
+_BACKWARDS = re.compile(_NAME + r"(?:(?:how do you |can you )?spell " + _WORD + r" backwards?|what(?:'s| is) " + _WORD.replace("word>", "word2>")
+                        + r" (?:backwards?|spelt backwards|spelled backwards))" + _END, re.I)
+_VOWELS = re.compile(_NAME + r"how many (?P<kind>vowels|consonants) (?:are )?(?:there )?(?:in|does) " + _WORD + r"(?: have)?" + _END, re.I)
+_PALINDROME = re.compile(_NAME + r"is " + _WORD + r" a palindrome" + _END, re.I)
+_END_LETTER = re.compile(_NAME + r"what(?:'s| is) the (?P<which>first|last) letter (?:of|in) " + _WORD + _END, re.I)
+
+
+_PHONETIC = ("Alpha Bravo Charlie Delta Echo Foxtrot Golf Hotel India Juliett Kilo Lima Mike November Oscar Papa Quebec Romeo "
+             "Sierra Tango Uniform Victor Whiskey X-ray Yankee Zulu").split()
+_SPELL_PHONETIC = re.compile(_NAME + r"(?:(?:how do you |can you |please )?spell " + _WORD + r" (?:phonetically|in (?:the )?(?:nato|phonetic)(?: alphabet)?"
+                             r"|using the (?:nato|phonetic) alphabet))" + _END, re.I)
+_LETTER_PHONETIC = re.compile(_NAME + r"what(?:'s| is) (?:the letter )?[\"']?(?P<l>[a-z])[\"']? in (?:the )?(?:nato|phonetic)(?: alphabet)?" + _END, re.I)
+_ANAGRAM = re.compile(_NAME + r"(?:are [\"']?(?P<a>[a-z]{2,30})[\"']? and [\"']?(?P<b>[a-z]{2,30})[\"']? anagrams"
+                     r"|is [\"']?(?P<a2>[a-z]{2,30})[\"']? an anagram of [\"']?(?P<b2>[a-z]{2,30})[\"']?)" + _END, re.I)
+
+
+def _phonetic(word: str) -> str:
+    """'Smith' -> 'Sierra, Mike, India, Tango, Hotel': clear over a bad phone line."""
+    return ", ".join(_PHONETIC[ord(c) - 97] if c.isalpha() else c for c in word.lower() if c.isalpha() or c.isdigit())
+
+
+def _word_answer(said: str) -> str | None:
+    """'Spell Smith phonetically', 'are listen and silent anagrams?', 'spell banana backwards', 'how many vowels in banana?', 'is level a palindrome?', 'what's the last letter of Tuesday?'"""
+    if m := _SPELL_PHONETIC.match(said):
+        word = m.group("word")
+        if word.lower() in ("it", "that", "this", "them"):
+            return None  # Claude knows what "that" was
+        return f"{word.capitalize()}: {_phonetic(word)}."
+    if m := _LETTER_PHONETIC.match(said):
+        return f"{m.group('l').upper()} is {_PHONETIC[ord(m.group('l').lower()) - 97]}."
+    if m := _ANAGRAM.match(said):
+        a, b = (m.group("a") or m.group("a2")).lower(), (m.group("b") or m.group("b2")).lower()
+        same = a != b and sorted(a) == sorted(b)
+        return f"{'Yes' if same else 'No'}, {a} and {b} {'are' if same else 'are not'} anagrams."
+    if m := _BACKWARDS.match(said):
+        word = (m.group("word") or m.group("word2")).lower()
+        if word in ("it", "that", "this", "them"):
+            return None  # "spell that backwards": Claude knows what "that" was
+        return f"{word.capitalize()} backwards is {_spelt(word[::-1])}."
+    if m := _VOWELS.match(said):
+        word, kind = m.group("word"), m.group("kind").lower()
+        letters = [c for c in word.lower() if c.isalpha()]
+        n = sum((c in "aeiou") == (kind == "vowels") for c in letters)
+        return f"{word.capitalize()} has {n} {kind if n != 1 else kind[:-1]}."
+    if m := _PALINDROME.match(said):
+        word = m.group("word")
+        letters = [c for c in word.lower() if c.isalpha()]
+        is_it = len(letters) > 1 and letters == letters[::-1]
+        return f"{'Yes' if is_it else 'No'}, {word.lower()} {'reads the same' if is_it else 'does not read the same'} backwards."
+    if m := _END_LETTER.match(said):
+        word = m.group("word")
+        letters = [c for c in word if c.isalpha()]
+        return f"The {m.group('which').lower()} letter of {word} is {(letters[0] if m.group('which').lower() == 'first' else letters[-1]).upper()}."
+    return None
+
+
+def _alphabet_answer(said: str) -> str | None:
+    """'What letter comes after G?', 'what's the 5th letter of the alphabet?', 'what number letter is K?'"""
+    if m := _LETTER_NEXT.match(said):
+        i = ord(m.group("l").lower()) - 97 + (1 if m.group("way").lower() == "after" else -1)
+        if not 0 <= i < 26:
+            return f"Nothing, {m.group('l').upper()} is the {'last' if i > 25 else 'first'} letter of the alphabet."
+        return f"{chr(65 + i)} comes {m.group('way').lower()} {m.group('l').upper()}."
+    if m := _LETTER_NTH.match(said):
+        n = int(m.group("n"))
+        return f"The {_ordinal(n)} letter is {chr(64 + n)}." if 1 <= n <= 26 else "The alphabet only has 26 letters."
+    if m := _LETTER_POS.match(said):
+        letter = (m.group("l") or m.group("l2")).upper()
+        return f"{letter} is the {_ordinal(ord(letter) - 64)} letter of the alphabet."
+    return None
 
 
 def _spelling_answer(said: str) -> str | None:
@@ -818,8 +2475,10 @@ def _ordinal(n: int) -> str:
 
 _LEAD = re.compile(r"^(?:(?:hey|ok|okay|oi|right|so|well|um+|uh+|er+|erm+|hmm+|alright|quick question|"
                    r"alfred|alfie|jarvis|(?:can|could|would) you (?:please )?tell me(?= (?:what|how|when)\b)|(?:can|could|would|will) you(?: please)?|"
-                   r"please|do you know|i (?:want|need|would like) to know)[,.!]?\s+)+", re.I)
-_TRAIL = re.compile(r"(?:,?\s+(?:mate|buddy|pal|sir|for me|thanks|thank you|cheers|alfred|jarvis|please))+([?.!]*)$", re.I)
+                   r"please|do you know|you know|i mean|i (?:want|need|would like) to know)[,.!]?\s+)+", re.I)
+_TRAIL = re.compile(r"(?:,?\s+(?:mate|buddy|pal|sir|for me|thanks|thank you|cheers|alfred|jarvis|please|then|now then|um+|uh+|erm+))+([?.!]*)$", re.I)
+_FILLER = re.compile(r",?\s+(?:um+|uh+|uhm+|erm+|er|hmm+)\b,?(?=\s)", re.I)  # "what's the, uh, time" -> "what's the time"
+_STUTTER = re.compile(r"\b([a-z]{2,}(?:'[a-z]+)?)(?:,? \1\b)+", re.I)  # "what's what's the time" -> "what's the time"
 _INDIRECT = ((r"^tell me (?=what |how |when )", ""), (r"^what time it is", "what time is it"), (r"^what the time is", "what's the time"),
              (r"^what (?:the date|today's date) is", "what's the date"), (r"^what day it is", "what day is it"),
              (r"^tell me (?:the|today's) date", "what's the date"), (r"^what the date is tomorrow", "what's the date tomorrow"))
@@ -849,15 +2508,51 @@ def spoken_durations(said: str) -> str:
     return said
 
 
+_HOUR_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+               "ten": 10, "eleven": 11, "twelve": 12}
+_MIN_WORDS = {"five": 5, "ten": 10, "twenty": 20, "twenty five": 25, "twenty-five": 25}
+_HOUR_SAID = r"(?P<hr>" + "|".join(_HOUR_WORDS) + r"|1[0-2]|[1-9])(?! ?(?:minutes?|mins?|hours?|seconds?|%|percent|[:.]\d))\b"
+_MIN_SAID = r"(?P<mn>twenty[- ]five|twenty|ten|five|[1-9]|1\d|2\d)"
+_HALF_PAST = re.compile(r"\b(?P<kind>half|quarter) (?P<way>past|to) " + _HOUR_SAID, re.I)
+_MINS_PAST = re.compile(r"\b" + _MIN_SAID + r" (?P<way>past) " + _HOUR_SAID, re.I)
+_MINS_TO = re.compile(r"\b(?P<ctx>(?:until|till|til|at|by|it's|before|after|about|around) )?" + _MIN_SAID
+                      + r"(?P<mins> minutes?)? to " + _HOUR_SAID, re.I)
+_OCLOCK = re.compile(r"\b" + _HOUR_SAID.replace(r"(?! ?(?:minutes?", r"(?= ?o'?clock)(?! ?(?:minutes?") + r" ?o'?clock\b", re.I)
+
+
+def _hour_of(text: str) -> int:
+    return _HOUR_WORDS.get(text.lower(), None) or int(text)
+
+
+def _min_of(text: str) -> int:
+    return _MIN_WORDS.get(text.lower().replace("-", " "), None) or int(text)
+
+
+def spoken_clocks(said: str) -> str:
+    """'half past 5' -> '5:30', 'quarter to six' -> '5:45', 'ten past 4' -> '4:10', 'six o'clock' -> '6:00',
+    so the clock answers catch times said the British way. No am or pm is added: the answers decide that."""
+    def clock(hour: int, minute: int) -> str:
+        return f"{(hour - 1) % 12 + 1}:{minute:02d}"
+
+    said = _HALF_PAST.sub(lambda m: clock(_hour_of(m["hr"]) - (m["way"].lower() == "to"),
+                                          (30 if m["kind"].lower() == "half" else 15) if m["way"].lower() != "to" else 45), said)
+    said = _MINS_PAST.sub(lambda m: clock(_hour_of(m["hr"]), _min_of(m["mn"])), said)
+    said = _MINS_TO.sub(lambda m: (m["ctx"] or "") + clock(_hour_of(m["hr"]) - 1, 60 - _min_of(m["mn"]))
+                        if m["ctx"] or m["mins"] else m[0], said)
+    return _OCLOCK.sub(lambda m: clock(_hour_of(m["hr"]), 0), said)
+
+
 def tidy_request(text: str) -> str:
     """'Um, Alfred, could you tell me what time it is please mate?' -> 'what time is it?': the plain request,
     so the instant answers catch the many ways people actually say things."""
     said = re.sub(r"\s+", " ", text).strip()
+    said = _FILLER.sub("", said)
+    said = _STUTTER.sub(r"\1", said)
     said = _LEAD.sub("", said)
     said = _TRAIL.sub(r"\1", said)
     for pattern, plain in _INDIRECT:
         said = re.sub(pattern, plain, said, flags=re.I)
-    return spoken_durations(said)
+    return spoken_durations(spoken_clocks(said))
 
 
 _WHAT_HEARD = re.compile(_NAME + r"(?:what did (?:you|u) (?:just )?hear(?: me say)?|what did I (?:just )?say|"
@@ -865,22 +2560,264 @@ _WHAT_HEARD = re.compile(_NAME + r"(?:what did (?:you|u) (?:just )?hear(?: me sa
                          r"(?:say|repeat) (?:back )?what I (?:just )?said|repeat (?:that|me) back)" + _END, re.I)
 
 
+_TRAVEL = r"(?:drive|walk|cycle|ride|run|jog|go|travel|do|fly)"
+_DIST = r"(?P<d>\d+(?:\.\d+)?) ?(?P<du>miles?|km|k|kilomet(?:re|er)s?)"
+_SPEED = (r"(?P<s>\d+(?:\.\d+)?) ?(?P<su>mph|miles (?:per|an|a) hour|km/h|kph|kmh|km an hour|kilomet(?:re|er)s (?:per|an|a) hour)")
+_TRIP_TIME = re.compile(_NAME + r"(?:how long (?:does it|will it|would it|is it going to) take(?: me)?(?: to " + _TRAVEL + r")?|how long is) "
+                        + _DIST + r" at " + _SPEED + _END, re.I)
+_TRIP_SPEED = re.compile(_NAME + r"(?:(?:if )?I (?:" + _TRAVEL[3:-1] + r"|drove|walked|cycled|rode|ran|jogged|went|travell?ed|did|flew) " + _DIST + r" in (?:" + _DUR.format("a")
+                         + r"),? (?:how fast|what speed|what(?:'s| is) my (?:average )?speed)(?: am I going| was I going| is that| was that| am I doing)?"
+                         r"|(?:how fast|what speed|what(?:'s| is) the (?:average )?speed) (?:is|for) " + _DIST.replace("<d", "<e")
+                         + r" in (?:" + _DUR.format("b") + r"))" + _END, re.I)
+_TRIP_FAR = re.compile(_NAME + r"how far (?:(?:can|will|would|do) I (?:" + _TRAVEL + r"|get)|is) (?:in )?(?:" + _DUR.format("a") + r") at "
+                       + _SPEED + _END, re.I)
+_PACE = re.compile(_NAME + r"what(?:'s| is)? (?:my |the )?pace (?:if I (?:run|jog|walk|do)|for|is|of) " + _DIST + r" in (?:" + _DUR.format("a") + r")" + _END, re.I)
+_KM_PER_MILE = 1.609344
+
+
+def _is_km(unit: str) -> bool:
+    return unit.lower().startswith("k")
+
+
+def _say_pace(minutes: float) -> str:
+    whole, seconds = divmod(round(minutes * 60), 60)
+    return f"{whole} minute{'s' if whole != 1 else ''}" + (f" {seconds} second{'s' if seconds != 1 else ''}" if seconds else "")
+
+
+def _journey_answer(said: str) -> str | None:
+    """'How long does it take to drive 100 miles at 50 mph?', 'if I drive 120 miles in 2 hours how fast am I going?',
+    'how far can I drive in 3 hours at 60 mph?' and 'what's my pace if I run 5k in 25 minutes?'."""
+    said = spoken_numbers(said)
+    if m := _TRIP_TIME.match(said):
+        dist, speed = float(m["d"]), float(m["s"])
+        if speed <= 0:
+            return None
+        if _is_km(m["du"]) != _is_km(m["su"]):
+            dist = dist / _KM_PER_MILE if _is_km(m["du"]) else dist * _KM_PER_MILE
+        unit = "km/h" if _is_km(m["su"]) else "mph"
+        said_dist = f"{calcmaths.fmt(float(m['d']))} {'km' if _is_km(m['du']) else ('mile' if float(m['d']) == 1 else 'miles')}"
+        return f"At {calcmaths.fmt(speed)} {unit}, {said_dist} takes {_say_minutes(dist / speed * 60)}."
+    if m := _TRIP_SPEED.match(said):
+        p = "a" if m["d"] else "b"
+        dist, unit = (m["d"], m["du"]) if m["d"] else (m["e"], m["eu"])
+        minutes = _dur_minutes(m, p)
+        if minutes <= 0:
+            return None
+        speed = float(dist) / minutes * 60
+        return f"That's {calcmaths.fmt(round(speed, 1))} {'km/h' if _is_km(unit) else 'mph'}."
+    if m := _TRIP_FAR.match(said):
+        far = float(m["s"]) * _dur_minutes(m, "a") / 60
+        unit = "km" if _is_km(m["su"]) else ("mile" if far == 1 else "miles")
+        return f"In {_say_minutes(_dur_minutes(m, 'a'))} at {calcmaths.fmt(float(m['s']))} {'km/h' if _is_km(m['su']) else 'mph'}, you'd cover {calcmaths.fmt(round(far, 1))} {unit}."
+    if m := _PACE.match(said):
+        km = float(m["d"]) if _is_km(m["du"]) else float(m["d"]) * _KM_PER_MILE
+        minutes = _dur_minutes(m, "a")
+        if km <= 0 or minutes <= 0:
+            return None
+        return f"That's {_say_pace(minutes / km)} per km, or {_say_pace(minutes / km * _KM_PER_MILE)} per mile."
+    return None
+
+
+_SIDES = {"triangle": 3, "square": 4, "rectangle": 4, "quadrilateral": 4, "rhombus": 4, "parallelogram": 4, "trapezium": 4,
+          "kite": 4, "pentagon": 5, "hexagon": 6, "heptagon": 7, "septagon": 7, "octagon": 8, "nonagon": 9, "decagon": 10,
+          "hendecagon": 11, "dodecagon": 12, "circle": 0}
+_COUNTS = {"dozen": "A dozen is 12.", "baker's dozen": "A baker's dozen is 13.", "bakers dozen": "A baker's dozen is 13.",
+           "score": "A score is 20.", "gross": "A gross is 144, a dozen dozens.", "half dozen": "Half a dozen is 6.",
+           "half a dozen": "Half a dozen is 6.", "century": "A century is 100 years.", "decade": "A decade is 10 years.",
+           "millennium": "A millennium is 1,000 years.", "fortnight": "A fortnight is 14 days."}
+_LEGS = {"spider": 8, "insect": 6, "ant": 6, "bee": 6, "fly": 6, "beetle": 6, "butterfly": 6, "octopus": 8, "squid": 10,
+         "crab": 10, "lobster": 10, "dog": 4, "cat": 4, "horse": 4, "cow": 4, "bird": 2, "chicken": 2, "duck": 2,
+         "starfish": 5, "scorpion": 8, "tick": 8, "snake": 0, "fish": 0, "worm": 0, "kangaroo": 2, "human": 2, "person": 2}
+_HOW_MANY_IN = {"letters in the alphabet": "There are 26 letters in the alphabet.",
+                "letters in the english alphabet": "There are 26 letters in the English alphabet.",
+                "vowels in the alphabet": "There are 5 vowels: A, E, I, O and U.",
+                "days in a leap year": "A leap year has 366 days.", "days in a year": "A year has 365 days, or 366 in a leap year.",
+                "weeks in a year": "A year has 52 weeks and 1 day, or 2 days in a leap year.",
+                "months in a year": "A year has 12 months.", "days in a week": "A week has 7 days.",
+                "continents": "There are 7 continents.", "oceans": "There are 5 oceans.",
+                "planets": "There are 8 planets in the solar system.", "planets in the solar system": "There are 8 planets in the solar system.",
+                "players in a football team": "A football team has 11 players on the pitch.",
+                "players on a football team": "A football team has 11 players on the pitch.",
+                "cards in a deck": "A standard deck has 52 cards, plus 2 jokers if they're included.",
+                "cards in a pack": "A standard pack has 52 cards, plus 2 jokers if they're included.",
+                "squares on a chess board": "A chess board has 64 squares.", "squares on a chessboard": "A chessboard has 64 squares.",
+                "bones in the human body": "An adult human has 206 bones.", "bones in the body": "An adult human has 206 bones.",
+                "teeth does an adult have": "An adult usually has 32 teeth, including wisdom teeth.",
+                "countries in the uk": "The UK has 4 countries: England, Scotland, Wales and Northern Ireland.",
+                "states in america": "The USA has 50 states.", "states in the us": "The USA has 50 states.",
+                "states in the usa": "The USA has 50 states."}
+_PLURALS = {"mouse": "mice", "goose": "geese", "child": "children", "person": "people", "man": "men", "woman": "women",
+            "tooth": "teeth", "foot": "feet", "ox": "oxen", "cactus": "cacti", "fungus": "fungi", "octopus": "octopuses",
+            "sheep": "sheep", "fish": "fish", "deer": "deer", "moose": "moose", "louse": "lice", "die": "dice",
+            "knife": "knives", "wife": "wives", "life": "lives", "leaf": "leaves", "wolf": "wolves", "half": "halves",
+            "loaf": "loaves", "potato": "potatoes", "tomato": "tomatoes", "hero": "heroes", "crisis": "crises",
+            "analysis": "analyses", "phenomenon": "phenomena", "criterion": "criteria", "datum": "data", "medium": "media",
+            "appendix": "appendices", "index": "indices or indexes", "radius": "radii", "salmon": "salmon"}
+_CAPITALS = {"france": "Paris", "spain": "Madrid", "portugal": "Lisbon", "italy": "Rome", "germany": "Berlin",
+             "netherlands": "Amsterdam", "the netherlands": "Amsterdam", "holland": "Amsterdam", "belgium": "Brussels",
+             "ireland": "Dublin", "england": "London", "the uk": "London", "uk": "London", "united kingdom": "London",
+             "the united kingdom": "London", "scotland": "Edinburgh", "wales": "Cardiff", "northern ireland": "Belfast",
+             "switzerland": "Bern", "austria": "Vienna", "poland": "Warsaw", "greece": "Athens", "turkey": "Ankara",
+             "sweden": "Stockholm", "norway": "Oslo", "denmark": "Copenhagen", "finland": "Helsinki", "iceland": "Reykjavik",
+             "russia": "Moscow", "ukraine": "Kyiv", "czechia": "Prague", "the czech republic": "Prague", "hungary": "Budapest",
+             "romania": "Bucharest", "croatia": "Zagreb", "egypt": "Cairo", "morocco": "Rabat", "nigeria": "Abuja",
+             "kenya": "Nairobi", "ghana": "Accra", "ethiopia": "Addis Ababa", "zimbabwe": "Harare",
+             "south africa": "Pretoria (the seat of government), with Cape Town and Bloemfontein also capitals",
+             "usa": "Washington, D.C.", "the usa": "Washington, D.C.", "america": "Washington, D.C.",
+             "the united states": "Washington, D.C.", "canada": "Ottawa", "mexico": "Mexico City", "brazil": "Brasília",
+             "argentina": "Buenos Aires", "chile": "Santiago", "peru": "Lima", "colombia": "Bogotá", "jamaica": "Kingston",
+             "china": "Beijing", "japan": "Tokyo", "south korea": "Seoul", "north korea": "Pyongyang", "india": "New Delhi",
+             "pakistan": "Islamabad", "bangladesh": "Dhaka", "thailand": "Bangkok", "vietnam": "Hanoi",
+             "indonesia": "Jakarta", "malaysia": "Kuala Lumpur", "philippines": "Manila", "the philippines": "Manila",
+             "singapore": "Singapore", "australia": "Canberra", "new zealand": "Wellington", "saudi arabia": "Riyadh",
+             "the uae": "Abu Dhabi", "uae": "Abu Dhabi", "united arab emirates": "Abu Dhabi", "israel": "Jerusalem",
+             "iran": "Tehran", "iraq": "Baghdad", "qatar": "Doha"}
+_FACT_SIDES = re.compile(_NAME + r"how many (?:sides|edges|corners) (?:does|has) an? (?P<s>[a-z]+) (?:have|got)" + _END, re.I)
+_FACT_COUNT = re.compile(_NAME + r"(?:(?:what(?:'s| is)|how many is|how much is) (?:an? |one )?(?P<c>baker'?s dozen|half (?:a )?dozen|dozen|score|gross|century|decade|millennium|fortnight)"
+                         r"|how many (?:things |years |days )?(?:is |are )?(?:in )?(?:an? |one )?(?P<c2>baker'?s dozen|half (?:a )?dozen|dozen|score|gross))" + _END, re.I)
+_FACT_LEGS = re.compile(_NAME + r"(?:how many legs (?:does|has) an? (?P<a>[a-z]+) (?:have|got)|how many legs (?:do|have) (?P<a2>[a-z]+?)s? (?:have|got))" + _END, re.I)
+_FACT_HOW_MANY = re.compile(_NAME + r"how many (?P<q>" + "|".join(sorted(map(re.escape, _HOW_MANY_IN), key=len, reverse=True))
+                            + r")(?: are there)?" + _END + r"|" + _NAME + r"how many (?P<q2>" + "|".join(sorted(map(re.escape, _HOW_MANY_IN), key=len, reverse=True)).replace(r"\ in\ ", r"\ (?:are\ there\ )?in\ ")
+                            + r")" + _END, re.I)
+_FACT_WATER = re.compile(_NAME + r"(?:what(?:'s| is) the |at what temperature does water )(?P<w>boiling|freezing|boil|freeze)(?: point)?(?: of water)?" + _END, re.I)
+_FACT_PLURAL = re.compile(_NAME + r"(?:what(?:'s| is) the plural (?:of|for) (?P<w>[a-z]+)|what(?:'s| is) more than one (?P<w2>[a-z]+?) called)" + _END, re.I)
+_FACT_CAPITAL = re.compile(_NAME + r"(?:what(?:'s| is) the capital (?:city )?of (?P<c>[a-z .'-]+?)|what(?:'s| is) (?P<c2>[a-z .'-]+?)'s capital(?: city)?)" + _END, re.I)
+
+
+def _quick_facts(said: str) -> str | None:
+    """Fixed facts said on the spot: sides of shapes, a dozen or a gross, legs on a spider, letters in the alphabet,
+    weeks in a year, water's boiling point, irregular plurals and capital cities."""
+    if m := _FACT_SIDES.match(said):
+        shape = m.group("s").lower()
+        if shape not in _SIDES:
+            return None
+        n = _SIDES[shape]
+        return ("A circle has one curved side and no corners." if shape == "circle"
+                else f"{'An' if shape[0] in 'aeiou' else 'A'} {shape} has {n} sides.")
+    if m := _FACT_COUNT.match(said):
+        return _COUNTS.get((m.group("c") or m.group("c2")).lower().replace("half dozen", "half a dozen"))
+    if m := _FACT_LEGS.match(said):
+        animal = (m.group("a") or m.group("a2")).lower()
+        animal = {"spiders": "spider", "insects": "insect", "ants": "ant", "dogs": "dog", "cats": "cat", "humans": "human",
+                  "people": "person", "birds": "bird", "crabs": "crab"}.get(animal, animal)
+        if animal not in _LEGS:
+            return None
+        n = _LEGS[animal]
+        article = "An" if animal[0] in "aeiou" else "A"
+        return f"{article} {animal} has no legs." if n == 0 else f"{article} {animal} has {n} legs."
+    if m := _FACT_HOW_MANY.match(said):
+        key = re.sub(r" are there in ", " in ", (m.group("q") or m.group("q2")).lower())
+        return _HOW_MANY_IN.get(key)
+    if m := _FACT_WATER.match(said):
+        boil = m.group("w").lower().startswith("boil")
+        return ("Water boils at 100 degrees Celsius, 212 Fahrenheit, at sea level." if boil
+                else "Water freezes at 0 degrees Celsius, 32 Fahrenheit.")
+    if m := _FACT_PLURAL.match(said):
+        word = (m.group("w") or m.group("w2")).lower()
+        return f"The plural of {word} is {_PLURALS[word]}." if word in _PLURALS else None
+    if m := _FACT_CAPITAL.match(said):
+        place = (m.group("c") or m.group("c2")).lower().strip(" .")
+        if place not in _CAPITALS:
+            return None
+        name = " ".join(w.upper() if w in ("uk", "usa", "uae", "us") else w if w in ("the", "of") else w.capitalize() for w in place.split())
+        city = _CAPITALS[place]
+        return f"The capital of {name} is {city}{'' if city.endswith('.') else '.'}"
+    return None
+
+
+_OPPOSITE_PAIRS = ("hot cold", "big small", "up down", "left right", "in out", "open closed", "fast slow", "happy sad",
+                   "good bad", "light dark", "day night", "old new", "young old", "tall short", "long short", "high low",
+                   "rich poor", "full empty", "wet dry", "hard soft", "heavy light", "early late", "first last",
+                   "push pull", "buy sell", "win lose", "start finish", "begin end", "yes no", "true false",
+                   "right wrong", "love hate", "strong weak", "thick thin", "wide narrow", "clean dirty", "loud quiet",
+                   "easy difficult", "cheap expensive", "safe dangerous", "near far", "inside outside", "above below",
+                   "before after", "front back", "top bottom", "north south", "east west", "black white", "sweet sour",
+                   "brave cowardly", "friend enemy", "arrive leave", "remember forget", "accept refuse", "add subtract",
+                   "always never", "asleep awake", "come go", "give take", "laugh cry", "lend borrow", "max min",
+                   "maximum minimum", "on off", "over under", "plus minus", "positive negative", "question answer",
+                   "rise fall", "smooth rough", "sharp blunt", "sink float", "summer winter", "tight loose",
+                   "together apart", "upstairs downstairs", "victory defeat", "wake sleep", "polite rude",
+                   "generous mean", "calm angry", "present absent", "public private", "major minor", "entrance exit",
+                   "import export", "increase decrease", "inhale exhale", "success failure", "ancient modern",
+                   "boy girl", "man woman", "king queen", "husband wife", "brother sister", "uncle aunt")
+_OPPOSITES: dict[str, str] = {}
+for _pair in _OPPOSITE_PAIRS:
+    _a, _b = _pair.split()
+    _OPPOSITES.setdefault(_a, _b)
+    _OPPOSITES.setdefault(_b, _a)
+_OPPOSITES.update({"short": "tall or long", "light": "dark or heavy", "old": "new or young", "right": "left or wrong",
+                   "hard": "soft or easy", "mean": "kind or generous", "kind": "unkind or cruel", "sad": "happy",
+                   "difficult": "easy", "go": "come or stop", "stop": "go or start", "fat": "thin", "less": "more",
+                   "more": "less", "most": "least", "least": "most", "same": "different", "different": "same",
+                   "best": "worst", "worst": "best", "better": "worse", "worse": "better", "possible": "impossible",
+                   "impossible": "possible", "like": "dislike", "dislike": "like", "agree": "disagree",
+                   "disagree": "agree", "honest": "dishonest", "visible": "invisible", "legal": "illegal",
+                   "patient": "impatient", "lucky": "unlucky", "fair": "unfair", "tidy": "messy", "messy": "tidy"})
+_SYNONYMS = {
+    "happy": "glad, cheerful or delighted", "sad": "unhappy, down or miserable", "big": "large, huge or massive",
+    "small": "little, tiny or compact", "good": "great, fine or excellent", "bad": "poor, awful or terrible",
+    "fast": "quick, rapid or speedy", "slow": "unhurried, gradual or sluggish", "smart": "clever, bright or sharp",
+    "clever": "smart, bright or sharp", "angry": "cross, annoyed or furious", "tired": "sleepy, worn out or exhausted",
+    "beautiful": "lovely, gorgeous or stunning", "pretty": "lovely, attractive or cute", "ugly": "unattractive or unsightly",
+    "nice": "pleasant, lovely or kind", "funny": "amusing, hilarious or witty", "scared": "afraid, frightened or nervous",
+    "easy": "simple, straightforward or effortless", "hard": "difficult, tough or tricky", "difficult": "hard, tough or tricky",
+    "important": "key, vital or crucial", "interesting": "fascinating, engaging or intriguing", "boring": "dull, tedious or dreary",
+    "rich": "wealthy, well off or affluent", "poor": "hard up, broke or needy", "cold": "chilly, freezing or icy",
+    "hot": "warm, boiling or scorching", "quiet": "silent, calm or hushed", "loud": "noisy, booming or deafening",
+    "said": "stated, replied or remarked", "say": "state, tell or mention", "walk": "stroll, wander or march",
+    "run": "jog, sprint or dash", "look": "glance, watch or gaze", "eat": "dine, munch or devour",
+    "help": "assist, support or aid", "start": "begin, launch or kick off", "end": "finish, close or conclude",
+    "finish": "complete, end or wrap up", "make": "build, create or produce", "use": "apply, employ or utilise",
+    "get": "receive, obtain or gain", "show": "display, reveal or present", "change": "alter, adjust or modify",
+    "improve": "boost, enhance or upgrade", "amazing": "incredible, brilliant or outstanding",
+    "great": "excellent, brilliant or superb", "very": "really, extremely or highly", "many": "lots, plenty or loads",
+    "strong": "powerful, sturdy or tough", "weak": "feeble, frail or fragile", "brave": "bold, fearless or courageous",
+    "kind": "caring, generous or thoughtful", "rude": "impolite, cheeky or disrespectful", "old": "aged, elderly or ancient",
+    "new": "fresh, modern or brand new", "cheap": "inexpensive, low cost or affordable", "expensive": "pricey, costly or dear",
+    "busy": "occupied, hectic or swamped", "calm": "relaxed, peaceful or chilled", "quick": "fast, speedy or swift",
+    "problem": "issue, snag or difficulty", "idea": "thought, plan or notion", "job": "role, post or position",
+    "money": "cash, funds or dosh", "friend": "mate, pal or buddy", "house": "home, place or dwelling",
+    "excited": "thrilled, eager or buzzing", "worried": "anxious, concerned or uneasy", "sure": "certain, confident or positive",
+}
+_WORD_OPPOSITE = re.compile(_NAME + r"(?:what(?:'s| is) the opposite (?:of|to) (?:the word )?(?P<w>[a-z]+)"
+                            r"|what(?:'s| is) (?:an?|the) (?:antonym|opposite word) (?:of|for) (?P<w2>[a-z]+))" + _END, re.I)
+_WORD_SYNONYM = re.compile(_NAME + r"(?:what(?:'s| is) (?:an?other|a different|a better|a) (?:word|way to say) for (?:the word )?(?P<w>[a-z]+)"
+                           r"|(?:what(?:'s| is|'re| are) )?(?:an? |some )?synonyms? (?:of|for) (?P<w2>[a-z]+)"
+                           r"|(?:give me |tell me )?(?:an?other|a different) word for (?P<w3>[a-z]+)"
+                           r"|what(?:'s| is) a word that means (?P<w4>[a-z]+))" + _END, re.I)
+
+
+def _word_meanings(said: str) -> str | None:
+    """Opposites and other words for common words ("what's the opposite of hot?", "another word for happy")."""
+    if m := _WORD_OPPOSITE.match(said):
+        word = (m.group("w") or m.group("w2")).lower()
+        return f"The opposite of {word} is {_OPPOSITES[word]}." if word in _OPPOSITES else None
+    if m := _WORD_SYNONYM.match(said):
+        word = (m.group("w") or m.group("w2") or m.group("w3") or m.group("w4")).lower()
+        return f"Another word for {word} is {_SYNONYMS[word]}." if word in _SYNONYMS else None
+    return None
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
         return None
     said = tidy_request(text)
     now = now or time.localtime()
+    if (found := _echo_and_count(said, text)) is not None:
+        return found
     if _ASK_TIME.match(said):
         hour = now.tm_hour % 12 or 12
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
-    if (found := _calendar_answer(said, now)) is not None:
+    if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
+            or (found := _year_maths(said, now.tm_year)) is not None \
+            or (found := _day_and_journey(said, now)) is not None:
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
-            or _shopping_answer(said, settings) or _money_answer(said) or _maths_answer(said)
-            or _units_answer(said) or _fun_answer(said) or _spelling_answer(said))
+            or _shopping_answer(said, settings) or _money_answer(said) or _cash_sums(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _science_maths(said) or _cup_weights(said) or _fraction_answer(said) or _bigger_numbers(said)
+            or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _quick_facts(said) or _word_meanings(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _alphabet_answer(said) or _word_answer(said))
 
 
 def time_of_day(hour: int | None = None) -> str:
@@ -1034,6 +2971,8 @@ class Brain:
         self.messages: list[dict] = load_carry_over(settings)  # picks up where the last session left off
         self._notes: list[str] = []  # announcements made since the user last spoke
         self._heard = ""  # the last thing the user said, for "what did you hear?"
+        self.last_model = ""  # the model that answered last, for the HUD and for follow-ups to a hard job
+        self._told_no_credit = False  # the out-of-credit line is said in full once, then kept short
 
     @property
     def computer(self):
@@ -1080,27 +3019,49 @@ class Brain:
         self._notes.clear()
         self.messages.append({"role": "user", "content": f"(Local time: {stamp})\n{notes}{user_text}"})
         try:
-            await self._run(speak, turn_effort(self.settings, user_text))
+            await self._run(speak, turn_effort(self.settings, user_text),
+                            turn_model(self.settings, user_text, self.last_model))
+            self._told_no_credit = False
             reply = " ".join(filter(None, (spoken_text(m["content"]) for m in self.messages[start + 1:]
                                            if m["role"] == "assistant" and not isinstance(m["content"], str))))
             if reply and not user_text.startswith("[activate]"):
                 await asyncio.to_thread(save_carry_over, self.settings, self.messages[start]["content"], reply)
+                remember = asyncio.to_thread(alfredmem.remember_turn, self.settings, self.messages[start]["content"], reply)
+                asyncio.get_running_loop().create_task(remember)  # in the background: never slows the reply
+                if self.settings.auto_learn and aboutyou.worth_learning(user_text):  # a rule, a client, a price...
+                    asyncio.get_running_loop().create_task(aboutyou.learn(self.settings, self.client, user_text, reply))
         except asyncio.CancelledError:  # you said cancel: forget the half-finished turn so history stays valid
             del self.messages[start:]
             raise
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive
             print(f"[jarvis] Error: {exc!r}", flush=True)
+            # the free route broke part-way through a reply: rest it and answer this turn with Claude instead
+            client = self.client
+            if getattr(client, "last_route", "") == "OmniRoute" and hasattr(client, "rest") and not isinstance(exc, asyncio.CancelledError):
+                client.rest("OmniRoute", exc)
+                del self.messages[start + 1:]
+                try:
+                    await self._run(speak, turn_effort(self.settings, user_text), turn_model(self.settings, user_text, self.last_model))
+                    self.messages = trim_history(self.messages, keep=TRIMMED_TO)
+                    return
+                except Exception as exc2:  # Claude failed too: fall through and say why
+                    print(f"[jarvis] Claude after OmniRoute failed: {exc2!r}", flush=True)
+                    exc = exc2
             del self.messages[start:]
             # say what's wrong when it's something the user can fix (key, credit, network)
-            await speak(line(self.settings, error_key(exc)))
-        self.messages = trim_history(self.messages)
+            key = error_key(exc)
+            if key in ("no_credit", "no_credit_free"):
+                key, self._told_no_credit = ("still_no_credit" if self._told_no_credit else key), True
+            await speak(line(self.settings, key))
+        self.messages = trim_history(self.messages, keep=TRIMMED_TO)
 
-    async def _run(self, speak: Speak, effort: str | None = None) -> None:
-        opts = request_options(self.settings, effort)
+    async def _run(self, speak: Speak, effort: str | None = None, model: str | None = None) -> None:
+        opts = request_options(self.settings, effort, model)
         start = len(self.messages) - 1
         for _ in range(MAX_TOOL_ROUNDS):
             prune_images(self.messages)
             response, spoken = await self._respond(opts, speak)
+            await self._show_model(opts["model"], response)
 
             if response.stop_reason == "refusal":
                 del self.messages[start:]  # drop the whole declined turn so history stays valid
@@ -1129,6 +3090,20 @@ class Brain:
                 opts = {**opts, "output_config": {**opts["output_config"], "effort": STUCK_EFFORT[effort]}}
 
         await self._wrap_up(opts, speak)
+
+    async def _show_model(self, asked: str, response) -> None:
+        """Remember which model answered and show it on the HUD's MODEL line (OmniRoute's own model when it
+        answered instead of Claude)."""
+        self.last_model = asked
+        answered = getattr(response, "model", None) or asked
+        if getattr(self.client, "last_route", "") == "OmniRoute":
+            answered = f"OmniRoute · {answered}"
+        if not self.page:
+            return
+        try:
+            await self.page({"type": "model", "model": answered})
+        except Exception:  # noqa: BLE001 - a HUD line is never worth failing a turn over
+            pass
 
     async def _show_doing(self, calls) -> None:
         if not self.page or not calls:
@@ -1199,6 +3174,9 @@ class Brain:
 
     async def _tool_result(self, call) -> dict:
         print(f"  tool: {call.name} {call.input}", flush=True)
+        if call.name == omniroute.FIND_TOOL:  # the free route's stand-in for Claude's tool search
+            found = omniroute.find_tools(str(call.input.get("query", "")), tools.client_tool_definitions(self.settings))
+            return {"type": "tool_result", "tool_use_id": call.id, "content": found}
         try:
             content = await tools.run_tool(call.name, dict(call.input), self.settings, self.http, self.page)
             return {"type": "tool_result", "tool_use_id": call.id, "content": content}
@@ -1224,7 +3202,7 @@ class Brain:
             return r
 
         active = [c for c in calls if c.name not in computer.PASSIVE]
-        if active and not self._allow_all:
+        if active and not self._allow_all and not getattr(self.settings, "computer_auto_allow", False):
             steps = [computer.describe(c.name, dict(c.input)) for c in active]
             print(f"  asking: {steps}", flush=True)
             answer = await self.confirm(steps) if self.confirm else "deny"

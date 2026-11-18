@@ -1,6 +1,8 @@
 import asyncio
+from dataclasses import replace
 import json
 
+import httpx
 import pytest
 
 import alerts
@@ -133,7 +135,7 @@ def test_check_deliveries_tool_only_with_email():
     names = lambda s: [t["name"] for t in tools.client_tool_definitions(s)]
     assert "check_deliveries" in names(SETTINGS)
     assert "check_deliveries" not in names(Settings(email_address="", email_app_password=""))
-    assert "check_deliveries" in request_options(SETTINGS)["system"]
+    assert "check_deliveries" in request_options(SETTINGS)["system"][0]["text"]
 
 
 async def test_announcements_reach_the_next_turn():
@@ -306,3 +308,38 @@ async def test_watch_email_says_a_problem_once(monkeypatch, capsys):
     with pytest.raises(asyncio.CancelledError):
         await asyncio.wait_for(alerts.watch_email(SETTINGS, None), 2)
     assert capsys.readouterr().out.count("Email check failed") == 1
+
+
+async def test_phone_push_sends_what_matters_to_a_private_address(tmp_path):
+    sent = []
+
+    def handler(request):
+        sent.append((str(request.url), request.headers["Title"], request.content.decode()))
+        return httpx.Response(200)
+
+    s = replace(Settings(), phone_push=True, ntfy_server="https://ntfy.example")
+    topic = tmp_path / "push"
+    assert alerts.pushes(s, "briefing") and alerts.pushes(s, "instagram") and not alerts.pushes(s, "timer")
+    assert not alerts.pushes(replace(s, phone_push=False), "briefing")
+    assert await alerts.push(s, "Good morning, sir.", "briefing", transport=httpx.MockTransport(handler), topic_file=topic)
+    url, title, body = sent[0]
+    assert url.startswith("https://ntfy.example/alfred-") and len(url) > 40 and url.endswith(topic.read_text().strip())
+    assert (title, body) == ("Morning briefing", "Good morning, sir.")
+    down = httpx.MockTransport(lambda r: httpx.Response(500))
+    assert not await alerts.push(s, "x", "health", transport=down, topic_file=topic)  # never raises
+
+
+async def test_the_days_dms_reach_the_phone_one_by_one(monkeypatch):
+    from hq import agents
+    sent = []
+
+    async def fake_push(settings, text, kind, **kw):
+        sent.append((kind, text))
+        return True
+    monkeypatch.setattr(alerts, "push", fake_push)
+    items = [({"name": "Kamo Barbers"}, "kamo", "https://k/m/kamo/", "Hi Kamo team"),
+             ({"name": "No Handle Cuts"}, "", "https://k/m/nh/", "Hi team")]
+    await agents.push_dms(Settings(), items)
+    assert sent[0][0] == "dms" and "2 Instagram DMs" in sent[0][1] and "Kamo Barbers, No Handle Cuts" in sent[0][1]
+    assert sent[1] == ("dm", "Send to @kamo (Kamo Barbers):\n\nHi Kamo team")
+    assert sent[2][1].startswith('Send to search "No Handle Cuts" on Instagram')

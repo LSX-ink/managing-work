@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LSX HQ · Workflow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #0d0f14; --panel: #161a22; --edge: #262c38; --text: #e7ecf3; --muted: #8590a3; --accent: #ff6d5a; --ok: #4fd18b; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 500 13px/1.45 Inter, sans-serif; overflow: hidden; }
+body { background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px); background-size: 22px 22px; }
+#wires { position: fixed; inset: 0; }
+.top { position: fixed; top: 0; left: 0; right: 0; height: 52px; display: flex; align-items: center; gap: 14px; padding: 0 18px; background: rgba(13,15,20,.92); border-bottom: 1px solid var(--edge); z-index: 5; }
+.top .logo { font: 800 15px Inter; letter-spacing: .06em; } .top .logo b { color: var(--accent); }
+.tabs { display: flex; gap: 4px; background: #11141b; border: 1px solid var(--edge); border-radius: 8px; padding: 3px; }
+.tabs span { padding: 5px 12px; border-radius: 6px; color: var(--muted); font-weight: 600; font-size: 12px; } .tabs span.on { background: #232937; color: #fff; }
+.top .r { margin-left: auto; display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; color: #fff; font-weight: 600; } .toggle i { width: 34px; height: 18px; border-radius: 20px; background: var(--ok); position: relative; } .toggle i::after { content: ""; position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+.node { position: absolute; width: 196px; transform: translate(-50%, -50%); background: var(--panel); border: 1px solid var(--edge); border-radius: 12px; z-index: 3; cursor: pointer; transition: box-shadow .3s, border-color .3s; }
+.node:hover { border-color: #3a4252; }
+.node .hd { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.node .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 18px; background: color-mix(in srgb, var(--c) 18%, transparent); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); }
+.node b { display: block; font-weight: 700; } .node small { color: var(--muted); font-size: 11.5px; }
+.node .ft { display: flex; justify-content: space-between; padding: 7px 12px; border-top: 1px solid var(--edge); font: 500 11px "JetBrains Mono"; color: var(--muted); }
+.node .ft b { color: var(--text); display: inline; font-weight: 700; }
+.node.working { border-color: var(--c); box-shadow: 0 0 0 1px var(--c), 0 0 30px -6px var(--c); }
+.node.working .ic { animation: spin 1.4s linear infinite; } @keyframes spin { 50% { transform: scale(1.08); } }
+.node.error { border-color: #f05252; }
+.node .dot { position: absolute; top: 50%; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid #4a5366; transform: translateY(-50%); }
+.node .dot.in { left: -6px; } .node .dot.out { right: -6px; }
+.node .say { padding: 0 12px 9px; font-size: 11.5px; color: #cfd6e2; }
+.count { position: absolute; transform: translate(-50%, -50%); font: 700 11px "JetBrains Mono"; color: #fff; background: #232937; border: 1px solid var(--edge); border-radius: 20px; padding: 2px 8px; z-index: 2; }
+.lane { position: absolute; font: 700 10.5px "JetBrains Mono"; letter-spacing: .2em; color: #4b5468; transform: translateX(-50%); }
+.side { position: fixed; right: 16px; top: 66px; bottom: 16px; width: 330px; display: flex; flex-direction: column; gap: 12px; z-index: 4; }
+.panel { background: rgba(22,26,34,.94); border: 1px solid var(--edge); border-radius: 12px; display: flex; flex-direction: column; min-height: 0; }
+.panel h4 { margin: 0; padding: 10px 14px; font: 700 11px Inter; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--edge); display: flex; justify-content: space-between; }
+.panel .b { padding: 8px 14px 12px; overflow: auto; min-height: 0; }
+.exec { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1d222c; font-size: 12px; animation: in .3s; }
+.exec i { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; background: var(--c); } .exec time { color: var(--muted); font: 500 11px "JetBrains Mono"; }
+.exec.error i { background: #f05252; } .exec.warn i { background: #f5b14c; }
+@keyframes in { from { opacity: 0; transform: translateY(-3px); } }
+.orders { white-space: pre-wrap; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<canvas id="wires"></canvas>
+<div class="top"><div class="logo">LSX <b>HQ</b></div><div class="tabs"><span class="on">Workflow</span><span>Executions</span><span>Brain</span></div>
+  <span style="color:var(--muted)">/ <b style="color:#fff" id="div">Kinetic Web Designs</b> · client acquisition</span>
+  <div class="r"><span id="clock">--:--</span><span class="toggle"><i></i>Active</span></div></div>
+<div id="board"></div>
+<div class="side">
+  <div class="panel" style="max-height:38%"><h4>Today's orders <span>Atlas</span></h4><div class="b orders" id="orders"></div></div>
+  <div class="panel" style="flex:1"><h4>Executions <span id="evN"></span></h4><div class="b" id="execs"></div></div>
+</div>
+<script type="module">
+import { state, on, start, esc, openAgent, numbers, fmtTime } from "/static/core.js";
+const $ = s => document.querySelector(s), cv = $("#wires"), g = cv.getContext("2d");
+// the pipeline, left to right, with the support team underneath and the CEO above
+const LAYOUT = { ceo: [.36, .2], scout: [.1, .47], closer: [.3, .4], warden: [.5, .47], concierge: [.69, .4], analyst: [.3, .78], studio: [.1, .78], guardian: [.5, .78] };
+const WIRES = [["ceo", "scout"], ["ceo", "closer"], ["ceo", "warden"], ["scout", "closer"], ["scout", "warden"], ["closer", "concierge"], ["warden", "concierge"],
+               ["studio", "concierge"], ["analyst", "ceo"], ["guardian", "warden"]];
+const STAGE = [["FIND", .1], ["WRITE", .3], ["CHECK & SEND", .5], ["REPLY", .69]];
+let built = false, flows = [];
+function size() { cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; }
+size(); addEventListener("resize", () => { size(); place(); });
+const W = () => innerWidth - 360, P = k => { const [x, y] = LAYOUT[k] || [.5, .5]; return [20 + x * W(), 52 + y * (innerHeight - 70)]; };
+function place() { document.querySelectorAll(".node").forEach(n => { const [x, y] = P(n.dataset.k); n.style.left = x + "px"; n.style.top = y + "px"; }); }
+function build() {
+  $("#board").innerHTML = STAGE.map(([t, x]) => `<div class="lane" style="left:${20 + x * W()}px;top:70px">${t}</div>`).join("") +
+    state.agents.map(a => `<div class="node" data-k="${a.key}" style="--c:${a.colour}"><span class="dot in"></span><span class="dot out"></span><div class="hd"><div class="ic">${a.emoji}</div><div><b>${esc(a.name)}</b><small>${esc(a.title)}</small></div></div><div class="say"></div><div class="ft"><span>runs <b>0</b></span><span>wins <b>0</b></span><span>next <b>--</b></span></div></div>`).join("");
+  document.querySelectorAll(".node").forEach(n => n.onclick = () => openAgent(n.dataset.k)); place();
+}
+function curve(a, b) { const [x1, y1] = P(a), [x2, y2] = P(b), ax = x1 + 100, bx = x2 - 100; return [x1 + 98, y1, ax + 60, y1, bx - 60, y2, x2 - 98, y2]; }
+function bez(c, t) { const [x0, y0, x1, y1, x2, y2, x3, y3] = c, u = 1 - t; return [u*u*u*x0 + 3*u*u*t*x1 + 3*u*t*t*x2 + t*t*t*x3, u*u*u*y0 + 3*u*u*t*y1 + 3*u*t*t*y2 + t*t*t*y3]; }
+function draw(t) {
+  const d = devicePixelRatio; g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, innerWidth, innerHeight);
+  WIRES.forEach(([a, b]) => { const A = state.agents.find(z => z.key === a), Bn = state.agents.find(z => z.key === b); if (!A || !Bn) return;
+    const c = curve(a, b), live = A.status === "working" || Bn.status === "working";
+    g.lineWidth = live ? 2.4 : 1.6; g.strokeStyle = live ? A.colour : "#3a4252"; g.beginPath(); g.moveTo(c[0], c[1]); g.bezierCurveTo(c[2], c[3], c[4], c[5], c[6], c[7]); g.stroke();
+    const n = live ? 4 : 1; for (let k = 0; k < n; k++) { const f = ((t / (live ? 900 : 2600)) + k / n) % 1, [x, y] = bez(c, f);
+      g.fillStyle = live ? A.colour : "#5a6378"; g.shadowColor = A.colour; g.shadowBlur = live ? 12 : 0; g.beginPath(); g.arc(x, y, live ? 3.4 : 2.2, 0, 7); g.fill(); g.shadowBlur = 0; } });
+  flows = flows.filter(f => f.t < 1); flows.forEach(f => { f.t += .012; const [x, y] = bez(f.c, f.t); g.fillStyle = "#fff"; g.shadowColor = f.col; g.shadowBlur = 16; g.beginPath(); g.arc(x, y, 4.5, 0, 7); g.fill(); g.shadowBlur = 0; });
+  requestAnimationFrame(draw);
+}
+function counts() {
+  const n = numbers();
+  const pairs = [["scout", "closer", `${n.leads} leads`], ["warden", "concierge", `${n.sent}/${n.cap} sent`], ["closer", "concierge", `${n.contacted} contacted`], ["studio", "concierge", `${n.ig} IG`]];
+  document.querySelectorAll(".count").forEach(e => e.remove());
+  pairs.forEach(([a, b, txt]) => { if (!LAYOUT[a] || !LAYOUT[b]) return; const [x, y] = bez(curve(a, b), .5); $("#board").insertAdjacentHTML("beforeend", `<div class="count" style="left:${x}px;top:${y}px">${txt}</div>`); });
+}
+on("state", s => {
+  if (!built && s.agents.length) { build(); built = true; requestAnimationFrame(draw); }
+  $("#clock").textContent = s.time; $("#div").textContent = (s.divisions || [])[0] || "Kinetic Web Designs";
+  s.agents.forEach(a => { const n = document.querySelector(`.node[data-k="${a.key}"]`); if (!n) return; n.className = `node ${a.status}`;
+    n.querySelector(".say").textContent = a.status === "working" ? "Running…" : (a.last ? a.last.result : "").slice(0, 70);
+    n.querySelector(".ft").innerHTML = `<span>runs <b>${a.runs_today}</b></span><span>wins <b>${a.wins_today}</b></span><span>next <b>${esc(a.next)}</b></span>`; });
+  $("#orders").textContent = s.brain.priorities || "Atlas sets the orders at 07:55.";
+  counts();
+});
+on("events", (list, ready) => {
+  const box = $("#execs");
+  list.forEach(e => {
+    if (ready) { const w = WIRES.find(([a]) => a === e.agent); if (w) flows.push({ c: curve(w[0], w[1]), t: 0, col: state.colours[e.agent] }); }
+    box.insertAdjacentHTML("afterbegin", `<div class="exec ${e.kind}" style="--c:${state.colours[e.agent] || "#888"}"><i></i><div><b>${esc(state.names[e.agent] || e.agent)}</b> ${esc(e.text)}</div><time>${fmtTime(e.ts).slice(0, 5)}</time></div>`); });
+  while (box.children.length > 80) box.lastChild.remove(); $("#evN").textContent = box.children.length;
+});
+start();
+</script>
+</body>
+</html>

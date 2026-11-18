@@ -1,0 +1,1 @@
+From github.com/vercel-labs/agent-skills (MIT, commit 1a2c79d) and github.com/vercel-labs/web-interface-guidelines (MIT, commit 434b7f9). web-design-guidelines reads its rules from references/rules.md here instead of fetching them.

@@ -1,0 +1,354 @@
+{
+ "id": "ChIJtUDSi_iPcUgRWBwSPavoI5s",
+ "nationalPhoneNumber": "0117 957 1900",
+ "internationalPhoneNumber": "+44 117 957 1900",
+ "formattedAddress": "47 Broad St, Bristol BS16 5LS, UK",
+ "location": {
+  "latitude": 51.481164199999995,
+  "longitude": -2.5037306999999998
+ },
+ "rating": 4.9,
+ "googleMapsUri": "https://maps.google.com/?cid=11179034522225351768&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+ "websiteUri": "http://www.scammellsbarbershop.co.uk/",
+ "regularOpeningHours": {
+  "openNow": true,
+  "periods": [
+   {
+    "open": {
+     "day": 1,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 1,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 2,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 2,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 3,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 3,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 4,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 4,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 5,
+     "hour": 9,
+     "minute": 0
+    },
+    "close": {
+     "day": 5,
+     "hour": 18,
+     "minute": 0
+    }
+   },
+   {
+    "open": {
+     "day": 6,
+     "hour": 7,
+     "minute": 30
+    },
+    "close": {
+     "day": 6,
+     "hour": 14,
+     "minute": 30
+    }
+   }
+  ],
+  "weekdayDescriptions": [
+   "Monday: 9:00 AM – 6:00 PM",
+   "Tuesday: 9:00 AM – 6:00 PM",
+   "Wednesday: 9:00 AM – 6:00 PM",
+   "Thursday: 9:00 AM – 6:00 PM",
+   "Friday: 9:00 AM – 6:00 PM",
+   "Saturday: 7:30 AM – 2:30 PM",
+   "Sunday: Closed"
+  ],
+  "nextCloseTime": "2026-10-26T18:00:00Z"
+ },
+ "userRatingCount": 675,
+ "displayName": {
+  "text": "Scammells Barber Shop",
+  "languageCode": "en"
+ },
+ "reviews": [
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/reviews/Ci9DQUlRQUNvZENodHljRjlvT21abmFGSXhVbDlQYkRCeldVbGFhSEZmU3pKVE1YYxAB",
+   "relativePublishTimeDescription": "6 months ago",
+   "rating": 5,
+   "text": {
+    "text": "It was the first time I had been there and Andy did a great job sorting a very long overdue haircut, it had got far too long after an extended hospital stay and made to feel at home. Definitely will be back.",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "It was the first time I had been there and Andy did a great job sorting a very long overdue haircut, it had got far too long after an extended hospital stay and made to feel at home. Definitely will be back.",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Mike Newton",
+    "uri": "https://www.google.com/maps/contrib/101509892717456341384/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocLcLWB7pLMXbzsgSgjXD8Hg_HImWZN__Bh35dn6D_BHqi_k8g=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-04-22T14:56:15.058988506Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT21abmFGSXhVbDlQYkRCeldVbGFhSEZmU3pKVE1YYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT21abmFGSXhVbDlQYkRCeldVbGFhSEZmU3pKVE1YYxAB!2m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/reviews/Ci9DQUlRQUNvZENodHljRjlvT213MlZGRm5XR3huT1c5S1NHTkZSMVZMV1hodFJFRRAB",
+   "relativePublishTimeDescription": "7 months ago",
+   "rating": 5,
+   "text": {
+    "text": "Lucy was great with my son, who is super anxious about hair cuts! She was super kind to him and helped him feel at ease. His hair looks great - thank you!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "Lucy was great with my son, who is super anxious about hair cuts! She was super kind to him and helped him feel at ease. His hair looks great - thank you!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Maya van Hamel",
+    "uri": "https://www.google.com/maps/contrib/118279981544053208273/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocLKBv0M_B2lgRiiTz6alkh4dB6M2IAoWNmu6bHUdGGlwwrdRw=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-03-16T13:13:30.324176491Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT213MlZGRm5XR3huT1c5S1NHTkZSMVZMV1hodFJFRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT213MlZGRm5XR3huT1c5S1NHTkZSMVZMV1hodFJFRRAB!2m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/reviews/Ci9DQUlRQUNvZENodHljRjlvT2xsaFV5MTJaMWg1U25OU05tTTBXVGR1YkVaRFlWRRAB",
+   "relativePublishTimeDescription": "6 months ago",
+   "rating": 5,
+   "text": {
+    "text": "Probably the best hair cut I've had. I had extremely long hair but Lucy sorted it perfectly and quickly. Great atmosphere, great music, great chat!",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "Probably the best hair cut I've had. I had extremely long hair but Lucy sorted it perfectly and quickly. Great atmosphere, great music, great chat!",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Grant",
+    "uri": "https://www.google.com/maps/contrib/115160613623559224581/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWY0v2Xd2Z_D4kkmytCpHaGnB7D8SQwe48TtZkB0cXAFSt4-lrSvw=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-04-28T06:30:04.006356755Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2xsaFV5MTJaMWg1U25OU05tTTBXVGR1YkVaRFlWRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2xsaFV5MTJaMWg1U25OU05tTTBXVGR1YkVaRFlWRRAB!2m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/reviews/Ci9DQUlRQUNvZENodHljRjlvT2pCT1JETlpXRlZRY1haT01UbGxYM3AzUzJkbGQyYxAB",
+   "relativePublishTimeDescription": "3 months ago",
+   "rating": 5,
+   "text": {
+    "text": "Lucy does a spot on job as always and I’ve been using Scammells now for the past 4 years and would recommend anyone to go there to get a great haircut",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "Lucy does a spot on job as always and I’ve been using Scammells now for the past 4 years and would recommend anyone to go there to get a great haircut",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Alex Bowen",
+    "uri": "https://www.google.com/maps/contrib/103431326531406173249/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a/ACg8ocJForUPcNt_Eo_RJArJoExMqoWeCnauATfhZtBoAMtx8LdOfQ=s128-c0x00000000-cc-rp-mo"
+   },
+   "publishTime": "2026-07-23T10:20:39.413918927Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2pCT1JETlpXRlZRY1haT01UbGxYM3AzUzJkbGQyYxAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2pCT1JETlpXRlZRY1haT01UbGxYM3AzUzJkbGQyYxAB!2m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/reviews/Ci9DQUlRQUNvZENodHljRjlvT2pkeGRWRTBiMDExYm5oVk9USkxNMlV5WjJwRGMwRRAB",
+   "relativePublishTimeDescription": "9 months ago",
+   "rating": 5,
+   "text": {
+    "text": "First visit to SBS today, thrilled to bits, thanks! ✂️ Booking was easy with some available slots within 24hours. Lucy was great, fab atmosphere! Be back soon 👍🏻",
+    "languageCode": "en"
+   },
+   "originalText": {
+    "text": "First visit to SBS today, thrilled to bits, thanks! ✂️ Booking was easy with some available slots within 24hours. Lucy was great, fab atmosphere! Be back soon 👍🏻",
+    "languageCode": "en"
+   },
+   "authorAttribution": {
+    "displayName": "Rach G",
+    "uri": "https://www.google.com/maps/contrib/108505809670629431631/reviews",
+    "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjWC_QAHSHkcbMvTE-w4d98mFg9PWEkESjORJIxBIoxUiaYkUnM=s128-c0x00000000-cc-rp-mo-ba4"
+   },
+   "publishTime": "2026-01-22T17:32:15.748058107Z",
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=Ci9DQUlRQUNvZENodHljRjlvT2pkeGRWRTBiMDExYm5oVk9USkxNMlV5WjJwRGMwRRAB&d=17924085&t=1&wv=1",
+   "googleMapsUri": "https://www.google.com/maps/reviews/data=!4m6!14m5!1m4!2m3!1sCi9DQUlRQUNvZENodHljRjlvT2pkeGRWRTBiMDExYm5oVk9USkxNMlV5WjJwRGMwRRAB!2m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  }
+ ],
+ "photos": [
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMYoXXxazRdCxQ0C70lC3gWHbdbKm_81k79SflFMGULFJlIAzvfAuXIV_P0vEQfbpktDEtYpICE91g9b_Gv6bY4TiHq03x-B-dE_v_k4sy6s0gaDfLfQGQXeiFcL-J7uVS2p4hQZPwVX37kZuzmIctRDkUWfxUj_n1OgxD5qKoTE9Und6Y0APFxiR3ZmyW3wkH-qec7WdleYa-eEcqBhuSiiTIRBVHG3-oeSc0Xh3Ek7-Ca7Hd36GFSQAWwqWeXyKqTXmtP0VTGWvosR0tVudbb9Mgc12J4U6XJ_l5zc8fc5N7reup73YJBCRC6ofArHQlxzoAhR-IEQZBZ6dEufYynea_6Yas5JEdD3XaKn2JJW_CGNA63TC22tjXkTAKFtcV7Ne6YeO1WIGLDRTxef5vQqo1eQCU0",
+   "widthPx": 960,
+   "heightPx": 960,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICi-bLKogE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICi-bLKogE!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMZcW7yUsCgh_sVoggF6TxWgcYvullQhiVe6bQ4cqOhNAChOA8_KV6Qko2XCH7I-xRYRerVcTEC6g9IGIPKqWXBQYOnyWtDhkOrogu-oE63yaVD4ccjz2T3MJIL9GnwmfQiblDgzXeH7qCujgRGbCpGWBD7PLAccEBPXYToKIzxFG73kqwx-LD7sygW3ZC8mhP0drLrSZTlduPNJopkAzyjW-gwrtY-awej76QpeKv95IGLwh6zCaBg5ouyCyB9XQ-7cvAyQNLxTIA4p0f898UAtvkjHfFBkjhGjFEzxnNkBOGfRgRo7Un-yIgt0zRo2OtPe4IT2AtygeJWDPBtpTBHc6djA4FMNxfz_4KdVpuTbZtWqFbf4Y73RH8uQ8U7VroKOEYv4Glp6-yguLpSwA6o1V2iw_L_K5PGhEPprrLBB",
+   "widthPx": 960,
+   "heightPx": 951,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIABIhCVyrQztQLzU85fpPWs589j&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIABIhCVyrQztQLzU85fpPWs589j!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMaU23wkrWgXy73A1n6CFn73ZscC4EaIfKh6lqwxvBpq-ULuUFwPCPEnk0PdRf8kCzBljW0nXkuUTqczucG9m0aV-_AQMW5s98wV-2dLQm7KxG1dA2N-znqxQCTWoAkwz3Y1W7jGIi4dmYjW6q97_GoI5jDOtd2jgap4OSCJmsn6D1z7BL2_GVuNZENkCmXEvRWty_kK7fkh78a0SyKQnDjefXitJRjTpWjosxZK6Welc4G8kGp08pE4oXYbpv83B8fkEysIE83cETLDUUM734z8aZM-5MSvyxhKZDwmkPhRtVIhzTAPQUlAs9bxxO4pu9XKa__WQ_hLoWndYqzL3iWokeyoVTMVqYb8-Zk6f_pPuCKnr-rN0rEXhvJdFbAizXyxNfCqBS673abyOAZ80M4SKZPZkPk",
+   "widthPx": 4800,
+   "heightPx": 3295,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICi-bLZ1AE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICi-bLZ1AE!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMbWV0MCx3iArh7qzR-fCv_--AZ-77vwqNYWCGKbIJsfvs8yFiZstS-a-4fa-UBCHY7cC5E7yfYZgeCgBl9tqj5Smnui5usx8nfcBr55QLJHesXmJqcdFcHalrcdYF8fUA3FIl7fe-gz5JtwLowsdOhmGOJBMwIHHD0GaWXjFinzNDjVpJZIBkJ02qms_V3jsTw9JL8T79YKP-Y3xlqoOxDbO-NCsF9bqzkOxQiFuDonIPRjCny_8LSibvp5hpq74LLdhBCHQXBf56uYLNu0WoJ5co-4OMKGsjgzBn6kyDw2zmhDqitkmc7HZXttBlbEXSRHh2RLguxtu78W6HIPG3c3pKwXPlBGwlB1tVnTIQvA4gnGeXG3TolGMhY2AG7Koskg6MEInux8OV8CIrQ6g_Q_0ig",
+   "widthPx": 4800,
+   "heightPx": 3199,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICiua3XZQ&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICiua3XZQ!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMaXP5CNbfrQHo_FM9h080neJKDJHM-jMNhImL99egFXvyh_hO8P7NY69829kcUMm0ekUcjUnt3VNlzfZ3q3syFh_Wy43y94qd58uTFXcS-ymrQttb5hK2EeLcOe3ePz56ZjJEuk-3uOYhjE1V7K4rFCjedumvaru4pBVK2D4c8QzJQmIcB99G0SEFGt6VCkyLqahcoYxTnjZAW-zeggK0EWxbL4MDDfPN1RuPylBJ_zUUDGmHe9fo1d_a2y06r2O8O8EE1-9u7dP80ZzONolzWEw2m9wBiFRroYUxWSk172A74MYsL9jVAcIuz8TMer9ODaJsmP1awu-PcBkfmSk-wLbCXyDvoIjERHUhCPKXQAlL3xtopJKxoLV1R4nNWd5AC32YBnFwniF6VElvRziQF2giBK7yw",
+   "widthPx": 640,
+   "heightPx": 640,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICi-fKingE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICi-fKingE!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMa-3CwbCxpPfEA9P0fb_o9RfH19QCkAqzSgWZ7o3gxly2QurAkc_SbZtUZLo3bNmL1ZRNYTTT38sjLr6EnxcOoAiQz9hySG4zbDr5D7Mjs0vaES3fb94WYSwZ-4PeNC0Gjm03PqaEP5YRH3Ow6l5mp466HBPZ5_bOMw3R7WdLcJH2a8jD4ctkHoE7CbDnO1jtFdb1okU_cyCYINhBEE72lFVpog3co3ms8J48vPcPOz0R-wI42Ol85Mmf2Vs3B2q8AOpWsnt1W7tM19biksVB48532o16mMRI9cvKWOhVf6Q5w5WVYQdCH_MUilCMFZFmHpLBY7mDYpZso-6kVbiMvmH4G4LqtMcBFgfZDtMTIIR4JTTg8MpHSxkkYHpEKmQlWeRUrGM0y0YRqUB12u0MUFWC4dxsA",
+   "widthPx": 720,
+   "heightPx": 960,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICi-fKomAE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICi-fKomAE!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMYAShKwNvKlfVRYHcKNB0TWzwNzfTQ28JP3r9XbtrXweZgyv23izRD4ji-em6nlacLoVJM5E_xWMjpR8DEXHrosl-9kvM_cEQVUv5EQUddRld35gn7ynnbbw80GwHGMNlAvbXDxYEZkO0DSCEJQyogFD2iQ8mLcB7OdoInJA3cNCgIf9AmL7lMSykck9Bf7zg8ZW17DqnYipM_JCSypkW6IiNPAUAEM16S8lRPA0gGD6hHL5Owfo9AX4b-T5KgJA5StlKHKaKyPtW2oXzlDjCb549Q_02rIfDk0DUnBXJyuEOPn3UfVisARhdLsvM5G7RfmFVrsXDuQSuqAk3gaJ_YUZAswh52c0f2DU3paJCOf0oSK2qQ2KXA151lfUooXRlv2Vggo5hgq20OjoPjkygYZKTE",
+   "widthPx": 460,
+   "heightPx": 480,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICi2YruZw&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICi2YruZw!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMbvEoNBxW-fQut8BbJLzwnezuwG1trrWtufJaed14Q1qpLRQSFop4B1vWNqEoEMFlh5kiybQGhA9ykvvY-xMjdjwuwRMgzePl-eSDhLtFIAI6waknrCkXysQfe-H79DaAbht8fGp3Qsef8CrQHjOymaWG1jKW0hcA1Ltz2c0c2mfRD3bV32_9Msf6EcGDS2OIz7fzEAgwIUPNRcUvXo9HdlDYboU5KVZ0J6CBirIBy8eesaakUgd3WznBFkX9GOyof_EKCq2qGQvlPf86cdUY6z0nwE6MF61Dhp6pfLV3BWlX9td8M7OrifzShVHSQB0J7w-rF9Dhg1cvPw-qNLz1ysvPeS2Nu7VY6mzjYviURWjto6-Q81Ita31JKKeCZjDcpNaMdbPx_RJf88prBpdTa_93uxkq4",
+   "widthPx": 1530,
+   "heightPx": 2048,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICiuffq_gE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICiuffq_gE!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMYKcqmr5YZHn2pREYDGZDDlbNMMLGcfyHfCz0oayizeDmNaqpW_qcWS8tp6Gtu_ryRVAEF6HlSfLx8sEvLh-bju7CZSR_wONNv-SLOrUnAnvDriVk5nH-o0uKH_gNYRfxtNAz_YAPrmcXnxv6O-3ierB3uif33Y44oxxrxAZOg9aH2p8z_fSdadOtHtnjhhFPZi7niu7QZ_DhmVucFuFaPUF3_I0iyrnMD8R2d4qI1dQcuTlqbH2m1uJ2rd_vNoyn6GXnIlNkaVYgEYmQgsWzpqLAo-n4ozJEs8X20O0Y6Lb03d66zvUt0y2aWxTKiBOiYcYf9fJKBkRh5yRWnczyuyWkQw2momsSQU3TqgbjffyzGuUcd1iOhoHnEjvwcr1cNSE5sv_z1RfyQ-1yMN7yiPWHQ",
+   "widthPx": 706,
+   "heightPx": 960,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICi-bLvXg&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICi-bLvXg!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  },
+  {
+   "name": "places/ChIJtUDSi_iPcUgRWBwSPavoI5s/photos/Aa-ngMbPA0wwXxvgD0rmtUJXmZzOg0O2KbLDmgymiWEJ3HBqKYhcKnxmTw5a-l-1gjIkLaEb_Z12zyP5pSCzDSNizMtE-O_U8GJTrtXspEMDFEJ505ipbBLU6C2Nx4LI4uXQoSc9ikIgpDecJDMWi9Ml8WYSyduvxFrOdVY3KWDisZ9m4hW7Gg6ltDyms5ds5w9bz3pRKWVaUNtl0ueDr1TcOJtIBVE1cF5vdXxbaNNdSSG3Biawdli3BaFwaco46A4Wu6EbOqnAI5Tq5KDReHtjVGEo-z3LfyTsIi3Ex_BXmxaNuyU4GrwGfLXmHLxQXOQllAcEfr1X2nGVm3NoGxqj8V0qvAwXMCGEpEqq-SgkH2dmlSbRNdZiZmCMoJdVlQ9CmrS2bQxezKBZkpd4PK-zp9Pb5cWYEhQ",
+   "widthPx": 1366,
+   "heightPx": 1365,
+   "authorAttributions": [
+    {
+     "displayName": "Scammells Barber Shop",
+     "uri": "https://maps.google.com/maps/contrib/109242091520748933896",
+     "photoUri": "https://lh3.googleusercontent.com/a-/ALV-UjUU2tS14KM-bQQV26fEKd1liGbkEFHydTULv7qDhoiyLCx4dp_g=s100-p-k-no-mo"
+    }
+   ],
+   "flagContentUri": "https://www.google.com/local/content/rap/report?postId=!1e10!2sCIHM0ogKEICAgICi-Yqp1QE&t=27&cb_client=maps_api_places.places_api&hl=en-US",
+   "googleMapsUri": "https://www.google.com/maps/place//data=!3m4!1e2!3m2!1sCIHM0ogKEICAgICi-Yqp1QE!2e10!4m2!3m1!1s0x48718ff88bd240b5:0x9b23e8ab3d121c58"
+  }
+ ]
+}

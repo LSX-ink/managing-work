@@ -10,7 +10,7 @@ import pytest
 MAIN = Path(__file__).resolve().parent.parent / "frontend" / "main.js"
 
 SCRIPT = """
-const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const src = require('fs').readFileSync(process.argv[1], 'utf8').replace(/\\r\\n/g, '\\n');
 const a = src.indexOf('const NAME_SOUNDALIKES'), b = src.indexOf('function onlyName');
 const config = { name: 'Alfred' };
 eval(src.slice(a, src.indexOf('\\n}\\n', b) + 3) + ';globalThis.f = { calledByName, onlyName };');
@@ -37,7 +37,7 @@ def test_his_name_is_heard_even_when_misheard():
 
 
 REPEAT_SCRIPT = """
-const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const src = require('fs').readFileSync(process.argv[1], 'utf8').replace(/\\r\\n/g, '\\n');
 const line = src.split('\\n').find((l) => l.startsWith('const REPEAT = '));
 eval(line.replace('const REPEAT', 'globalThis.REPEAT'));
 console.log(JSON.stringify(JSON.parse(process.argv[2]).map((t) => REPEAT.test(t))));
@@ -54,7 +54,7 @@ def test_say_that_again_is_recognised():
 
 
 QUICK_SCRIPT = """
-const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const src = require('fs').readFileSync(process.argv[1], 'utf8').replace(/\\r\\n/g, '\\n');
 const a = src.indexOf('const QUICK = ['), b = src.indexOf('];', a) + 2;
 eval(src.slice(a, b).replace('const QUICK', 'globalThis.QUICK'));
 const kind = (t) => { const said = t.toLowerCase().replace(/^(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )/, '').replace(/[.!?,]+$/g, '').trim();
@@ -73,7 +73,7 @@ def test_volume_and_speed_by_voice_are_instant():
 
 
 LINE_SCRIPT = """
-const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const src = require('fs').readFileSync(process.argv[1], 'utf8').replace(/\\r\\n/g, '\\n');
 const a = src.indexOf('function connect(onOpen)'), b = src.indexOf('function send(payload)');
 const code = src.slice(a, src.indexOf('\\n}\\n', b) + 3);
 const sockets = [];
@@ -142,7 +142,7 @@ def test_listening_mode_and_mic_off_by_voice_are_instant():
 
 
 BARGE_SCRIPT = """
-const src = require('fs').readFileSync(process.argv[1], 'utf8');
+const src = require('fs').readFileSync(process.argv[1], 'utf8').replace(/\\r\\n/g, '\\n');
 const a = src.indexOf('const NAME_SOUNDALIKES'), b = src.indexOf('function onlyName');
 const config = { name: 'Alfred' };
 let nowSaying = 'the forecast for tomorrow says alfred will need a coat';
@@ -158,3 +158,19 @@ def test_saying_his_name_and_a_new_question_cuts_in():
     run = subprocess.run(["node", "-e", BARGE_SCRIPT, str(MAIN), json.dumps(texts)],
                          capture_output=True, text=True, check=True)
     assert json.loads(run.stdout) == [True, True, False, False, False, False]
+
+
+HANDS_FREE_SCRIPT = """
+const src = require('fs').readFileSync(process.argv[1], 'utf8').replace(/\\r\\n/g, '\\n');
+const a = src.indexOf('function handsFree(search)'), b = src.indexOf('\\n}\\n', a) + 3;
+eval(src.slice(a, b) + ';globalThis.f = handsFree;');
+console.log(JSON.stringify(JSON.parse(process.argv[2]).map((s) => f(s))));
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs Node.js")
+def test_opening_with_listen_starts_hands_free():
+    cases = ["?listen", "?listen=1", "?a=1&listen", "", "?listener=1", "?glisten"]
+    out = subprocess.run(["node", "-e", HANDS_FREE_SCRIPT, str(MAIN), json.dumps(cases)], capture_output=True,
+                         text=True, check=True).stdout
+    assert json.loads(out) == [True, True, True, False, False, False]

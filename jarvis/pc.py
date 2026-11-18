@@ -185,7 +185,12 @@ def inside_home(path: Path) -> bool:
 
 
 def is_secret(path: Path) -> bool:
-    return bool(SECRET_NAME.search(path.name)) or any(part in SECRET_DIRS for part in path.parts)
+    # only the folders below home count, so a home that itself sits inside AppData isn't all secret
+    try:
+        parts = path.resolve().relative_to(home()).parts
+    except ValueError:
+        parts = path.parts
+    return bool(SECRET_NAME.search(path.name)) or any(part in SECRET_DIRS for part in parts)
 
 
 def launch(path: Path) -> None:

@@ -12,12 +12,15 @@ import httpx
 
 import access
 import aboutyou
+import alfredmem
 import active_calc
 import active_log
 import active_outdoors
 import active_workout
 import agenda
 import alerts
+import alfred_mail
+import alfred_replies
 import assistant_day
 import assistant_inbox
 import assistant_life
@@ -30,6 +33,7 @@ import arcade
 import arcade_board
 import arcade_cards
 import arcade_words
+import bots
 import browser
 import calcmaths
 import calcmoney
@@ -97,6 +101,50 @@ import diy_projects
 import diy_room
 import dates_saved
 import design
+import design_extract
+import design_contrast
+import design_palette
+import design_type
+import design_motion
+import design_kit
+import design_logo
+import design_social
+import design_layout
+import design_audit
+import design_components
+import design_gradient
+import design_mockup
+import design_email
+import design_icons
+import design_images
+import design_cards
+import design_posts
+import design_menu
+import design_signature
+import design_voucher
+import design_sign
+import design_loyalty
+import design_flyer
+import design_appointment
+import design_hours
+import design_review
+import design_carousel
+import design_banner
+import design_linkpage
+import design_highlights
+import design_cookies
+import design_pages
+import design_faq
+import instagram_dms
+import kinetic_briefing
+import kinetic_premium
+import kinetic_calendar
+import kinetic_find
+import kinetic_invoices
+import kinetic_outreach
+import kinetic_reach
+import kinetic_sales
+import kinetic_site
 import skillscan
 import docs_tools
 import docs_tools_forms
@@ -123,6 +171,7 @@ import freelance_money
 import freelance_work
 import habits
 import helpers
+import higgsfield_guide
 import homediary
 import homehouse
 import homekitchen
@@ -211,7 +260,6 @@ import study_write
 import tiktokstudio
 import money_research
 import sports_games
-import station
 import sports_live
 import sports_scoring
 import sports_teams
@@ -280,7 +328,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 ABILITIES = [todo, habits, money, notesearch, screen, helpers]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
-ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, station}  # headline abilities, never searched for
+ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, alfredmem}  # headline abilities, never searched for
 ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
@@ -345,11 +393,26 @@ ABILITIES += [investlearn_calc, investlearn_learn, investlearn_plan, investlearn
 ABILITIES += [writingincome_newsletter, writingincome_blog, writingincome_book, writingincome_money]  # writing income
 ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market, nicheresearch_plan]  # niche research
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
-ABILITIES += [station]  # the station world behind the HUD
-ABILITIES += [design, skillscan]  # design libraries and the skill scanner
+ABILITIES += [design, design_extract, design_contrast, design_palette, design_type, design_motion, design_kit, design_logo, design_social,
+              design_layout, design_audit, design_components, design_gradient, design_mockup, design_email,
+              design_icons, design_images, design_cards, design_posts, design_menu,
+              design_signature, design_voucher, design_sign,
+              design_loyalty, design_flyer, design_appointment,
+              design_hours, design_review,
+              design_carousel, design_banner, design_linkpage, design_highlights,
+              design_cookies, design_pages, design_faq, skillscan]  # design tools
+ABILITIES += [alfred_mail, alfred_replies]  # Alfred's own email account and reply drafts for new mail
+ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
+ABILITIES += [kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, track outreach, invoice
+ABILITIES += [kinetic_briefing, kinetic_calendar]  # Kinetic: morning money briefing, content calendar
+ABILITIES += [kinetic_premium]  # Kinetic end to end: a premium mock-up by voice, today's DMs to the phone
+ABILITIES += [kinetic_reach]  # Kinetic: trade of the week and its base mock-up, walk-in routes, mock-up videos
+ABILITIES += [instagram_dms]  # Kinetic: replies to Instagram DMs from people who message first
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
+ABILITIES += [alfredmem]  # Alfred's own long-term memory (Claude Mem)
+ABILITIES += [bots, higgsfield_guide]  # every bot in one window, and the Higgsfield guide
 
 
 def defer(tool: dict) -> dict:
@@ -590,7 +653,10 @@ async def _run_tool(name: str, args: dict, settings: Settings, http: httpx.Async
     if name in filing.NAMES and settings.email_enabled:
         return await filing.run_tool(name, args, settings)
     if name in aboutyou.NAMES:
-        return await asyncio.to_thread(aboutyou.run_tool, name, args, settings)
+        result = await asyncio.to_thread(aboutyou.run_tool, name, args, settings)
+        if name == "remember_about_user" and result == "Remembered.":
+            await asyncio.to_thread(alfredmem.remember_fact, settings, aboutyou._clean(args["fact"]))
+        return result
     if name == "check_inbox" and settings.email_enabled:
         hours = min(max(int(args.get("hours") or 24), 1), 168)
         return await asyncio.to_thread(inbox_text, settings, hours)

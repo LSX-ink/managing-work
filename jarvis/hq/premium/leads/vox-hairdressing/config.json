@@ -1,0 +1,214 @@
+{
+ "name": "Vox Hairdressing",
+ "short": "Vox",
+ "kicker": "50 Port Street · Manchester's Northern Quarter",
+ "h1": [
+  "Precision cuts.",
+  "Bespoke colour.",
+  "Effortless blonde."
+ ],
+ "lead": "A boutique salon in the heart of the Northern Quarter since 2013, specialising in precision cutting, bespoke colour and low-maintenance balayage. Kevin Murphy colour and styling, sulphate-free and cruelty-free.",
+ "colours": {
+  "bg": "#0e1615",
+  "panel": "#15201f",
+  "ink": "#f5eee8",
+  "muted": "#a7b2ae",
+  "gold": "#e08a5c",
+  "second": "#c98b84"
+ },
+ "motif": "classic",
+ "logo": "logo0.png",
+ "logo_light": true,
+ "hero": [
+  "s/56.jpg",
+  "s/38.jpg",
+  "s/31.jpg",
+  "s/07.jpg"
+ ],
+ "experience": {
+  "title": "Rebuilt with intention",
+  "text": "Our salon was stripped back and rebuilt, from lighting and layout to bespoke handmade workstations and refreshment areas, to feel calm, welcoming and quietly luxurious. Every appointment begins with a detailed consultation.",
+  "photos": [
+   "s/46.jpg",
+   "s/30.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Cutting",
+   "items": [
+    [
+     "Restyle (a big change)",
+     "£66 / £51"
+    ],
+    [
+     "Mid to long (below the ears)",
+     "£61 / £45"
+    ],
+    [
+     "Short creative (above the ears)",
+     "£48 / £40"
+    ],
+    [
+     "Clipper cut",
+     "£43"
+    ],
+    [
+     "Extra long (below the waist)",
+     "£66 / £51"
+    ]
+   ]
+  },
+  {
+   "group": "Styling & tint",
+   "items": [
+    [
+     "Wash & blow dry",
+     "£40 / £30"
+    ],
+    [
+     "Hair up",
+     "£44"
+    ],
+    [
+     "Regrowth tint",
+     "£61 / £40"
+    ],
+    [
+     "Full head tint",
+     "£67 / £50"
+    ]
+   ]
+  },
+  {
+   "group": "Blonde packages",
+   "items": [
+    [
+     "Face framing highlights",
+     "£100 / £85"
+    ],
+    [
+     "Half head, low-maintenance blonde",
+     "£145 / £115"
+    ],
+    [
+     "Full head, low-maintenance blonde",
+     "£175 / £145"
+    ]
+   ]
+  }
+ ],
+ "currency_note": "A genderless menu, priced by length, time and complexity. Senior stylist / graduate stylist. Cuts include wash & blow dry.",
+ "special": {
+  "kicker": "New to Vox?",
+  "title": "10% off your first visit",
+  "text": "New clients get 10% off. Tell us about your hair, your routine and what you want to achieve, and we'll design something that works with your lifestyle.",
+  "cta": "Book your first visit"
+ },
+ "gallery": [
+  "s/41.jpg",
+  "s/53.jpg",
+  "s/12.jpg",
+  "s/45.jpg",
+  "s/49.jpg",
+  "s/27.jpg",
+  "s/16.jpg",
+  "s/21.jpg",
+  "s/44.jpg"
+ ],
+ "reviews": [
+  [
+   "I had my haircut with Phoenix today, and it was such a great experience. I'm so happy with the result!  She was incredibly friendly and professional.",
+   "Dorsa Milani"
+  ],
+  [
+   "Such a good experience! I’ve been on the hunt for a new hairdresser after relocating to Manchester and I’m so glad I went with Vox. I even got 10% off for being a new customer.",
+   "Eleanor Sanderson"
+  ],
+  [
+   "Had a great experience with Phoenix who gave me some good advice and product recommendations for wearing my hair curly! It's hard to find stylists who get curly hair. Thank you!.",
+   "M H"
+  ],
+  [
+   "After years of trying to find a proper good hairdressers, that not only does great hair but makes you feel good too, I think I’ve finally found it! ✨  Vox is such a nice salon, great interior, great vibe, and Senior Stylist, Nuala, who did my hair was a dream; she listened to exactly what I had in mind, told me what she thought would work best with my hair type and then gave me the best cut I’ve had in ages. I will absolutely be returning!.",
+   "Lija S"
+  ]
+ ],
+ "stats": [
+  [
+   "4.9",
+   "Google rating"
+  ],
+  [
+   "711",
+   "Google reviews"
+  ],
+  [
+   "2013",
+   "established"
+  ],
+  [
+   "10%",
+   "off for new clients"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "Closed"
+  ],
+  [
+   "Tuesday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Wednesday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Thursday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Friday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Saturday",
+   "8:00 AM – 6:00 PM"
+  ],
+  [
+   "Sunday",
+   "Closed"
+  ]
+ ],
+ "address": "50 Port Street, Manchester M1 2EQ",
+ "phone": "0161 637 4077",
+ "book_url": "https://www.voxhairdressing.com/bookings-manchester-hairdressers",
+ "book_label": "Book online",
+ "loc": [
+  53.481817,
+  -2.2320868
+ ],
+ "instagram": "voxhairdressing",
+ "brand_text": false,
+ "layout": "split",
+ "fonts": "split",
+ "audit": {
+  "title": "What voxhairdressing.com is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Phone number isn't tap-to-call.",
+    "One tap to call you, on every page."
+   ],
+   [
+    "Google can't read the business details.",
+    "Set up so Google shows your hours, rating and location properly."
+   ]
+  ],
+  "speed": [
+   55,
+   79
+  ]
+ }
+}

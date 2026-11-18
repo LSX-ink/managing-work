@@ -351,6 +351,9 @@ function connect(onOpen) {
             showNowPlaying(msg);
         } else if (msg.type === 'status') {
             if (busy && !speaking && !queue.length) setState('thinking', msg.text);   // what he's doing right now
+        } else if (msg.type === 'model') {
+            const shown = document.getElementById('hud-model');   // HUD SYSTEM panel: which model answered last
+            if (shown && msg.model) shown.textContent = String(msg.model).toUpperCase();
         } else if (msg.type === 'note') {
             addLine('jarvis', msg.text);  // shown, not spoken
         } else if (msg.type === 'chime') {
@@ -853,9 +856,15 @@ function stopListening() {
 
 // ---- Controls ---------------------------------------------------------------
 
-// Reloaded after an update while awake: carry on listening, without the greeting.
+// Hands-free: opened as /?listen (the "Alfred (hands-free)" shortcut), he listens straight away for his name, no click.
+function handsFree(search) {
+    return /(?:^|[?&])listen(?:=|&|$)/.test(search || '');
+}
+if (handsFree(location.search)) setWakeOnly(true);
+
+// Reloaded after an update while awake, or opened hands-free: carry on listening, without the greeting.
 try {
-    if (sessionStorage.getItem('jarvis-resume')) {
+    if (sessionStorage.getItem('jarvis-resume') || handsFree(location.search)) {
         sessionStorage.removeItem('jarvis-resume');
         setTimeout(() => {
             if (started) return;
@@ -969,7 +978,7 @@ fetch('/config').then((r) => r.json()).then((c) => {
     applyLanguage();
     // "hud" or a colour variant such as "hud-gold": both classes go on the page
     if (config.theme && config.theme.startsWith('hud')) document.body.classList.add('hud', config.theme);
-    // Scripts lower in the page (the planets, the HUD extras) may still be loading when /config answers,
+    // Scripts lower in the page (the HUD extras) may still be loading when /config answers,
     // so hold the event until every script has run; otherwise they never hear it and quietly stay off.
     const tell = () => document.dispatchEvent(new CustomEvent('jarvis:config', { detail: config }));
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tell, { once: true });

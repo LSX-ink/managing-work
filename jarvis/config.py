@@ -30,6 +30,23 @@ IMAP_HOSTS = {
 @dataclass(frozen=True)
 class Settings:
     model: str = os.getenv("JARVIS_MODEL", "claude-opus-5")
+    # Cost saver: simple turns (chit-chat, quick facts, timers, music) go to the cheap model, and only hard jobs
+    # (long writing, code, planning, design, scripts, outreach) or "think hard" use the smart one.
+    cost_saver: bool = _bool("JARVIS_COST_SAVER", True)
+    cheap_model: str = os.getenv("JARVIS_CHEAP_MODEL", "claude-haiku-5-5").strip()
+    smart_model: str = os.getenv("JARVIS_SMART_MODEL", "").strip()  # empty: JARVIS_MODEL
+    # the mock-up builder (hq/premium): a cheaper Claude than JARVIS_MODEL so a day of mock-ups doesn't empty the
+    # credit (owner, 28 Oct 2026: "Cheaper Claude"); empty: JARVIS_SMART_MODEL / JARVIS_MODEL as before
+    mockup_model: str = os.getenv("JARVIS_MOCKUP_MODEL", "claude-sonnet-5-5").strip()
+    # Second route through OmniRoute: its address, its API key, and the model or combo it should use. Empty
+    # address: Claude only. Normally the backup when Claude fails (limits, credit, outages).
+    omniroute_url: str = os.getenv("JARVIS_OMNIROUTE_URL", "").strip()
+    omniroute_key: str = os.getenv("JARVIS_OMNIROUTE_KEY", "").strip()
+    omniroute_model: str = os.getenv("JARVIS_OMNIROUTE_MODEL", "auto").strip()
+    alfred_mem: bool = _bool("JARVIS_ALFRED_MEM", True)  # Alfred's own long-term memory (Claude Mem)
+    auto_learn: bool = _bool("JARVIS_AUTO_LEARN", True)  # notes lasting rules, clients and prices by himself
+    alfred_mem_port: int = int(os.getenv("JARVIS_ALFRED_MEM_PORT", "37778"))  # not 37777: that's Claude Code's
+    omniroute_first: bool = _bool("JARVIS_OMNIROUTE_FIRST", False)  # on: OmniRoute first, Claude when it fails
     effort: str = os.getenv("JARVIS_EFFORT", "low")
     # auto: more thought for harder questions, JARVIS_EFFORT for small talk; low, medium or high fixes it
     thinking: str = os.getenv("JARVIS_THINKING", "auto").strip().lower()
@@ -43,7 +60,6 @@ class Settings:
     persona: str = os.getenv("JARVIS_PERSONA", "jarvis").strip().lower()
     theme: str = os.getenv("JARVIS_THEME", "classic").strip().lower()  # "classic" orb or "hud" dashboard
     wake_word: bool = _bool("JARVIS_WAKE_WORD", False)  # only answer speech that uses Alfred's name
-    station: bool = _bool("JARVIS_STATION", True)  # the 3D station world behind the HUD; off = plain stars
     greeting: str = os.getenv("JARVIS_GREETING", "").strip()  # fixed wake-up line; empty = weather and tasks
     elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
@@ -53,6 +69,9 @@ class Settings:
     tool_search: bool = _bool("JARVIS_TOOL_SEARCH", True)  # load most abilities only when needed
     enable_pc: bool = _bool("JARVIS_ENABLE_PC", True)  # open apps/folders/files, media keys, read files
     enable_computer: bool = _bool("JARVIS_ENABLE_COMPUTER", False)  # mouse + keyboard, each action confirmed
+    # mouse + keyboard without the Allow/Deny card: when you tell Alfred to do something he just does it (owner,
+    # 25 Oct 2026). Set JARVIS_COMPUTER_AUTO_ALLOW=0 to bring the card back. Slam the mouse into a corner to stop him.
+    computer_auto_allow: bool = _bool("JARVIS_COMPUTER_AUTO_ALLOW", True)
     host: str = os.getenv("JARVIS_HOST", "127.0.0.1")
     port: int = int(os.getenv("JARVIS_PORT", "8340"))
     password: str = os.getenv("JARVIS_PASSWORD", "")  # empty: no login page
@@ -64,6 +83,25 @@ class Settings:
     email_app_password: str = "".join(os.getenv("JARVIS_EMAIL_APP_PASSWORD", "").split())  # Google shows it with spaces
     email_imap_host: str = os.getenv("JARVIS_EMAIL_IMAP_HOST", "").strip()  # empty: picked from the address
     email_check_seconds: int = int(os.getenv("JARVIS_EMAIL_CHECK_SECONDS", "60"))
+    # Alfred's own mailbox (alfred_mail.py): his address for every account he signs up for, and for business papers
+    # His identity: every account he has (TikTok, YouTube, Kick, Higgsfield, sign-ups) uses this address.
+    alfred_email_address: str = os.getenv("JARVIS_ALFRED_EMAIL_ADDRESS", "alfredw.lsx@gmail.com").strip()
+    alfred_email_app_password: str = "".join(os.getenv("JARVIS_ALFRED_EMAIL_APP_PASSWORD", "").split())
+    # Kinetic Web Designs: your Google review link for review-request drafts (kinetic_outreach)
+    kinetic_review_link: str = os.getenv("JARVIS_KINETIC_REVIEW_LINK", "").strip()
+    # Kinetic outreach: a 30-second mock-up video with each first message (needs Playwright and ffmpeg)
+    kinetic_video: bool = _bool("JARVIS_KINETIC_VIDEO", True)
+    # Google Places API (New) for the client finder; empty: OpenStreetMap. The cap stops a run running up a bill.
+    google_places_key: str = os.getenv("JARVIS_GOOGLE_PLACES_KEY", "").strip()
+    places_max_calls: int = int(os.getenv("JARVIS_PLACES_MAX_CALLS", "100") or 100)
+    # Google PageSpeed Insights (free key) for a Shopify store's mobile speed score; empty: skipped. Never logged.
+    pagespeed_key: str = os.getenv("JARVIS_PAGESPEED_KEY", "").strip()
+    # Instagram DMs (instagram_dms.py): a long-lived Instagram user access token for the business account. Alfred only
+    # replies to people who message first. The token is only sent in requests, never shown or logged.
+    instagram_token: str = os.getenv("JARVIS_INSTAGRAM_TOKEN", "").strip()
+    instagram_autoreply: bool = _bool("JARVIS_INSTAGRAM_AUTOREPLY", True)  # off: tell you about new DMs, don't answer
+    instagram_poll_seconds: int = int(os.getenv("JARVIS_INSTAGRAM_POLL_SECONDS", "60") or 60)
+    instagram_comments: bool = _bool("JARVIS_INSTAGRAM_COMMENTS", True)  # answer comments on our own posts too
     phone_alerts: bool = _bool("JARVIS_PHONE_ALERTS", False)  # calls and delivery apps via Phone Link (Windows)
     # Calls over the internet: your phone posts to a private ntfy topic that Jarvis makes up himself
     now_playing: bool = _bool("JARVIS_NOW_PLAYING", True)  # pop-up card when a new song starts (Windows)
@@ -71,6 +109,10 @@ class Settings:
     phone_relay: bool = _bool("JARVIS_CALL_ALERTS", True)
     ntfy_topic: str = os.getenv("JARVIS_NTFY_TOPIC", "").strip()  # empty: made up and kept in .phone-topic
     ntfy_server: str = os.getenv("JARVIS_NTFY_SERVER", "https://ntfy.sh").strip()
+    # And the other way: the alerts that matter go to your phone (the free ntfy app) on a second private topic
+    phone_push: bool = _bool("JARVIS_PHONE_PUSH", True)
+    health_alerts: bool = _bool("JARVIS_HEALTH_ALERTS", True)  # drive full, HQ or the website down (health.watch)
+    phone_push_kinds: str = os.getenv("JARVIS_PHONE_PUSH_KINDS", "briefing,instagram,email,sales,health,weekly")
     calendar_url: str = os.getenv("JARVIS_CALENDAR_URL", "").strip()  # private iCal (.ics) address, read-only
     # New abilities: requests Alfred can't handle go to Claude as GitHub issues on this repository
     github_repo: str = os.getenv("JARVIS_GITHUB_REPO", "LSX-ink/managing-work").strip()
@@ -98,6 +140,11 @@ class Settings:
             domain = self.email_address.rpartition("@")[2].lower()
             host = IMAP_HOSTS.get(domain, "imap.gmail.com")
         object.__setattr__(self, "email_imap_host", host)
+
+    @property
+    def big_model(self) -> str:
+        """The model for hard jobs: JARVIS_SMART_MODEL, or JARVIS_MODEL when that's empty."""
+        return self.smart_model or self.model
 
     @property
     def email_enabled(self) -> bool:

@@ -260,7 +260,7 @@ def product_remove(settings: Settings, args: dict) -> str:
 def catalogue_export(settings: Settings, args: dict) -> screen.Shown:
     data = store.load(settings)
     out = io.StringIO()
-    w = csv.writer(out)
+    w = csv.writer(out, lineterminator="\n")
     w.writerow(["id", "name", "format", "status", "price_gbp", "audience", "added"])
     for p in data["products"]:
         w.writerow([p["id"], p["name"], p["format"], p["status"], "" if p["price"] is None else p["price"],

@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="/static/popup-files-and-media.css">
     <link rel="stylesheet" href="/static/popup-web-in-alfred.css">
     <link rel="stylesheet" href="/static/hudplus.css">
-    <link rel="stylesheet" href="/static/station.css">
+    <link rel="stylesheet" href="/static/headonly.css">   <!-- only the floating head on screen until you press H -->
     <link rel="stylesheet" href="/static/popup-widgets.css">
     <link rel="stylesheet" href="/static/popup-health-plus.css">
     <link rel="stylesheet" href="/static/popup-money-plus.css">
@@ -73,6 +73,7 @@
     <link rel="stylesheet" href="/static/mic-help.css">
     <link rel="stylesheet" href="/static/access.css">   <!-- accessibility settings: keep last so they win -->
     <script src="/static/access.js"></script>   <!-- in the head so saved settings apply before the first paint -->
+    <script src="/static/headonly.js"></script>   <!-- before the first paint too, and before hudplus.js sees any key -->
     <style>
         /* Approval panel for mouse/keyboard actions (kept here so style.css stays yours to customise). */
         #confirm { width: 100%; padding: 14px 16px; border: 1px solid var(--think-a); border-radius: 12px; background: #121016; }
@@ -142,13 +143,33 @@
         #np-title { color: var(--text); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #np-artist { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         @media (prefers-reduced-motion: reduce) { #np-popup { transition: none; } }
+        /* LSX HQ inside Alfred: the live glass tower over the HUD */
+        #hud-hq { margin-right: 6px; }
+        #hud-hq[aria-pressed="true"] { color: var(--hud-bg, #000); background: var(--hud, var(--accent)); }
+        #hq-overlay { position: fixed; top: 64px; right: 18px; bottom: 70px; width: min(46vw, 900px); z-index: 30; border: 1px solid var(--hud-dim, #2a3547); border-radius: 14px;
+                      overflow: hidden; background: #07080a; box-shadow: 0 30px 80px -20px rgba(0,0,0,.8); }
+        #hq-overlay[hidden] { display: none; }
+        #hq-frame { width: 100%; height: 100%; border: 0; display: block; background: #07080a; }
+        .hq-tools { position: absolute; top: 10px; right: 12px; z-index: 2; display: flex; gap: 6px; }
+        .hq-tools button { min-width: 44px; min-height: 36px; border: 1px solid var(--hud-dim, #2a3547); background: rgba(12,18,28,.9); color: var(--hud-bright, var(--text));
+                           font: inherit; font-size: 12px; letter-spacing: .1em; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+        #hq-fab { position: fixed; right: 18px; bottom: 18px; z-index: 31; padding: 9px 14px; border-radius: 999px; cursor: pointer;
+                  border: 1px solid #d8b25a; background: rgba(10,10,14,.92); color: #d8b25a; font: 600 12px/1 Inter, system-ui, sans-serif; letter-spacing: .12em;
+                  box-shadow: 0 0 18px -4px rgba(216,178,90,.6); }
+        #hq-fab[aria-pressed="true"] { background: #d8b25a; color: #111; }
+        .bots-fabs { position: fixed; right: 18px; bottom: 60px; z-index: 31; display: flex; gap: 8px; }
+        .bots-fabs button { padding: 8px 12px; border-radius: 999px; cursor: pointer; border: 1px solid #8fb8ff; background: rgba(10,10,14,.92);
+                            color: #8fb8ff; font: 600 11px/1 Inter, system-ui, sans-serif; letter-spacing: .12em; }
+        .bots-fabs button:hover, .bots-fabs button:focus-visible { background: #8fb8ff; color: #111; }
+        .hq-msg { position: absolute; left: 24px; top: 70px; color: var(--muted); max-width: 40ch; }
+        @media (max-width: 1000px) { #hq-overlay { left: 10px; right: 10px; width: auto; top: 56px; bottom: 64px; } }
     </style>
 </head>
 <body>
     <header class="hud-only hud-bar">
         <span id="hud-title">J.A.R.V.I.S.</span>
         <span class="hud-sub">PERSONAL ASSISTANT // LOCAL NODE</span>
-        <span class="hud-chips"><button id="hud-access" type="button" aria-haspopup="dialog" aria-label="Accessibility settings" title="Accessibility settings (Alt+A)">ACCESS</button><button id="hud-memory" type="button" aria-pressed="false" aria-label="Show the memory folders" title="Show the memory folders">MEMORY</button><span id="hud-link" role="status">LINK · STANDBY</span><span id="hud-mic" role="status">MIC · OFF</span></span>
+        <span class="hud-chips"><button id="hud-bots" type="button" aria-label="Show Alfred's bots" title="Alfred's bots: HQ agents, the video checker, the Higgsfield guide (Alt+B)">BOTS</button><button id="hud-hq" type="button" aria-pressed="false" aria-label="Show LSX HQ" title="LSX HQ: the agents' glass tower (Alt+H)">HQ</button><button id="hud-access" type="button" aria-haspopup="dialog" aria-label="Accessibility settings" title="Accessibility settings (Alt+A)">ACCESS</button><button id="hud-memory" type="button" aria-pressed="false" aria-label="Show the memory folders" title="Show the memory folders">MEMORY</button><span id="hud-link" role="status">LINK · STANDBY</span><span id="hud-mic" role="status">MIC · OFF</span></span>
     </header>
     <aside class="hud-only hud-panel hud-left" aria-label="System status">
         <h2>SYSTEM</h2>
@@ -252,6 +273,8 @@
     <script src="/static/popup-files-and-media.js"></script>
     <script src="/static/popup-web-in-alfred.js"></script>
     <script src="/static/hudplus.js"></script>
+    <script src="/static/hq-tower.js"></script>
+    <script src="/static/bots.js"></script>
     <script src="/static/popup-widgets.js"></script>
     <script src="/static/popup-health-plus.js"></script>
     <script src="/static/popup-money-plus.js"></script>
@@ -292,6 +315,12 @@
     <script src="/static/popup-writingincome.js"></script>
     <script src="/static/popup-nicheresearch.js"></script>
     <script src="/static/popup-tiktokstudio.js"></script>
-    <script src="/static/station.js"></script>   <!-- the 3D station behind the HUD; loads three.js only when it starts -->
+    <div class="bots-fabs"><button id="bots-fab" type="button" title="Alfred's bots (Alt+B, or say &quot;show my bots&quot;)">BOTS</button><button id="higgsfield-fab" type="button" title="Higgsfield features and how we use them (say &quot;show the Higgsfield features&quot;)">HIGGSFIELD</button></div>
+    <button id="hq-fab" type="button" aria-pressed="false" title="Dashboard: today's DMs, replies, the week and what Claude is doing (Alt+H, or say &quot;show the dashboard&quot;)">&#9650; DASHBOARD</button>
+    <section id="hq-overlay" hidden aria-label="LSX HQ">
+        <div class="hq-tools"><button id="hq-tower" type="button" title="Switch between the dashboard and the glass tower">TOWER</button><button id="hq-reload" type="button" title="Reload">RELOAD</button><button id="hq-close" type="button" aria-label="Close LSX HQ" title="Close">× CLOSE</button></div>
+        <p class="hq-msg" hidden>LSX HQ isn't answering on this PC yet. It starts with Windows; give it a minute and press RELOAD.</p>
+        <iframe id="hq-frame" title="LSX HQ dashboard" referrerpolicy="no-referrer"></iframe>
+    </section>
 </body>
 </html>

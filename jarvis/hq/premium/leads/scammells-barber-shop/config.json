@@ -1,0 +1,216 @@
+{
+ "name": "Scammells Barber Shop",
+ "short": "Scammells",
+ "kicker": "47 Broad Street · Staple Hill, Bristol",
+ "h1": [
+  "Award-winning",
+  "barbering.",
+  "Since 1992."
+ ],
+ "lead": "Expert haircuts, beard grooming and luxury hot towel shaves, with customers from all over the West Country. By appointment only.",
+ "colours": {
+  "bg": "#100f0e",
+  "panel": "#191715",
+  "ink": "#f3efe7",
+  "muted": "#a59d90",
+  "gold": "#d4b26a",
+  "second": "#c8453b"
+ },
+ "motif": "classic",
+ "logo": "logo0.png",
+ "logo_light": true,
+ "hero": [
+  "g/00.jpg",
+  "g/04.jpg",
+  "s/01.jpg"
+ ],
+ "experience": {
+  "title": "From a son's first haircut to retired gentlemen",
+  "text": "We welcome all ages. Our highly skilled barbers use top-quality products from around the world, including Reuzel, Layrite, Kent Brushes, Proraso and Mariner Jack, all available to buy after your visit.",
+  "photos": [
+   "s/01.jpg",
+   "s/02.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Men",
+   "items": [
+    [
+     "Men's haircut",
+     "£23"
+    ],
+    [
+     "Skin fade",
+     "£26"
+    ],
+    [
+     "Restyle",
+     "£26"
+    ],
+    [
+     "Long hair",
+     "£27"
+    ],
+    [
+     "Buzz cut",
+     "£14"
+    ],
+    [
+     "Head shave with electric foils",
+     "£21"
+    ],
+    [
+     "Retired gentlemen (65+)",
+     "£15"
+    ]
+   ]
+  },
+  {
+   "group": "Boys",
+   "items": [
+    [
+     "Boys' haircut (under 15)",
+     "£19"
+    ],
+    [
+     "Boys' skin fade",
+     "£22"
+    ],
+    [
+     "Boys' restyle",
+     "£22"
+    ],
+    [
+     "Boys' long haircut",
+     "£24"
+    ]
+   ]
+  },
+  {
+   "group": "Beards",
+   "items": [
+    [
+     "Beard trim",
+     "£14"
+    ],
+    [
+     "Beard trim with hot towel line-out",
+     "£21"
+    ],
+    [
+     "Beard trim & haircut",
+     "£37"
+    ],
+    [
+     "Beard trim & skin fade",
+     "£39"
+    ]
+   ]
+  }
+ ],
+ "currency_note": "Appointments only, so book ahead to secure your chair.",
+ "special": {
+  "kicker": "Since 1992",
+  "title": "The hot towel line-out",
+  "text": "Hot and cold towels, balms and a cut-throat razor: our beard trim with hot towel line-out is the finishing touch our regulars come back for.",
+  "cta": "Book an appointment"
+ },
+ "gallery": [
+  "g/07.jpg",
+  "g/09.jpg",
+  "g/04.jpg",
+  "g/03.jpg",
+  "s/02.jpg",
+  "g/02.jpg",
+  "g/05.jpg",
+  "s/04.jpg"
+ ],
+ "reviews": [
+  [
+   "It was the first time I had been there and Andy did a great job sorting a very long overdue haircut, it had got far too long after an extended hospital stay and made to feel at home. Definitely will be back.",
+   "Mike Newton"
+  ],
+  [
+   "Lucy was great with my son, who is super anxious about hair cuts! She was super kind to him and helped him feel at ease. His hair looks great - thank you!.",
+   "Maya van Hamel"
+  ],
+  [
+   "Probably the best hair cut I've had. I had extremely long hair but Lucy sorted it perfectly and quickly.",
+   "Grant"
+  ],
+  [
+   "Lucy does a spot on job as always and I’ve been using Scammells now for the past 4 years and would recommend anyone to go there to get a great haircut.",
+   "Alex Bowen"
+  ]
+ ],
+ "stats": [
+  [
+   "4.9",
+   "Google rating"
+  ],
+  [
+   "675",
+   "Google reviews"
+  ],
+  [
+   "1992",
+   "established"
+  ],
+  [
+   "£14",
+   "beard trims"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "9:00 AM – 6:00 PM"
+  ],
+  [
+   "Tuesday",
+   "9:00 AM – 6:00 PM"
+  ],
+  [
+   "Wednesday",
+   "9:00 AM – 6:00 PM"
+  ],
+  [
+   "Thursday",
+   "9:00 AM – 6:00 PM"
+  ],
+  [
+   "Friday",
+   "9:00 AM – 6:00 PM"
+  ],
+  [
+   "Saturday",
+   "7:30 AM – 2:30 PM"
+  ],
+  [
+   "Sunday",
+   "Closed"
+  ]
+ ],
+ "address": "47 Broad Street, Staple Hill, Bristol BS16 5LS",
+ "phone": "0117 957 1900",
+ "book_url": "https://scammellsbarbershop.co.uk/",
+ "book_label": "Book online",
+ "loc": [
+  51.481164199999995,
+  -2.5037306999999998
+ ],
+ "instagram": "scammellsbarbershop",
+ "layout": "cinema",
+ "fonts": "vintage",
+ "audit": {
+  "title": "What scammellsbarbershop.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Google can't read the business details.",
+    "Set up so Google shows your hours, rating and location properly."
+   ]
+  ],
+  "speed": null
+ }
+}

@@ -6,14 +6,19 @@
   announces incoming calls and delivery-app notifications.
 - Phone over the internet: an app on your phone (e.g. MacroDroid) posts calls to a private
   ntfy.sh address that Jarvis makes up, and Jarvis listens there. No cable or Bluetooth needed.
+- To your phone: the heads-ups that matter (morning briefing, replies, health) are pushed to a second private
+  ntfy address; subscribe to it in the free ntfy app and they arrive wherever you are.
 """
 
 import asyncio
 import email.utils
 import imaplib
+import os
 import json
 import re
 import secrets
+import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -23,6 +28,7 @@ from typing import Awaitable, Callable
 
 import httpx
 
+import alfred_mail
 import filing
 
 from config import ROOT, Settings
@@ -325,12 +331,80 @@ async def watch_relay(settings: Settings, announce: Announce, retry: float = 10.
             await asyncio.sleep(retry)
 
 
+PUSH_FILE = ROOT / ".phone-push-topic"  # the private address Alfred posts to; git ignores it
+PUSH_TITLES = {"briefing": "Morning briefing", "instagram": "Instagram reply", "email": "New email",
+               "sales": "Follow-ups due", "mockup": "Mock-up ready", "dms": "Today's Instagram DMs", "dm": "Instagram DM to send", "health": "Alfred health check", "weekly": "Weekly report"}
+PUSH_MAX_CHARS = 3500  # ntfy keeps messages up to 4,096 bytes
+
+
+def push_url(settings: Settings, topic_file: Path | None = None) -> str:
+    """The private address Alfred pushes alerts to, made up on first use. Empty when phone push is off."""
+    if not settings.phone_push:
+        return ""
+    topic_file = topic_file or PUSH_FILE
+    try:
+        topic = topic_file.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        topic = ""
+    if not topic:
+        topic = "alfred-" + secrets.token_hex(12)
+        topic_file.write_text(topic + "\n", encoding="utf-8")
+    return f"{settings.ntfy_server.rstrip('/')}/{topic}"
+
+
+_dashboard: list[str] = []  # worked out once
+
+
+def dashboard_url() -> str:
+    """Where a tapped phone notification goes: Alfred on the phone link with the dashboard open
+    (https://<this PC's Tailscale name>/?dash). JARVIS_DASHBOARD_URL overrides it; empty when there's no phone link."""
+    if not _dashboard:
+        url = os.getenv("JARVIS_DASHBOARD_URL", "").strip()
+        if not url:
+            try:
+                exe = shutil.which("tailscale") or r"C:\Program Files\Tailscale\tailscale.exe"
+                out = subprocess.run([exe, "status", "--json"], capture_output=True, text=True, timeout=10)
+                name = json.loads(out.stdout).get("Self", {}).get("DNSName", "").rstrip(".")
+                url = f"https://{name}/?dash" if name else ""
+            except (OSError, ValueError, subprocess.SubprocessError):
+                url = ""
+        _dashboard.append(url)
+    return _dashboard[0]
+
+
+def pushes(settings: Settings, kind: str) -> bool:
+    """True for the kinds of heads-up that go to the phone too."""
+    return settings.phone_push and kind in {k.strip() for k in settings.phone_push_kinds.split(",")}
+
+
+async def push(settings: Settings, text: str, kind: str, transport=None, topic_file: Path | None = None) -> bool:
+    """Send one heads-up to the phone. Never raises: a phone that can't be reached mustn't stop anything."""
+    url = push_url(settings, topic_file)
+    if not url:
+        return False
+    headers = {"Title": PUSH_TITLES.get(kind, "Alfred"), "Tags": "tophat"}
+    if kind in ("instagram", "health"):
+        headers["Priority"] = "high"
+    if transport is None and (click := await asyncio.to_thread(dashboard_url)):
+        headers["Click"] = click  # tapping it opens the dashboard
+    try:
+        async with httpx.AsyncClient(timeout=15, transport=transport) as http:
+            r = await http.post(url, content=text[:PUSH_MAX_CHARS].encode("utf-8"), headers=headers)
+            r.raise_for_status()
+        return True
+    except httpx.HTTPError as exc:
+        print(f"[jarvis] Couldn't push to the phone ({exc!r}).", flush=True)
+        return False
+
+
 def start(settings: Settings, announce: Announce) -> list[asyncio.Task]:
     """Start whichever watchers are configured."""
     tasks = []
     if settings.email_enabled:
         tasks.append(asyncio.create_task(watch_email(settings, announce)))
         tasks.append(asyncio.create_task(filing.watch(settings, announce)))
+    if alfred_mail.enabled(settings):
+        tasks.append(asyncio.create_task(alfred_mail.watch(settings, announce)))
     if settings.phone_alerts:
         tasks.append(asyncio.create_task(watch_phone(settings, announce)))
     if settings.phone_relay:

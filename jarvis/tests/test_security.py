@@ -131,3 +131,14 @@ def test_the_page_fingerprint_changes_only_when_its_files_change(server, tmp_pat
     assert server.frontend_build() == first
     (tmp_path / "main.js").write_text("two")
     assert server.frontend_build() != first
+
+
+def test_hands_free_shortcut_survives_the_login(server, monkeypatch):
+    monkeypatch.setattr(server, "settings", replace(server.settings, password="open sesame"))
+    client = TestClient(server.app)
+    assert 'action="/login?listen"' in client.get("/?listen").text
+    assert 'action="/login"' in client.get("/").text
+    ok = client.post("/login?listen", data={"password": "open sesame"}, follow_redirects=False)
+    assert ok.status_code == 303 and ok.headers["location"] == "/?listen"
+    odd = client.post("/login?x=<script>", data={"password": "open sesame"}, follow_redirects=False)
+    assert odd.headers["location"] == "/"  # anything but a plain word is dropped

@@ -1,0 +1,176 @@
+{
+ "moroccan-barber-johannesburg": {
+  "title": "What moroccanbarberjhb.co.za is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "No main heading.",
+    "Set up so Google shows your hours, rating and location properly."
+   ],
+   [
+    "Google can't read the business details.",
+    "Opening hours on the page, always up to date."
+   ]
+  ],
+  "speed": null
+ },
+ "281-hair-hairdressers-glasgow": {
+  "title": "What 281hair.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Built with very old tech.",
+    "A fresh, modern look that shows you're open, busy and worth the visit."
+   ],
+   [
+    "Phone number isn't tap-to-call.",
+    "One tap to call you, on every page."
+   ],
+   [
+    "No main heading.",
+    "Set up so Google shows your hours, rating and location properly."
+   ],
+   [
+    "No share preview.",
+    "A proper preview card when your link is shared on WhatsApp or Instagram."
+   ],
+   [
+    "Google can't read the business details.",
+    "Opening hours on the page, always up to date."
+   ]
+  ],
+  "speed": null
+ },
+ "prestige-hair-beauty-west-croydon": {
+  "title": "What prestigehairandbeauty.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Weak page title.",
+    "Set up so Google shows your hours, rating and location properly."
+   ],
+   [
+    "Phone number isn't tap-to-call.",
+    "One tap to call you, on every page."
+   ],
+   [
+    "Google can't read the business details.",
+    "Opening hours on the page, always up to date."
+   ]
+  ],
+  "speed": [
+   53,
+   79
+  ]
+ },
+ "fade-barber": {
+  "title": "What a website would change for you.",
+  "fixes": [
+   [
+    "When people Google you, there's no website to land on.",
+    "A home page that shows your work, prices and reviews."
+   ],
+   [
+    "Customers have to message or call to ask the basics.",
+    "Hours, services and directions answered before they ask."
+   ],
+   [
+    "New customers can only judge you by a map pin.",
+    "Your photos and your Google rating front and centre."
+   ],
+   [
+    "No easy way to book.",
+    "One tap to call or book, from any phone."
+   ]
+  ],
+  "speed": null
+ },
+ "vox-hairdressing": {
+  "title": "What voxhairdressing.com is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Phone number isn't tap-to-call.",
+    "One tap to call you, on every page."
+   ],
+   [
+    "Google can't read the business details.",
+    "Set up so Google shows your hours, rating and location properly."
+   ]
+  ],
+  "speed": [
+   55,
+   79
+  ]
+ },
+ "hair-in-the-city": {
+  "title": "What hairinthecity.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Phone number isn't tap-to-call.",
+    "One tap to call you, on every page."
+   ],
+   [
+    "Heavy page.",
+    "Built light, so it opens in about a second on a phone."
+   ]
+  ],
+  "speed": [
+   59,
+   79
+  ]
+ },
+ "scammells-barber-shop": {
+  "title": "What scammellsbarbershop.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Google can't read the business details.",
+    "Set up so Google shows your hours, rating and location properly."
+   ]
+  ],
+  "speed": null
+ },
+ "melissa-timperley-hair-salon": {
+  "title": "What melissa-salons.com is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Google can't read the business details.",
+    "Set up so Google shows your hours, rating and location properly."
+   ]
+  ],
+  "speed": [
+   38,
+   79
+  ]
+ },
+ "sans-barber": {
+  "title": "What sansbarber.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "No Google description.",
+    "Set up so Google shows your hours, rating and location properly."
+   ],
+   [
+    "No share preview.",
+    "A proper preview card when your link is shared on WhatsApp or Instagram."
+   ],
+   [
+    "Google can't read the business details.",
+    "Opening hours on the page, always up to date."
+   ]
+  ],
+  "speed": [
+   33,
+   79
+  ]
+ },
+ "the-dandy-gent-barber-shop-nottm": {
+  "title": "What thedandygent.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "No main heading.",
+    "Set up so Google shows your hours, rating and location properly."
+   ]
+  ],
+  "speed": [
+   35,
+   79
+  ]
+ }
+}

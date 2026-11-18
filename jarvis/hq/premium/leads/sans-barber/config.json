@@ -1,0 +1,182 @@
+{
+ "name": "Sans Barber",
+ "short": "Sans Barber",
+ "kicker": "150 Mansfield Road · Nottingham",
+ "h1": [
+  "Smooth fades.",
+  "Clean cuts.",
+  "Impeccable service."
+ ],
+ "lead": "A Nottingham barbers with years of experience and the latest tools. Walk in, take a seat, grab a drink, and leave looking fresh and clean.",
+ "colours": {
+  "bg": "#061014",
+  "panel": "#0c1a1f",
+  "ink": "#f2ece4",
+  "muted": "#9aa6a8",
+  "gold": "#e8d2b8",
+  "second": "#c99a5b"
+ },
+ "motif": "classic",
+ "logo": "logo0.png",
+ "brand_text": false,
+ "hero": [
+  "g/00.jpg",
+  "g/03.jpg",
+  "g/04.jpg"
+ ],
+ "experience": {
+  "title": "We take pride in what we do",
+  "text": "Our years of experience have put us in a legendary position in Nottingham. We've worked on all types of hair and styles, and we want you treated well and comfortably while you wait, with snacks and drinks on us.",
+  "photos": [
+   "s/05.jpg",
+   "s/04.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Cuts",
+   "items": [
+    [
+     "Skin fades",
+     ""
+    ],
+    [
+     "Clean cuts & tapers",
+     ""
+    ],
+    [
+     "Kids' cuts",
+     ""
+    ]
+   ]
+  },
+  {
+   "group": "Finish",
+   "items": [
+    [
+     "Hot towel",
+     ""
+    ],
+    [
+     "Line-ups",
+     ""
+    ]
+   ]
+  }
+ ],
+ "currency_note": "Walk-ins only, no appointments. Last entry 30 minutes before closing.",
+ "special": {
+  "kicker": "The finishing touch",
+  "title": "The hot towel",
+  "text": "The ultimate way to end your cut with us: a relaxing, sensational experience that softens the beard, opens the pores and leaves your face clean.",
+  "cta": "Find us"
+ },
+ "gallery": [
+  "s/03.jpg",
+  "s/10.jpg",
+  "g/09.jpg",
+  "g/08.jpg",
+  "s/06.jpg",
+  "s/11.jpg",
+  "g/02.jpg",
+  "s/09.jpg"
+ ],
+ "reviews": [
+  [
+   "Absolutely amazing job done by sans barber shop! Superb with kids, mine normally hates having his hair cut! And yet they really worked there magic!! Giving him treats and sweets and He stayed still and loved it! Definitely recommend for anyone with kids!!.",
+   "JJ W"
+  ],
+  [
+   "I got exactly the haircut I wanted, everytime. The best customer service oriented barber shop in Nottingham.",
+   "Hamza Rajnalvee"
+  ],
+  [
+   "Great Service and Great Haircuts! Would highly recommend.",
+   "Necasius"
+  ],
+  [
+   "I've tried many barbers in Nottingham, but Dan's is by far the best. Been coming years now because the attention to detail and professionalism is such a high level.",
+   "Josh 1"
+  ]
+ ],
+ "stats": [
+  [
+   "4.9",
+   "Google rating"
+  ],
+  [
+   "673",
+   "Google reviews"
+  ],
+  [
+   "9pm",
+   "open till, Mon–Sat"
+  ],
+  [
+   "Walk-ins",
+   "only, no booking"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "9:00 AM – 6:30 PM"
+  ],
+  [
+   "Tuesday",
+   "9:00 AM – 6:30 PM"
+  ],
+  [
+   "Wednesday",
+   "9:00 AM – 6:30 PM"
+  ],
+  [
+   "Thursday",
+   "9:00 AM – 6:30 PM"
+  ],
+  [
+   "Friday",
+   "9:00 AM – 6:30 PM"
+  ],
+  [
+   "Saturday",
+   "9:00 AM – 6:30 PM"
+  ],
+  [
+   "Sunday",
+   "9:00 AM – 4:30 PM"
+  ]
+ ],
+ "address": "150 Mansfield Road, Nottingham NG1 3HW",
+ "phone": "07870 703090",
+ "book_url": "https://maps.google.com/?q=Sans+Barber+150+Mansfield+Road+Nottingham",
+ "book_label": "Get directions",
+ "loc": [
+  52.962368299999994,
+  -1.1509931
+ ],
+ "instagram": "sansbarbers",
+ "layout": "bold",
+ "fonts": "cinema",
+ "audit": {
+  "title": "What sansbarber.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "No Google description.",
+    "Set up so Google shows your hours, rating and location properly."
+   ],
+   [
+    "No share preview.",
+    "A proper preview card when your link is shared on WhatsApp or Instagram."
+   ],
+   [
+    "Google can't read the business details.",
+    "Opening hours on the page, always up to date."
+   ]
+  ],
+  "speed": [
+   33,
+   79
+  ]
+ }
+}

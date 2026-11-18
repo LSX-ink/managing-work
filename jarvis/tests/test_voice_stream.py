@@ -336,7 +336,7 @@ def test_sums_said_in_words_are_worked_out_instantly():
     assert instant_answer("work out three point five plus one point two five", en) == "That's 4.75."
     assert instant_answer("what is twelve thousand three hundred and forty five plus five", en) == "That's 12,350."
     assert instant_answer("what's a hundred plus 7", en) == "That's 107."
-    assert instant_answer("how many grams in three ounces", en) == "3 oz is 85.0486 g."
+    assert instant_answer("how many grams in three ounces", en) == "3 ounces is about 85 grams."
     assert instant_answer("what's seven and five", en) is None  # "and" only joins after hundred/thousand
     assert instant_answer("what is one", en) is None
 
@@ -367,10 +367,10 @@ def test_dates_ahead_and_weekdays_are_worked_out_instantly():
     assert instant_answer("what day is the 25th of December", en, now) == "The 25th of December is a Friday."
     assert instant_answer("what day of the week is March 3rd", en, now) == "The 3rd of March 2027 is a Wednesday."
     assert instant_answer("what day was the 4th of July 1776", en, now) == "The 4th of July 1776 was a Thursday."
-    assert instant_answer("what day does Christmas fall on", en, now) == "The 25th of December is a Friday."
+    assert instant_answer("what day does Christmas fall on", en, now) == "Christmas is on a Friday, the 25th of December."
     assert instant_answer("what day is the 30th of February", en, now) == "There's no 30th of February."
     assert instant_answer("what day is it", en, now) == "It's Tuesday the 6th of October."
-    assert instant_answer("what day is Easter", en, now) is None
+    assert instant_answer("what day is Easter", en, now) == "Easter is on a Sunday, the 28th of March 2027."
 
 
 def test_discounts_tips_and_bill_splits_are_instant():
@@ -434,14 +434,582 @@ def test_days_since_and_ages_are_worked_out_instantly():
     assert instant_answer("how old is someone born in 2030", en, now) is None
 
 
+def test_leap_years_month_lengths_and_week_numbers_are_instant():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-06 14:45", "%Y-%m-%d %H:%M")
+    assert instant_answer("is 2028 a leap year", en, now) == "2028 is a leap year."
+    assert instant_answer("is it a leap year?", en, now) == "2026 isn't a leap year."
+    assert instant_answer("is next year a leap year", en, now) == "Next year, 2027, isn't a leap year."
+    assert instant_answer("how many days in February", en, now) == "February 2026 has 28 days."
+    assert instant_answer("how many days are there in February 2028", en, now) == "February 2028 has 29 days."
+    assert instant_answer("how many days in this month", en, now) == "October has 31 days."
+    assert instant_answer("how many days left in the year", en, now) == "86 days left in the year, not counting today."
+    assert instant_answer("how many weeks left in the year", en, now) == "12 weeks and 2 days left in the year, not counting today."
+    assert instant_answer("what week number is it", en, now) == "It's week 41 of 2026."
+    assert instant_answer("what day of the year is it", en, now) == "Today is day 279 of 365."
+    assert instant_answer("how many days in my holiday", en, now) is None
+
+
+def test_halves_primes_factorials_and_rounding_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what is half of 90", en) == "That's 45."
+    assert instant_answer("three quarters of 200", en) == "That's 150."
+    assert instant_answer("Alfred, what's twice 12?", en) == "That's 24."
+    assert instant_answer("is 97 a prime number", en) == "Yes, 97 is a prime number."
+    assert instant_answer("is 91 prime", en) == "No, 91 isn't prime. It's 7 times 13."
+    assert instant_answer("what's 7 factorial", en) == "That's 5,040."
+    assert instant_answer("round 3.14159 to 2 decimal places", en) == "That's 3.14."
+    assert instant_answer("round 1234 to the nearest hundred", en) == "That's 1,200."
+    assert instant_answer("round 4.2 up", en) == "That's 5."
+    assert instant_answer("half of my dinner", en) is None
+    assert instant_answer("factorial of 25", en) is None  # too long to say: Claude explains
+
+
+def test_time_differences_between_cities_are_instant(monkeypatch):
+    import brain
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    offsets = {"london": 1, "tokyo": 9, "new york": -4, "paris": 2}
+    monkeypatch.setattr(brain, "_offset_hours", lambda where: (0, "here") if where is None else
+                        ((offsets[where.lower()], where.title()) if where.lower() in offsets else None))
+    assert instant_answer("what's the time difference between London and Tokyo", en) == "Tokyo is 8 hours ahead of London."
+    assert instant_answer("time difference between London and New York", en) == "New York is 5 hours behind London."
+    assert instant_answer("how many hours ahead is Paris of London", en) == "Paris is 1 hour ahead of London."
+    assert instant_answer("how far behind is New York", en) == "New York is 4 hours behind right now."
+    assert instant_answer("time difference between London and Atlantis", en) is None
+
+
+def test_dates_of_weekdays_and_yesterday_are_instant():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.strptime("2026-10-06 14:45", "%Y-%m-%d %H:%M")  # a Tuesday
+    assert instant_answer("what's the date next Friday", en, now) == "Friday is the 9th of October."
+    assert instant_answer("what's the date on Tuesday", en, now) == "Tuesday is the 13th of October."
+    assert instant_answer("when is Friday after next", en, now) == "Friday is the 16th of October."
+    assert instant_answer("what was the date last Friday", en, now) == "Last Friday was the 2nd of October."
+    assert instant_answer("what was the date on Friday", en, now) == "Last Friday was the 2nd of October."
+    assert instant_answer("what was the date yesterday", en, now) == "Yesterday was Monday the 5th of October."
+    assert instant_answer("when is my dentist", en, now) is None
+
+
+def test_clock_formats_and_averages_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's 15:45 in 12 hour time", en) == "That's 3:45 pm."
+    assert instant_answer("what is 3:45 pm in 24 hour time", en) == "That's 15:45."
+    assert instant_answer("what's 12 am in 24 hour time", en) == "That's 00:00."
+    assert instant_answer("what's 25:00 in 12 hour time", en) is None
+    assert instant_answer("what's the average of 4, 8 and 12", en) == "The average is 8."
+    assert instant_answer("what's the mean of ten, twenty and thirty", en) == "The average is 20."
+    assert instant_answer("average of 1,000 and 2,000", en) == "The average is 1,500."
+    assert instant_answer("what's the average of my scores", en) is None
+
+
+def test_roman_numerals_and_binary_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's 1984 in roman numerals", en) == "1,984 is M, C, M, L, X, X, X, I, V."
+    assert instant_answer("what is XIV in numbers", en) == "XIV is 14."
+    assert instant_answer("what number is MMXXVI", en) == "MMXXVI is 2,026."
+    assert instant_answer("what number is IIII", en) is None  # not a proper numeral
+    assert instant_answer("what is MIX", en) is None  # could be the word "mix"
+    assert instant_answer("what's 10 in binary", en) == "10 in binary is 1 0 1 0."
+    assert instant_answer("what's 255 in hex", en) == "255 in hex is F F."
+    assert instant_answer("what's 5000 in roman numerals", en) is None
+
+
+def test_repeat_after_me_and_counting_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("repeat after me the quick brown fox", en) == "the quick brown fox"
+    assert instant_answer("Alfred, repeat after me: what time is it?", en) == "what time is it?"
+    assert instant_answer("count to five", en) == "1, 2, 3, 4, 5."
+    assert instant_answer("count down from 5", en) == "5, 4, 3, 2, 1. Lift off!"
+    assert instant_answer("count from 3 to 7", en) == "3, 4, 5, 6, 7."
+    assert instant_answer("count down from 5 to 1", en) == "5, 4, 3, 2, 1."
+    assert instant_answer("count to 100", en) is None
+    assert instant_answer("count the words in this", en) is None
+
+
+def test_countdowns_in_weeks_working_days_and_to_midnight_are_instant():
+    import time
+
+    from brain import instant_answer
+    now = time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")  # a Friday
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("how many weeks until Christmas?", en, now) == "10 weeks until Christmas, on Friday the 25th of December."
+    assert instant_answer("how many weeks until halloween?", en, now) == (
+        "2 weeks and 1 day until Halloween, on Saturday the 31st of October.")
+    assert instant_answer("Alfred, how many working days until Christmas?", en, now) == (
+        "49 working days before Christmas, not counting today or bank holidays.")
+    assert instant_answer("how many working days until Friday?", en, now) == (
+        "4 working days before Friday, not counting today or bank holidays.")
+    assert instant_answer("how many days until Monday?", en, now) == "3 days until Monday, the 19th of October."
+    assert instant_answer("how many days until Friday?", en, now) == "7 days until Friday, the 23rd of October."
+    assert instant_answer("how many days until the 30th of October?", en, now) == "14 days until Friday, the 30th of October."
+    assert instant_answer("how many days until Christmas?", en, now) == (
+        "70 days until Christmas, on Friday the 25th of December.")  # unchanged
+    assert instant_answer("how long until midnight?", en, now) == "15 hours until midnight."
+    assert instant_answer("how many hours until noon?", en, now) == "3 hours until noon."
+    assert instant_answer("what's 3 hours 20 minutes in minutes?", en, now) == "That's 200 minutes."
+    assert instant_answer("how long until my birthday?", en, now) is None  # Claude knows (or asks)
+    assert instant_answer("how many days until the 30th of February?", en, now) is None
+
+
+def test_alphabet_positions_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what letter comes after G?", en) == "H comes after G."
+    assert instant_answer("what letter is before m", en) == "L comes before M."
+    assert instant_answer("what comes after Z?", en) == "Nothing, Z is the last letter of the alphabet."
+    assert instant_answer("Alfred, what's the 5th letter of the alphabet?", en) == "The 5th letter is E."
+    assert instant_answer("what's the 30th letter of the alphabet?", en) == "The alphabet only has 26 letters."
+    assert instant_answer("what number letter is K?", en) == "K is the 11th letter of the alphabet."
+    assert instant_answer("where does R come in the alphabet?", en) == "R is the 18th letter of the alphabet."
+    assert instant_answer("what comes after the weekend?", en) is None
+
+
+def test_relative_days_month_year_and_weekend_are_instant():
+    import time
+
+    from brain import instant_answer
+    now = time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")  # a Friday
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's the day after tomorrow?", en, now) == "The day after tomorrow is Sunday the 18th of October."
+    assert instant_answer("what was the date the day before yesterday?", en, now) == (
+        "The day before yesterday was Wednesday the 14th of October.")
+    assert instant_answer("what day was it 3 days ago?", en, now) == "3 days ago was Tuesday the 13th of October."
+    assert instant_answer("what was the date a week ago?", en, now) == "A week ago was Friday the 9th of October."
+    assert instant_answer("Alfred, what month is it?", en, now) == "It's October 2026."
+    assert instant_answer("what year is it?", en, now) == "It's 2026."
+    assert instant_answer("is it the weekend?", en, now) == "Not yet, it's Friday. The weekend starts tomorrow."
+    assert instant_answer("is it the weekend?", en, time.strptime("2026-10-17 09:00", "%Y-%m-%d %H:%M")) == "Yes, it's Saturday."
+    assert instant_answer("is it a weekday?", en, now) == "Yes, it's Friday."
+    assert instant_answer("what's the last day of the month?", en, now) == "The last day of October is Saturday the 31st."
+    assert instant_answer("what is the first day of next month?", en, now) == "The first day of November is Sunday the 1st."
+
+
+def test_percentages_odd_even_roots_and_remainders_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what percentage is 30 of 120?", en) == "30 is 25% of 120."
+    assert instant_answer("what's 50 as a percentage of 200?", en) == "50 is 25% of 200."
+    assert instant_answer("increase 80 by 10%", en) == "That's 88."
+    assert instant_answer("decrease 250 by 20 percent", en) == "That's 200."
+    assert instant_answer("is 12 even?", en) == "Yes, 12 is even."
+    assert instant_answer("Alfred, is 7 even?", en) == "No, 7 is odd."
+    assert instant_answer("what's the cube root of 27?", en) == "The cube root of 27 is 3."
+    assert instant_answer("what's the square of 12?", en) == "12 squared is 144."
+    assert instant_answer("how many times does 7 go into 50?", en) == "7 times, with 1 left over."
+    assert instant_answer("how many times does 5 go into 20?", en) == "4 times exactly."
+    assert instant_answer("what's the remainder of 17 divided by 5?", en) == "The remainder is 2. 17 divided by 5 is 3 remainder 2."
+
+
+def test_heights_and_weights_the_british_way_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's 5 feet 10 in cm?", en) == "5 foot 10 is 178 cm, or 1.78 metres."
+    assert instant_answer("what's five foot ten in centimetres?", en) == "5 foot 10 is 178 cm, or 1.78 metres."
+    assert instant_answer("what is 6 foot in cm?", en) == "6 foot is 183 cm, or 1.83 metres."
+    assert instant_answer("how tall is 180 cm in feet?", en) == "180 cm is 5 foot 11."
+    assert instant_answer("Alfred, what's 70 kg in stone?", en) == "70 kg is 11 stone."
+    assert instant_answer("what's 85 kilos in stone and pounds?", en) == "85 kg is 13 stone 5 pounds."
+    assert instant_answer("what's 30 mph in km/h?", en) == "30 mph is about 48.3 km/h."
+
+
+def test_word_tools_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("spell banana backwards", s) == "Banana backwards is A, N, A, N, A, B."
+    assert instant_answer("what's hello backwards?", s) == "Hello backwards is O, double L, E, H."
+    assert instant_answer("spell it backwards", s) is None
+    assert instant_answer("Alfred, how many vowels in banana?", s) == "Banana has 3 vowels."
+    assert instant_answer("how many consonants are there in strength", s) == "Strength has 7 consonants."
+    assert instant_answer("is Racecar a palindrome", s) == "Yes, racecar reads the same backwards."
+    assert instant_answer("is hello a palindrome?", s) == "No, hello does not read the same backwards."
+    assert instant_answer("what's the first letter of Tuesday", s) == "The first letter of Tuesday is T."
+    assert instant_answer("what is the last letter in apple", s) == "The last letter of apple is E."
+
+
+def test_phonetic_spelling_and_anagrams_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("spell Smith phonetically", s) == "Smith: Sierra, Mike, India, Tango, Hotel."
+    assert instant_answer("Alfred, how do you spell Thato in the phonetic alphabet?", s) == "Thato: Tango, Hotel, Alpha, Tango, Oscar."
+    assert instant_answer("spell it phonetically", s) is None
+    assert instant_answer("what's B in the NATO alphabet?", s) == "B is Bravo."
+    assert instant_answer("are listen and silent anagrams?", s) == "Yes, listen and silent are anagrams."
+    assert instant_answer("is listen an anagram of silent", s) == "Yes, listen and silent are anagrams."
+    assert instant_answer("are cat and dog anagrams", s) == "No, cat and dog are not anagrams."
+    assert instant_answer("are you and me free tonight", s) is None
+
+
+def test_moveable_days_like_easter_are_instant():
+    import time
+    from brain import _easter, instant_answer
+    s, now = SimpleNamespace(speech_lang="en-GB"), time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")
+    assert [_easter(y).isoformat() for y in (2024, 2025, 2026, 2027)] == ["2024-03-31", "2025-04-20", "2026-04-05", "2027-03-28"]
+    assert instant_answer("when is Easter", s, now) == "Easter is on Sunday the 28th of March 2027."
+    assert instant_answer("when's Good Friday?", s, now) == "Good Friday is on Friday the 26th of March 2027."
+    assert instant_answer("what date is pancake day", s, now) == "Pancake Day is on Tuesday the 9th of February 2027."
+    assert instant_answer("when is mother's day", s, now) == "Mother's Day is on Sunday the 7th of March 2027."
+    assert instant_answer("when is father's day", s, now) == "Father's Day is on Sunday the 20th of June 2027."
+    assert instant_answer("when is Christmas", s, now) == "Christmas is on Friday the 25th of December."
+    assert instant_answer("when is easter this year", s, now) == "Easter was on Sunday the 5th of April."
+    assert instant_answer("how many days until easter", s, now) == "163 days until Easter, on Sunday the 28th of March 2027."
+    assert instant_answer("what day is christmas 2030", s, now) == "Christmas 2030 is on a Wednesday, the 25th of December."
+    assert instant_answer("when is my dentist appointment", s, now) is None
+
+
+def test_fractions_decimals_and_percentages_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("what's 3/4 as a percentage", s) == "3/4 is 75%."
+    assert instant_answer("what's 0.25 as a fraction?", s) == "0.25 is a quarter (1/4)."
+    assert instant_answer("what's 1/3 as a decimal", s) == "1/3 is about 0.333 as a decimal."
+    assert instant_answer("what is 75% as a fraction", s) == "75% is three quarters (3/4)."
+    assert instant_answer("what's 40% as a decimal", s) == "40% is 0.4 as a decimal."
+    assert instant_answer("what's a third as a percentage", s) == "A third is about 33.3%."
+    assert instant_answer("what's three quarters as a decimal", s) == "Three quarters is 0.75 as a decimal."
+    assert instant_answer("what's 12.5% as a fraction", s) == "12.5% is an eighth (1/8)."
+    assert instant_answer("simplify 6/8", s) == "6/8 simplifies to 3/4."
+    assert instant_answer("simplify 3/7", s) == "3/7 is already as simple as it goes."
+    assert instant_answer("what's 15% of 80", s) == "That's 12."
+
+
+def test_gas_marks_and_adding_a_percentage_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("what's gas mark 6 in celsius", s) == "Gas mark 6 is 200 degrees Celsius, or 180 in a fan oven."
+    assert instant_answer("gas mark 4 in fahrenheit", s) == "Gas mark 4 is about 350 degrees Fahrenheit."
+    assert instant_answer("what's 180 c in gas mark", s) == "180 Celsius is about gas mark 4."
+    assert instant_answer("what is 160 fan in gas mark", s) == "160 Celsius fan is about gas mark 4."
+    assert instant_answer("what's 350 fahrenheit in gas mark", s) == "350 Fahrenheit is about gas mark 4."
+    assert instant_answer("what's 50 plus 10%", s) == "That's 55."
+    assert instant_answer("what's 80 minus 25%", s) == "That's 60."
+    assert instant_answer("what's 15% of 80", s) == "That's 12."
+
+
+def test_times_before_and_after_and_adding_durations_are_instant():
+    import time
+    from brain import instant_answer
+    s, now = SimpleNamespace(speech_lang="en-GB"), time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")
+    assert instant_answer("what's 4 hours before 2 pm", s, now) == "That's 10 am."
+    assert instant_answer("what's 9 am plus 8 hours", s, now) == "That's 5 pm."
+    assert instant_answer("what time is 45 minutes after 10:50", s, now) == "That's 11:35 am."
+    assert instant_answer("what time is an hour and a half after 9 am", s, now) == "That's 10:30 am."
+    assert instant_answer("what's 3 hours after 11 pm", s, now) == "That's 2 am the next day."
+    assert instant_answer("what is 2 hours before midnight", s, now) == "That's 10 pm."
+    assert instant_answer("what time was it 3 hours ago", s, now) == "It was 6 am."
+    assert instant_answer("what time was it 10 hours ago", s, now) == "It was 11 pm yesterday."
+    assert instant_answer("what's 2 hours 30 minutes plus 45 minutes", s, now) == "That's 3 hours and 15 minutes."
+    assert instant_answer("what's 2 hours minus 45 minutes", s, now) == "That's 1 hour and 15 minutes."
+    assert instant_answer("what's 1 hour 20 in minutes", s, now) == "That's 80 minutes."
+    assert instant_answer("what time will it be in 3 hours", s, now) == "It'll be 12 pm."
+
+
+def test_numbers_in_words_comparisons_and_millions_are_instant():
+    from brain import instant_answer
+    s = SimpleNamespace(speech_lang="en-GB")
+    assert instant_answer("how do you say 1234 in words", s) == "1234 is one thousand, two hundred and thirty-four."
+    assert instant_answer("what's 2050 in words", s) == "2050 is two thousand and fifty."
+    assert instant_answer("write 1000005 out", s) == "1000005 is one million and five."
+    assert instant_answer("which is bigger 3/4 or 2/3", s) == "3/4 is bigger."
+    assert instant_answer("which is smaller, 0.3 or 0.25", s) == "0.25 is smaller."
+    assert instant_answer("is 0.5 more than 0.45", s) == "Yes, 0.5 is more than 0.45."
+    assert instant_answer("is 3 bigger than 7", s) == "No, 3 is less than 7."
+    assert instant_answer("what's the next prime after 13", s) == "The next prime after 13 is 17."
+    assert instant_answer("how many zeros in a billion", s) == "A billion has 9 zeros: 1,000,000,000."
+    assert instant_answer("what's 1 million divided by 12", s) == "That's 83,333.3333."
+    assert instant_answer("what's 2.5 million times 2", s) == "That's 5,000,000."
+
+
+def test_clocks_seasons_and_nth_weekdays_are_instant():
+    import time
+    from brain import instant_answer
+    s, now = SimpleNamespace(speech_lang="en-GB"), time.strptime("2026-10-16 09:00", "%Y-%m-%d %H:%M")
+    assert instant_answer("when do the clocks go back", s, now) == "The clocks go back an hour on Sunday the 25th of October, at 2 am."
+    assert instant_answer("when do the clocks go forward", s, now) == "The clocks go forward an hour on Sunday the 28th of March 2027, at 1 am."
+    assert instant_answer("what season is it", s, now) == "It's autumn."
+    assert instant_answer("what quarter is it", s, now) == "It's Q4, quarter 4 of 2026."
+    assert instant_answer("what's the 100th day of the year", s, now) == "Day 100 of 2026 is Friday the 10th of April."
+    assert instant_answer("what's the first Monday in December", s, now) == "The first Monday in December is the 7th."
+    assert instant_answer("when is the second Tuesday in March", s, now) == "The second Tuesday in March 2027 is the 9th."
+    assert instant_answer("how many Fridays are left this year", s, now) == "There are 10 Fridays left this year, not counting today."
+
+
+def test_journeys_pace_and_powers_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("how long does it take to drive 100 miles at 50 mph", en) == "At 50 mph, 100 miles takes 2 hours."
+    assert instant_answer("how long will it take to walk 5 km at 4 km/h", en) == "At 4 km/h, 5 km takes 1 hour and 15 minutes."
+    assert instant_answer("Alfred, how long does it take to cycle twenty miles at ten miles per hour?", en) == "At 10 mph, 20 miles takes 2 hours."
+    assert instant_answer("if I drive 120 miles in 2 hours how fast am I going", en) == "That's 60 mph."
+    assert instant_answer("I ran 10k in 50 minutes, what's my average speed", en) == "That's 12 km/h."
+    assert instant_answer("what speed is 30 miles in 45 minutes", en) == "That's 40 mph."
+    assert instant_answer("how far can I drive in 3 hours at 60 mph", en) == "In 3 hours at 60 mph, you'd cover 180 miles."
+    assert instant_answer("what's my pace if I run 5k in 25 minutes", en) == "That's 5 minutes per km, or 8 minutes 3 seconds per mile."
+    assert instant_answer("what's 3 to the 4th", en) == "That's 81."
+    assert instant_answer("what's 9 to the power 2", en) == "That's 81."
+    assert instant_answer("how fast is a cheetah", en) is None  # facts go to Claude
+    assert instant_answer("how long does it take", en) is None
+
+
+def test_clock_in_another_zone_and_between_clocks_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    # Dubai, Tokyo and Delhi have no summer time, so these hold all year
+    assert instant_answer("if it's 3 pm in Dubai what time is it in Tokyo", en) == "When it's 3 pm in Dubai, it's 8 pm in Tokyo."
+    assert instant_answer("what's 9 pm Tokyo time in Dubai", en) == "When it's 9 pm in Tokyo, it's 4 pm in Dubai."
+    assert instant_answer("what's 10 am Dubai time in Delhi", en) == "When it's 10 am in Dubai, it's 11:30 am in Delhi."
+    assert instant_answer("when it's 11 pm in Dubai, what time is it in Tokyo?", en) == "When it's 11 pm in Dubai, it's 4 am the next day in Tokyo."
+    assert instant_answer("how many hours between 9 am and 5 pm", en) == "From 9 am to 5 pm is 8 hours."
+    assert instant_answer("how long is it from 9:30 to 17:15", en) == "From 9:30 am to 5:15 pm is 7 hours and 45 minutes."
+    assert instant_answer("how long from 10 pm to 6 am", en) == "From 10 pm to 6 am is 8 hours."
+    assert instant_answer("what's 5 pm in Narnia", en) is None  # unknown places go to Claude
+
+
+def test_days_between_dates_and_dates_from_dates_are_instant():
+    import time
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 9, 0, 0, 4, 289, 0))  # Friday the 16th of October 2026
+    ask = lambda q: instant_answer(q, en, now=now)
+    assert ask("how many days between the 1st of March and the 25th of December") == "From Sunday the 1st of March to Friday the 25th of December is 299 days."
+    assert ask("how many days from today to the 1st of January") == "From Friday the 16th of October to Friday the 1st of January 2027 is 77 days."
+    assert ask("how many weeks between 1 March and 1 June") == "That's 13 weeks and 1 day."
+    assert ask("how many nights from the 20th of December to the 2nd of January") == "From Sunday the 20th of December to Saturday the 2nd of January 2027 is 13 nights."
+    assert ask("what date is 6 weeks from the 1st of December") == "That's Tuesday the 12th of January 2027."
+    assert ask("what's 2 weeks before Christmas") == "That's Friday the 11th of December."
+    assert ask("what's 100 days from today") == "That's Sunday the 24th of January 2027."
+    assert ask("how many weekends until Christmas") == "There are 10 weekends before Friday the 25th of December."
+    assert ask("how many Fridays until the 1st of December") == "There are 6 Fridays before Tuesday the 1st of December."
+    assert ask("how old will I be in 2030 if I was born in 1990") == "You'll turn 40 in 2030."
+    assert ask("how many days between now and then") is None
+
+
+def test_vat_percentage_change_interest_and_pay_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's VAT on £100", en) == "VAT at 20% on £100 is £20, making £120."
+    assert instant_answer("add VAT to £120", en) == "£120 plus VAT is £144."
+    assert instant_answer("take VAT off £120", en) == "£120 with VAT is £100 before VAT, so the VAT is £20."
+    assert instant_answer("how much VAT is in £60", en) == "£60 with VAT is £50 before VAT, so the VAT is £10."
+    assert instant_answer("what's the percentage change from 50 to 75", en) == "From 50 to 75 is a 50% increase."
+    assert instant_answer("what's the percentage decrease from 80 to 60", en) == "From 80 to 60 is a 25% decrease."
+    assert instant_answer("what's the difference between 75 and 120", en) == "The difference is 45."
+    assert instant_answer("what's £500 plus 20%", en) == "£500 plus 20% is £600."
+    assert instant_answer("how much is 5% interest on £1000 for 3 years", en) == \
+        "After 3 years at 5% a year, £1,000 grows to £1,157.63, so £157.63 in interest (paid yearly)."
+    assert instant_answer("what is the hourly rate for £30000 a year", en) == "£30,000 a year is about £15.38 an hour, at 37.5 hours a week."
+    assert instant_answer("what's £12 an hour a year", en) == "£12 an hour is £23,400 a year, at 37.5 hours a week."
+    assert instant_answer("if I earn £12 an hour how much is 37.5 hours", en) == "37.5 hours at £12 an hour is £450."
+    assert instant_answer("what's 50 plus 10%", en) == "That's 55."  # a plain sum stays a sum
+    assert instant_answer("what's £120", en) is None
+
+
+def test_bmi_roast_times_and_recipe_scaling_are_instant():
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB")
+    assert instant_answer("what's my BMI if I'm 70 kg and 175 cm", en) == "That's a BMI of 22.9, which is in the healthy range (18.5 to 24.9)."
+    assert instant_answer("what's my BMI if I am 11 stone 7 pounds and 5 foot 9", en) == "That's a BMI of 23.8, which is in the healthy range (18.5 to 24.9)."
+    assert instant_answer("work out my BMI 90 kg 1.8 m", en) == "That's a BMI of 27.8, which is in the overweight range (25 to 29.9)."
+    assert instant_answer("how long do I roast a 1.5 kg chicken", en) == (
+        "Roast it for about 1 hour and 20 minutes at 190 C (170 fan, gas mark 5), until the juices run clear. "
+        "That's 20 minutes per 500 grams plus 20.")
+    assert instant_answer("how long should I roast a 1 kg beef joint", en).startswith("Roast it for about 1 hour and 5 minutes for medium")
+    assert instant_answer("double 250 g", en) == "That's 500 g."
+    assert instant_answer("halve 300 ml", en) == "That's 150 ml."
+    assert instant_answer("double 250", en) == "That's 500."
+    assert instant_answer("what's my BMI", en) is None  # needs your height and weight: Claude asks
+
+
+def test_fillers_and_stutters_mid_sentence_still_get_instant_answers():
+    import time
+    from brain import instant_answer, tidy_request
+    en = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 9, 0, 0, 4, 289, 0))
+    assert instant_answer("uh what's the uh time", en, now=now) == "It's 9:00 am."
+    assert instant_answer("what's what's the time", en, now=now) == "It's 9:00 am."
+    assert instant_answer("what is the the date", en, now=now) == "It's Friday the 16th of October."
+    assert instant_answer("what's twelve times, uh, seven", en) == "That's 84."
+    assert instant_answer("how many days until uh Christmas", en, now=now) == "70 days until Christmas, on Friday the 25th of December."
+    assert instant_answer("what time is it now then", en, now=now) == "It's 9:00 am."
+    assert tidy_request("um, could you tell me what's the, er, date please?") == "what's the date?"
+    assert instant_answer("spell aardvark", en) == "Aardvark: double A, R, D, V, A, R, K."  # letters inside a word are left alone
+
+
+def test_number_lists_factors_and_bases_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("what's the median of 3, 9, 1 and 4", s) == "The median is 3.5."
+    assert instant_answer("what's the sum of 4, 5 and 6", s) == "That adds up to 15."
+    assert instant_answer("add up 4, 5 and 6", s) == "That adds up to 15."
+    assert instant_answer("what's the biggest of 4, 9 and 2", s) == "The biggest is 9."
+    assert instant_answer("sort 5, 2, 9 from biggest to smallest", s) == "In order: 9, 5, 2."
+    assert instant_answer("what's the mode of 2, 3, 3, 5", s) == "The mode is 3, appearing twice."
+    assert instant_answer("what's the range of 2, 8, 5", s) == "The range is 6, from 2 to 8."
+    assert instant_answer("what are the factors of 12", s) == "The factors of 12 are 1, 2, 3, 4, 6 and 12."
+    assert instant_answer("what's the lowest common multiple of 4 and 6", s) == "The lowest common multiple is 12."
+    assert instant_answer("what's the highest common factor of 12 and 18", s) == "The highest common factor is 6."
+    assert instant_answer("convert hex ff to decimal", s) == "Hex FF is 255."
+    assert instant_answer("what's 1010 from binary", s) == "Binary 1010 is 10."
+    assert instant_answer("what's 255 in binary", s) == "255 in binary is 1 1 1 1 1 1 1 1."
+    assert instant_answer("what's the average of 3, 5 and 10", s) == "The average is 6."
+
+
+def test_sleep_cycle_times_are_instant():
+    import time
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 22, 0, 0, 4, 289, 0))
+    assert instant_answer("if I go to bed at 11 when should I wake up", s, now=now) == (
+        "Try waking at 8:15 am for six full sleep cycles, or 6:45 am for five. That allows 15 minutes to fall asleep.")
+    assert instant_answer("if I go to bed now what time should I wake up", s, now=now).startswith("Try waking at 7:15 am")
+    assert instant_answer("what time should I go to bed to wake up at 6:30", s, now=now) == (
+        "Go to bed at 9:15 pm for six full sleep cycles, or 10:45 pm for five. That allows 15 minutes to fall asleep.")
+
+
+def test_science_maths_billions_and_cup_weights_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("what's pi", s) == "Pi is about 3.14159."
+    assert instant_answer("what's sin 30", s) == "The sine of 30 degrees is 0.5."
+    assert instant_answer("what's tan 90", s) == "The tangent of 90 degrees is undefined."
+    assert instant_answer("what's log base 2 of 8", s) == "Log base 2 of 8 is 3."
+    assert instant_answer("what's the natural log of 10", s) == "The natural log of 10 is 2.3026."
+    assert instant_answer("what's 17 mod 5", s) == "That's 2."
+    assert instant_answer("what's 45 degrees in radians", s) == "45 degrees is 0.7854 radians."
+    assert instant_answer("what's 3 times pi", s) == "That's 9.4248."
+    assert instant_answer("what's 2 to the 10", s) == "That's 1,024."
+    assert instant_answer("what's one billion divided by 1000", s) == "That's 1,000,000."
+    assert instant_answer("how many zeros in a billion", s) == "A billion has 9 zeros: 1,000,000,000."
+    assert instant_answer("how many grams in a cup of flour", s) == "1 cup of flour is about 125 grams."
+    assert instant_answer("how many grams in half a cup of butter", s) == "Half a cup of butter is about 114 grams."
+    assert instant_answer("how many cups is 300 grams of flour", s) == "300 grams of flour is about 2 and a half cups."
+
+
+def test_money_sums_savings_and_years_are_instant():
+    import time
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 9, 0, 0, 4, 289, 0))
+    assert instant_answer("what's £3.50 times 4", s) == "That's £14."
+    assert instant_answer("how much is 3 pounds 50 times 4", s) == "That's £14."
+    assert instant_answer("what's 20% of £50", s) == "That's £10."
+    assert instant_answer("what's £12 plus £7.50", s) == "That's £19.50."
+    assert instant_answer("what's £60 split between 4", s) == "That's £15 each."
+    assert instant_answer("if I save £50 a week how much will I have in a year", s) == "That's £2,600 over a year."
+    assert instant_answer("how much is £10 a day for a month", s) == "That's £300 over a month."
+    assert instant_answer("how long will it take to save £1000 at £50 a week", s) == "20 weeks, about 4.6 months."
+    assert instant_answer("how long ago was 1990", s, now=now) == "1990 was 36 years ago."
+    assert instant_answer("what year will it be in 15 years", s, now=now) == "It'll be 2041."
+    assert instant_answer("what century is it", s, now=now) == "It's the 21st century."
+    assert instant_answer("what decade was 1985", s, now=now) == "That was the 1980s."
+    assert instant_answer("what's 50 plus 10%", s) == "That's 55."
+
+
+def test_spoken_clocks_bare_hours_days_and_journeys_are_instant():
+    import time
+    from brain import instant_answer, spoken_clocks
+    s = Settings(speech_lang="en-GB")
+    now = time.struct_time((2026, 10, 16, 9, 0, 0, 4, 289, 0))  # Friday, 9 am
+    assert spoken_clocks("how long till half past five") == "how long till 5:30"
+    assert spoken_clocks("meet at quarter to 1") == "meet at 12:45"
+    assert spoken_clocks("it's twenty five to 7") == "it's 6:35"
+    assert spoken_clocks("count from five to ten") == "count from five to ten"
+    assert spoken_clocks("set a timer for 10 to 15 minutes") == "set a timer for 10 to 15 minutes"
+    assert instant_answer("how long until 6", s, now=now) == "9 hours until 6 pm."
+    assert instant_answer("how many minutes until quarter past 10", s, now=now) == "1 hour and 15 minutes until 10:15 am."
+    assert instant_answer("what's quarter to 6 in 24 hour time", s) == "That's 05:45 in the morning, or 17:45 in the evening."
+    assert instant_answer("is it Friday", s, now=now) == "Yes, it's Friday."
+    assert instant_answer("is today Monday", s, now=now) == "No, it's Friday."
+    assert instant_answer("is it the evening", s, now=now) == "No, it's 9 am, so it's the morning."
+    assert instant_answer("what time do I need to leave to arrive at 9 if it takes 40 minutes", s, now=now) == "Leave by 8:20."
+    assert instant_answer("if I leave at half past 7 and it takes 20 minutes what time will I get there", s, now=now) == (
+        "You'll arrive at 7:50.")
+    assert instant_answer("count from five to ten", s, now=now) == "5, 6, 7, 8, 9, 10."
+
+
+def test_shopping_checks_weekday_and_later_reminders_are_instant(tmp_path):
+    import datetime as dt
+    import reminders
+    from brain import instant_answer
+    en = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    assert instant_answer("add bread to my shopping list", en) == "Added bread. 1 item on the list."
+    assert instant_answer("put bananas on the shopping list", en) == "Added bananas. 2 items on the list."
+    assert instant_answer("are bananas on the shopping list", en) == "Yes, bananas are on the list."
+    assert instant_answer("what's on my list", en) is None  # could be the to-do list: Claude decides
+    assert instant_answer("is milk on the shopping list", en) == "No, milk isn't on the list."
+    assert instant_answer("have I got bread on my shopping list", en) == "Yes, bread is on the list."
+    assert instant_answer("how many things on my shopping list", en) == "There are 2 items on the list."
+    assert instant_answer("clear the shopping list", en) is None  # emptying it stays with Claude
+    assert instant_answer("when is my next reminder", en) == "No reminders are set."
+    said = instant_answer("remind me on Friday at 9 am to pay rent", en)
+    assert said.startswith("I'll remind you ") and said.endswith("at 09:00: pay rent.")
+    said = instant_answer("remind me in 2 days to renew the car tax", en)
+    assert said.endswith(": renew the car tax.")
+    found = {r["text"]: reminders.parse_when(r["at"]) for r in reminders.load(en)}
+    assert found["pay rent"].weekday() == 4 and found["pay rent"].hour == 9
+    assert found["pay rent"] > dt.datetime.now() and found["pay rent"] - dt.datetime.now() <= dt.timedelta(days=7)
+    assert (found["renew the car tax"].date() - dt.date.today()).days == 2
+    assert instant_answer("what's my next reminder", en).startswith("Your next reminder is ")
+    assert instant_answer("remind me at 9 to call the bank", en) is None  # am or pm? Claude asks
+
+
+def test_quick_facts_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("how many sides has an octagon got", s) == "An octagon has 8 sides."
+    assert instant_answer("what's a baker's dozen", s) == "A baker's dozen is 13."
+    assert instant_answer("how many legs do spiders have", s) == "A spider has 8 legs."
+    assert instant_answer("how many letters are there in the alphabet", s) == "There are 26 letters in the alphabet."
+    assert instant_answer("how many weeks in a year", s) == "A year has 52 weeks and 1 day, or 2 days in a leap year."
+    assert instant_answer("what's the boiling point of water", s) == "Water boils at 100 degrees Celsius, 212 Fahrenheit, at sea level."
+    assert instant_answer("what's the plural of mouse", s) == "The plural of mouse is mice."
+    assert instant_answer("what's the capital of France", s) == "The capital of France is Paris."
+    assert instant_answer("what's the capital of the usa", s) == "The capital of the USA is Washington, D.C."
+    assert instant_answer("what's Australia's capital", s) == "The capital of Australia is Canberra."
+
+
+def test_opposites_and_other_words_are_instant():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("what's the opposite of hot", s) == "The opposite of hot is cold."
+    assert instant_answer("what is the opposite of short", s) == "The opposite of short is tall or long."
+    assert instant_answer("Alfred, what's an antonym for brave?", s) == "The opposite of brave is cowardly."
+    assert instant_answer("what's another word for happy", s) == "Another word for happy is glad, cheerful or delighted."
+    assert instant_answer("synonym for tired", s) == "Another word for tired is sleepy, worn out or exhausted."
+    assert instant_answer("what's a word that means angry", s) == "Another word for angry is cross, annoyed or furious."
+    assert instant_answer("what's the opposite of banana", s) is None
+
+
+def test_conversions_are_rounded_and_said_in_full():
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    assert instant_answer("how many pints in a litre", s) == "1 litre is about 1.76 pints."
+    assert instant_answer("how many grams in an ounce", s) == "1 ounce is about 28.3 grams."
+    assert instant_answer("what's 1 acre in square metres", s) == "1 acre is about 4,047 square metres."
+    assert instant_answer("what's 1 inch in cm", s) == "1 inch is 2.54 cm."
+    assert instant_answer("how many teaspoons in a tablespoon", s) == "1 tablespoon is 3 teaspoons."
+    assert instant_answer("what's 100 f in celsius", s) == "100 degrees Fahrenheit is about 37.8 degrees Celsius."
+    assert instant_answer("what's another word for banana", s) is None
+    assert instant_answer("what's the capital of Narnia", s) is None
+    assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."
+
+
 def test_unit_conversions_are_instant():
     from brain import instant_answer
     en = Settings(speech_lang="en-GB")
-    assert instant_answer("What's 10 miles in km?", en) == "10 miles is 16.0934 km."
-    assert instant_answer("how many grams in 3 ounces", en) == "3 oz is 85.0486 g."
+    assert instant_answer("What's 10 miles in km?", en) == "10 miles is about 16.1 km."
+    assert instant_answer("how many grams in 3 ounces", en) == "3 ounces is about 85 grams."
     assert instant_answer("Alfred, what is 20 degrees in Fahrenheit", en) == "20 degrees Celsius is 68 degrees Fahrenheit."
     assert instant_answer("how many feet in a mile", en) == "1 mile is 5,280 feet."
-    assert instant_answer("what is 75 kilos in stone", en) == "75 kg is 11.8105 stone."
+    assert instant_answer("what is 75 kilos in stone", en) == "75 kg is 11 stone 11 pounds."
     assert instant_answer("what is 3 cups in grams", en) is None  # needs the ingredient: Claude asks
     assert instant_answer("what is 10 pounds in euros", en) is None  # money goes to Claude
     assert instant_answer("how many people in London", en) is None

@@ -1490,7 +1490,9 @@ def test_scene_sound_fades_at_the_cuts_so_joins_never_click(tmp_path):
     samples = array.array("h", raw)
     loudest = max(abs(v) for v in samples[len(samples) // 3: 2 * len(samples) // 3])
     assert loudest > 3000
-    assert max(abs(v) for v in samples[-900:]) < loudest * 0.1  # faded right down at the cut, not chopped off
+    # faded right down at the cut, not chopped off; the window is the fade's own last 50 samples because newer ffmpeg
+    # builds (imageio-ffmpeg 0.8) drop the AAC encoder's padding, so the clip now ends exactly where the fade does
+    assert max(abs(v) for v in samples[-50:]) < loudest * 0.1
     assert max(abs(v) for v in samples[:100]) < loudest * 0.5  # and eased in at the start
 
 
@@ -1774,7 +1776,7 @@ def test_lore_scenes_get_a_third_shot_and_the_storyteller_voice(s, tmp_path, mon
     script = cv.parse_script(json.dumps({**json.loads(SCRIPT), "scenes": scenes}))
     lore = cs.load(s)["accounts"][0]
     asyncio.run(cv.make(None, None, s, lore, tmp_path, script=script))
-    assert [len(r) for r in rendered] == [3, 2]  # the picture changes every couple of seconds
+    assert sorted(len(r) for r in rendered) == [2, 3]  # the picture changes every couple of seconds; scenes render in parallel
     assert {size for _, size in asked} == {(cv.W, cv.H)} and len(asked) == 5
     assert voices == ["en-US-AndrewMultilingualNeural"] * 2
     rendered.clear()
@@ -2654,3 +2656,17 @@ def test_lore_rewinds_the_tape_after_the_flash_forward(s, tmp_path, monkeypatch)
                              capture_output=True, text=True).stderr
         return float(re.search(r"max_volume: (-?[\d.]+)", out).group(1))
     assert peak("tape") > -30 and peak("plain") < -60  # the tape whirr
+
+
+def test_video_making_is_never_hidden_behind_tool_search():
+    from dataclasses import replace
+
+    import brain
+    import tiktokstudio
+    import tools
+    from config import Settings
+
+    assert tiktokstudio in tools.ALWAYS_LOADED
+    loaded = {t["name"] for t in brain.request_options(replace(Settings(), model="claude-opus-5"))["tools"]
+              if "name" in t and not t.get("defer_loading")}
+    assert "tiktok_studio" in loaded

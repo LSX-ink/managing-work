@@ -1,0 +1,218 @@
+{
+ "name": "Hair In The City",
+ "short": "Hair In The City",
+ "kicker": "14 High Street · Glasgow's Merchant City",
+ "h1": [
+  "Award-winning",
+  "colour specialists.",
+  "Since 2013."
+ ],
+ "lead": "A Keune Gold Ambassador salon on Glasgow's oldest street, renowned for signature balayage, lived-in blondes, advanced colour rescues and the safest extensions.",
+ "colours": {
+  "bg": "#141313",
+  "panel": "#1d1b1b",
+  "ink": "#f4f1ef",
+  "muted": "#ada4a0",
+  "gold": "#9a6b55",
+  "second": "#e8d2c4",
+  "paper": "#f6efea",
+  "text": "#1b1717",
+  "soft": "#6e6460",
+  "rule": "#e3d6cf"
+ },
+ "motif": "classic",
+ "logo": "logo0.png",
+ "logo_light": true,
+ "hero": [
+  "g/00.jpg",
+  "g/05.jpg",
+  "g/04.jpg"
+ ],
+ "experience": {
+  "title": "Your hair's integrity comes first",
+  "text": "Our passionate, highly trained team listen and guide you through a thorough consultation, giving you an honest, professional opinion. Led by Salon Director Louise Wilson, a former professional colour educator with over 25 years in hairdressing.",
+  "photos": [
+   "s/01.jpg",
+   "g/04.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Cut & colour",
+   "items": [
+    [
+     "Consultation",
+     "from £20"
+    ],
+    [
+     "Cut & style",
+     "£23.50 – £50"
+    ],
+    [
+     "Balayage",
+     "£97.50 – £145"
+    ],
+    [
+     "Signature balayage & blend",
+     "from £110"
+    ],
+    [
+     "Foiling",
+     "£65 – £145"
+    ],
+    [
+     "Tinting & toning",
+     "£67.50 – £145"
+    ],
+    [
+     "Advanced colour correction",
+     "on consultation"
+    ]
+   ]
+  },
+  {
+   "group": "Treatments",
+   "items": [
+    [
+     "Keune hair treatments",
+     "from £67.50"
+    ],
+    [
+     "Keune permanent straightening",
+     "£200"
+    ],
+    [
+     "Keracalm smoothing",
+     "£10 – £140"
+    ]
+   ]
+  },
+  {
+   "group": "Extensions",
+   "items": [
+    [
+     "Remi Cachet flat bond extensions",
+     "from £250"
+    ],
+    [
+     "Tape extension refits",
+     "from £75"
+    ],
+    [
+     "Extension fitting only",
+     "from £75"
+    ]
+   ]
+  }
+ ],
+ "currency_note": "All prices are from and confirmed on consultation.",
+ "special": {
+  "kicker": "For everyone",
+  "title": "A private room, at no extra cost",
+  "text": "Our fully enclosed private hairdressing room gives a secure, female-only space for hijab-friendly appointments, or simply for anyone who'd like more privacy.",
+  "cta": "Book the private room"
+ },
+ "gallery": [
+  "g/04.jpg",
+  "g/09.jpg",
+  "g/07.jpg",
+  "g/08.jpg",
+  "g/03.jpg",
+  "s/00.jpg",
+  "s/01.jpg",
+  "g/05.jpg"
+ ],
+ "reviews": [
+  [
+   "I’ve been coming to Hair in the City for 10+ years and wouldn’t trust anyone else with my hair. The salon is professional and friendly.",
+   "Amanda Ramage"
+  ],
+  [
+   "I’ve been coming here regularly for highlights and always have such a great experience. Everyone at the salon is so welcoming and friendly, and Louise is absolutely amazing.",
+   "Emily Anderson"
+  ],
+  [
+   "It’s always such a pleasure coming to Hair in the City, but tonight was the first time I had the privilege of a restyle by Louise. I had a particular style in mind, and she absolutely nailed it.",
+   "Wendy Brown"
+  ],
+  [
+   "I've been going to Hair in the City for a long time now and I always leave feeling great. Louise and her team give honest advice about styles and also help advise how to style your hair at home (this involved teaching me how to blow dry my hair).",
+   "Heather Wallace"
+  ]
+ ],
+ "stats": [
+  [
+   "4.9",
+   "Google rating"
+  ],
+  [
+   "687",
+   "Google reviews"
+  ],
+  [
+   "25+",
+   "years' experience"
+  ],
+  [
+   "2013",
+   "established"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "10:00 AM – 4:00 PM"
+  ],
+  [
+   "Tuesday",
+   "10:00 AM – 4:00 PM"
+  ],
+  [
+   "Wednesday",
+   "10:00 AM – 6:00 PM"
+  ],
+  [
+   "Thursday",
+   "10:00 AM – 8:00 PM"
+  ],
+  [
+   "Friday",
+   "10:00 AM – 6:00 PM"
+  ],
+  [
+   "Saturday",
+   "9:00 AM – 5:00 PM"
+  ],
+  [
+   "Sunday",
+   "Closed"
+  ]
+ ],
+ "address": "14 High Street, Glasgow G1 1NL",
+ "phone": "0141 552 2848",
+ "loc": [
+  55.8569768,
+  -4.2431695
+ ],
+ "instagram": "hairinthecity",
+ "brand_text": false,
+ "layout": "editorial",
+ "fonts": "fashion",
+ "audit": {
+  "title": "What hairinthecity.co.uk is costing you, and what this fixes.",
+  "fixes": [
+   [
+    "Phone number isn't tap-to-call.",
+    "One tap to call you, on every page."
+   ],
+   [
+    "Heavy page.",
+    "Built light, so it opens in about a second on a phone."
+   ]
+  ],
+  "speed": [
+   59,
+   79
+  ]
+ }
+}

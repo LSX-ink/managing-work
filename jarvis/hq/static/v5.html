@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LSX HQ · Company OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #f4f2ee; --ink: #16140f; --orange: #ff5a1f; --muted: #8b857a; --line: #d9d4ca; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 500 13px/1.45 Inter, sans-serif; overflow: hidden; }
+#scene { position: fixed; right: 0; top: 0; width: 62vw; height: 100vh; }
+#tags { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.tag { position: absolute; display: flex; align-items: center; gap: 0; pointer-events: auto; cursor: pointer; transform: translate(0, -50%); }
+.tag .ln { width: 46px; height: 1px; background: var(--orange); position: relative; } .tag .ln::before { content: ""; position: absolute; left: -4px; top: -3.5px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+.tag .bx { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; box-shadow: 0 6px 18px rgba(0,0,0,.06); min-width: 150px; }
+.tag b { display: block; font: 700 11px "JetBrains Mono"; letter-spacing: .12em; text-transform: uppercase; }
+.tag small { color: var(--muted); font-size: 11.5px; }
+.tag.on .bx { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,90,31,.15); } .tag.on b { color: var(--orange); }
+.left { position: fixed; left: 48px; top: 40px; bottom: 36px; width: 36vw; display: flex; flex-direction: column; z-index: 3; }
+.kick { font: 700 12px "JetBrains Mono"; letter-spacing: .2em; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+.kick i { width: 9px; height: 9px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 4px rgba(255,90,31,.15); animation: p 1.6s infinite; }
+@keyframes p { 50% { box-shadow: 0 0 0 9px rgba(255,90,31,0); } }
+h1 { font: 400 clamp(46px, 5.6vw, 92px)/.92 "Archivo Black", sans-serif; letter-spacing: -.02em; margin: 26px 0 14px; }
+h1 em { font-style: normal; color: var(--orange); }
+.lede { color: #514c43; font-size: 16px; max-width: 520px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 24px 0 18px; max-width: 560px; }
+.stats div { background: #fff; padding: 12px 14px; } .stats b { display: block; font: 400 28px "Archivo Black"; } .stats span { font: 600 10.5px "JetBrains Mono"; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; min-height: 0; max-width: 560px; }
+.box { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.box h4 { margin: 0 0 8px; font: 700 10.5px "JetBrains Mono"; letter-spacing: .16em; color: var(--muted); display: flex; justify-content: space-between; }
+.box .sc { overflow: auto; min-height: 0; }
+.orders { white-space: pre-wrap; font-size: 12.5px; }
+.ev { font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f0ede7; animation: in .3s; } .ev b { color: var(--c); } .ev time { color: var(--muted); font: 500 10.5px "JetBrains Mono"; margin-right: 6px; }
+@keyframes in { from { opacity: 0; } }
+.top { position: fixed; top: 22px; right: 28px; z-index: 4; display: flex; gap: 10px; align-items: center; font: 600 12px "JetBrains Mono"; color: var(--muted); }
+.top .chip { border: 1px solid var(--ink); color: var(--ink); padding: 5px 10px; border-radius: 30px; } .top .chip.o { background: var(--orange); border-color: var(--orange); color: #fff; }
+</style>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+</head>
+<body>
+<div id="scene"></div><div id="tags"></div>
+<div class="top"><span class="chip o" id="div">KINETIC WEB DESIGNS</span><span class="chip">+ NEXT VENTURE</span><span id="clock">--:--</span></div>
+<div class="left">
+  <div class="kick"><i></i>LSX HQ · COMPANY OS · <span id="live">0 WORKING</span></div>
+  <h1>A company<br>run by <em>agents.</em></h1>
+  <div class="lede">Eight AI employees, one shared brain. They find the leads, write the messages, check the work, answer the DMs and keep the lights on, while you build.</div>
+  <div class="stats" id="stats"></div>
+  <div class="cols">
+    <div class="box"><h4>TODAY'S ORDERS <span>ATLAS</span></h4><div class="sc orders" id="orders"></div></div>
+    <div class="box"><h4>ACTIVITY <span id="evN"></span></h4><div class="sc" id="events"></div></div>
+  </div>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { state, on, start, esc, openAgent, numbers, fmtTime, working } from "/static/core.js";
+const $ = s => document.querySelector(s), host = $("#scene"), W = () => host.clientWidth, H = () => host.clientHeight;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(W(), H());
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+host.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), .04).texture;
+const aspect = W() / H(), V = 13; const camera = new THREE.OrthographicCamera(-V * aspect, V * aspect, V, -V, .1, 200);
+camera.position.set(26, 20, 30); camera.lookAt(0, 6.5, 0);
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(14, 30, 20); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -25, right: 25, top: 25, bottom: -25 }); scene.add(sun); scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d2c8, .7));
+const M = { white: new THREE.MeshStandardMaterial({ color: 0xf7f6f3, roughness: .85 }), wall: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .9 }),
+  floor: new THREE.MeshStandardMaterial({ color: 0xe9e4da, roughness: .8 }), desk: new THREE.MeshStandardMaterial({ color: 0xd8c3a0, roughness: .6 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: .6 }), skin: new THREE.MeshStandardMaterial({ color: 0xe9c09a, roughness: .8 }),
+  shirt: [0x30343f, 0x5b6d8a, 0xece8e1, 0x7a5a3c, 0x1f2937].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: .8 })), leaf: new THREE.MeshStandardMaterial({ color: 0x4b8b57, roughness: .9 }) };
+const B = new THREE.Group(); scene.add(B);
+const rooms = {}, RW = 7, RD = 6, FH = 3.2;
+const add = (geo, mat, x, y, z, parent) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; (parent || B).add(m); return m; };
+function build(agents) {
+  const floorsN = Math.ceil(agents.length / 2);
+  add(new THREE.BoxGeometry(RW * 2 + 1.4, .5, RD + 1.4), M.white, 0, -.25, 0);
+  for (let f = 0; f <= floorsN; f++) add(new THREE.BoxGeometry(RW * 2 + 1, .28, RD + 1), M.white, 0, f * FH, 0);
+  add(new THREE.BoxGeometry(RW * 2 + 1, floorsN * FH, .3), M.wall, 0, floorsN * FH / 2, -RD / 2 - .35);          // back wall
+  add(new THREE.BoxGeometry(.3, floorsN * FH, RD + 1), M.wall, -RW - .35, floorsN * FH / 2, 0);                    // left wall
+  for (let f = 0; f < floorsN; f++) add(new THREE.BoxGeometry(.18, FH - .28, RD), M.wall, 0, f * FH + FH / 2, 0); // middle wall
+  add(new THREE.BoxGeometry(4, 2.2, 3.6), M.white, -3, floorsN * FH + 1.25, -.6);                                  // rooftop box
+  const logo = add(new THREE.CircleGeometry(.9, 12), new THREE.MeshBasicMaterial({ color: 0xff5a1f }), -3, floorsN * FH + 1.3, 1.22); logo.castShadow = false;
+  agents.forEach((a, i) => {
+    const f = Math.floor(i / 2), side = i % 2 ? 1 : -1, cx = side * (RW / 2 + .1), y = f * FH + .14, g = new THREE.Group(); g.position.set(cx, y, 0); B.add(g);
+    add(new THREE.BoxGeometry(RW - .4, .04, RD - .2), M.floor, 0, .02, 0, g);
+    const screen = add(new THREE.BoxGeometry(2.2, 1.2, .06), new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0xff5a1f, emissiveIntensity: .1 }), side < 0 ? -.4 : .4, 1.9, -RD / 2 + .15, g);
+    const people = [];
+    for (let k = 0; k < 3; k++) { const x = -2 + k * 2, z = .4 + (k % 2) * .5;
+      add(new THREE.BoxGeometry(1.3, .07, .7), M.desk, x, .78, z, g);
+      add(new THREE.BoxGeometry(.6, .38, .04), new THREE.MeshStandardMaterial({ color: 0x0f0f12, emissive: new THREE.Color(a.colour), emissiveIntensity: .25 }), x, 1.06, z - .2, g);
+      const body = add(new THREE.CapsuleGeometry(.2, .4, 4, 8), M.shirt[(i + k) % M.shirt.length], x, .78, z + .55, g); const head = add(new THREE.SphereGeometry(.16, 14, 10), M.skin, x, 1.27, z + .55, g);
+      people.push([body, head]); }
+    add(new THREE.CylinderGeometry(.22, .18, .4, 10), M.white, RW / 2 - .6, .2, RD / 2 - .6, g); add(new THREE.IcosahedronGeometry(.42, 0), M.leaf, RW / 2 - .6, .75, RD / 2 - .6, g);
+    const accent = add(new THREE.BoxGeometry(RW - .4, .05, .05), new THREE.MeshBasicMaterial({ color: a.colour }), 0, .06, RD / 2 - .1, g);
+    const lamp = new THREE.PointLight(0xffb48a, 0, 7, 2); lamp.position.set(0, 2.4, .5); g.add(lamp);
+    rooms[a.key] = { g, screen, people, lamp, side, y };
+  });
+}
+const v = new THREE.Vector3();
+function tags() {
+  const rect = host.getBoundingClientRect(); let h = "";
+  state.agents.forEach(a => { const r = rooms[a.key]; if (!r) return; v.set(r.side * (RW + 1.2), r.y + 1.6, RD / 2).applyMatrix4(B.matrixWorld).project(camera);
+    let x = rect.left + (v.x + 1) / 2 * rect.width, y = (1 - v.y) / 2 * rect.height; if (r.side < 0) x -= 230;
+    const live = a.status === "working";
+    h += `<div class="tag ${live ? "on" : ""}" data-k="${a.key}" style="left:${x}px;top:${y}px;flex-direction:${r.side < 0 ? "row-reverse" : "row"}"><div class="ln"></div><div class="bx"><b>${a.emoji} ${esc(a.title)}</b><small>${esc(live ? "working now…" : (a.last ? a.last.result : a.job)).slice(0, 42)}</small></div></div>`; });
+  $("#tags").innerHTML = h; $("#tags").querySelectorAll(".tag").forEach(e => e.onclick = () => openAgent(e.dataset.k));
+}
+let built = false, lastT = 0;
+function loop(t) {
+  B.rotation.y = Math.sin(t / 12000) * .12;
+  state.agents.forEach(a => { const r = rooms[a.key]; if (!r) return; const live = a.status === "working";
+    r.screen.material.emissiveIntensity = live ? 1.6 + Math.sin(t / 150) * .5 : .1; r.lamp.intensity = live ? 8 : 0;
+    r.people.forEach(([b, hd], k) => { const d = live ? Math.abs(Math.sin(t / 170 + k)) * .05 : 0; b.position.y = .78 + d; hd.position.y = 1.27 + d; }); });
+  renderer.render(scene, camera);
+  if (t - lastT > 120) { lastT = t; tags(); }
+  requestAnimationFrame(loop);
+}
+addEventListener("resize", () => { const a = W() / H(); Object.assign(camera, { left: -V * a, right: V * a }); camera.updateProjectionMatrix(); renderer.setSize(W(), H()); });
+on("state", s => {
+  if (!built && s.agents.length) { build(s.agents); built = true; requestAnimationFrame(loop); }
+  $("#clock").textContent = s.time; $("#live").textContent = `${working()} WORKING`; $("#div").textContent = ((s.divisions || [])[0] || "Kinetic Web Designs").toUpperCase();
+  const n = numbers();
+  $("#stats").innerHTML = [["Leads found", n.leads], ["Emails today", `${n.sent}/${n.cap}`], ["Replies", n.replies], ["Contacted", n.contacted], ["Won", n.won], ["IG answered", n.ig]].map(([k, x]) => `<div><b>${x}</b><span>${k}</span></div>`).join("");
+  $("#orders").textContent = s.brain.priorities || "Atlas sets the orders at 07:55.";
+});
+on("events", list => { const box = $("#events");
+  list.forEach(e => box.insertAdjacentHTML("afterbegin", `<div class="ev" style="--c:${state.colours[e.agent] || "#888"}"><time>${fmtTime(e.ts).slice(0, 5)}</time><b>${esc(state.names[e.agent] || e.agent)}</b> ${esc(e.text)}</div>`));
+  while (box.children.length > 60) box.lastChild.remove(); $("#evN").textContent = box.children.length; });
+start();
+</script>
+</body>
+</html>

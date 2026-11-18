@@ -256,6 +256,6 @@ def test_songs(s, tmp_path):
     assert sections(out)[-1] == {"type": "text", "title": "Coda", "text": "Home at last"}
     out = helper(s, action="song_show", piece="night drive")
     assert out.startswith("Night Drive:\nChorus:\nWindows down")
-    text = (tmp_path / "Writing" / "Songs" / "Night Drive.md").read_text()
+    text = (tmp_path / "Writing" / "Songs" / "Night Drive.md").read_text(encoding="utf-8")
     assert "Structure: Verse 1 → Chorus → Verse 2 → Chorus → Bridge → Chorus → Coda" in text
     assert "8 words" in proj(s, action="outline", project="songs")

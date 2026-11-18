@@ -1,0 +1,176 @@
+{
+ "name": "Fade Barber",
+ "short": "Fade Barber",
+ "kicker": "389 Humberstone Road · Leicester",
+ "h1": [
+  "Clean fades.",
+  "Sharp lines.",
+  "Every time."
+ ],
+ "lead": "Skin fades with precision and attention to detail, friendly barbers and a great atmosphere. Walk in on Humberstone Road, seven days a week.",
+ "colours": {
+  "bg": "#0b0b0b",
+  "panel": "#141311",
+  "ink": "#f2efe8",
+  "muted": "#9d988d",
+  "gold": "#cba557",
+  "second": "#e8e2d4"
+ },
+ "motif": "classic",
+ "logo": "",
+ "hero": [
+  "g/05.jpg",
+  "g/09.jpg",
+  "g/03.jpg",
+  "g/06.jpg"
+ ],
+ "experience": {
+  "title": "Finding a new barber is never easy",
+  "text": "That's what our customers say before they find us. Our barbers take their time, even at closing, and deliver skin fades that are super clean, sharp and exactly what you asked for. Parents trust us with their kids too.",
+  "photos": [
+   "g/09.jpg",
+   "g/08.jpg"
+  ]
+ },
+ "services": [
+  {
+   "group": "Cuts",
+   "items": [
+    [
+     "Skin fades",
+     ""
+    ],
+    [
+     "Tapers & classic cuts",
+     ""
+    ],
+    [
+     "Kids' cuts",
+     ""
+    ]
+   ]
+  },
+  {
+   "group": "Extras",
+   "items": [
+    [
+     "Face masks",
+     ""
+    ],
+    [
+     "Line-ups",
+     ""
+    ]
+   ]
+  }
+ ],
+ "currency_note": "Walk-ins welcome. Ask in store for today's prices.",
+ "special": null,
+ "gallery": [
+  "g/09.jpg",
+  "g/08.jpg",
+  "g/01.jpg",
+  "g/07.jpg",
+  "g/02.jpg",
+  "g/04.jpg",
+  "g/06.jpg",
+  "g/03.jpg"
+ ],
+ "reviews": [
+  [
+   "I highly recommend Sarhang at Fade Barbers. He consistently delivers excellent skin fades with great precision and attention to detail.",
+   "Tymer"
+  ],
+  [
+   "Best barbers! After trying several other barbers for my son I was recommended Fade barbers. And it was the best recommendation.",
+   "kiren Johal"
+  ],
+  [
+   "Got a skin fade done and it was absolutely on point. Super clean, sharp, and exactly what I asked for.",
+   "Mandeep Singh"
+  ],
+  [
+   "Finding a new barber is never easy. My old barber had been cutting my hair for years and after he moved away, I was honestly worried about trying someone new.",
+   "LMA"
+  ]
+ ],
+ "stats": [
+  [
+   "5.0",
+   "Google rating"
+  ],
+  [
+   "726",
+   "Google reviews"
+  ],
+  [
+   "7",
+   "days a week"
+  ],
+  [
+   "9am",
+   "doors open"
+  ]
+ ],
+ "hours": [
+  [
+   "Monday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Tuesday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Wednesday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Thursday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Friday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Saturday",
+   "9:00 AM – 7:00 PM"
+  ],
+  [
+   "Sunday",
+   "10:00 AM – 5:00 PM"
+  ]
+ ],
+ "address": "389 Humberstone Road, Leicester LE5 3DF",
+ "phone": "07763 636398",
+ "loc": [
+  52.6420413,
+  -1.1053513
+ ],
+ "instagram": "fade.barberlc_",
+ "layout": "cinema",
+ "fonts": "cinema",
+ "audit": {
+  "title": "What a website would change for you.",
+  "fixes": [
+   [
+    "When people Google you, there's no website to land on.",
+    "A home page that shows your work, prices and reviews."
+   ],
+   [
+    "Customers have to message or call to ask the basics.",
+    "Hours, services and directions answered before they ask."
+   ],
+   [
+    "New customers can only judge you by a map pin.",
+    "Your photos and your Google rating front and centre."
+   ],
+   [
+    "No easy way to book.",
+    "One tap to call or book, from any phone."
+   ]
+  ],
+  "speed": null
+ }
+}
