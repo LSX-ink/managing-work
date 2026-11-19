@@ -1622,7 +1622,7 @@ _TOMORROW = re.compile(_NAME + r"(?:what(?:'s| is) (?:the date |the day )?tomorr
 
 
 _DATE_IN = re.compile(_NAME + r"(?:what(?:'s| is| will be) the (?:date|day)|what date (?:is it|will it be)|what day (?:is it|will it be)) "
-                      r"(?:in (?P<n>\d+|a|an) (?P<unit>days?|weeks?)(?: time)?|(?P<n2>\d+|a|an) (?P<unit2>days?|weeks?) (?:from (?:now|today)|today))" + _END, re.I)
+                      r"(?:in (?P<n>\d+|a|an) (?P<unit>days?|weeks?|fortnights?)(?: time)?|(?P<n2>\d+|a|an) (?P<unit2>days?|weeks?|fortnights?) (?:from (?:now|today)|today))" + _END, re.I)
 _MONTH_NAMES = ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
                 "november", "december")
 _MONTH = r"(?P<mon>" + "|".join(_MONTH_NAMES) + r"|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec)"
@@ -1753,12 +1753,35 @@ def _calendar_facts(said: str, today: dt.date) -> str | None:
     return None
 
 
+_DAYS_OLD = re.compile(_NAME + r"how many (?P<unit>days|weeks|months) old (?:am I|is someone|is somebody|would I be|is a person)"
+                       r"(?: if (?:I was|I'm|they were|they're|he was|she was))? born (?:on )?(?:the )?"
+                       r"(?:(?P<d>\d{1,2})(?:st|nd|rd|th)? (?:of )?" + _MONTH + r"|" + _MONTH.replace("mon>", "mon2>")
+                       + r" (?:the )?(?P<d2>\d{1,2})(?:st|nd|rd|th)?),? (?P<y>\d{4})" + _END, re.I)
+
+
 def _date_maths(said: str, today: dt.date) -> str | None:
     """'What's the date in 2 weeks?' and 'what day is the 25th of December?': worked out from the calendar on the spot."""
     said = spoken_numbers(said)
+    if m := _DAYS_OLD.match(said):
+        word = (m.group("mon") or m.group("mon2")).lower()
+        month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+        try:
+            born = dt.date(int(m.group("y")), month, int(m.group("d") or m.group("d2")))
+        except ValueError:
+            return None
+        if born > today:
+            return None
+        days = (today - born).days
+        unit = m.group("unit").lower()
+        if unit == "weeks":
+            return f"{days // 7:,} weeks old, that's {days:,} days."
+        if unit == "months":
+            months = (today.year - born.year) * 12 + today.month - born.month - (today.day < born.day)
+            return f"{months:,} months old."
+        return f"{days:,} days old."
     if m := _DATE_IN.match(said):
         n, unit = (m.group("n"), m.group("unit")) if m.group("n") else (m.group("n2"), m.group("unit2"))
-        days = (1 if not n.isdigit() else int(n)) * (7 if unit.lower().startswith("w") else 1)
+        days = (1 if not n.isdigit() else int(n)) * {"w": 7, "f": 14}.get(unit.lower()[0], 1)
         if days > 36500:
             return None
         t = today + dt.timedelta(days=days)
@@ -1788,13 +1811,15 @@ def _date_maths(said: str, today: dt.date) -> str | None:
     return f"The {_ordinal(t.day)} of {t:%B}{f' {t.year}' if m.group('y') or t.year != today.year else ''} {verb} a {t:%A}."
 
 
-_UNTIL_CLOCK = re.compile(_NAME + r"(?:how long (?:is it |have I got |do I have )?|how many (?:minutes|hours) (?:is it |have I got |do I have )?|"
-                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r"|(?P<word>midnight|midday|noon)|(?P<bh>1[0-2]|[1-9])(?::(?P<bm>[0-5]\d))?)" + _END, re.I)
+_UNTIL_CLOCK = re.compile(_NAME + r"(?:how long (?:is it |have I got |do I have )?|how many (?P<unit>minutes|hours|seconds|mins|secs) (?:is it |are there |are left |have I got |do I have )?|"
+                          r"how much time (?:is there |have I got |do I have |is left )?)(?:until|till|til|to|before) (?:" + _CLOCK + r"|(?P<word>midnight|midday|noon|tomorrow)|(?P<bh>1[0-2]|[1-9])(?::(?P<bm>[0-5]\d))?)" + _END, re.I)
 _TIME_IN = re.compile(_NAME + r"(?:what time will it be|what(?:'s| is| will be) the time|what time is it) in " + _AMOUNT
                       + r" (minutes?|mins?|hours?|hrs?)(?: time)?" + _END, re.I)
 
 
 def _say_clock(hour: int, minute: int) -> str:
+    if minute == 0 and hour in (0, 12):
+        return "midnight" if hour == 0 else "midday"  # clearer than "12 am" or "12 pm"
     return f"{hour % 12 or 12}{f':{minute:02d}' if minute else ''} {'am' if hour < 12 else 'pm'}"
 
 
@@ -2072,7 +2097,7 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
     if not (m := _UNTIL_CLOCK.match(said)):
         return None
     if m.group("word"):
-        hour, minute = (0 if m.group("word").lower() == "midnight" else 12), 0
+        hour, minute = (0 if m.group("word").lower() in ("midnight", "tomorrow") else 12), 0
     elif m.group("bh"):  # a bare '6' or '5:30' means whichever comes next, am or pm
         minute = int(m.group("bm") or 0)
         hour = min((h for h in (int(m.group("bh")) % 12, int(m.group("bh")) % 12 + 12)),
@@ -2087,9 +2112,16 @@ def _clock_maths(said: str, now: time.struct_time) -> str | None:
     target = here.replace(hour=hour, minute=minute)
     if target <= here:
         target += dt.timedelta(days=1)
-    hours, minutes = divmod(int((target - here).total_seconds() // 60), 60)
+    total = int((target - here).total_seconds() // 60)
+    hours, minutes = divmod(total, 60)
     parts = [f"{n} {unit}{'s' if n != 1 else ''}" for n, unit in ((hours, "hour"), (minutes, "minute")) if n]
-    return f"{' and '.join(parts)} until {m.group('word').lower() if m.group('word') else _say_clock(hour, minute)}."
+    until = m.group("word").lower().replace("tomorrow", "midnight") if m.group("word") else _say_clock(hour, minute)
+    asked = (m.group("unit") or "").lower()
+    if asked.startswith("m") and hours:  # "how many minutes until 3 pm?": the minutes first
+        return f"{total:,} minutes until {until}, that's {' and '.join(parts)}."
+    if asked.startswith("s"):
+        return f"About {total * 60:,} seconds until {until}, that's {' and '.join(parts)}."
+    return f"{' and '.join(parts)} until {until}."
 
 
 _WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -2167,7 +2199,7 @@ def _date_at(p: str) -> str:
 
 _DATES_BETWEEN = re.compile(_NAME + r"how many (?P<unit>days|weeks|nights)(?: are there| is it| is that)? (?:between|from) " + _date_at("a")
                             + r" (?:and|to|until|till) " + _date_at("b") + _END, re.I)
-_DATE_FROM = re.compile(_NAME + r"(?:what(?:'s| is)(?: the date)?|what date is|what day is|when is) (?P<n>\d+|a|an) (?P<unit>days?|weeks?) "
+_DATE_FROM = re.compile(_NAME + r"(?:what(?:'s| is)(?: the date)?|what date is|what day is|when is) (?P<n>\d+|a|an) (?P<unit>days?|weeks?|fortnights?) "
                         r"(?P<way>from|after|before) " + _date_at("a") + _END, re.I)
 _WEEKENDS_UNTIL = re.compile(_NAME + r"how many (?P<unit>weekends|saturdays|sundays|mondays|tuesdays|wednesdays|thursdays|fridays)"
                              r"(?: are there| are left| have I got| is it)? (?:until|till|before) " + _date_at("a") + _END, re.I)
@@ -2221,7 +2253,7 @@ def _date_spans(said: str, today: dt.date) -> str | None:
         if not found:
             return None
         n = 1 if not m.group("n").isdigit() else int(m.group("n"))
-        days = n * (7 if m.group("unit").lower().startswith("w") else 1) * (-1 if m.group("way").lower() == "before" else 1)
+        days = n * {"w": 7, "f": 14}.get(m.group("unit").lower()[0], 1) * (-1 if m.group("way").lower() == "before" else 1)
         if abs(days) > 36500:
             return None
         return f"That's {_long_date(found[0] + dt.timedelta(days=days), today)}."
