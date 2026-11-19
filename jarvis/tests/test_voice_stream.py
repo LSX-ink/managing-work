@@ -709,7 +709,7 @@ def test_times_before_and_after_and_adding_durations_are_instant():
     assert instant_answer("what's 2 hours 30 minutes plus 45 minutes", s, now) == "That's 3 hours and 15 minutes."
     assert instant_answer("what's 2 hours minus 45 minutes", s, now) == "That's 1 hour and 15 minutes."
     assert instant_answer("what's 1 hour 20 in minutes", s, now) == "That's 80 minutes."
-    assert instant_answer("what time will it be in 3 hours", s, now) == "It'll be 12 pm."
+    assert instant_answer("what time will it be in 3 hours", s, now) == "It'll be midday."
 
 
 def test_numbers_in_words_comparisons_and_millions_are_instant():
@@ -924,7 +924,7 @@ def test_spoken_clocks_bare_hours_days_and_journeys_are_instant():
     assert spoken_clocks("count from five to ten") == "count from five to ten"
     assert spoken_clocks("set a timer for 10 to 15 minutes") == "set a timer for 10 to 15 minutes"
     assert instant_answer("how long until 6", s, now=now) == "9 hours until 6 pm."
-    assert instant_answer("how many minutes until quarter past 10", s, now=now) == "1 hour and 15 minutes until 10:15 am."
+    assert instant_answer("how many minutes until quarter past 10", s, now=now) == "75 minutes until 10:15 am, that's 1 hour and 15 minutes."
     assert instant_answer("what's quarter to 6 in 24 hour time", s) == "That's 05:45 in the morning, or 17:45 in the evening."
     assert instant_answer("is it Friday", s, now=now) == "Yes, it's Friday."
     assert instant_answer("is today Monday", s, now=now) == "No, it's Friday."
@@ -1009,6 +1009,21 @@ def test_more_spoken_sums_are_instant():
     assert instant_answer("what's 100 minus 15 percent", s) == "That's 85."
     assert instant_answer("what's 6 lots of 7", s) == "That's 42."
     assert instant_answer("what's 4 times ( 2", s) is None  # a sum he can't read goes to Claude
+
+
+def test_minutes_until_days_old_and_fortnights():
+    import datetime as dt
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB")
+    now = dt.datetime(2026, 10, 16, 9, 0).timetuple()
+    assert instant_answer("how many minutes until 3 pm", s, now) == "360 minutes until 3 pm, that's 6 hours."
+    assert instant_answer("how many hours until tomorrow", s, now) == "15 hours until midnight."
+    assert instant_answer("how long until 3 pm", s, now) == "6 hours until 3 pm."
+    assert instant_answer("what's a fortnight from today", s, now) == "That's Friday the 30th of October."
+    assert instant_answer("what's the date in a fortnight", s, now) == "It'll be Friday the 30th of October."
+    assert instant_answer("how many days old am I if I was born on 1 May 1990", s, now) == "13,317 days old."
+    assert instant_answer("how many weeks old is someone born on the 3rd of March 2026", s, now) == "32 weeks old, that's 227 days."
+    assert instant_answer("what's 2 hours after 10 pm", s, now) == "That's midnight the next day."
     assert instant_answer("what's another word for banana", s) is None
     assert instant_answer("what's the capital of Narnia", s) is None
     assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."
