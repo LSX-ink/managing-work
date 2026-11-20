@@ -1024,6 +1024,34 @@ def test_minutes_until_days_old_and_fortnights():
     assert instant_answer("how many days old am I if I was born on 1 May 1990", s, now) == "13,317 days old."
     assert instant_answer("how many weeks old is someone born on the 3rd of March 2026", s, now) == "32 weeks old, that's 227 days."
     assert instant_answer("what's 2 hours after 10 pm", s, now) == "That's midnight the next day."
+
+
+def test_named_timers_hours_and_minutes_and_times_tables():
+    import asyncio
+    from brain import instant_answer
+    import timers
+    s = Settings(speech_lang="en-GB")
+
+    async def run():
+        timers.timers.clear()
+        try:
+            assert instant_answer("set a pasta timer for 10 minutes", s) == "The pasta timer is set for 10 minutes."
+            assert instant_answer("set a timer for 5 minutes called eggs", s) == "The eggs timer is set for 5 minutes."
+            assert instant_answer("how long left on the pasta timer", s) == "10 minutes left on the pasta timer."
+            assert instant_answer("add 5 minutes to the pasta timer", s) == "The pasta timer now has 15 minutes left."
+            assert instant_answer("take 2 minutes off the eggs timer", s) == "The eggs timer now has 3 minutes left."
+            assert instant_answer("how many timers do I have", s).startswith("2 timers are running.")
+            assert instant_answer("cancel the eggs timer", s) == "Cancelled the eggs timer."
+        finally:
+            for t in list(timers.timers.values()):
+                t.task and t.task.cancel()
+            timers.timers.clear()
+    asyncio.run(run())
+    assert instant_answer("what's 200 minutes in hours", s) == "200 minutes is 3 hours and 20 minutes."
+    assert instant_answer("how long is 100 minutes", s) == "100 minutes is 1 hour and 40 minutes."
+    assert instant_answer("what's 2.75 hours in hours and minutes", s) == "2.75 hours is 2 hours and 45 minutes."
+    assert instant_answer("what's 0.75 of an hour", s) == "That's 45 minutes."
+    assert instant_answer("what's 7 eights", s) == "7 eights are 56."
     assert instant_answer("what's another word for banana", s) is None
     assert instant_answer("what's the capital of Narnia", s) is None
     assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."
