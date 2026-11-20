@@ -101,7 +101,7 @@ def test_laundry(s):
         return out
 
     shown = asyncio.run(go())
-    assert str(shown) == "The laundry timer set for 45 minutes."
+    assert str(shown) == "The laundry timer is set for 45 minutes."
     assert shown.card["kind"] == "timer" and shown.card["ends_at"] > 0
 
 

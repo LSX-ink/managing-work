@@ -395,6 +395,16 @@ _SET_TIMER = re.compile(_NAME + r"(?:(?:can you |please )?(?:set|start) (?:a |th
 _CHECK_TIMER = re.compile(_NAME + r"(?:how long(?: is)? left(?: on (?:the|my) timers?)?|how(?:'s| is) (?:the|my) timer"
                           r"(?: doing)?|check (?:the |my )?timers?|time left on (?:the|my) timer)" + _END, re.I)
 _CANCEL_TIMER = re.compile(_NAME + r"(?:cancel|stop|clear) (?:the |my )?timer" + _END, re.I)
+_LABEL = r"(?P<label>[a-z][a-z ]{0,30}?)"
+_SET_NAMED_TIMER = re.compile(_NAME + r"(?:(?:set|start) )?(?:a |an |the )?(?:" + _LABEL + r" timer (?:for )?" + _AMOUNT + " " + _UNIT
+                              + r"|timer (?:for )?" + _AMOUNT.replace("(", "(?P<n2>", 1) + " " + _UNIT.replace("(", "(?P<u2>", 1)
+                              + r" (?:called |named |for (?:the |my )?)" + _LABEL.replace("<label>", "<label2>") + r")" + _END, re.I)
+_CANCEL_NAMED_TIMER = re.compile(_NAME + r"(?:cancel|stop|clear) (?:the |my )?" + _LABEL + r" timer" + _END, re.I)
+_CHECK_NAMED_TIMER = re.compile(_NAME + r"(?:how long(?: is)? left on (?:the |my )?" + _LABEL + r" timer|how(?:'s| is) (?:the |my )?"
+                                + _LABEL.replace("<label>", "<label2>") + r" timer(?: doing)?)" + _END, re.I)
+_ADD_TIMER = re.compile(_NAME + r"(?P<way>add|put|take|knock) (?:another )?" + _AMOUNT + " " + _UNIT + r" (?:on|onto|to|off|from) (?:the |my )?"
+                        + r"(?:" + _LABEL + r" )?timer" + _END, re.I)
+_TIMER_COUNT = re.compile(_NAME + r"(?:how many timers (?:do I have|are (?:there )?(?:running|on|set|going))(?: running)?|what timers (?:do I have|are (?:running|on|set))(?: running)?)" + _END, re.I)
 
 
 _LATER = _AMOUNT + r" (minutes?|mins?|hours?|hrs?)"
@@ -1488,6 +1498,40 @@ def _gas_mark(said: str) -> str | None:
     return None
 
 
+_TIMES_TABLE = {"ones": 1, "twos": 2, "threes": 3, "fours": 4, "fives": 5, "sixes": 6, "sevens": 7, "eights": 8, "nines": 9, "tens": 10,
+                "elevens": 11, "twelves": 12}
+_TIMES_SAID = re.compile(_NAME + r"(?:what(?:'s| is| are)|how much is|how much are) (?P<n>\d{1,3}) (?P<t>" + "|".join(_TIMES_TABLE) + r")" + _END, re.I)
+_HOURS_MINUTES = re.compile(_NAME + r"(?:(?:what(?:'s| is)|convert|how long is|how many hours is) (?P<n>\d+(?:\.\d+)?) (?P<u>minutes?|mins?|hours?|hrs?)"
+                            r"(?: (?:in|to|into|as) (?P<to>hours and minutes|hours|hours and mins))?"
+                            r"|what(?:'s| is) (?P<f>\d*\.\d+|a quarter|half|three quarters) (?:of )?an hour(?: in minutes)?)" + _END, re.I)
+
+
+def _hours_minutes(said: str) -> str | None:
+    """'What's 200 minutes in hours?' (3 hours and 20 minutes), 'what's 2.75 hours in hours and minutes?', 'how long is 100 minutes?',
+    'what's 7 eights?' (56)."""
+    said = spoken_numbers(said)
+    if m := _TIMES_SAID.match(said):
+        a, b = int(m.group("n")), _TIMES_TABLE[m.group("t").lower()]
+        return f"{a} {m.group('t').lower()} are {a * b}."
+    if not (m := _HOURS_MINUTES.match(said)):
+        return None
+    if m.group("f"):
+        minutes = round(60 * {"a quarter": 0.25, "half": 0.5, "three quarters": 0.75}.get(m.group("f").lower(), 0) or 60 * float(m.group("f")))
+        return f"That's {minutes} minutes."
+    n, unit, to = float(m.group("n")), m.group("u").lower(), (m.group("to") or "").lower()
+    asked_how_long = "how long" in m.group(0).lower() or "how many hours" in m.group(0).lower()
+    if unit.startswith("h") and not to.startswith("hours and"):
+        return None  # "what's 2 hours?" or "2 hours in hours": nothing to do
+    if unit.startswith("m") and not to and not asked_how_long:
+        return None  # "what's 90 minutes?": not a conversion
+    total = round(n * 60) if unit.startswith("h") else round(n)
+    if total < 60 and unit.startswith("m"):
+        return None
+    hours, minutes = divmod(total, 60)
+    parts = [f"{v} {w}{'s' if v != 1 else ''}" for v, w in ((hours, "hour"), (minutes, "minute")) if v]
+    said_n = f"{n:g}"
+    return f"{said_n} {'hour' if unit.startswith('h') and n == 1 else 'hours' if unit.startswith('h') else 'minutes'} is {' and '.join(parts) or '0 minutes'}."
+
 def _units_answer(said: str) -> str | None:
     """'What's 10 miles in km?', 'how many grams in 3 ounces', '20 degrees in Fahrenheit': converted on the spot."""
     said = spoken_numbers(said)
@@ -2499,7 +2543,30 @@ def _timer_answer(said: str, settings: Settings) -> str | None:
         return timers.list_timers()
     if _CANCEL_TIMER.match(said):
         return timers.cancel_timer()
+    if m := _TIMER_COUNT.match(said):
+        n = len(timers.timers)
+        return "No timers are running." if not n else f"1 timer is running. {timers.list_timers()}" if n == 1 \
+            else f"{n} timers are running. {timers.list_timers()}"
+    if m := _ADD_TIMER.match(said):
+        amount = [g for g in m.groups()[1:3]]
+        seconds = _seconds(amount[0], amount[1])
+        return timers.add_time(settings, -seconds if m.group("way").lower() in ("take", "knock") else seconds, m.group("label") or "")
+    if (m := _CANCEL_NAMED_TIMER.match(said)) and m.group("label").lower() not in _NOT_LABELS:
+        return timers.cancel_timer(m.group("label"))
+    if (m := _CHECK_NAMED_TIMER.match(said)) and (label := (m.group("label") or m.group("label2")).lower()) not in _NOT_LABELS:
+        timer = timers.timers.get(label)
+        return (f"{timers.spoken(timer.ends - time.monotonic())} left on the {timer.label} timer." if timer
+                else f"There's no {label} timer. {timers.list_timers()}")
+    if (m := _SET_NAMED_TIMER.match(said)) and (label := (m.group("label") or m.group("label2"))).lower() not in _NOT_LABELS:
+        n, unit = (m.group(2), m.group(3)) if m.group("label") else (m.group("n2"), m.group("u2"))
+        try:
+            return timers.set_timer(settings, _seconds(n, unit), label)
+        except ValueError as exc:
+            return str(exc)
     return None
+
+
+_NOT_LABELS = {"a", "an", "the", "my", "new", "another", "this", "that"}
 
 
 def _ordinal(n: int) -> str:
@@ -2849,7 +2916,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return found
     return (_timer_answer(said, settings) or _reminder_answer(said, settings) or _more_reminders(said, settings)
             or _shopping_answer(said, settings) or _money_answer(said) or _cash_sums(said) or _money_more(said) or _maths_answer(said) or _number_facts(said) or _more_maths(said) or _number_lists(said) or _science_maths(said) or _cup_weights(said) or _fraction_answer(said) or _bigger_numbers(said)
-            or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _quick_facts(said) or _word_meanings(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
+            or _journey_answer(said) or _kitchen_answer(said) or _height_weight(said) or _gas_mark(said) or _quick_facts(said) or _word_meanings(said) or _hours_minutes(said) or _units_answer(said) or _fun_answer(said) or _spelling_answer(said)
             or _alphabet_answer(said) or _word_answer(said))
 
 

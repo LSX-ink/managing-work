@@ -62,8 +62,7 @@ def set_timer(settings: Settings, seconds: float, label: str = "") -> str:
     timer = Timer(label, time.monotonic() + seconds)
     timer.task = asyncio.get_running_loop().create_task(_ring(settings, timer))
     timers[label.lower()] = timer
-    what = "Timer" if label == "timer" else f"The {label} timer"
-    return f"{what} set for {spoken(seconds)}."
+    return "Timer set for " + spoken(seconds) + "." if label == "timer" else f"The {label} timer is set for {spoken(seconds)}."
 
 
 def list_timers() -> str:
@@ -87,6 +86,26 @@ def cancel_timer(label: str = "") -> str:
     if timer.task:
         timer.task.cancel()
     return f"Cancelled the {timer.label} timer." if timer.label != "timer" else "Cancelled the timer."
+
+
+def add_time(settings: Settings, seconds: float, label: str = "") -> str:
+    """'Add 5 minutes to the timer': the running timer rings that much later (a negative amount takes time off)."""
+    if not timers:
+        return "No timers are running."
+    key = str(label or "").strip().lower().removesuffix(" timer")
+    if not key:
+        if len(timers) > 1:
+            return "More than one timer is running; say which: " + ", ".join(t.label for t in timers.values()) + "."
+        key = next(iter(timers))
+    timer = timers.get(key)
+    if not timer:
+        return f"There's no {label} timer. " + list_timers()
+    left = timer.ends - time.monotonic() + float(seconds)
+    if left <= 0:
+        return cancel_timer(timer.label if timer.label != "timer" else "")
+    set_timer(settings, left, timer.label if timer.label != "timer" else "")
+    what = "The timer" if timer.label == "timer" else f"The {timer.label} timer"
+    return f"{what} now has {spoken(left)} left."
 
 
 # ---- break mode --------------------------------------------------------------------
