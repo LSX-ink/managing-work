@@ -1,0 +1,28 @@
+# Monthly statement emails + inbound "STOP" replies for ONE client site.
+# Copy this folder per client, set `name`, the D1 database (the same one the site's Pages project uses)
+# and the vars below, then:  npx wrangler deploy
+name = "kinetic-statements"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# 07:00 UTC on the 1st of every month: send last month's statement.
+[triggers]
+crons = ["0 7 1 * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kinetic-db"
+database_id = "2af23fc8-7fa2-49dd-b896-d3240bc1f1aa"
+
+[vars]
+SITE_NAME = "Kinetic Web Designs"
+SITE_URL = "https://kineticwebdesigns.co.uk"   # links in the email point here
+CURRENCY = "gbp"
+# The sender must be on a domain verified in Resend.
+STATEMENT_FROM = "Kinetic Web Designs <statements@kineticwebdesigns.co.uk>"
+# Replies go here. Route this address to this Worker with Cloudflare Email Routing so "STOP" works.
+STATEMENT_REPLY_TO = "statements@kineticwebdesigns.co.uk"
+# Optional: replies that aren't STOP are forwarded here (must be a verified Email Routing destination).
+FORWARD_TO = ""
+
+# Secret (not in this file):  npx wrangler secret put RESEND_API_KEY

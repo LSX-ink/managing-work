@@ -1,0 +1,5 @@
+﻿.wrangler/
+
+# client mock-up sites (large, client photos; deployed straight to the live site) and archived concepts
+kinetic-live/m/
+stays-archive/

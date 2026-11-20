@@ -1,0 +1,29 @@
+# Kinetic kit: Cloudflare Pages config for ONE client site. Copy into the site's folder
+# (next to index.html and functions/) and fill in the REPLACE_ values.
+# Note: Pages uploads this file with the site, so it must never hold secrets. Secrets go in with
+#   npx wrangler pages secret put <NAME> --project-name <project>
+name = "client-site"                       # the Pages project name
+pages_build_output_dir = "."
+compatibility_date = "2025-01-01"
+
+[vars]
+SITE_NAME = "Client business name"
+SITE_URL = "https://www.example.co.uk"
+SHOP = "1"          # "1" = show the Products & stock tab and serve products to the site
+TEXT = "1"          # "1" = show the Text tab (fields come from the `texts` table)
+CURRENCY = "gbp"
+# Site events counted on the Analytics tab, as name:Label pairs. kit.js / KineticKit.event("name").
+EVENTS = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "client-site-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Product photos. Leave this out for sites without a shop (R2 must be enabled on the account).
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "client-site-photos"
+
+# Secrets (Pages > Settings > Variables, or `wrangler pages secret put`):
+#   STRIPE_WEBHOOK_SECRET   whsec_... from the Stripe webhook endpoint (turns on Transactions)

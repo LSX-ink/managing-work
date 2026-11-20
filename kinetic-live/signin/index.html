@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in | Kinetic Web Designs</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/client.css">
+</head>
+<body>
+<main class="card" aria-labelledby="t">
+  <a class="brand" href="/">Kinetic Web Designs</a>
+  <h1 id="t">Sign in to continue</h1>
+  <p class="lede" id="why">Sign in, or create your account. It takes a few seconds.</p>
+  <p class="plan" id="plan" hidden></p>
+
+  <div class="tabs" role="tablist" aria-label="Sign in or create an account">
+    <button role="tab" id="tab-in" aria-selected="true" aria-controls="form" type="button">Sign in</button>
+    <button role="tab" id="tab-new" aria-selected="false" aria-controls="form" type="button">Create account</button>
+  </div>
+
+  <p class="msg bad" id="err" role="alert" hidden></p>
+
+  <div id="google-wrap" hidden>
+    <div id="google-btn"></div>
+    <div class="or"><span>or with your email</span></div>
+  </div>
+
+  <form id="form" novalidate>
+    <div class="field" id="name-field" hidden>
+      <label for="name">Your name <span class="muted">(optional)</span></label>
+      <input id="name" name="name" type="text" autocomplete="name">
+    </div>
+    <div class="field" id="site-field" hidden>
+      <label for="website">Your website <span class="muted">(if you have one)</span></label>
+      <input id="website" name="website" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk">
+    </div>
+    <div class="field">
+      <label for="email">Email address</label>
+      <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@yourbusiness.co.uk">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="pw">
+        <input id="password" name="password" type="password" autocomplete="current-password" required minlength="10">
+        <button class="link" id="show" type="button" aria-controls="password" aria-pressed="false">Show</button>
+      </div>
+      <p class="hint" id="pw-hint" hidden>At least 10 characters.</p>
+    </div>
+    <button class="btn" id="go" type="submit">Sign in</button>
+    <p class="small left"><button class="link" id="forgot" type="button">Forgot your password?</button></p>
+  </form>
+
+  <form id="reset" novalidate hidden>
+    <p class="lede">Enter your email and we'll send you a link to choose a new password.</p>
+    <div class="field">
+      <label for="reset-email">Email address</label>
+      <input id="reset-email" type="email" autocomplete="email" inputmode="email" required>
+    </div>
+    <button class="btn" id="reset-go" type="submit">Email me a reset link</button>
+    <p class="small left"><button class="link" id="back" type="button">Back to sign in</button></p>
+  </form>
+
+  <p class="msg good" id="sent" role="status" hidden></p>
+
+  <p class="small">By signing in you agree to our <a href="/privacy.html">privacy notice</a>.</p>
+</main>
+<script src="/client.js"></script>
+<script>
+  KC.signinPage();
+</script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My account | Kinetic Web Designs</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/client.css">
+</head>
+<body>
+<main class="card wide" aria-labelledby="t">
+  <a class="brand" href="/">Kinetic Web Designs</a>
+  <h1 id="t">My account</h1>
+  <p class="lede">Signed in as <strong id="who">…</strong></p>
+
+  <section id="mysite" aria-labelledby="s-t">
+    <h2 id="s-t">Your website</h2>
+    <div id="site-show" hidden><p class="siteline"><a id="site-link" href="#" target="_blank" rel="noopener"></a> <button class="link" id="site-edit" type="button">Change</button></p></div>
+    <form id="site-form" novalidate hidden>
+      <label for="site-input">Website address</label>
+      <input id="site-input" type="text" inputmode="url" autocomplete="url" placeholder="yourbusiness.co.uk">
+      <p class="msg bad" id="site-err" role="alert" hidden></p>
+      <button class="btn" type="submit">Save</button>
+    </form>
+  </section>
+
+  <section id="setpw" aria-labelledby="setpw-t" hidden>
+    <h2 id="setpw-t">Choose a new password</h2>
+    <p class="muted" id="setpw-p">You'll use it with your email to sign in from now on.</p>
+    <form id="setpw-form" novalidate>
+      <label for="newpw">New password</label>
+      <input id="newpw" type="password" autocomplete="new-password" minlength="10" required>
+      <p class="hint">At least 10 characters.</p>
+      <p class="msg bad" id="setpw-msg" role="alert" hidden></p>
+      <button class="btn" type="submit">Save password</button>
+    </form>
+  </section>
+
+  <section aria-labelledby="p-t">
+    <h2 id="p-t">My hosting and care plan</h2>
+    <div id="plans"><p class="muted">Loading…</p></div>
+  </section>
+
+  <section aria-labelledby="c-t" id="changes">
+    <h2 id="c-t">Request a change</h2>
+    <p class="muted">Tell us what you'd like changed on your website. We'll email you when it's done.</p>
+    <div class="tips">
+      <b>To get it right first time, please include:</b>
+      <ul>
+        <li><b>Where:</b> which page and which part, for example "home page, the opening hours at the bottom".</li>
+        <li><b>What it says now</b> and <b>what it should say</b> (or what should change).</li>
+        <li><b>Screenshots</b> of how that part of your website looks now. Circle or mark the spot if you can.</li>
+        <li>Any new <b>photos</b>, logos or documents (PDF) to use.</li>
+      </ul>
+    </div>
+    <form id="change-form" novalidate>
+      <div class="field">
+        <label for="ch-site">Your website</label>
+        <input id="ch-site" type="url" inputmode="url" placeholder="https://yourbusiness.co.uk" autocomplete="url">
+      </div>
+      <div class="field">
+        <label for="ch-kind">What kind of change?</label>
+        <select id="ch-kind">
+          <option>Wording</option><option>Pictures</option><option>Design</option><option>New page</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ch-details">What changes do you need, and where?</label>
+        <textarea id="ch-details" rows="6" required placeholder="For example: On the home page, near the bottom, our opening hours say Mon to Fri 9 to 5. Please change them to Mon to Sat, 9am to 6pm. Screenshot attached."></textarea>
+      </div>
+      <div class="field">
+        <span class="label" id="ch-files-l">Screenshots, photos and PDFs <span class="muted">(optional)</span></span>
+        <label class="drop" for="ch-files">
+          <input id="ch-files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif,application/pdf,.pdf" aria-describedby="ch-files-h">
+          <span class="drop-t">Tap to add screenshots, photos or PDFs</span>
+          <span class="drop-s">Up to 6 files, 8 MB each</span>
+        </label>
+        <ul class="files" id="ch-file-list" aria-live="polite"></ul>
+        <p class="hint" id="ch-files-h">A screenshot of how your website looks now helps us find the exact spot.</p>
+      </div>
+      <div class="field">
+        <label for="ch-links">Links to examples <span class="muted">(optional)</span></label>
+        <input id="ch-links" type="text" placeholder="A Google Drive, Dropbox or Instagram link, or a website you like">
+      </div>
+      <p class="msg bad" id="ch-err" role="alert" hidden></p>
+      <p class="msg good" id="ch-ok" role="status" hidden></p>
+      <button class="btn" id="ch-go" type="submit">Send request</button>
+    </form>
+    <h3 class="sub">Your requests</h3>
+    <div id="ch-list"><p class="muted">No requests yet.</p></div>
+  </section>
+
+  <section aria-labelledby="b-t" id="buy">
+    <h2 id="b-t">Start a plan</h2>
+    <p class="muted">Monthly changes to your wording and design, and new pictures, done for you. Priced by the size of your website.</p>
+    <div class="choices">
+      <a class="choice" href="/api/client/buy?plan=single"><b>Single page</b><span>£20 a month</span></a>
+      <a class="choice" href="/api/client/buy?plan=five"><b>Up to 5 pages</b><span>£25 a month</span></a>
+      <a class="choice" href="/api/client/buy?plan=more"><b>More than 5 pages</b><span>£30 a month</span></a>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-t">
+    <h2 id="h-t">Payments and receipts</h2>
+    <p><a class="btn ghost" id="portal" href="#">Manage payments and receipts</a></p>
+  </section>
+
+  <section class="danger" aria-labelledby="x-t" id="cancel">
+    <button class="btn red" id="cancel-open" type="button" aria-expanded="false" aria-controls="cancel-box">Cancel subscription</button>
+    <div id="cancel-box" hidden>
+      <h2 id="x-t">Cancel your subscription?</h2>
+      <p>We'll stop your monthly plan and email you to confirm, usually within one working day. After that we stop making changes and looking after your website.</p>
+      <label for="cancel-why">Why are you leaving? <span class="muted">(optional, it helps us improve)</span></label>
+      <textarea id="cancel-why" rows="3"></textarea>
+      <p class="msg bad" id="cancel-err" role="alert" hidden></p>
+      <div class="row">
+        <button class="btn red" id="cancel-go" type="button">Yes, cancel my subscription</button>
+        <button class="btn ghost" id="cancel-keep" type="button">Keep my plan</button>
+      </div>
+    </div>
+    <p class="msg good" id="cancel-ok" role="status" hidden></p>
+  </section>
+
+  <p class="small"><button class="link" id="out" type="button">Sign out</button> · <a href="/">Back to the website</a></p>
+</main>
+<script src="/client.js"></script>
+<script>
+  KC.accountPage();
+</script>
+</body>
+</html>
