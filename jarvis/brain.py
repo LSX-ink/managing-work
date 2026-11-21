@@ -21,6 +21,7 @@ import alfredmem
 import alerts
 import computer
 import dates
+import dates_saved
 import fun
 import omniroute
 import reminders
@@ -1591,8 +1592,17 @@ def _offset_hours(where: str | None) -> tuple[float, str] | None:
     name = dates.CITY_ZONES.get(where.strip().lower().removeprefix("the "))
     if not name:
         return None
-    return dt.datetime.now(ZoneInfo(name)).utcoffset().total_seconds() / 3600, where.strip().title()
+    return dt.datetime.now(ZoneInfo(name)).utcoffset().total_seconds() / 3600, _place_name(where)
 
+
+_SHORT_PLACES = {"la": "LA", "nyc": "New York", "ny": "New York", "uk": "the UK", "usa": "the USA", "us": "the US", "uae": "the UAE",
+                 "dc": "Washington DC", "sf": "San Francisco"}
+
+
+def _place_name(where: str) -> str:
+    """'la' -> 'LA', 'cape town' -> 'Cape Town', 'the uk' -> 'the UK': said back the way it's written."""
+    key = where.strip().lower().removeprefix("the ")
+    return _SHORT_PLACES.get(key) or " ".join(w if w in ("of", "and") else w.capitalize() for w in where.strip().split())
 
 def _time_difference(said: str) -> str | None:
     """'What's the time difference between London and Tokyo?', 'how many hours ahead is Sydney?'"""
@@ -2342,7 +2352,7 @@ def _calendar_answer(said: str, now: time.struct_time) -> str | None:
         hour = there.hour % 12 or 12
         when = "" if there.date() == dt.datetime.now().date() else (
             " tomorrow" if there.date() > dt.datetime.now().date() else " yesterday")
-        return f"It's {hour}:{there.minute:02d} {'am' if there.hour < 12 else 'pm'}{when} in {m.group('where').strip().title()}."
+        return f"It's {hour}:{there.minute:02d} {'am' if there.hour < 12 else 'pm'}{when} in {_place_name(m.group('where'))}."
     if m := _DAYS_UNTIL.match(said):
         key = m.group("day").strip().lower().removeprefix("the ")
         if (target := _next_named_day(key, today)) is None:
@@ -2897,6 +2907,64 @@ def _word_meanings(said: str) -> str | None:
         return f"Another word for {word} is {_SYNONYMS[word]}." if word in _SYNONYMS else None
     return None
 
+_WHO = r"(?P<who>my|[a-z][a-z' -]{0,30}?'s)"
+_BDAY_DATE = (r"(?:on )?(?:the )?(?:(?P<d>\d{1,2})(?:st|nd|rd|th)? (?:of )?" + _MONTH + r"|" + _MONTH.replace("mon>", "mon2>")
+              + r" (?:the )?(?P<d2>\d{1,2})(?:st|nd|rd|th)?)(?:,? (?P<y>(?:19|20)\d{2}))?")
+_BDAY_SAVE = re.compile(_NAME + r"(?:remember (?:that )?)?" + _WHO + r" birthday is " + _BDAY_DATE + _END, re.I)
+_BDAY_WHEN = re.compile(_NAME + r"(?:when(?:'s| is) " + _WHO + r" birthday|how (?:many days|long) (?:is it )?(?:until|till|to|before) "
+                        + _WHO.replace("<who>", "<who2>") + r" birthday)" + _END, re.I)
+_BDAY_NEXT = re.compile(_NAME + r"(?:whose birthday is (?:it )?next|who(?:'s| has) the next birthday|what birthdays (?:are|have I got) coming up"
+                        r"|(?:any|are there any) birthdays coming up)" + _END, re.I)
+
+
+def _birthday_answer(said: str, settings: Settings, today: dt.date) -> str | None:
+    """'My birthday is the 3rd of May', 'Lebo's birthday is 12 April 1990', 'when's my birthday?', 'how long until Lebo's birthday?',
+    'whose birthday is next?': kept in birthdays.json, the same list Alfred's birthday tool uses."""
+    if m := _BDAY_SAVE.match(said):
+        word = (m.group("mon") or m.group("mon2")).lower()
+        month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+        day, year = int(m.group("d") or m.group("d2")), m.group("y")
+        value = f"{year}-{month:02d}-{day:02d}" if year else f"{month:02d}-{day:02d}"
+        try:
+            dates_saved.add(settings, "birthday", _bday_key(m.group("who")), value)
+        except ValueError:
+            return None
+        whose = "your" if m.group("who").lower() == "my" else _bday_key(m.group("who")) + "'s"
+        return f"Got it, {whose} birthday is the {_ordinal(day)} of {_MONTH_NAMES[month - 1].title()}."
+    if m := _BDAY_WHEN.match(said):
+        who = m.group("who") or m.group("who2")
+        data = dates_saved.load(settings, "birthday")
+        key = dates_saved._key(data, _bday_key(who))
+        if key is None:
+            return None  # not saved here: Claude may know it from memory, or asks
+        when, age = dates_saved._next_birthday(data[key], today)
+        n = (when - today).days
+        whose = "Your" if key == "me" else f"{key}'s"
+        turning = f", and {'you turn' if key == 'me' else 'they turn'} {age}" if age is not None else ""
+        if n == 0:
+            return f"{whose} birthday is today!" + (f" {'You turn' if key == 'me' else 'They turn'} {age}." if age is not None else "")
+        return f"{whose} birthday is {when:%A} the {_ordinal(when.day)} of {when:%B}, in {n} day{'s' if n != 1 else ''}{turning}."
+    if _BDAY_NEXT.match(said):
+        data = dates_saved.load(settings, "birthday")
+        if not data:
+            return "I haven't got any birthdays saved yet. Say something like \"Lebo's birthday is the 12th of April\"."
+        coming = sorted(((dates_saved._next_birthday(v, today)[0], k) for k, v in data.items()))[:3]
+        said_back = [f"{'yours' if k == 'me' else k + chr(39) + 's'} {'today' if (d - today).days == 0 else 'on ' + f'{d:%A} the {_ordinal(d.day)} of {d:%B}'}"
+                     for d, k in coming]
+        return "Next up: " + "; then ".join(said_back) + "."
+    return None
+
+
+def _bday_key(who: str) -> str:
+    who = who.strip()
+    if who.lower() == "my":
+        return "me"
+    name = re.sub(r"'s$", "", who, flags=re.I).strip()
+    name = re.sub(r"^(?:my|our) ", "", name, flags=re.I)
+    relation = r"(?:sister|brother|mum|mom|mother|dad|father|son|daughter|wife|husband|friend|cousin|aunt|auntie|uncle|nan|gran|grandma|grandad|partner|boyfriend|girlfriend|niece|nephew|boss|mate)"
+    name = re.sub(r"^" + relation + r" (?=\S)", "", name, flags=re.I)  # "my sister Lebo" is Lebo; "my mum" stays Mum
+    return " ".join(w.capitalize() for w in name.split())
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -2910,6 +2978,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
+    if (found := _birthday_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None:
+        return found
     if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
             or (found := _year_maths(said, now.tm_year)) is not None \
             or (found := _day_and_journey(said, now)) is not None:
