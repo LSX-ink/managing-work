@@ -1052,6 +1052,24 @@ def test_named_timers_hours_and_minutes_and_times_tables():
     assert instant_answer("what's 2.75 hours in hours and minutes", s) == "2.75 hours is 2 hours and 45 minutes."
     assert instant_answer("what's 0.75 of an hour", s) == "That's 45 minutes."
     assert instant_answer("what's 7 eights", s) == "7 eights are 56."
+
+
+def test_birthdays_by_voice_and_place_names(tmp_path):
+    import datetime as dt
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    now = dt.datetime(2026, 10, 16, 9, 0).timetuple()
+    assert instant_answer("whose birthday is next", s, now).startswith("I haven't got any birthdays saved yet.")
+    assert instant_answer("my birthday is the 3rd of May", s, now) == "Got it, your birthday is the 3rd of May."
+    assert instant_answer("Lebo's birthday is 12 April 1990", s, now) == "Got it, Lebo's birthday is the 12th of April."
+    assert instant_answer("my sister Kgomotso's birthday is on October 16th", s, now) == "Got it, Kgomotso's birthday is the 16th of October."
+    assert instant_answer("when's my birthday", s, now) == "Your birthday is Monday the 3rd of May, in 199 days."
+    assert instant_answer("how many days until Lebo's birthday", s, now) == "Lebo's birthday is Monday the 12th of April, in 178 days, and they turn 37."
+    assert instant_answer("when is Kgomotso's birthday", s, now) == "Kgomotso's birthday is today!"
+    assert instant_answer("whose birthday is next", s, now).startswith("Next up: Kgomotso's today; then Lebo's")
+    assert instant_answer("when is Bob's birthday", s, now) is None
+    from brain import _place_name
+    assert _place_name("la") == "LA" and _place_name("cape town") == "Cape Town" and _place_name("the uk") == "the UK"
     assert instant_answer("what's another word for banana", s) is None
     assert instant_answer("what's the capital of Narnia", s) is None
     assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."
