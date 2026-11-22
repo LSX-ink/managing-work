@@ -2920,6 +2920,8 @@ _BDAY_NEXT = re.compile(_NAME + r"(?:whose birthday is (?:it )?next|who(?:'s| ha
 def _birthday_answer(said: str, settings: Settings, today: dt.date) -> str | None:
     """'My birthday is the 3rd of May', 'Lebo's birthday is 12 April 1990', 'when's my birthday?', 'how long until Lebo's birthday?',
     'whose birthday is next?': kept in birthdays.json, the same list Alfred's birthday tool uses."""
+    if not getattr(settings, "memory_dir", None):
+        return None  # no memory folder to read or keep them in
     if m := _BDAY_SAVE.match(said):
         word = (m.group("mon") or m.group("mon2")).lower()
         month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
@@ -2965,6 +2967,81 @@ def _bday_key(who: str) -> str:
     name = re.sub(r"^" + relation + r" (?=\S)", "", name, flags=re.I)  # "my sister Lebo" is Lebo; "my mum" stays Mum
     return " ".join(w.capitalize() for w in name.split())
 
+
+_EVENT = r"(?P<own>(?:my|the|our) )?(?P<what>[a-z][a-z0-9' -]{1,40}?)"
+_COUNT_SAVE = re.compile(_NAME + r"(?:(?:start|set up|set|add|make|create) (?:a |me a )?countdown (?:to|for|until) |count down (?:to|until) "
+                         r"|remember (?:that )?(?=(?:my|the|our) ))" + _EVENT + r" (?:is )?(?:on|for) " + _BDAY_DATE + _END, re.I)
+_COUNT_ASK = re.compile(_NAME + r"(?:how (?:long|many (?P<unit>days|weeks|sleeps)) (?:is it |is there |have I got )?(?:until|till|til|to|before) "
+                        r"|when(?:'s| is) )" + _EVENT.replace("(?:my|the|our) )?", "(?:my|the|our) )") + _END, re.I)
+_COUNT_LIST = re.compile(_NAME + r"(?:what countdowns (?:have I got|do I have|are there)|(?:list|read) (?:my |the )?countdowns|my countdowns)" + _END, re.I)
+_COUNT_DROP = re.compile(_NAME + r"(?:cancel|delete|remove|stop|clear) (?:the |my )?countdown (?:to|for|until) " + _EVENT + _END, re.I)
+
+
+def _countdown_answer(said: str, settings: Settings, today: dt.date) -> str | None:
+    """'Count down to my holiday on the 20th of December', 'how many days until my holiday?', 'what countdowns have I got?',
+    'cancel the countdown to the wedding': kept in countdowns.json, the same list Alfred's countdown tool uses."""
+    if not getattr(settings, "memory_dir", None):
+        return None  # no memory folder to read or keep them in
+    if m := _COUNT_SAVE.match(said):
+        what = m.group("what").strip()
+        if what.lower() in ("birthday",) or what.lower().endswith("birthday"):
+            return None
+        word = (m.group("mon") or m.group("mon2")).lower()
+        month = next(i for i, name in enumerate(_MONTH_NAMES, 1) if name.startswith(word[:3]))
+        day = int(m.group("d") or m.group("d2"))
+        try:
+            when = dt.date(int(m.group("y") or today.year), month, day)
+            if not m.group("y") and when < today:
+                when = dt.date(today.year + 1, month, day)
+        except ValueError:
+            return None
+        if when < today:
+            return None
+        dates_saved.add(settings, "countdown", what, when.isoformat())
+        n = (when - today).days
+        return f"Counting down to {_event_name(m.group('own'), what)}: {_long_date(when, today)}, {'today' if n == 0 else f'in {n} day' + ('s' if n != 1 else '')}."
+    if m := _COUNT_LIST.match(said):
+        data = dates_saved.load(settings, "countdown")
+        coming = sorted((dt.date.fromisoformat(v), k) for k, v in data.items() if dt.date.fromisoformat(v) >= today)
+        if not coming:
+            return "You haven't got any countdowns. Say something like \"count down to my holiday on the 20th of December\"."
+        said_back = [f"{k} {'today' if d == today else f'in {(d - today).days} day' + ('s' if (d - today).days != 1 else '')}" for d, k in coming[:4]]
+        return "Coming up: " + "; ".join(said_back) + "."
+    if m := _COUNT_DROP.match(said):
+        data = dates_saved.load(settings, "countdown")
+        if dates_saved._key(data, m.group("what")) is None:
+            return None
+        dates_saved.remove(settings, "countdown", m.group("what"), confirmed=True)
+        return f"Cancelled the countdown to {_event_name(m.group('own'), m.group('what'))}."
+    if m := _COUNT_ASK.match(said):
+        data = dates_saved.load(settings, "countdown")
+        key = dates_saved._key(data, m.group("what"))
+        if key is None:
+            return None  # nothing saved by that name: the other answers or Claude
+        when = dt.date.fromisoformat(data[key])
+        n = (when - today).days
+        name = _event_name(m.group("own"), key)
+        if n < 0:
+            return f"{name[0].upper() + name[1:]} was {_long_date(when, today)}, {-n} day{'s' if n != -1 else ''} ago."
+        if n == 0:
+            return f"{name[0].upper() + name[1:]} is today!"
+        unit = (m.group("unit") or "days").lower()
+        if unit == "weeks":
+            weeks, days = divmod(n, 7)
+            left = f"{weeks} week{'s' if weeks != 1 else ''}" + (f" and {days} day{'s' if days != 1 else ''}" if days else "")
+        elif unit == "sleeps":
+            left = f"{n} sleep{'s' if n != 1 else ''}"
+        else:
+            left = f"{n} day{'s' if n != 1 else ''}"
+        return f"{left} until {name}, on {_long_date(when, today)}."
+    return None
+
+
+def _event_name(own: str | None, what: str) -> str:
+    """'my holiday' is said back as 'your holiday', 'the wedding' stays 'the wedding'."""
+    own = (own or "the ").strip().lower()
+    return f"{ {'my': 'your'}.get(own, own)} {what}"
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -2978,7 +3055,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
-    if (found := _birthday_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None:
+    if (found := _birthday_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None \
+            or (found := _countdown_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None:
         return found
     if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
             or (found := _year_maths(said, now.tm_year)) is not None \

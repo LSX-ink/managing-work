@@ -1070,6 +1070,25 @@ def test_birthdays_by_voice_and_place_names(tmp_path):
     assert instant_answer("when is Bob's birthday", s, now) is None
     from brain import _place_name
     assert _place_name("la") == "LA" and _place_name("cape town") == "Cape Town" and _place_name("the uk") == "the UK"
+
+
+def test_countdowns_by_voice(tmp_path):
+    import datetime as dt
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    now = dt.datetime(2026, 10, 16, 9, 0).timetuple()
+    assert instant_answer("what countdowns have I got", s, now).startswith("You haven't got any countdowns.")
+    assert instant_answer("count down to my holiday on the 20th of December", s, now) == \
+        "Counting down to your holiday: Sunday the 20th of December, in 65 days."
+    assert instant_answer("start a countdown to the wedding on 5 June 2027", s, now) == \
+        "Counting down to the wedding: Saturday the 5th of June 2027, in 232 days."
+    assert instant_answer("how many days until my holiday", s, now) == "65 days until your holiday, on Sunday the 20th of December."
+    assert instant_answer("how many weeks until the wedding", s, now) == "33 weeks and 1 day until the wedding, on Saturday the 5th of June 2027."
+    assert instant_answer("how many sleeps until my holiday", s, now) == "65 sleeps until your holiday, on Sunday the 20th of December."
+    assert instant_answer("what countdowns have I got", s, now) == "Coming up: holiday in 65 days; wedding in 232 days."
+    assert instant_answer("cancel the countdown to the wedding", s, now) == "Cancelled the countdown to the wedding."
+    assert instant_answer("how long until the wedding", s, now) is None
+    assert instant_answer("how many days until christmas", s, now) == "70 days until Christmas, on Friday the 25th of December."
     assert instant_answer("what's another word for banana", s) is None
     assert instant_answer("what's the capital of Narnia", s) is None
     assert instant_answer("how many seconds in an hour", s) == "1 hour is 3,600 seconds."
