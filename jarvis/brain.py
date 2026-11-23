@@ -3042,6 +3042,99 @@ def _event_name(own: str | None, what: str) -> str:
     own = (own or "the ").strip().lower()
     return f"{ {'my': 'your'}.get(own, own)} {what}"
 
+_SPOT = r"(?P<spot>(?:in|on|under|behind|beside|by|at|inside|next to|on top of|in front of|round the back of|up|down) [a-z0-9][a-z0-9' ,-]{1,80}?)"
+_THING = r"(?P<own>my |the |our )(?P<thing>[a-z][a-z0-9' -]{1,40}?)"
+_PARK_SAVE = re.compile(_NAME + r"(?:remember (?:that )?)?(?:I(?:'ve| have)? (?:just )?parked|the car(?:'s| is) parked|I(?:'ve| have)? left the car) "
+                        r"(?P<spot>(?:in|on|at|by|outside|near|next to|behind|opposite|round the corner from|up|down) [a-z0-9][a-z0-9' ,-]{1,120}?)" + _END, re.I)
+_PARK_ASK = re.compile(_NAME + r"(?:where(?:'d| did) I (?:park|leave the car)(?: the car)?|where(?:'s| is) (?:the|my) car(?: parked)?|where am I parked"
+                       r"|where have I parked(?: the car)?)" + _END, re.I)
+_PARK_DONE = re.compile(_NAME + r"(?:I(?:'ve| have)? got the car(?: back)?|I(?:'ve| have)? picked (?:up )?the car(?: up)?|"
+                        r"(?:forget|clear) where I parked)" + _END, re.I)
+_PUT_SAVE = re.compile(_NAME + r"(?:remember (?:that )?)?(?:I(?:'ve| have)? (?:just )?(?:put|left|hidden|hid|stored|stashed|placed) "
+                       + _THING + r" " + _SPOT + r"|" + _THING.replace("own>", "own2>").replace("thing>", "thing2>")
+                       + r" (?:is|are|(?:'s|'re)) (?:kept |stored |hidden )?" + _SPOT.replace("spot>", "spot2>") + r"|I keep "
+                       + _THING.replace("own>", "own3>").replace("thing>", "thing3>") + r" " + _SPOT.replace("spot>", "spot3>") + r")" + _END, re.I)
+_PUT_ASK = re.compile(_NAME + r"(?:where(?:'d| did) I (?:put|leave|hide|store|stash) |where (?:have|has) I (?:put|left|hidden|stored) "
+                      r"|where(?:'s| is| are|'re) |where do I keep )" + _THING + r"(?: kept| stored| hidden)?" + _END, re.I)
+_PUT_LIST = re.compile(_NAME + r"(?:what (?:things )?have I (?:put away|told you where I put|stored)|where are all my things"
+                       r"|(?:list|read) (?:out )?where (?:my )?things are)" + _END, re.I)
+_PUT_DROP = re.compile(_NAME + r"(?:I(?:'ve| have)? found " + _THING + r"|forget where I (?:put|left|keep) "
+                       + _THING.replace("own>", "own2>").replace("thing>", "thing2>") + r")" + _END, re.I)
+_THINGS_FILE = "where-things-are.json"
+
+
+def _thing_key(thing: str) -> str:
+    return re.sub(r"\s+", " ", thing).strip().lower()
+
+
+def _find_thing(things: dict, thing: str) -> str | None:
+    """The saved name for 'spare key' or 'spare keys' alike (one s either way), else the hs.find match."""
+    import homestore as hs
+    one = _thing_key(thing).removesuffix("s")
+    return next((k for k in things if k.removesuffix("s") == one), None) or hs.find(things, _thing_key(thing))
+
+
+def _yours(own: str | None, thing: str) -> str:
+    """'my keys' is said back as 'your keys', 'the spare key' stays 'the spare key'."""
+    own = (own or "the ").strip().lower()
+    return f"{ {'my': 'your'}.get(own, own)} {thing.strip()}"
+
+
+def _spot_back(spot: str) -> str:
+    """The spot as it is said back: 'my bag' -> 'your bag', 'I' -> 'you'."""
+    spot = re.sub(r"\bmy\b", "your", spot.strip().rstrip(",."), flags=re.I)
+    return re.sub(r"\bI\b", "you", spot)
+
+
+def _where_things_answer(said: str, settings: Settings) -> str | None:
+    """'I parked on level 3, bay 42', 'where did I park?', 'I've got the car', 'I put my passport in the top drawer',
+    'where's my passport?', 'what have I put away?', 'I've found my keys': answered on the spot. Parking is the same note
+    Alfred's household tools keep; things live in where-things-are.json in the memory folder."""
+    if not getattr(settings, "memory_dir", None):
+        return None
+    import homestore as hs
+    import household_meters
+    if m := _PARK_SAVE.match(said):
+        household_meters.park_save(settings, re.sub(r"^(?:at|in|on) ", "", _spot_back(m.group("spot")), flags=re.I))
+        return f"Got it, you parked {_spot_back(m.group('spot'))}."
+    if _PARK_ASK.match(said):
+        return str(household_meters.park_where(settings))
+    if _PARK_DONE.match(said):
+        return str(household_meters.park_clear(settings))
+    things = hs.load(settings, _THINGS_FILE, {})
+    if m := _PUT_LIST.match(said):
+        if not things:
+            return "You haven't told me where you've put anything. Say something like \"I put my passport in the top drawer\"."
+        listed = [f"{_yours(v['own'], k)} {'are' if k.endswith('s') else 'is'} {v['spot']}" for k, v in list(things.items())[-6:]]
+        return listed[0][0].upper() + listed[0][1:] + "." if len(listed) == 1 else "Here's where things are: " + "; ".join(listed) + "."
+    if m := _PUT_DROP.match(said):
+        thing = m.group("thing") or m.group("thing2")
+        key = _find_thing(things, thing)
+        if key is None:
+            return None
+        del things[key]
+        hs.save(settings, _THINGS_FILE, things)
+        return f"Good, I've forgotten where {_yours(m.group('own') or m.group('own2'), thing)} {'were' if thing.endswith('s') else 'was'}."
+    if m := _PUT_SAVE.match(said):
+        n = next(i for i in ("", "2", "3") if m.group("thing" + i))
+        own, thing, spot = m.group("own" + n), m.group("thing" + n), m.group("spot" + n)
+        if thing.lower().strip() in ("car", "phone call", "name", "life", "mind") or re.match(r"(?:way|time|hand|head|foot|heart|money where)\b", thing, re.I):
+            return None
+        things.pop(_find_thing(things, thing) or "", None)
+        things[_thing_key(thing)] = {"own": own.strip().lower(), "spot": _spot_back(spot)}
+        hs.save(settings, _THINGS_FILE, things)
+        return f"Got it, {_yours(own, thing)} {'are' if thing.endswith('s') else 'is'} {_spot_back(spot)}."
+    if m := _PUT_ASK.match(said):
+        key = _find_thing(things, m.group("thing"))
+        if key is None:
+            if re.match(r"where(?:'d| did| have| has) I ", said, re.I):
+                return f"You haven't told me where you put {_yours(m.group('own'), m.group('thing'))}."
+            return None  # "where's my order?" and the like: Claude
+        found = things[key]
+        return f"You said {_yours(found['own'], key)} {'are' if key.endswith('s') else 'is'} {found['spot']}."
+    return None
+
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -3056,7 +3149,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if _ASK_DATE.match(said):
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
     if (found := _birthday_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None \
-            or (found := _countdown_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None:
+            or (found := _countdown_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None \
+            or (found := _where_things_answer(said, settings)) is not None:
         return found
     if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
             or (found := _year_maths(said, now.tm_year)) is not None \
