@@ -1187,3 +1187,24 @@ async def test_natural_durations_set_timers_and_reminders(tmp_path):
         for t in list(timers.timers.values()):
             t.task.cancel()
         timers.timers.clear()
+
+
+def test_where_things_are_and_parking_by_voice(tmp_path):
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    assert instant_answer("where did I park?", s) == "You haven't told me where you parked."
+    assert instant_answer("I parked on level 3, bay 42", s) == "Got it, you parked on level 3, bay 42."
+    assert instant_answer("Alfred, where's the car?", s).startswith("You parked at level 3, bay 42, under a minute ago")
+    assert instant_answer("I've got the car", s) == "Cleared where you parked."
+    assert instant_answer("what have I put away?", s).startswith("You haven't told me where you've put anything.")
+    assert instant_answer("I put my passport in my bag", s) == "Got it, your passport is in your bag."
+    assert instant_answer("where's my passport?", s) == "You said your passport is in your bag."
+    assert instant_answer("my spare keys are in the blue bowl", s) == "Got it, your spare keys are in the blue bowl."
+    assert instant_answer("where did I leave my spare key?", s) == "You said your spare keys are in the blue bowl."
+    assert instant_answer("I keep the remote behind the sofa cushion", s) == "Got it, the remote is behind the sofa cushion."
+    assert instant_answer("what have I put away?", s) == ("Here's where things are: your passport is in your bag; "
+                                                          "your spare keys are in the blue bowl; the remote is behind the sofa cushion.")
+    assert instant_answer("I've found my spare keys", s) == "Good, I've forgotten where your spare keys were."
+    assert instant_answer("where did I put my spare keys?", s) == "You haven't told me where you put your spare keys."
+    for other in ("where's my order?", "where is the nearest Tesco", "I put the kettle on", "I put my name down for the trip"):
+        assert instant_answer(other, s) is None, other
