@@ -31,7 +31,10 @@ from config import Settings
 WINDOWS = sys.platform == "win32"
 NAMES = {"browser_tabs", "screen_read", "screen_do"}
 TAB_ACTIONS = ["list", "close", "switch"]
-DO_ACTIONS = ["search", "type", "press", "click"]
+DO_ACTIONS = ["search", "type", "press", "click", "switch", "windows", "scroll", "choose", "menu", "window"]
+CLICK_HOW = ["click", "double", "right"]
+DIRECTIONS = ["down", "up", "left", "right"]
+WINDOW_STATES = ["minimize", "maximize", "restore", "close"]
 MANY = 3  # closing this many tabs or more is read back to the user first
 MAX_ITEMS = 80
 MAX_TEXT = 5000
@@ -115,26 +118,45 @@ def tool_definitions() -> list[dict]:
         },
         {
             "name": "screen_do",
-            "description": "Do things on the user's PC screen by voice. search: search a site or Windows ('search "
-                           "YouTube for lo-fi beats' -> where youtube; also google, amazon, maps, images, ebay, "
-                           "tiktok, spotify, wikipedia, bbc, github; where windows for the Start menu; where here for "
-                           "the search box in the window in front). type: type text (into target, a box's name or "
-                           "number from screen_read, else wherever the cursor is), submit true presses Enter. press: "
-                           "keys such as 'enter', 'ctrl+l', 'alt+tab', 'esc'. click: a button or link by its name or "
-                           "number from screen_read. Never types passwords or card numbers (the user types those). "
-                           "Ask the user first, then call again with confirmed true, before a click that buys, pays, "
-                           "sends, posts or deletes, and before Enter or Send in an email or messaging app. Use "
-                           "open_app to open apps.",
+            "description": "Use the user's PC apps by voice: click, type, move between apps and find your way "
+                           "around them. search: search a site or Windows ('search YouTube for lo-fi beats' -> where "
+                           "youtube; also google, amazon, maps, images, ebay, tiktok, spotify, wikipedia, bbc, github; "
+                           "where windows for the Start menu; where here for the search box in the window in front). "
+                           "switch: bring an app or window to the front, even if minimised ('go to Spotify', 'switch "
+                           "to File Explorer', 'open my Word document' when it's already open; target is the app or "
+                           "words from its title). windows: list the open apps and windows. "
+                           "click: a button, link, tab, checkbox, list or tree item by its name or number from "
+                           "screen_read (it reads the screen itself if needed); how double or right for a double or "
+                           "right click. type: type text (into target, a box's name or number, else wherever the "
+                           "cursor is), submit true presses Enter. choose: pick option in a dropdown or list called "
+                           "target ('set the country box to United Kingdom'). menu: work through a menu path such as "
+                           "'File > Save As' or 'View > Zoom > Zoom in'. scroll: direction down/up/left/right, amount "
+                           "in screens (default 1). press: keys such as 'enter', 'ctrl+l', 'alt+left' (back), "
+                           "'alt+tab', 'esc', 'tab'. window: state minimize, maximize, restore or close for the "
+                           "window in front or the one named. After click, choose, menu, switch and scroll you get a "
+                           "short look at what's showing now, so carry on step by step until the job is done. "
+                           "Never types passwords or card numbers (the user types those). Ask the user first, then "
+                           "call again with confirmed true, before a click that buys, pays, sends, posts or deletes, "
+                           "before Enter or Send in an email or messaging app, and before closing a window. Use "
+                           "open_app to open apps that aren't open yet.",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "action": {"type": "string", "enum": DO_ACTIONS},
                     "where": {"type": "string", "description": "search: youtube, google, amazon, windows, here, ..."},
                     "text": {"type": "string", "description": "search: what to search for; type: what to type."},
-                    "target": {"type": "string", "description": "type/click: a name or number from screen_read."},
+                    "target": {"type": "string", "description": "click/type/choose: a name or number from "
+                                                                "screen_read. switch: the app or window title."},
+                    "how": {"type": "string", "enum": CLICK_HOW, "description": "click: double or right click."},
+                    "option": {"type": "string", "description": "choose: the option to pick."},
+                    "path": {"type": "string", "description": "menu: e.g. 'File > Save As'."},
+                    "direction": {"type": "string", "enum": DIRECTIONS},
+                    "amount": {"type": "integer", "description": "scroll: how many screens, 1 to 10."},
+                    "state": {"type": "string", "enum": WINDOW_STATES},
                     "keys": {"type": "string", "description": "press: e.g. 'enter' or 'ctrl+l'."},
                     "submit": {"type": "boolean", "description": "type: press Enter afterwards."},
-                    "window": {"type": "string", "description": "Part of the window's title. Default: the one in front."},
+                    "window": {"type": "string", "description": "Part of the window's title or the app's name. "
+                                                                "Default: the one in front."},
                     "confirmed": confirmed,
                 },
                 "required": ["action"],
@@ -142,6 +164,61 @@ def tool_definitions() -> list[dict]:
             },
         },
     ]
+
+
+# ---- finding apps and menus (plain logic, tested on any computer) --------------------------------------------
+
+# What people call an app -> its program name, for windows whose titles don't say (Spotify shows the song).
+APP_NAMES = {
+    "file explorer": "explorer", "explorer": "explorer", "files": "explorer", "my files": "explorer",
+    "folder": "explorer", "word": "winword", "microsoft word": "winword", "excel": "excel",
+    "powerpoint": "powerpnt", "power point": "powerpnt", "outlook": "outlook", "teams": "ms-teams",
+    "edge": "msedge", "microsoft edge": "msedge", "chrome": "chrome", "google chrome": "chrome", "brave": "brave",
+    "firefox": "firefox", "spotify": "spotify", "vs code": "code", "visual studio code": "code", "code": "code",
+    "notepad": "notepad", "paint": "mspaint", "calculator": "calculatorapp", "settings": "systemsettings",
+    "task manager": "taskmgr", "whatsapp": "whatsapp", "discord": "discord", "steam": "steam", "obs": "obs64",
+    "terminal": "windowsterminal", "powershell": "powershell", "command prompt": "cmd", "photos": "photos",
+    "media player": "microsoft.media.player", "capcut": "capcut", "premiere": "adobe premiere pro",
+    "photoshop": "photoshop", "zoom": "zoom", "slack": "slack", "telegram": "telegram", "vlc": "vlc",
+}
+
+
+def _plain(text: str) -> str:
+    text = (text or "").lower().replace("\u200b", "")
+    for said, real in SAID_AS.items():
+        text = text.replace(said, real)
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9.+ ]", " ", text)).strip()
+
+
+def alfred_window(title: str) -> bool:
+    """Alfred's own screen, also as a browser window title ('J.A.R.V.I.S. - Google Chrome')."""
+    named = _browser_name(title or "")
+    return is_alfred({"title": named[0] if named else (title or "")})
+
+
+def match_window(wins: list[dict], name: str) -> dict | None:
+    """The window a spoken app or title means: {'title', 'exe', ...} items, front to back."""
+    want = _plain(re.sub(r"^(?:the|my)\s+|\s+(?:app|window|program)$", "", (name or "").strip(), flags=re.I))
+    if not want:
+        return None
+    exe = APP_NAMES.get(want, want.replace(" ", ""))
+    for test in (lambda w: (w.get("exe") or "") == exe,
+                 lambda w: _plain(w["title"]) == want,
+                 lambda w: re.search(r"(?:^|\W)" + re.escape(want) + r"(?:\W|$)", _plain(w["title"])),
+                 lambda w: exe and exe in (w.get("exe") or ""),
+                 lambda w: want in _plain(w["title"])):
+        for w in sorted(wins, key=lambda w: alfred_window(w["title"])):  # Alfred's own screen last
+            if test(w):
+                return w
+    titles = {_plain(w["title"]): w for w in wins}
+    close = difflib.get_close_matches(want, list(titles), n=1, cutoff=0.75)
+    return titles[close[0]] if close else None
+
+
+def menu_steps(path: str) -> list[str]:
+    """'File > Save As' / 'file then save as' / 'View, Zoom, Zoom in' -> ['File', 'Save As']."""
+    parts = re.split(r"\s*(?:>|->|\u2192|/|,|\bthen\b)\s*", (path or "").strip(), flags=re.I)
+    return [p.strip() for p in parts if p.strip()]
 
 
 # ---- picking tabs (plain logic, tested on any computer) ------------------------------------------------------
@@ -244,6 +321,21 @@ def _auto():
         raise ValueError(INSTALL) from None
 
 
+def _app_window(hwnd) -> bool:
+    """A window the user would see in Alt+Tab: not an overlay, tool window or zero-size helper."""
+    import ctypes
+    from ctypes import wintypes
+    user32 = ctypes.windll.user32
+    ex = user32.GetWindowLongW(hwnd, -20)
+    if ex & 0x80 or ex & 0x08000000:  # WS_EX_TOOLWINDOW, WS_EX_NOACTIVATE
+        return False
+    if user32.IsIconic(hwnd):
+        return True
+    r = wintypes.RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(r))
+    return r.right - r.left > 1 and r.bottom - r.top > 1
+
+
 def _windows() -> list[tuple[int, str, str]]:
     """Visible top-level windows front to back: (hwnd, title, class name)."""
     import ctypes
@@ -254,7 +346,7 @@ def _windows() -> list[tuple[int, str, str]]:
 
     @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
     def each(hwnd, _):
-        if not user32.IsWindowVisible(hwnd) or user32.IsIconic(hwnd):
+        if not user32.IsWindowVisible(hwnd) or user32.IsIconic(hwnd) or not _app_window(hwnd):
             return True
         cloaked = wintypes.DWORD(0)
         dwm.DwmGetWindowAttribute(hwnd, 14, ctypes.byref(cloaked), ctypes.sizeof(cloaked))
@@ -269,6 +361,46 @@ def _windows() -> list[tuple[int, str, str]]:
         user32.GetClassNameW(hwnd, cls, 256)
         if buf.value not in ("Program Manager", "Windows Input Experience"):
             found.append((int(hwnd), buf.value, cls.value))
+        return True
+
+    user32.EnumWindows(each, 0)
+    return found
+
+
+def _all_windows() -> list[dict]:
+    """Every app window, minimised ones too, front to back, with its program name."""
+    import ctypes
+    from ctypes import wintypes
+    user32 = ctypes.windll.user32
+    dwm = ctypes.windll.dwmapi
+    found: list[dict] = []
+    try:
+        import psutil
+    except ImportError:
+        psutil = None
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def each(hwnd, _):
+        if not user32.IsWindowVisible(hwnd) or user32.GetWindow(hwnd, 4) or not _app_window(hwnd):
+            return True  # owned pop-ups and overlays aren't apps
+        cloaked = wintypes.DWORD(0)
+        dwm.DwmGetWindowAttribute(hwnd, 14, ctypes.byref(cloaked), ctypes.sizeof(cloaked))
+        n = user32.GetWindowTextLengthW(hwnd)
+        if cloaked.value or not n:
+            return True
+        buf = ctypes.create_unicode_buffer(n + 1)
+        user32.GetWindowTextW(hwnd, buf, n + 1)
+        if buf.value in ("Program Manager", "Windows Input Experience", "Settings Overlay"):
+            return True
+        pid = wintypes.DWORD(0)
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        exe = ""
+        if psutil:
+            try:
+                exe = psutil.Process(pid.value).name().lower().removesuffix(".exe")
+            except Exception:
+                pass
+        found.append({"hwnd": int(hwnd), "title": buf.value, "exe": exe, "minimised": bool(user32.IsIconic(hwnd))})
         return True
 
     user32.EnumWindows(each, 0)
@@ -367,7 +499,11 @@ def _front(window: str = "") -> tuple[int, str]:
         for hwnd, title, _ in wins:
             if want in title.lower():
                 return hwnd, title
-        raise ValueError(f"I can't see a window called '{window}'.")
+        found = match_window(_all_windows(), window)
+        if found:
+            _bring(found)
+            return found["hwnd"], found["title"]
+        raise ValueError(f"I can't see a window called '{window}'. Say 'what windows are open' to list them.")
     for hwnd, title, _ in wins:
         named = _browser_name(title)
         bare = (named[0] if named else title).strip().lower()
@@ -383,16 +519,20 @@ BOXES = {"EditControl", "ComboBoxControl"}
 
 
 def _read(window: str = "") -> str:
-    auto = _auto()
     hwnd, title = _front(window)
+    return _read_window(hwnd, title)
+
+
+def _read_window(hwnd: int, title: str, text_limit: int = MAX_TEXT, item_limit: int = MAX_ITEMS) -> str:
+    auto = _auto()
     win = auto.ControlFromHandle(hwnd)
     items, words, seen_text = [], [], set()
     for control, _depth in auto.WalkControl(win, includeTop=False, maxDepth=30):
         if len(items) >= MAX_ITEMS * 3 and sum(map(len, words)) > MAX_TEXT:
             break
         kind = control.ControlTypeName
-        name = (control.Name or "").strip()
-        if kind in BOXES:
+        name = re.sub(r"[\ue000-\uf8ff]", "", control.Name or "").strip()  # icon-font glyphs
+        if kind in BOXES or kind in ("ListControl", "TreeControl", "DataGridControl"):
             label = name or getattr(control, "AutomationId", "") or "box"
             items.append({"id": len(items) + 1, "kind": "box", "label": label[:80], "control": control})
         elif kind in CLICKABLE and name:
@@ -403,10 +543,10 @@ def _read(window: str = "") -> str:
             words.append(name)
     _seen.update(items=items, hwnd=hwnd, title=title)
     text = "\n".join(words)
-    if len(text) > MAX_TEXT:
-        text = text[:MAX_TEXT] + "\n... (more on screen)"
-    rows = [f"[{i['id']}] {i['kind']}: {i['label']}" for i in items[:MAX_ITEMS]]
-    more = f"\n... and {len(items) - MAX_ITEMS} more" if len(items) > MAX_ITEMS else ""
+    if len(text) > text_limit:
+        text = text[:text_limit] + "\n... (more on screen)"
+    rows = [f"[{i['id']}] {i['kind']}: {i['label']}" for i in items[:item_limit]]
+    more = f"\n... and {len(items) - item_limit} more" if len(items) > item_limit else ""
     return (f"Window: {title}\n\n{text or '(no words found: try look_at_screen for a picture)'}\n\n"
             f"Buttons, links and boxes (use the numbers with screen_do):\n" + "\n".join(rows) + more)
 
@@ -451,7 +591,7 @@ def _type(args: dict) -> str:
         return "That looks like a card number. I never type those: ask the user to type it themselves."
     target = str(args.get("target") or "").strip()
     if target:
-        item = _find(target, boxes=True)
+        item = _find_fresh(target, boxes=True, window=args.get("window") or "")
         control = item["control"]
         title = _seen["title"]
         auto.ControlFromHandle(_seen["hwnd"]).SetActive()
@@ -494,18 +634,16 @@ def _press(args: dict) -> str:
 
 
 def _click(args: dict) -> str:
-    item = _find(str(args.get("target") or ""), boxes=False)
+    item = _find_fresh(str(args.get("target") or ""), boxes=False, window=args.get("window") or "")
     if (browser.is_risky(item["label"]) or is_outward(_seen["title"]) and re.search(r"\bsend\b", item["label"], re.I)) \
             and not args.get("confirmed"):
         return f"'{item['label']}' could buy, send, post or delete something. {CONFIRM}"
     auto = _auto()
     auto.ControlFromHandle(_seen["hwnd"]).SetActive()
-    control = item["control"]
-    try:
-        control.GetInvokePattern().Invoke()
-    except Exception:
-        control.Click(simulateMove=False)
-    return f"Clicked {item['label']}."
+    how = args.get("how") if args.get("how") in CLICK_HOW else "click"
+    _activate(item["control"], how)
+    said = {"click": "Clicked", "double": "Double-clicked", "right": "Right-clicked"}[how]
+    return f"{said} {item['label']}." + _glance()
 
 
 def _search_here(args: dict) -> str:
@@ -545,6 +683,214 @@ def _search_windows(query: str) -> str:
     return f"Typed '{query}' into Windows search; the results are showing. Say 'press enter' to open the top one."
 
 
+def _bring(win: dict) -> None:
+    import ctypes
+    user32 = ctypes.windll.user32
+    hwnd = win["hwnd"]
+    if user32.IsIconic(hwnd):
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+    try:
+        _auto().ControlFromHandle(hwnd).SetActive()
+    except Exception:
+        _keys("alt")  # lets Windows hand over the focus
+        user32.SetForegroundWindow(hwnd)
+    time.sleep(0.3)
+
+
+def _glance(hwnd: int = 0, title: str = "") -> str:
+    """A short look at the window in front after a step, so Alfred can carry on."""
+    time.sleep(0.6)
+    try:
+        hwnd2, title2 = _front()
+        full = _read_window(hwnd2, title2, text_limit=900, item_limit=30)
+    except Exception:
+        return ""
+    return "\n\nNow showing:\n" + full
+
+
+def _list_windows() -> str:
+    wins = [w for w in _all_windows() if not alfred_window(w["title"])]
+    if not wins:
+        return "There are no app windows open."
+    rows = [f"- {w['title']}" + (f" ({w['exe']})" if w["exe"] else "") + (" [minimised]" if w["minimised"] else "")
+            for w in wins[:40]]
+    return f"{len(wins)} windows open, front first:\n" + "\n".join(rows)
+
+
+def _switch(args: dict) -> str:
+    name = str(args.get("target") or args.get("window") or "").strip()
+    if not name:
+        raise ValueError("Which app should I switch to?")
+    win = match_window(_all_windows(), name)
+    if not win:
+        return f"I can't see '{name}' open. Use open_app to open it.\n\n" + _list_windows()
+    _bring(win)
+    return f"Switched to {win['title']}." + _glance()
+
+
+def _activate(control, how: str = "click") -> None:
+    """Click a control the most reliable way: its own action first, the mouse if it has none."""
+    try:
+        control.GetScrollItemPattern().ScrollIntoView()
+    except Exception:
+        pass
+    if how == "double":
+        control.DoubleClick(simulateMove=False)
+        return
+    if how == "right":
+        control.RightClick(simulateMove=False)
+        return
+    for pattern in ("GetInvokePattern", "GetTogglePattern", "GetSelectionItemPattern", "GetExpandCollapsePattern"):
+        try:
+            got = getattr(control, pattern)()
+        except Exception:
+            continue
+        if got is None:
+            continue
+        try:
+            if pattern == "GetInvokePattern":
+                got.Invoke()
+            elif pattern == "GetTogglePattern":
+                got.Toggle()
+            elif pattern == "GetSelectionItemPattern":
+                got.Select()
+            else:
+                got.Collapse() if got.ExpandCollapseState == 1 else got.Expand()
+            return
+        except Exception:
+            continue
+    control.Click(simulateMove=False)
+
+
+def _find_fresh(target: str, boxes: bool, window: str = "") -> dict:
+    """The item a name or number means, reading the screen again when the last read is old or missed it."""
+    if not target.strip().isdigit():
+        try:
+            hwnd, _ = _front(window)
+        except ValueError:
+            hwnd = 0
+        if not _seen["items"] or (hwnd and hwnd != _seen["hwnd"]):
+            _read(window)
+        try:
+            return _find(target, boxes)
+        except ValueError:
+            _read(window)
+    return _find(target, boxes)
+
+
+def _scroll(args: dict) -> str:
+    import pyautogui
+    hwnd, title = _front(args.get("window") or "")
+    win = _auto().ControlFromHandle(hwnd)
+    win.SetActive()
+    rect = win.BoundingRectangle
+    pyautogui.moveTo((rect.left + rect.right) // 2, (rect.top + rect.bottom) // 2)
+    direction = args.get("direction") or "down"
+    amount = max(1, min(10, int(args.get("amount") or 1)))
+    clicks = 10 * amount
+    if direction in ("up", "down"):
+        pyautogui.scroll(clicks * 60 if direction == "up" else -clicks * 60)
+    else:
+        pyautogui.hscroll(clicks * 60 if direction == "right" else -clicks * 60)
+    return f"Scrolled {direction} in {title}." + _glance()
+
+
+def _choose(args: dict) -> str:
+    auto = _auto()
+    option = str(args.get("option") or args.get("text") or "").strip()
+    if not option:
+        raise ValueError("Which option should I pick?")
+    item = _find_fresh(str(args.get("target") or ""), boxes=True, window=args.get("window") or "")
+    control = item["control"]
+    auto.ControlFromHandle(_seen["hwnd"]).SetActive()
+    try:
+        control.GetExpandCollapsePattern().Expand()
+    except Exception:
+        _activate(control)
+    time.sleep(0.4)
+    low = option.lower()
+    best = None
+    for root in (control, auto.GetRootControl()):
+        for c, _d in auto.WalkControl(root, includeTop=False, maxDepth=8 if root is control else 4):
+            if c.ControlTypeName in ("ListItemControl", "MenuItemControl", "DataItemControl", "TreeItemControl"):
+                name = (c.Name or "").strip().lower()
+                if name == low:
+                    best = c
+                    break
+                if best is None and (name.startswith(low) or low in name):
+                    best = c
+        if best is not None:
+            break
+    if best is None:
+        try:
+            control.SetFocus()
+            _paste(option)
+            _keys("enter")
+            return f"Typed '{option}' into {item['label']} and pressed Enter." + _glance()
+        except Exception:
+            return f"I opened {item['label']} but can't see '{option}' in it." + _glance()
+    _activate(best)
+    try:
+        control.GetExpandCollapsePattern().Collapse()
+    except Exception:
+        pass
+    return f"Picked {best.Name} in {item['label']}." + _glance()
+
+
+def _menu(args: dict) -> str:
+    auto = _auto()
+    steps = menu_steps(str(args.get("path") or args.get("target") or ""))
+    if not steps:
+        raise ValueError("Which menu? e.g. 'File > Save As'.")
+    if any(browser.is_risky(step) for step in steps) and not args.get("confirmed"):
+        return f"'{' > '.join(steps)}' could buy, send, post or delete something. {CONFIRM}"
+    hwnd, title = _front(args.get("window") or "")
+    win = auto.ControlFromHandle(hwnd)
+    win.SetActive()
+    time.sleep(0.15)
+    done = []
+    for n, step in enumerate(steps):
+        low = step.lower().replace("&", "")
+        found = None
+        roots = [win] if n == 0 else [auto.GetRootControl(), win]
+        for root in roots:
+            for c, _d in auto.WalkControl(root, includeTop=False, maxDepth=12 if root is win else 6):
+                if c.ControlTypeName in ("MenuItemControl", "ButtonControl", "SplitButtonControl", "TabItemControl",
+                                         "ListItemControl"):
+                    name = (c.Name or "").replace("&", "").strip().lower()
+                    if name == low or (found is None and name.startswith(low)):
+                        found = c
+                        if name == low:
+                            break
+            if found is not None:
+                break
+        if found is None:
+            where = " > ".join(done) or title
+            return f"I got to {where} but can't see '{step}' there." + _glance()
+        _activate(found)
+        done.append(found.Name.replace("&", "") or step)
+        time.sleep(0.45)
+    return f"Went to {' > '.join(done)} in {title}." + _glance()
+
+
+def _window_state(args: dict) -> str:
+    import ctypes
+    state = args.get("state") or ""
+    if state not in WINDOW_STATES:
+        raise ValueError(f"Pick one of: {', '.join(WINDOW_STATES)}.")
+    hwnd, title = _front(args.get("window") or "")
+    if alfred_window(title):
+        return "That's my own screen, so I left it."
+    if state == "close" and not args.get("confirmed"):
+        return f"Close {title}? Anything unsaved in it could be lost. {CONFIRM}"
+    user32 = ctypes.windll.user32
+    if state == "close":
+        user32.PostMessageW(hwnd, 0x0010, 0, 0)  # WM_CLOSE: the app can still ask to save
+        return f"Asked {title} to close (if it asks about saving, the user decides)."
+    user32.ShowWindow(hwnd, {"minimize": 6, "maximize": 3, "restore": 9}[state])
+    return f"{state.capitalize()}d {title}."
+
+
 def _do(args: dict) -> str:
     action = args.get("action")
     if action == "type":
@@ -553,6 +899,18 @@ def _do(args: dict) -> str:
         return _press(args)
     if action == "click":
         return _click(args)
+    if action == "switch":
+        return _switch(args)
+    if action == "windows":
+        return _list_windows()
+    if action == "scroll":
+        return _scroll(args)
+    if action == "choose":
+        return _choose(args)
+    if action == "menu":
+        return _menu(args)
+    if action == "window":
+        return _window_state(args)
     where = str(args.get("where") or "").strip().lower()
     if where in ("windows", "start", "start menu", "pc", "computer"):
         return _search_windows(str(args.get("text") or ""))
