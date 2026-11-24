@@ -100,7 +100,7 @@ async def test_each_turn_gets_its_own_effort_and_thinking_is_never_spoken():
         said.append(t)
 
     b = Brain(SETTINGS, client, http=None)
-    for text in ("Good evening", "Compare these two mortgages and plan the cheapest one over five years", "Thanks"):
+    for text in ("Who wrote Hamlet?", "Compare these two mortgages and plan the cheapest one over five years", "What year is it in Japan?"):
         await b.handle(text, speak)
 
     assert [r["output_config"]["effort"] for r in client.requests] == ["low", "high", "low"]

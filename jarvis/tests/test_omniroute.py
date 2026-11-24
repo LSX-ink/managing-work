@@ -238,3 +238,10 @@ async def test_the_route_that_answered_is_remembered():
     client.direct.beta.messages.error = None
     await client.beta.messages.create(**OPTS)
     assert client.last_route == "Claude"
+
+
+def test_the_free_route_only_waits_a_few_seconds_before_claude_takes_over():
+    client = omniroute.make_client(replace(Settings(), omniroute_url="http://localhost:20128", omniroute_wait=8), api_key="k")
+    assert client.gateway.timeout.read == 8 and client.gateway.timeout.connect == 3
+    assert client.gateway.max_retries == 0
+    assert client.direct.timeout != client.gateway.timeout  # Claude itself keeps its own, longer limit

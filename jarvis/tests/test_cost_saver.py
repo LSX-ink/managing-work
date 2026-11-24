@@ -120,7 +120,7 @@ async def test_each_turn_uses_its_own_model_and_the_hud_shows_who_answered():
     client = FakeClient(reply("end_turn", text("Very well, sir."), model="claude-haiku-5-5"),
                         reply("end_turn", text("Here is your essay."), model="claude-opus-5"))
     b = Brain(SETTINGS, client, http=None, page=page)
-    await run(b, "How are you?")
+    await run(b, "Who painted the Mona Lisa?")
     await run(b, "Write me an essay about tea")
     assert [r["model"] for r in client.requests] == [CHEAP, SMART]
     assert [m["model"] for m in sent if m["type"] == "model"] == ["claude-haiku-5-5", "claude-opus-5"]
@@ -135,19 +135,19 @@ async def test_the_hud_names_omniroute_when_it_answered():
 
     client = FakeClient(reply("end_turn", text("Hello."), model="gemini-2.5-flash"))
     client.last_route = "OmniRoute"
-    await run(Brain(SETTINGS, client, http=None, page=page), "Hello")
+    await run(Brain(SETTINGS, client, http=None, page=page), "Tell me a fact")
     assert sent[-1] == {"type": "model", "model": "OmniRoute · gemini-2.5-flash"}
 
 
 async def test_no_credit_and_no_free_ai_is_said_plainly_once():
     b = Brain(SETTINGS, FakeClient(error=omniroute.NoThinkingCredit("both down")), http=None)
-    first = await run(b, "Hello")
-    second = await run(b, "Hello?")
+    first = await run(b, "Tell me a fact")
+    second = await run(b, "Tell me another fact")
     assert first == ["My thinking credit has run out and the free AI isn't connected — add the free Gemini key "
                      "in OmniRoute."]
     assert second == [brain.LINES["en"]["still_no_credit"]]
     b.client = FakeClient(reply("end_turn", text("I'm back.")))
-    await run(b, "Hello")
+    await run(b, "Tell me a fact")
     b.client = FakeClient(error=omniroute.NoThinkingCredit("both down again"))
-    assert await run(b, "Hello") == first  # back in full after a working turn
+    assert await run(b, "Tell me a fact") == first  # back in full after a working turn
     assert brain.error_key(omniroute.NoThinkingCredit("x")) == "no_credit_free"

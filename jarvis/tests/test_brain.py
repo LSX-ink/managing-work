@@ -80,7 +80,7 @@ async def test_refusal_drops_the_turn_from_history():
     client = FakeClient(reply("end_turn", text("Hello.")), reply("refusal"))
     b = Brain(SETTINGS, client, http=None)
 
-    await run(b, "Hi")
+    await run(b, "Tell me a fact")
     said = await run(b, "Something declined")
 
     assert said == [brain.LINES["en"]["refusal"]]

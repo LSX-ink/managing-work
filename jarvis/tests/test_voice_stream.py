@@ -1230,3 +1230,24 @@ def test_to_do_list_by_voice(tmp_path):
         assert instant_answer(other, s) is None, other
     assert instant_answer("add milk to the shopping list", s) == "Added milk. 1 item on the list."
     assert instant_answer("tick off milk on my shopping list", s).startswith("Ticked off milk")
+
+
+def test_hello_and_small_talk_are_instant(tmp_path):
+    import datetime as dt
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    morning = dt.datetime(2026, 10, 16, 9, 0).timetuple()
+    afternoon = dt.datetime(2026, 10, 16, 14, 0).timetuple()
+    for hi in ("hello", "Hello.", "hi Alfred", "Alfred, hello", "hey", "hi there"):
+        assert instant_answer(hi, s, morning) == "Hello. What can I do for you?", hi
+    assert instant_answer("good morning", s, morning) == "Good morning. What can I do for you?"
+    assert instant_answer("good morning", s, afternoon) == "Good afternoon, it's the afternoon actually. What can I do for you?"
+    assert instant_answer("how are you?", s, morning) == "I'm very well, thank you. What can I do for you?"
+    assert instant_answer("can you hear me?", s, morning) == "Yes, I can hear you. Go ahead."
+    assert instant_answer("thanks Alfred", s, morning) == "You're welcome."
+    assert instant_answer("goodnight", s, morning) == "Goodnight. Sleep well."
+    assert instant_answer("hello, what's the time", s, morning) == "It's 9:00 am."
+    assert instant_answer("hi Alfred, what's 2 plus 2", s, morning) == "That's 4."
+    assert instant_answer("hey, can you email Lebo", s, morning) is None
+    named = Settings(speech_lang="en-GB", memory_dir=str(tmp_path), user_name="Thato")
+    assert instant_answer("hello", named, morning) == "Hello, Thato. What can I do for you?"

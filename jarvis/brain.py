@@ -3209,6 +3209,42 @@ def _todo_answer(said: str, settings: Settings) -> str | None:
     return None
 
 
+_HELLO = re.compile(r"(?:(?:hello|hi|hiya|hey|hey there|hi there|hello there|yo|howdy|morning|good (?:morning|afternoon|evening|day))"
+                    r"(?:,? (?:alfred|alfie|jarvis|mate|there|sir))*|(?:alfred|alfie|jarvis),? (?:hello|hi|hiya|hey))[.!?]*$", re.I)
+_HOW_ARE_YOU = re.compile(_NAME + r"(?:(?:hello|hi|hey|hiya),? )?(?:(?:alfred|jarvis),? )?(?:how are you(?: doing| today| keeping)?|how(?:'s| is) it going|you all right|you alright"
+                          r"|how(?:'re| are) things|how do you do|what's up|wassup|sup)" + _END, re.I)
+_THANKS = re.compile(_NAME + r"(?:thank you|thanks|thank you very much|thanks a lot|cheers|ta|nice one|much appreciated|brilliant,? thanks"
+                     r"|(?:ok |okay |great |perfect |lovely )?(?:thanks|thank you|cheers))(?: (?:mate|very much|so much|a lot))*" + _END, re.I)
+_ARE_YOU_THERE = re.compile(_NAME + r"(?:(?:are )?you there|(?:can you )?hear me|are you listening|are you awake|testing(?:,? testing)*(?: one two(?: three)?)?|mic check)" + _END, re.I)
+_BYE = re.compile(_NAME + r"(?:good ?night|night night|bye|goodbye|bye bye|see you(?: later| soon| tomorrow)?|see ya|later|catch you later)(?: (?:alfred|jarvis|mate))*" + _END, re.I)
+
+
+def _small_talk(said: str, settings: Settings, hour: int) -> str | None:
+    """'Hello', 'good morning', 'how are you?', 'can you hear me?', 'thanks', 'goodnight': answered at once, so a
+    simple hello never waits on Claude."""
+    name = (getattr(settings, "user_name", "") or "").strip()
+    you = f", {name}" if name else ""
+    part = time_of_day(hour)
+    if m := _HELLO.match(said):
+        if re.match(r"good (morning|afternoon|evening)", said, re.I):
+            asked = re.match(r"good (\w+)", said, re.I).group(1).lower()
+            if asked != part and not (asked == "evening" and hour < 5):
+                return f"Good {part}{you}, it's the {part} actually. What can I do for you?"
+            return f"Good {part}{you}. What can I do for you?"
+        return f"Hello{you}. What can I do for you?"
+    if _HOW_ARE_YOU.match(said):
+        return f"I'm very well, thank you{you}. What can I do for you?"
+    if _ARE_YOU_THERE.match(said):
+        return f"Yes, I can hear you{you}. Go ahead."
+    if _THANKS.match(said):
+        return "You're welcome."
+    if _BYE.match(said):
+        if re.search(r"night", said, re.I):
+            return f"Goodnight{you}. Sleep well."
+        return f"Bye for now{you}."
+    return None
+
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -3217,6 +3253,11 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     now = now or time.localtime()
     if (found := _echo_and_count(said, text)) is not None:
         return found
+    if (found := _small_talk(said, settings, now.tm_hour)) is not None:
+        return found
+    # "Hello Alfred, what's the time?": the greeting is dropped so the question still gets its instant answer.
+    if (rest := re.sub(r"^(?:hello|hi|hiya|hey|morning|good (?:morning|afternoon|evening))(?: there)?(?:,? (?:alfred|alfie|jarvis|mate))?[,.!]? +", "", said, flags=re.I)) != said and rest:
+        return instant_answer(rest, settings, now)
     if _ASK_TIME.match(said):
         hour = now.tm_hour % 12 or 12
         return f"It's {hour}:{now.tm_min:02d} {'am' if now.tm_hour < 12 else 'pm'}."
