@@ -38,6 +38,7 @@ import omniroute
 import pc
 import screen
 import reminders
+import standing
 import timers
 import tiktok
 import tools
@@ -155,8 +156,11 @@ async def announce(app: FastAPI, text: str, kind: str = "phone", shown: str | No
     """Add a heads-up (a delivery, a call) to the notifications and say it on every open page.
 
     shown, when given, is what the notification says instead (e.g. a longer briefing); text is still what's spoken."""
+    text, shown = standing.scrub(settings, text), (standing.scrub(settings, shown) if shown else shown)
     item = {"id": next(app.state.alert_ids), "kind": kind, "text": shown or text, "at": time.strftime("%H:%M")}
     app.state.alerts = [*app.state.alerts, item][-MAX_ALERTS:]
+    if standing.is_quiet(settings, f"{text} {shown or ''}", kind):  # the user said to stop these: list it, say nothing
+        return
     if alerts.pushes(settings, kind):  # the ones that matter reach the phone too, in the background
         asyncio.get_running_loop().create_task(alerts.push(settings, shown or text, kind))
     if not app.state.pages:
@@ -587,6 +591,9 @@ async def websocket(ws: WebSocket):
         instead of waiting for the whole answer to be voiced. The first message carries the full text for
         the transcript; the rest are marked as parts of it.
         """
+        text = standing.scrub(settings, text)  # standing orders, e.g. no name
+        if not text.strip():
+            return
         print(f"  Jarvis: {text}", flush=True)
         first = True
         async for part, audio in tts.stream(http, settings, text):

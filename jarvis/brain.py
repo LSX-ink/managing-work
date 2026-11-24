@@ -14,6 +14,7 @@ import anthropic
 import httpx
 
 import aboutyou
+import standing
 import calcmaths
 import calcunits
 import agenda
@@ -166,7 +167,9 @@ def system_prompt(settings: Settings) -> str:
     p = persona(settings)
     who = f"Your principal is {settings.user_name}. " if settings.user_name else ""
     home = f"Their home city is {settings.city}. " if settings.city else ""
-    return f"""{p["intro"]} {who}{home}Address them as "{settings.user_address}".
+    called = standing.address(settings)
+    hail = f'Address them as "{called}".' if called else "Never address them by name or as sir; just talk to them."
+    return f"""{p["intro"]} {who}{home}{hail}
 
 Personality: {p["personality"]}
 
@@ -194,7 +197,7 @@ Showing things: when the user asks to see or show something, or it's easier to r
 
 New abilities: if the user asks for something none of your tools (including ones found by search) can do, or to change how you work, don't just say you can't. Call request_new_ability with a clear description, then tell them in a sentence that Claude will build it and it will arrive as an update.
 
-{identity_section(settings)}{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}{names.prompt_section()}{alfredmem.prompt_section(settings)}"""
+{identity_section(settings)}{pc_section(settings)}When a message starts with "[activate]", the user has just arrived: greet them to suit the time of day, give the weather in a sentence (temperature, sky, how it feels), sum up their open tasks in one sentence without reading them all out, mention any delivery expected today if one is listed, today's calendar events and any reminders later today, and add a light remark.{aboutyou.prompt_section(settings)}{names.prompt_section()}{alfredmem.prompt_section(settings)}{standing.prompt_section(settings)}"""
 
 
 def identity_section(settings: Settings) -> str:
@@ -3246,7 +3249,7 @@ _BYE = re.compile(_NAME + r"(?:good ?night|night night|bye|goodbye|bye bye|see y
 def _small_talk(said: str, settings: Settings, hour: int) -> str | None:
     """'Hello', 'good morning', 'how are you?', 'can you hear me?', 'thanks', 'goodnight': answered at once, so a
     simple hello never waits on Claude."""
-    name = (getattr(settings, "user_name", "") or "").strip()
+    name = "" if standing.no_name(settings) else (getattr(settings, "user_name", "") or "").strip()
     you = f", {name}" if name else ""
     part = time_of_day(hour)
     if m := _HELLO.match(said):
@@ -3276,6 +3279,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     said = tidy_request(text)
     now = now or time.localtime()
     if (found := _echo_and_count(said, text)) is not None:
+        return found
+    if (found := standing.instant(settings, said)) is not None:  # "stop calling me by my name"
         return found
     if (found := _small_talk(said, settings, now.tm_hour)) is not None:
         return found
