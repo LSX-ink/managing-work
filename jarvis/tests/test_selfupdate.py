@@ -48,5 +48,22 @@ def test_supervise_starts_the_server_again_after_an_update(tmp_path, monkeypatch
         f"sys.exit({selfupdate.RESTART_CODE} if n < 2 else 0)\n")
     monkeypatch.setattr(sys, "argv", ["server.py"])
     monkeypatch.setattr(selfupdate.time, "sleep", lambda s: None)
+    monkeypatch.setattr(selfupdate, "port_taken", lambda h, p: False)
     assert selfupdate.supervise(str(script)) == 0
     assert runs.read_text().splitlines() == [selfupdate.CHILD_FLAG] * 3
+
+
+def test_a_taken_port_or_a_failed_start_never_loops(tmp_path, monkeypatch, capsys):
+    import socket
+    with socket.socket() as busy:
+        busy.bind(("127.0.0.1", 0))
+        busy.listen()
+        port = busy.getsockname()[1]
+        assert selfupdate.supervise(str(tmp_path / "never_run.py"), "127.0.0.1", port) == 1
+        assert "already running" in capsys.readouterr().out
+    script = tmp_path / "fails.py"
+    runs = tmp_path / "runs.txt"
+    script.write_text(f"import pathlib, sys\np = pathlib.Path({str(runs)!r})\np.write_text((p.read_text() if p.exists() else '') + 'x')\nsys.exit(3)\n")
+    monkeypatch.setattr(sys, "argv", ["server.py"])
+    assert selfupdate.supervise(str(script), "127.0.0.1", port) == 3  # uvicorn's "couldn't start": no restart
+    assert runs.read_text() == "x"
