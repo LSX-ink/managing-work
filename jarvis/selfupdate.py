@@ -11,6 +11,7 @@ JARVIS_AUTO_RESTART=false turns it off.
 
 import asyncio
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -35,7 +36,8 @@ def fingerprint(root: Path) -> tuple:
     return tuple(found)
 
 
-RESTART_CODE = 3  # the server's exit code that asks the window's first copy to start it again
+RESTART_CODE = 75  # the server's exit code that asks the window's first copy to start it again (uvicorn uses 3)
+STARTUP_FAILURE = 3  # uvicorn's exit code when it couldn't start, e.g. the port is taken
 CHILD_FLAG = "--serve"
 
 
@@ -47,9 +49,23 @@ def restart() -> None:
     os._exit(RESTART_CODE)
 
 
-def supervise(script: str) -> int:
+def port_taken(host: str, port: int) -> bool:
+    """True when something (usually another Alfred) is already answering on this address."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(1)
+        return s.connect_ex(("127.0.0.1" if host in ("", "0.0.0.0") else host, port)) == 0
+
+
+ALREADY = ("[jarvis] Alfred is already running on port {port} (in another window), so this one stops here. "
+           "Use that one at http://localhost:{port}, or close it first and start this again.")
+
+
+def supervise(script: str, host: str = "127.0.0.1", port: int = 8340) -> int:
     """Run the server as a child and start it again whenever it asks to (after an update). Ctrl+C stops both.
-    Returns the exit code to leave with."""
+    Returns the exit code to leave with. Never loops: when the port is taken or the server can't start, it stops."""
+    if port_taken(host, port):
+        print(ALREADY.format(port=port), flush=True)
+        return 1
     while True:
         child = subprocess.Popen([sys.executable, script, CHILD_FLAG, *sys.argv[1:]])
         try:
@@ -61,6 +77,8 @@ def supervise(script: str) -> int:
                 child.kill()
                 code = 1
             return code
+        if code == STARTUP_FAILURE and port_taken(host, port):
+            print(ALREADY.format(port=port), flush=True)
         if code != RESTART_CODE:
             return code
         time.sleep(1)

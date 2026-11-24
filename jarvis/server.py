@@ -712,7 +712,7 @@ if __name__ == "__main__":
     if settings.auto_restart and selfupdate.CHILD_FLAG not in sys.argv:
         # This copy only keeps the server running: it starts it again by itself after an update.
         try:
-            sys.exit(selfupdate.supervise(__file__))
+            sys.exit(selfupdate.supervise(__file__, settings.host, settings.port))
         except KeyboardInterrupt:
             sys.exit(0)
 
