@@ -299,3 +299,46 @@ async def test_running_out_of_steps_reports_progress_instead_of_a_canned_line(mo
     assert wrap["tool_choice"] == {"type": "none"}
     assert "used every step" in wrap["messages"][-1]["content"][-1]["text"]
     assert said == ["I've checked your list twice; the sorting is still to do."]
+
+
+def test_trimming_drops_old_thinking_blocks():
+    thinking = {"type": "thinking", "thinking": "hmm", "signature": "sig"}
+    messages = []
+    for i in range(25):
+        messages += [{"role": "user", "content": f"q{i}"},
+                     {"role": "assistant", "content": [thinking, {"type": "text", "text": f"a{i}"}]}]
+    trimmed = trim_history(messages, max_turns=20, keep=12)
+    assert trimmed[0]["content"] == "q13"
+    assert all(b["type"] != "thinking" for m in trimmed if m["role"] == "assistant" for b in m["content"])
+    assert trimmed[1]["content"] == [{"type": "text", "text": "a13"}]
+    assert messages[27]["content"][0] is thinking  # the original history is left as it was
+
+
+async def test_a_refused_old_thinking_block_is_dropped_and_the_turn_asked_again():
+    import anthropic
+    import httpx
+
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    refused = anthropic.BadRequestError(
+        "messages.11.content.0: Invalid `signature` in `thinking` block. The block is bound to a different conversation.",
+        response=httpx.Response(400, request=request), body=None)
+    answers = [refused, reply("end_turn", text("Lima, sir."))]
+
+    class Flaky(FakeClient):
+        async def _create(self, **kwargs):
+            self.requests.append({**kwargs, "messages": list(kwargs["messages"])})
+            got = answers.pop(0)
+            if isinstance(got, Exception):
+                raise got
+            return got
+
+    client = Flaky()
+    b = Brain(SETTINGS, client, http=None)
+    b.messages = [{"role": "user", "content": "earlier"},
+                  {"role": "assistant", "content": [{"type": "thinking", "thinking": "x", "signature": "s"},
+                                                    {"type": "text", "text": "Earlier answer."}]}]
+    said = await run(b, "Tell me about Peru")
+    assert said == ["Lima, sir."]
+    last = client.requests[-1]["messages"]
+    assert all(not isinstance(m["content"], list) or all(
+        (b.get("type") if isinstance(b, dict) else b.type) != "thinking" for b in m["content"]) for m in last)
