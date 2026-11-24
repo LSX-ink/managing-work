@@ -375,7 +375,30 @@ def trim_history(messages: list[dict], max_turns: int = MAX_TURNS_KEPT, keep: in
     starts = [i for i, m in enumerate(messages) if m["role"] == "user" and isinstance(m["content"], str)]
     if len(starts) <= max_turns:
         return messages
-    return messages[starts[-min(keep or max_turns, max_turns)]:]
+    # Claude ties each saved thinking block to everything said before it: once the start is cut off, an old one is
+    # turned down ("Invalid signature in thinking block") and every turn after fails. Finished turns don't need them.
+    return drop_thinking(messages[starts[-min(keep or max_turns, max_turns)]:])
+
+
+_THINKING = ("thinking", "redacted_thinking")
+
+
+def drop_thinking(messages: list[dict]) -> list[dict]:
+    """The messages without Claude's thinking blocks (only the turn running now needs its own)."""
+    kept = []
+    for m in messages:
+        if m["role"] == "assistant" and isinstance(m["content"], list):
+            blocks = [b for b in m["content"] if (b.get("type") if isinstance(b, dict) else getattr(b, "type", None)) not in _THINKING]
+            if len(blocks) != len(m["content"]):
+                m = {**m, "content": blocks or [{"type": "text", "text": "(done)"}]}
+        kept.append(m)
+    return kept
+
+
+def thinking_turned_down(exc: BaseException) -> bool:
+    """Claude refused an old thinking block that no longer matches the history before it."""
+    text = str(exc)
+    return isinstance(exc, anthropic.BadRequestError) and "thinking" in text and "signature" in text
 
 
 _NAME = r"(?:(?:hey |ok |okay )?(?:alfred|alfie|jarvis),? )?"
@@ -3506,6 +3529,16 @@ class Brain:
                 except Exception as exc2:  # Claude failed too: fall through and say why
                     print(f"[jarvis] Claude after OmniRoute failed: {exc2!r}", flush=True)
                     exc = exc2
+            if thinking_turned_down(exc):  # an old thinking block no longer fits: drop them all and ask again
+                del self.messages[start + 1:]
+                self.messages = drop_thinking(self.messages)
+                try:
+                    await self._run(speak, turn_effort(self.settings, user_text), turn_model(self.settings, user_text, self.last_model))
+                    self.messages = trim_history(self.messages, keep=TRIMMED_TO)
+                    return
+                except Exception as exc3:
+                    print(f"[jarvis] Again without old thinking: {exc3!r}", flush=True)
+                    exc = exc3
             del self.messages[start:]
             # say what's wrong when it's something the user can fix (key, credit, network)
             key = error_key(exc)

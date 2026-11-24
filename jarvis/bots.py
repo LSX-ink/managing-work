@@ -89,6 +89,10 @@ EXTRA_BOTS = [
     {"key": "instagram_dms", "name": "Instagram replies", "emoji": "📨", "group": "Kinetic Web Designs",
      "job": "Answers Instagram DMs from people who message Kinetic first.",
      "say": "How are the Instagram DM replies going?"},
+    {"key": "claude_tools", "name": "Claude's free tools", "emoji": "🧰", "group": "Alfred",
+     "job": "Every free tool Claude has, in Alfred: free web search and page reading (even when the free AI answers), "
+            "Word, Excel and PowerPoint files, and reading PDFs and Office files.",
+     "say": "Show me Claude's free tools"},
 ]
 
 
