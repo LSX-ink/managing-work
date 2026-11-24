@@ -14,6 +14,8 @@ imageio-ffmpeg>=0.5
 json-repair>=0.30  # mends the odd broken script JSON
 # Alfred's own web browser: drives Edge, Chrome or Playwright's Chromium
 playwright>=1.47
+# Alfred's hands on the desktop (desktop.py): see and close the user's real Chrome/Edge tabs, read and use windows
+uiautomation>=2.0.18; sys_platform == "win32"
 # Clip accounts: download Twitch clips
 yt-dlp>=2025.1.1
 # Kick clips (n3on.vault): lets yt-dlp reach kick.com like a normal browser
