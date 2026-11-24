@@ -22,6 +22,8 @@ import anthropic
 
 from config import Settings
 
+# Alfred's own free web tools (claudetools.py): the free AI always gets them
+FREE_ROUTE_TOOLS = ("free_web_search", "free_web_fetch")
 COOLDOWN = 300  # seconds Alfred skips the first route after it failed
 _GATEWAY_KEEP = {"model", "max_tokens", "system", "messages", "tools", "tool_choice", "temperature",
                  "stop_sequences", "metadata"}
@@ -151,6 +153,7 @@ def gateway_request(opts: dict, model: str) -> dict:
     request["messages"] = _trim_messages(request.get("messages", []))
     every = [t for t in request.pop("tools", None) or [] if isinstance(t, dict) and "input_schema" in t]
     found = _found(request["messages"])
+    found |= set(FREE_ROUTE_TOOLS)  # Claude's web_search/web_fetch don't come along, so the free web tools always do
     tools = [{k: t[k] for k in _TOOL_KEYS if k in t} for t in every if not t.get("defer_loading") or t["name"] in found]
     if any(t.get("defer_loading") for t in every):
         tools.append(_FIND_TOOL_DEF)
