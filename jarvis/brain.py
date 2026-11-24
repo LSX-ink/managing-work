@@ -499,7 +499,7 @@ def _more_reminders(said: str, settings: Settings) -> str | None:
 _LIST = r"(?:the |my )?shopping list"
 _SHOP_ADD = re.compile(_NAME + r"(?:(?:can you |please )?(?:add|put) (?P<items>.+?) (?:to|on|onto) " + _LIST + r")" + _END, re.I)
 _SHOP_REMOVE = re.compile(_NAME + r"(?:(?:take|cross|tick) (?P<a>.+?) off " + _LIST +
-                          r"|(?:remove|delete) (?P<b>.+?) from " + _LIST + r")" + _END, re.I)
+                          r"|(?:remove|delete) (?P<b>.+?) from " + _LIST + r"|(?:tick|cross) off (?P<c>.+?) (?:on|from|off) " + _LIST + r")" + _END, re.I)
 _SHOP_READ = re.compile(_NAME + r"(?:what(?:'s| is) on " + _LIST + r"|(?:read|show|tell me) (?:me )?" + _LIST +
                         r"|what do (?:I|we) need (?:to buy|from the shop(?:s)?))" + _END, re.I)
 
@@ -520,7 +520,7 @@ def _shopping_answer(said: str, settings: Settings) -> str | None:
         if m := _SHOP_ADD.match(said):
             return shopping.add(settings, _spoken_items(m.group("items")))
         if m := _SHOP_REMOVE.match(said):
-            return shopping.remove(settings, _spoken_items(m.group("a") or m.group("b")))
+            return shopping.remove(settings, _spoken_items(m.group("a") or m.group("b") or m.group("c")))
     except ValueError as exc:
         return str(exc)
     if m := _SHOP_HAVE.match(said):
@@ -3135,6 +3135,80 @@ def _where_things_answer(said: str, settings: Settings) -> str | None:
     return None
 
 
+_TODO = r"(?:the |my |our )?(?:to[- ]?do|todo|jobs?) list"
+_TODO_ADD = re.compile(_NAME + r"(?:can you |please )?(?:add|put|stick|pop|write) (?P<jobs>.+?) (?:to|on|onto|in) " + _TODO + _END, re.I)
+_TODO_DONE = re.compile(_NAME + r"(?:(?:tick|cross|take|mark) (?P<a>.+?) off (?:of )?" + _TODO + r"|(?:remove|delete) (?P<b>.+?) from " + _TODO
+                        + r"|(?:mark|tick) (?P<c>.+?) (?:as )?(?:done|complete|finished)(?: on " + _TODO + r")?"
+                        + r"|(?:tick|cross) off (?P<e>.+?)(?: (?:on|from|off) " + _TODO + r")?"
+                        + r"|I(?:'ve| have)? (?:done|finished|sorted) (?P<d>.+?)(?: on " + _TODO + r")?)" + _END, re.I)
+_TODO_READ = re.compile(_NAME + r"(?:what(?:'s| is) on " + _TODO + r"|(?:read|show|tell me|go through) (?:me )?" + _TODO
+                        + r"|what (?:do I|have I got to|have I got left to|do I still) (?:need to |have to )?do(?: today)?|what jobs (?:have I got|do I have)(?: left)?)" + _END, re.I)
+_TODO_COUNT = re.compile(_NAME + r"how many (?:things|jobs|items|tasks) (?:are )?(?:there )?(?:left )?(?:on|in) " + _TODO
+                         + r"|how many (?:jobs|tasks|to[- ]?dos) (?:have I got|do I have)(?: left)?" + _END, re.I)
+_TODO_NEXT = re.compile(_NAME + r"(?:what(?:'s| is) (?:next|first|the next job|the first job|top) on " + _TODO
+                        + r"|what should I do (?:next|first)|what(?:'s| is) (?:my )?next job)" + _END, re.I)
+_TODO_HAVE = re.compile(_NAME + r"(?:is (?P<job>.+?) on " + _TODO + r"|have I (?:put|added) (?P<job2>.+?) (?:on|to) " + _TODO + r")" + _END, re.I)
+
+
+def _todo_jobs(said: str) -> list[str]:
+    """'call the bank, email Lebo' -> two jobs; 'call mum and dad' stays one job."""
+    return [re.sub(r"^(?:to |and )", "", j.strip(), flags=re.I) for j in re.split(r",\s*", said) if j.strip()]
+
+
+def _said_list(found: list[str]) -> str:
+    return found[0] if len(found) == 1 else ", ".join(found[:-1]) + " and " + found[-1]
+
+
+def _todo_answer(said: str, settings: Settings) -> str | None:
+    """'Add call the bank to my to-do list', 'what's on my to-do list?', 'what should I do next?', 'tick off call the bank',
+    'I've done the bins', 'how many jobs have I got?': the same to-do.md Alfred's to-do tool and the HUD use."""
+    if not (getattr(settings, "memory_dir", None) or getattr(settings, "tasks_file", None)):
+        return None
+    import todo
+    if re.search(r"shopping list", said, re.I):
+        return None
+    if m := _TODO_ADD.match(said):
+        jobs = _todo_jobs(m.group("jobs"))
+        before = {j.lower() for j in todo.open_items(settings)}
+        try:
+            todo.add(settings, jobs)
+        except ValueError as exc:
+            return str(exc)
+        new = [j for j in jobs if j.lower() not in before]
+        n = len(todo.open_items(settings))
+        if not new:
+            return f"{_said_list(jobs)[0].upper() + _said_list(jobs)[1:]} {'is' if len(jobs) == 1 else 'are'} already on your to-do list."
+        return f"Added {_said_list(new)} to your to-do list. That's {n} job{'s' if n != 1 else ''}."
+    if m := _TODO_DONE.match(said):
+        job = next(g for g in m.groups() if g)
+        open_now = todo.open_items(settings)
+        word = job.strip().lower().removeprefix("the ")
+        if not any(word in j.lower() for j in open_now):
+            return None if not re.search(r"\blist\b", said, re.I) else f"{job.strip()[0].upper() + job.strip()[1:]} {"aren't" if job.strip().endswith("s") else "isn't"} on your to-do list."
+        todo.done(settings, [word])
+        left = todo.open_items(settings)
+        ticked = [j for j in open_now if j not in left] or [job]
+        tail = "That's everything done!" if not left else f"{len(left)} job{'s' if len(left) != 1 else ''} left."
+        return f"Ticked off {_said_list(ticked)}. {tail}"
+    if m := _TODO_HAVE.match(said):
+        job = (m.group("job") or m.group("job2")).strip()
+        found = [j for j in todo.open_items(settings) if job.lower() in j.lower() or j.lower() in job.lower()]
+        return f"Yes, {found[0]} is on your to-do list." if found else f"No, {job} isn't on your to-do list."
+    if _TODO_COUNT.match(said):
+        n = len(todo.open_items(settings))
+        return "Your to-do list is clear." if not n else f"You've got {n} job{'s' if n != 1 else ''} on your to-do list."
+    if _TODO_NEXT.match(said):
+        found = todo.open_items(settings)
+        return "Your to-do list is clear, nothing to do." if not found else f"Next on your to-do list: {found[0]}."
+    if _TODO_READ.match(said):
+        found = todo.open_items(settings)
+        if not found:
+            return "Your to-do list is clear."
+        more = f", and {len(found) - 8} more" if len(found) > 8 else ""
+        return f"You've got {len(found)} job{'s' if len(found) != 1 else ''}: {_said_list(found[:8])}{more}."
+    return None
+
+
 def instant_answer(text: str, settings: Settings, now: time.struct_time | None = None) -> str | None:
     """The time, the date, time until 5 pm, the date in 2 weeks, weekdays of dates, days since, ages, plain timers, a stopwatch, reminders, the shopping list, discounts, tips, bill splits, simple sums, unit conversions, world times, days until Christmas, coins, dice, jokes and spellings, answered on the spot: no need to wait for Claude."""
     if not (settings.speech_lang or "en").lower().startswith("en"):
@@ -3150,7 +3224,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
         return f"It's {time.strftime('%A', now)} the {_ordinal(now.tm_mday)} of {time.strftime('%B', now)}."
     if (found := _birthday_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None \
             or (found := _countdown_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None \
-            or (found := _where_things_answer(said, settings)) is not None:
+            or (found := _where_things_answer(said, settings)) is not None \
+            or (found := _todo_answer(said, settings)) is not None:
         return found
     if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
             or (found := _year_maths(said, now.tm_year)) is not None \
