@@ -15,6 +15,7 @@ import aboutyou
 import alfredmem
 import askclaude
 import standing
+import play
 import active_calc
 import active_log
 import active_outdoors
@@ -339,7 +340,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 ABILITIES = [todo, habits, money, notesearch, screen, helpers]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
-ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, alfredmem, askclaude, desktop, standing}  # headline abilities, never searched for
+ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, alfredmem, askclaude, desktop, standing, play}  # headline abilities, never searched for
 ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
@@ -426,6 +427,7 @@ ABILITIES += [desktop]  # owner, 24 Nov 2026: close the user's real browser tabs
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
 ABILITIES += [alfredmem]  # Alfred's own long-term memory (Claude Mem)
+ABILITIES += [play]  # owner, 24 Nov 2026: "play X" plays, not just searches
 ABILITIES += [standing]  # owner, 24 Nov 2026: what he's told to stop, sticks
 ABILITIES += [askclaude]  # owner, 24 Nov 2026: Alfred can ask Claude (read-only) when he is stuck
 ABILITIES += [bots, higgsfield_guide]  # every bot in one window, and the Higgsfield guide

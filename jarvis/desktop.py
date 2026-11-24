@@ -119,7 +119,7 @@ def tool_definitions() -> list[dict]:
         {
             "name": "screen_do",
             "description": "Use the user's PC apps by voice: click, type, move between apps and find your way "
-                           "around them. search: search a site or Windows ('search YouTube for lo-fi beats' -> where "
+                           "around them. (To play music or a video, use play instead: it starts playing.) search: search a site or Windows ('search YouTube for lo-fi beats' -> where "
                            "youtube; also google, amazon, maps, images, ebay, tiktok, spotify, wikipedia, bbc, github; "
                            "where windows for the Start menu; where here for the search box in the window in front). "
                            "switch: bring an app or window to the front, even if minimised ('go to Spotify', 'switch "
