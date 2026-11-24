@@ -30,3 +30,8 @@ winrt-Windows.UI.Notifications.Management>=3.0; sys_platform == "win32"
 # Now-playing card (JARVIS_NOW_PLAYING): read the current song from Windows
 winrt-Windows.Media.Control>=3.0; sys_platform == "win32"
 winrt-Windows.Storage.Streams>=3.0; sys_platform == "win32"
+# Claude's free tools (claudetools.py): make and read Word, Excel and PowerPoint files, and read PDFs
+python-docx>=1.1
+openpyxl>=3.1
+python-pptx>=1.0
+pypdf>=5.0

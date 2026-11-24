@@ -34,6 +34,7 @@ import arcade_board
 import arcade_cards
 import arcade_words
 import bots
+import claudetools
 import browser
 import calcmaths
 import calcmoney
@@ -422,6 +423,7 @@ ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
 ABILITIES += [alfredmem]  # Alfred's own long-term memory (Claude Mem)
 ABILITIES += [bots, higgsfield_guide]  # every bot in one window, and the Higgsfield guide
+ABILITIES += [claudetools]  # Claude's free tools: web search/fetch on every route, Word/Excel/PowerPoint/PDF
 
 
 def defer(tool: dict) -> dict:
