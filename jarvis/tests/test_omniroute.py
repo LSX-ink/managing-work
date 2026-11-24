@@ -32,7 +32,28 @@ class FakeMessages:
         self.calls.append(opts)
         if self.error:
             raise self.error
-        yield self.answer
+        yield FakeStream(self.answer)
+
+
+class FakeStream:
+    """A stream that says `answer` as one text event, after `pings` keep-alive pings `gap` seconds apart."""
+
+    def __init__(self, answer, pings=0, gap=0.0):
+        self.answer, self.pings, self.gap = answer, pings, gap
+
+    def __eq__(self, other):
+        return self.answer == other
+
+    async def __aiter__(self):
+        import asyncio
+        from types import SimpleNamespace
+        for _ in range(self.pings):
+            await asyncio.sleep(self.gap)
+            yield SimpleNamespace(type="ping")
+        yield SimpleNamespace(type="text", text=self.answer)
+
+    async def get_final_message(self):
+        return self.answer
 
 
 class FakeClient:
@@ -177,7 +198,8 @@ async def test_free_first_asks_omniroute_and_leaves_claude_alone():
     client, direct, gateway = backup(free_first=True)
     assert await client.beta.messages.create(**OPTS) == "backup"
     async with client.beta.messages.stream(**OPTS) as stream:
-        assert stream == "backup"
+        assert [e.text async for e in stream if e.type == "text"] == ["backup"]
+        assert await stream.get_final_message() == "backup"
     assert direct.beta.messages.calls == [] and gateway.messages.calls[0]["model"] == "alfred"
 
 
@@ -245,3 +267,43 @@ def test_the_free_route_only_waits_a_few_seconds_before_claude_takes_over():
     assert client.gateway.timeout.read == 8 and client.gateway.timeout.connect == 3
     assert client.gateway.max_retries == 0
     assert client.direct.timeout != client.gateway.timeout  # Claude itself keeps its own, longer limit
+
+
+async def test_a_free_ai_that_only_sends_pings_hands_the_turn_to_claude_quickly():
+    import time
+    direct, gateway = FakeClient("claude"), FakeClient("backup")
+
+    @contextlib.asynccontextmanager
+    async def slow(**opts):
+        gateway.messages.calls.append(opts)
+        yield FakeStream("too late", pings=50, gap=0.05)  # keep-alives for 2.5 s, no words
+
+    gateway.messages.stream = slow
+    client = omniroute.BackupClient(direct, gateway, "alfred", free_first=True, first_word=0.3)
+    started = time.monotonic()
+    async with client.beta.messages.stream(**OPTS) as stream:
+        assert stream == "claude"
+    assert time.monotonic() - started < 1.5
+    assert client.last_route == "Claude" and client.resting()
+
+
+async def test_a_free_ai_reply_that_drags_on_is_cut_off():
+    direct, gateway = FakeClient("claude"), FakeClient("backup")
+
+    @contextlib.asynccontextmanager
+    async def dragging(**opts):
+        class Drags(FakeStream):
+            async def __aiter__(self):
+                import asyncio
+                from types import SimpleNamespace
+                yield SimpleNamespace(type="text", text="Let me")
+                await asyncio.sleep(5)
+                yield SimpleNamespace(type="text", text=" think")
+        yield Drags("x")
+
+    gateway.messages.stream = dragging
+    client = omniroute.BackupClient(direct, gateway, "alfred", free_first=True, first_word=1, round_limit=0.3)
+    with pytest.raises(omniroute.FreeAISlow):
+        async with client.beta.messages.stream(**OPTS) as stream:
+            async for _ in stream:
+                pass

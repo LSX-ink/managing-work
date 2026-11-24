@@ -14,6 +14,7 @@ OmniRoute's AIs don't share Claude's built-in extras (its own web search, tool s
 the request is trimmed to plain text, pictures and Alfred's own loaded tools before it goes there.
 """
 
+import asyncio
 import contextlib
 import re
 import time
@@ -25,6 +26,8 @@ from config import Settings
 # Alfred's own free web tools (claudetools.py): the free AI always gets them
 FREE_ROUTE_TOOLS = ("free_web_search", "free_web_fetch")
 COOLDOWN = 300  # seconds Alfred skips the first route after it failed
+ROUND_LIMIT = 45.0  # seconds one free-AI reply may take in all before Claude takes over
+_NOT_WORDS = {"message_start", "ping"}  # what a busy gateway sends while it is still waiting on its AI
 _GATEWAY_KEEP = {"model", "max_tokens", "system", "messages", "tools", "tool_choice", "temperature",
                  "stop_sequences", "metadata"}
 _BLOCKS_KEPT = {"text", "image", "tool_use", "tool_result"}
@@ -42,7 +45,7 @@ def make_client(settings: Settings, **kwargs):
     gateway = anthropic.AsyncAnthropic(base_url=settings.omniroute_url.rstrip("/").removesuffix("/v1"),
                                        api_key=settings.omniroute_key or "omniroute", max_retries=0,
                                        timeout=anthropic.Timeout(wait, connect=3.0))
-    return BackupClient(direct, gateway, settings.omniroute_model or "auto", settings.omniroute_first)
+    return BackupClient(direct, gateway, settings.omniroute_model or "auto", settings.omniroute_first, first_word=wait)
 
 
 class NoThinkingCredit(Exception):
@@ -168,6 +171,63 @@ def gateway_request(opts: dict, model: str) -> dict:
     return request
 
 
+class FreeAISlow(Exception):
+    """The free AI sent no real words in time (a busy gateway keeps the line alive with pings meanwhile)."""
+
+
+class _Watched:
+    """The free route's stream, with the events read while waiting for its first words put back in front, and a
+    limit on the whole reply: past it, the turn fails over to Claude instead of hanging."""
+
+    def __init__(self, stream, iterator, early: list, deadline: float):
+        self._stream, self._iterator, self._early, self._deadline = stream, iterator, early, deadline
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+    async def __aiter__(self):
+        for event in self._early:
+            yield event
+        while True:
+            left = self._deadline - time.monotonic()
+            if left <= 0:
+                raise FreeAISlow("The free AI's reply took too long.")
+            try:
+                event = await asyncio.wait_for(self._iterator.__anext__(), left)
+            except StopAsyncIteration:
+                return
+            except asyncio.TimeoutError:
+                raise FreeAISlow("The free AI's reply took too long.") from None
+            yield event
+
+    async def get_final_message(self):
+        async for _ in self:  # anything not read yet, under the same limit
+            pass
+        return await self._stream.get_final_message()
+
+
+async def first_words(stream, wait: float, limit: float) -> "_Watched":
+    """Wait up to `wait` seconds for the free AI's first real words (pings and the empty message start don't
+    count), so an overloaded AI hands the turn to Claude quickly."""
+    started = time.monotonic()
+    iterator = stream.__aiter__()
+    early = []
+    while True:
+        left = wait - (time.monotonic() - started)
+        if left <= 0:
+            raise FreeAISlow(f"No words from the free AI within {wait:g} seconds.")
+        try:
+            event = await asyncio.wait_for(iterator.__anext__(), left)
+        except asyncio.TimeoutError:
+            raise FreeAISlow(f"No words from the free AI within {wait:g} seconds.") from None
+        except StopAsyncIteration:
+            break
+        early.append(event)
+        if getattr(event, "type", "") not in _NOT_WORDS:
+            break
+    return _Watched(stream, iterator, early, started + limit)
+
+
 class _Messages:
     def __init__(self, owner: "BackupClient", direct, gateway):
         self._owner, self._direct, self._gateway = owner, direct, gateway
@@ -228,6 +288,14 @@ class _Messages:
                 if not self._move_on(exc, name):
                     raise
                 continue
+            if name == "OmniRoute":
+                try:
+                    stream = await first_words(stream, self._owner.first_word, self._owner.round_limit)
+                except (FreeAISlow, Exception) as exc:
+                    with contextlib.suppress(Exception):
+                        await manager.__aexit__(type(exc), exc, exc.__traceback__)
+                    self._move_on(exc, name)
+                    continue
             self._owner.last_route = name
             try:
                 yield stream
@@ -262,8 +330,10 @@ class _Beta:
 class BackupClient:
     """Looks like anthropic.AsyncAnthropic for what Jarvis uses: messages and beta.messages, create and stream."""
 
-    def __init__(self, direct, gateway, model: str, free_first: bool = False):
+    def __init__(self, direct, gateway, model: str, free_first: bool = False, first_word: float = 8.0,
+                 round_limit: float = ROUND_LIMIT):
         self.direct, self.gateway, self.model, self.free_first = direct, gateway, model, free_first
+        self.first_word, self.round_limit = first_word, round_limit
         self.rest_until = 0.0
         self.rest_error: BaseException | None = None  # why the first route is being skipped
         self.last_route = ""  # "Claude" or "OmniRoute": which one answered last, for the HUD
