@@ -82,7 +82,17 @@ class Ctx:
         self.settings, self.brain, self.http = settings, brain, http
 
     async def ask_ai(self, prompt: str, max_tokens: int = 500) -> str:
-        """One answer from the free AI route (OmniRoute). Raises on failure."""
+        """One answer from the free AI route (OmniRoute); when that fails (24 Nov 2026: it rate-limited Vera's checks
+        all afternoon, so 9 free-offer emails waited), Claude Code on this PC answers instead. Raises if both fail."""
+        try:
+            return await self._ask_free_ai(prompt, max_tokens)
+        except Exception as first:
+            try:
+                return await asyncio.to_thread(ask_claude_cli, prompt)
+            except Exception:
+                raise first
+
+    async def _ask_free_ai(self, prompt: str, max_tokens: int = 500) -> str:
         s = self.settings
         if not s.omniroute_url:
             raise RuntimeError("OmniRoute isn't set up")
@@ -98,6 +108,21 @@ class Ctx:
             if text.strip():
                 return text.strip()
         raise RuntimeError("the free AI gave an empty answer")
+
+
+def ask_claude_cli(prompt: str) -> str:
+    """One answer from Claude Code on this PC (no tools, quick model). Used when the free AI is down or rate-limited."""
+    import shutil
+    import subprocess
+    exe = shutil.which("claude") or str(Path.home() / ".local" / "bin" / "claude.exe")
+    done = subprocess.run([exe, "-p", prompt, "--output-format", "text", "--model", "claude-sonnet-5-5",
+                           "--disallowedTools", "Bash,PowerShell,Edit,Write,Read,Grep,Glob,WebSearch,WebFetch,Agent,Task"],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180,
+                          creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    text = (done.stdout or "").strip()
+    if done.returncode != 0 or not text:
+        raise RuntimeError("Claude Code didn't answer: " + ((done.stderr or "").strip()[-160:] or "no answer"))
+    return text
 
 
 # ---------------------------------------------------------------- the agents' work
