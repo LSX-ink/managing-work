@@ -41,6 +41,7 @@ import reminders
 import timers
 import tiktok
 import tools
+import selfupdate
 import tts
 from brain import Brain, computer_enabled, persona
 from config import ROOT, settings
@@ -67,6 +68,7 @@ SESSION_DAYS = 30
 LOGIN_TRIES = 5  # wrong passwords in a row before that address has to wait
 LOGIN_LOCK = 600  # seconds it waits
 MAX_ALERTS = 30  # notifications kept for the page
+TURNS = {"running": 0}  # answers in progress, so a restart after an update waits for them
 
 
 @asynccontextmanager
@@ -94,6 +96,8 @@ async def lifespan(app: FastAPI):
     watchers.append(tiktokstudio.start(settings, app.state.client, app.state.http, lambda text, kind: announce(app, text, kind)))
     if settings.health_alerts:  # the drive filling up, HQ or the website going down
         watchers.append(asyncio.create_task(health.watch(settings, lambda text, kind: announce(app, text, kind))))
+    if settings.auto_restart:  # a git pull is picked up by itself: no Ctrl+C and starting again by hand
+        watchers.append(asyncio.create_task(selfupdate.watch(ROOT, lambda: TURNS["running"] > 0)))
     if settings.now_playing:
         watchers.append(asyncio.create_task(nowplaying.watch(lambda song: broadcast(app, {"type": "nowplaying", **song}))))
     yield
@@ -613,6 +617,13 @@ async def websocket(ws: WebSocket):
     inbox: asyncio.Queue = asyncio.Queue()
 
     async def turn(msg: dict) -> None:
+        TURNS["running"] += 1
+        try:
+            await answer(msg)
+        finally:
+            TURNS["running"] -= 1
+
+    async def answer(msg: dict) -> None:
         if msg.get("type") == "activate":
             timers.on_break = False  # clicking the orb ends a break too
             await brain.activate(speak)
@@ -694,7 +705,16 @@ async def websocket(ws: WebSocket):
 
 
 if __name__ == "__main__":
+    import sys
+
     import uvicorn
+
+    if settings.auto_restart and selfupdate.CHILD_FLAG not in sys.argv:
+        # This copy only keeps the server running: it starts it again by itself after an update.
+        try:
+            sys.exit(selfupdate.supervise(__file__))
+        except KeyboardInterrupt:
+            sys.exit(0)
 
     print(f"J.A.R.V.I.S. on http://{settings.host}:{settings.port}  (model: {settings.big_model}{f', simple turns: {settings.cheap_model}' if settings.cost_saver else ''})", flush=True)
     # Browsers only allow the microphone on https or localhost, so point at the address that works.

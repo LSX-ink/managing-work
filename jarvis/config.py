@@ -46,6 +46,7 @@ class Settings:
     alfred_mem: bool = _bool("JARVIS_ALFRED_MEM", True)  # Alfred's own long-term memory (Claude Mem)
     auto_learn: bool = _bool("JARVIS_AUTO_LEARN", True)  # notes lasting rules, clients and prices by himself
     alfred_mem_port: int = int(os.getenv("JARVIS_ALFRED_MEM_PORT", "37778"))  # not 37777: that's Claude Code's
+    auto_restart: bool = _bool("JARVIS_AUTO_RESTART", True)  # restart by itself when its code changes (git pull)
     omniroute_wait: float = float(os.getenv("JARVIS_OMNIROUTE_WAIT", "8") or 8)  # seconds to wait for the free AI to start
     omniroute_first: bool = _bool("JARVIS_OMNIROUTE_FIRST", False)  # on: OmniRoute first, Claude when it fails
     effort: str = os.getenv("JARVIS_EFFORT", "low")
