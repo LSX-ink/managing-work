@@ -34,6 +34,9 @@ CHANGE_TOOLS = "Read,Grep,Glob,WebSearch,WebFetch,Edit,Write,Bash,PowerShell"
 OUTWARD_COMMANDS = ["wrangler", "deploy", "git push", "gh ", "curl", "Invoke-WebRequest", "Invoke-RestMethod",
                     "Send-MailMessage", "smtp", "stripe", "npm publish"]
 NEVER_TOOLS = "NotebookEdit,Agent,Task,mcp__*"
+# owner, 24 Nov 2026: "why 26 seconds why not faster?" Plain questions use a quicker model (about 8 seconds instead of
+# 26 on the same ChefMotso question); changes keep Claude Code's default, stronger model so the work stays careful.
+ASK_MODEL = os.getenv("JARVIS_ASK_CLAUDE_MODEL", "claude-sonnet-5-5")
 OFF = "Asking Claude is turned off (JARVIS_ASK_CLAUDE=false)."
 MISSING = "Claude Code isn't installed on this PC, so I can't ask Claude."
 NEEDS_YES = "NEEDS YES:"
@@ -95,7 +98,8 @@ def build_prompt(question: str, notes: str, mode: str = "ask") -> str:
 def command(exe: str, prompt: str, mode: str) -> list[str]:
     cmd = [exe, "-p", prompt, "--output-format", "text"]
     if mode == "ask":
-        return cmd + ["--allowedTools", READ_ONLY_TOOLS, "--disallowedTools", "Bash,PowerShell,Edit,Write," + NEVER_TOOLS]
+        return cmd + ["--model", ASK_MODEL, "--allowedTools", READ_ONLY_TOOLS,
+                      "--disallowedTools", "Bash,PowerShell,Edit,Write," + NEVER_TOOLS]
     blocked = NEVER_TOOLS
     if mode == "change":
         blocked += "," + ",".join(f"Bash(*{c}*),PowerShell(*{c}*)" for c in OUTWARD_COMMANDS)
