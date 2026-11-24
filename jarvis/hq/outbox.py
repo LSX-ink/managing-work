@@ -163,7 +163,8 @@ TRADE_GROUPS = (  # the trades that take turns on the DM list and in the emails 
     ("cafe", r"cafe|café|coffee|bakery|tea room"), ("restaurant", r"restaurant|steak|grill|pizza|bistro|diner|takeaway|bar|pub"),
     ("garage", r"garage|car |auto|mechanic|tyre|mot"), ("fitness", r"gym|fitness|yoga|pilates|martial|boxing"),
     ("health", r"clinic|dent|physio|doctor|medical|chiro|vet|optic|pharma"), ("cleaners", r"laundr|dry clean|clean"),
-    ("trades", r"plumb|electric|build|contractor|roof|paint|carpent|landscap|garden|tiler|plaster|locksmith|hvac"),
+    ("trades", r"plumb|electric|build|contractor|roof|paint|carpent|landscap|garden|tiler|plaster|locksmith|hvac|"
+               r"heating|air condition|pest|fenc|glaz|scaffold|drain|handyman|remov|skip hire|joiner|decorat|floor"),
     ("shop", r"store|shop|boutique|tailor|florist|butcher|jewel"))
 NOT_A_LEAD = re.compile(r"landmark|mall|museum|park|church|mosque|temple|school|attraction|institution|association|"
                         r"government|university|venue|hotel chain", re.I)

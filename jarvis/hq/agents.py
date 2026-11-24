@@ -632,8 +632,24 @@ async def _send_free_first(ctx: Ctx) -> str:
     s, b = ctx.settings, ctx.brain
     today = outbox.uk_now().date().isoformat()
     looked = 0
-    for p in outbox.candidates(s, outbox.limited_companies(b)):
-        if b.get(f"skip.{p['id']}") or not outbox.weak_site(p) or b.get(f"strong_site.{p['id']}"):
+    leads = outbox.candidates(s, outbox.limited_companies(b))
+    is_trade = lambda p: bool(re.search(dict(outbox.TRADE_GROUPS)["trades"], f"{p.get('kind', '')} {p.get('name', '')}", re.I))
+    leads = sorted(leads, key=lambda p: not is_trade(p))  # owner, 24 Nov 2026: "make sure its trades first"
+    audits = 0
+    for p in leads:
+        if b.get(f"skip.{p['id']}") or b.get(f"strong_site.{p['id']}"):
+            continue
+        if not p.get("audit") and p.get("website") and is_trade(p) and audits < 6:  # trades not checked yet: check now
+            audits += 1
+            import kinetic_find as kf
+            try:
+                p["audit"] = b.get(f"audit.{p['id']}") or await asyncio.wait_for(kf.audit_url(ctx.http, p["website"]), 45)
+                b.set(f"audit.{p['id']}", p["audit"])
+            except Exception:
+                continue
+        if not p.get("audit") and b.get(f"audit.{p['id']}"):
+            p["audit"] = b.get(f"audit.{p['id']}")
+        if not outbox.weak_site(p):
             continue
         if is_barber(p) and not barber_allowed(b):
             continue
