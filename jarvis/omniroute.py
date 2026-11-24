@@ -34,8 +34,12 @@ def make_client(settings: Settings, **kwargs):
     direct = anthropic.AsyncAnthropic(**kwargs)
     if not settings.omniroute_url:
         return direct
+    # A free AI that is overloaded can sit for a minute before its first word; give it a few seconds (each wait for
+    # the next bit of the answer, the first one included), then hand the turn to Claude instead of leaving you waiting.
+    wait = max(2.0, float(getattr(settings, "omniroute_wait", 8) or 8))
     gateway = anthropic.AsyncAnthropic(base_url=settings.omniroute_url.rstrip("/").removesuffix("/v1"),
-                                       api_key=settings.omniroute_key or "omniroute", max_retries=1)
+                                       api_key=settings.omniroute_key or "omniroute", max_retries=0,
+                                       timeout=anthropic.Timeout(wait, connect=3.0))
     return BackupClient(direct, gateway, settings.omniroute_model or "auto", settings.omniroute_first)
 
 
