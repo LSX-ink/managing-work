@@ -609,6 +609,8 @@ def is_safe_url(url: str) -> bool:
 
 
 async def open_url(url: str) -> str:
+    import names  # owner, 24 Nov 2026: "chef modzo.com" opened the wrong site; our own sites are put right
+    url = names.fix_url(url)
     if not is_safe_url(url):
         return f"Refused to open {url!r}: only http(s) URLs are allowed."
     await asyncio.to_thread(webbrowser.open, url)
