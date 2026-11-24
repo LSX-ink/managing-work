@@ -627,7 +627,7 @@ async def _send_first(ctx: Ctx) -> str:
 
 async def _send_free_first(ctx: Ctx) -> str:
     """The free website offer (owner, 24 Nov 2026): the owner's email to a business whose website our audit marked
-    weak, in a country where a cold email is legal. No mock-up. Stops by itself after 10 say yes."""
+    weak, in a country where a cold email is legal. No mock-up. Stops by itself after 100 say yes (owner, 24 Nov: "First 100 people")."""
     from hq import outbox
     s, b = ctx.settings, ctx.brain
     today = outbox.uk_now().date().isoformat()

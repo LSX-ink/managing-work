@@ -772,7 +772,7 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "it is addressed to the right business; every claim about their website is plausible from the facts; "
               "it is polite, professional, honest and specific; British English; no made-up facts, prices or "
               "promises beyond: websites from £395 (or the local equivalent), half when we start building and half "
-              "once complete (a Shopify store redesign is from £595 or the local equivalent), a free home page mock-up we really made for them (its link is in the facts as free_mockup_we_made), 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), the offer to look after a website they already have (monthly changes to the wording, design and pictures for £20 a month for a single page, £25 for up to 5 pages, £30 for more than 5 pages: our real hosting-and-care plans, owner 15-16 Nov 2026), the free website offer (owner, 24 Nov 2026, real: we rebuild the website of a business that has a weak one for free, in return for permission to show the finished site in our portfolio, open to the first 10 businesses who say yes; when the facts say free_offer is true, the email offers this instead of a mock-up and prices, and needs no mock-up link), the care plan line 'business websites starting at £25 a month' (our real plan for a website of up to 5 pages), an invitation to follow "
+              "once complete (a Shopify store redesign is from £595 or the local equivalent), a free home page mock-up we really made for them (its link is in the facts as free_mockup_we_made), 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), the offer to look after a website they already have (monthly changes to the wording, design and pictures for £20 a month for a single page, £25 for up to 5 pages, £30 for more than 5 pages: our real hosting-and-care plans, owner 15-16 Nov 2026), the free website offer (owner, 24 Nov 2026, real: we rebuild the website of a business that has a weak one for free, in return for permission to show the finished site in our portfolio, open to the first 100 businesses who say yes; when the facts say free_offer is true, the email offers this instead of a mock-up and prices, and needs no mock-up link), the care plan line 'business websites starting at £25 a month' (our real plan for a website of up to 5 pages), an invitation to follow "
               "Kinetic Web Designs on Instagram (instagram.com/kineticwebdesigns, our real account); it is signed by "
               "Alfred; it has an opt-out line. Our own phone number and website in the signature are real (8 Nov 2026: "
               "follow-ups were held for them); our own postal address in the signature is real and allowed (US and Canadian law require one, so emails to the US and Canada carry it; 17 Nov 2026: one was wrongly held for it), and 'from about £395' or its local equivalent is fine. A price in the business's own currency (e.g. $499 or €459) is the "
@@ -891,9 +891,9 @@ def watch_replies(ctx) -> list[str]:
 # daily limit, weekdays only, follow-ups weekends only). No mock-up page needed. Stop after 10 say yes, then go back
 # to normal paid pricing and tell me. Keep the £20 single-page care plan everywhere else."
 
-FREE_TARGET = 10
+FREE_TARGET = 100  # owner, 24 Nov 2026 13:42: "First 100 people" (was 10)
 FREE_MUST = [("Alfred", "Alfred's signature"), ("reply 'no thanks'", "the opt-out line"),
-             ("portfolio", "the portfolio condition"), ("first 10", "the first-10 limit")]
+             ("portfolio", "the portfolio condition"), ("first 100", "the first-100 limit")]
 YES_WORDS = re.compile(r"^\W*(yes|yeah|yep|yh|ya|interested|i'?m interested|sounds good|go ahead|sure|please do)\b", re.I)
 
 
@@ -941,7 +941,7 @@ def free_offer_email(settings, p: dict, contact: str = "") -> tuple[str, str]:
     body = (f"Hi {contact or name + ' team'},\n\n"
             f"I came across {name} and your {stood} stood out. Your website isn't doing you justice yet: {free_issue(p)}\n\n"
             "We're Kinetic Web Designs, and we'd like to rebuild it for you for free. All we ask in return is permission "
-            "to show the finished site in our portfolio. This is open to the first 10 businesses who say yes.\n\n"
+            "to show the finished site in our portfolio. This is open to the first 100 businesses who say yes.\n\n"
             "We wouldn't want to build your website and then leave you to it. If you'd like us to make small changes so "
             "your website matches your mood each month, we offer a care plan based on the size of your website, with "
             "business websites starting at £25 a month.\n\n"
@@ -961,7 +961,7 @@ def free_offer_follow_up(settings, row: dict) -> tuple[str, str] | None:
     name = _base_name({**p, "name": row["name"]})
     body = (f"Hi {row.get('contact_name') or name + ' team'},\n\n"
             f"Just following up on my email about rebuilding the {name} website for free. All we ask in return is "
-            "permission to show the finished site in our portfolio, and it's open to the first 10 businesses who say "
+            "permission to show the finished site in our portfolio, and it's open to the first 100 businesses who say "
             "yes.\n\n"
             "If you're interested, just reply \"yes\". You can see our work at kineticwebdesigns.co.uk and on Instagram "
             f"@kineticwebdesigns.\n\n{tail}")
@@ -969,7 +969,7 @@ def free_offer_follow_up(settings, row: dict) -> tuple[str, str] | None:
 
 
 def note_free_yes(brain, name: str, sender: str) -> str:
-    """Counts a "yes" to the free offer; at the 10th the offer closes and Vera goes back to normal pricing."""
+    """Counts a "yes" to the free offer; at the 100th the offer closes and Vera goes back to normal pricing."""
     o = free_offer(brain)
     yes = list(o.get("yes") or [])
     if sender in [y.get("email") for y in yes]:
@@ -982,6 +982,6 @@ def note_free_yes(brain, name: str, sender: str) -> str:
         o["closed"] = uk_now().date().isoformat()
         brain.set("settings.free_offer", o)
         return (f"FREE OFFER FULL: {name} is yes number {len(yes)}. The free website offer is now closed and Vera is "
-                "back to normal paid pricing. The 10: " + ", ".join(y["name"] for y in yes))
+                "back to normal paid pricing. The 100: " + ", ".join(y["name"] for y in yes))
     brain.set("settings.free_offer", o)
     return f"FREE OFFER: {name} said yes ({len(yes)} of {target})"

@@ -327,7 +327,7 @@ def test_free_offer_only_for_weak_websites_and_needs_its_lines():
     good = {**weak, "audit": {"grade": "good", "problems": []}}
     assert not outbox.weak_site(good)
     assert not outbox.weak_site({"name": "No Site"})
-    body = ("Hi,\n\nfree, portfolio, first 10 businesses.\n\nAlfred\n\nIf you'd rather not hear from me, just reply "
+    body = ("Hi,\n\nfree, portfolio, first 100 businesses.\n\nAlfred\n\nIf you'd rather not hear from me, just reply "
             "'no thanks'.")
     assert outbox.rule_check("A free new website for Ace", body, "", True, free=True) == []
     assert "the portfolio condition" in outbox.rule_check("s", body.replace("portfolio", "x"), "", True, free=True)
