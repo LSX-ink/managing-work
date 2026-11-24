@@ -187,14 +187,77 @@ def _start(settings: Settings):
     context.set_default_timeout(TIMEOUT_MS)
     _state["context"] = context
     _state["page"] = context.pages[0] if context.pages else context.new_page()
+    context.on("page", lambda new: _state.update(page=new))  # a link that opens a new tab: Alfred follows it
     return _state["page"]
+
+
+def _open_pages() -> list:
+    context = _state["context"]
+    if context is None:
+        return []
+    try:
+        return [p for p in context.pages if not p.is_closed()]
+    except Exception:
+        return []
 
 
 def _page():
     page = _state["page"]
     if page is None or page.is_closed():
-        raise ValueError("The browser isn't open. Open a page first.")
+        pages = _open_pages()
+        if not pages:
+            raise ValueError("The browser isn't open. Open a page first.")
+        page = _state["page"] = pages[-1]  # the tab he was on was closed: carry on in the newest one left
     return page
+
+
+def _tabs() -> list[dict]:
+    rows = []
+    for n, p in enumerate(_open_pages()):
+        try:
+            title = p.title() or p.url
+        except Exception:
+            title = p.url
+        rows.append({"id": n, "title": title, "url": p.url, "selected": p is _state["page"]})
+    return rows
+
+
+def _close_tabs(ids: list[int]) -> int:
+    pages = _open_pages()
+    closed = 0
+    for n in sorted(set(ids), reverse=True):
+        if 0 <= n < len(pages):
+            try:
+                pages[n].close()
+                closed += 1
+            except Exception:
+                pass
+    if not _open_pages():
+        _close()  # no tabs left: shut the window cleanly
+    return closed
+
+
+def _switch_tab(n: int) -> None:
+    pages = _open_pages()
+    if 0 <= n < len(pages):
+        _state["page"] = pages[n]
+        pages[n].bring_to_front()
+
+
+async def tabs() -> list[dict]:
+    """The tabs open in Alfred's own browser (empty when it isn't open): id, title, url, selected."""
+    if _state["context"] is None:
+        return []
+    return await asyncio.get_running_loop().run_in_executor(_pool, _tabs)
+
+
+async def close_tabs(ids: list[int]) -> int:
+    """Close these tabs (ids from tabs()) in Alfred's own browser; returns how many closed."""
+    return await asyncio.get_running_loop().run_in_executor(_pool, _close_tabs, list(ids))
+
+
+async def switch_tab(n: int) -> None:
+    await asyncio.get_running_loop().run_in_executor(_pool, _switch_tab, n)
 
 
 def _snapshot(page, with_text: bool = True) -> str:
