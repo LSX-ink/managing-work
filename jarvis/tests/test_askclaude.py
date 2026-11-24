@@ -27,6 +27,7 @@ def test_ask_is_read_only(monkeypatch):
     assert arg(cmd, "--allowedTools") == "Read,Grep,Glob,WebSearch,WebFetch"
     assert "Edit" in arg(cmd, "--disallowedTools") and "Bash" in arg(cmd, "--disallowedTools")
     assert "Do not change anything" in arg(cmd, "-p")
+    assert arg(cmd, "--model") == askclaude.ASK_MODEL  # questions use the quicker model
 
 
 def test_change_can_edit_but_outward_commands_are_blocked(monkeypatch):
@@ -34,6 +35,7 @@ def test_change_can_edit_but_outward_commands_are_blocked(monkeypatch):
     out = askclaude.ask(None, "change the ChefMotso heading", "change")
     cmd = seen["cmd"]
     assert "Edit" in arg(cmd, "--allowedTools") and "Bash" in arg(cmd, "--allowedTools")
+    assert "--model" not in cmd  # changes keep the stronger default model
     assert "Bash(*wrangler*)" in arg(cmd, "--disallowedTools") and "Bash(*git push*)" in arg(cmd, "--disallowedTools")
     prompt = arg(cmd, "-p")
     assert "Do NOT do anything outward-facing" in prompt and "passwords" in prompt and "Vera" in prompt
