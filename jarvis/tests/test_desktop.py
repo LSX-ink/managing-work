@@ -142,3 +142,38 @@ def test_alfred_browser_tabs_real(monkeypatch, tmp_path):
         assert asyncio.run(browser.tabs()) == []
     finally:
         run(action="close")
+
+
+WINS = [{"title": "J.A.R.V.I.S. - Google Chrome", "exe": "chrome"}, {"title": "Blinding Lights", "exe": "spotify"},
+        {"title": "Downloads - File Explorer", "exe": "explorer"}, {"title": "Report.docx - Word", "exe": "winword"},
+        {"title": "Gmail - Google Chrome", "exe": "chrome"}]
+
+
+def test_switch_finds_apps_by_name_or_title():
+    pick = lambda n: (desktop.match_window(WINS, n) or {}).get("title")
+    assert pick("Spotify") == "Blinding Lights"  # Spotify's title is the song
+    assert pick("file explorer") == "Downloads - File Explorer"
+    assert pick("my word app") == "Report.docx - Word"
+    assert pick("report") == "Report.docx - Word"
+    assert pick("chrome") == "Gmail - Google Chrome"  # never Alfred's own screen first
+    assert pick("netflix") is None
+
+
+def test_alfred_window_in_a_browser():
+    assert desktop.alfred_window("J.A.R.V.I.S. - Google Chrome")
+    assert not desktop.alfred_window("Gmail - Google Chrome")
+
+
+def test_menu_steps():
+    assert desktop.menu_steps("File > Save As") == ["File", "Save As"]
+    assert desktop.menu_steps("View then Zoom, Zoom in") == ["View", "Zoom", "Zoom in"]
+    assert desktop.menu_steps("") == []
+
+
+def test_new_actions_listed_and_described():
+    defs = {t["name"]: t for t in desktop.tool_definitions()}
+    props = defs["screen_do"]["input_schema"]["properties"]
+    for action in ("switch", "windows", "scroll", "choose", "menu", "window"):
+        assert action in props["action"]["enum"]
+    assert props["how"]["enum"] == ["click", "double", "right"]
+    assert "closing a window" in defs["screen_do"]["description"]
