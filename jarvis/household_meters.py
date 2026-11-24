@@ -178,8 +178,10 @@ def park_save(settings: Settings, note) -> str:
 
 def _ago(then: datetime) -> str:
     minutes = int((hs.now() - then).total_seconds() // 60)
+    if minutes < 1:
+        return "under a minute"
     if minutes < 60:
-        return hs.plural(max(0, minutes), "minute")
+        return hs.plural(minutes, "minute")
     if minutes < 48 * 60:
         return hs.plural(minutes // 60, "hour")
     return hs.plural(minutes // 1440, "day")

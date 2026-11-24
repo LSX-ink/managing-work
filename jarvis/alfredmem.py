@@ -144,7 +144,20 @@ def search(settings: Settings, query: str, limit: int = 8) -> str:
     query = str(query or "").strip()
     if not query:
         raise ValueError("Say what to look for.")
-    return as_lines(_observations(settings, {"query": query, "limit": limit})) or "Nothing about that in my memory."
+    import names  # owner, 24 Nov 2026: "chef modzo" must still find ChefMotso
+    fixed = names.correct(query)
+    found, seen = [], set()
+    # Claude's notes about a named client or project come first, then everything else about it
+    searches = [f"Claude's work log {real}" for real in names.mentioned(fixed)] + [fixed]
+    if fixed.lower() != query.lower():
+        searches.append(query)
+    for q in searches:
+        for o in _observations(settings, {"query": q, "limit": limit}):
+            key = o.get("id") or (o.get("title"), o.get("created_at"))
+            if key not in seen:
+                seen.add(key)
+                found.append(o)
+    return as_lines(found[:limit]) or "Nothing about that in my memory."
 
 
 def recent(settings: Settings, limit: int = 8) -> str:

@@ -1490,7 +1490,9 @@ def test_scene_sound_fades_at_the_cuts_so_joins_never_click(tmp_path):
     samples = array.array("h", raw)
     loudest = max(abs(v) for v in samples[len(samples) // 3: 2 * len(samples) // 3])
     assert loudest > 3000
-    assert max(abs(v) for v in samples[-900:]) < loudest * 0.1  # faded right down at the cut, not chopped off
+    # faded right down at the cut, not chopped off; the window is the fade's own last 50 samples because newer ffmpeg
+    # builds (imageio-ffmpeg 0.8) drop the AAC encoder's padding, so the clip now ends exactly where the fade does
+    assert max(abs(v) for v in samples[-50:]) < loudest * 0.1
     assert max(abs(v) for v in samples[:100]) < loudest * 0.5  # and eased in at the start
 
 

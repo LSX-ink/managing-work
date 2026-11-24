@@ -33,6 +33,7 @@ import arcade
 import arcade_board
 import arcade_cards
 import arcade_words
+import bots
 import browser
 import calcmaths
 import calcmoney
@@ -114,6 +115,33 @@ import design_components
 import design_gradient
 import design_mockup
 import design_email
+import design_icons
+import design_images
+import design_cards
+import design_posts
+import design_menu
+import design_signature
+import design_voucher
+import design_sign
+import design_loyalty
+import design_flyer
+import design_appointment
+import design_hours
+import design_review
+import design_carousel
+import design_banner
+import design_linkpage
+import design_highlights
+import design_cookies
+import design_pages
+import design_faq
+import design_pricing
+import design_testimonials
+import design_contact
+import design_hero
+import design_footer
+import design_header
+import design_services
 import instagram_dms
 import kinetic_briefing
 import kinetic_premium
@@ -150,6 +178,7 @@ import freelance_money
 import freelance_work
 import habits
 import helpers
+import higgsfield_guide
 import homediary
 import homehouse
 import homekitchen
@@ -373,7 +402,14 @@ ABILITIES += [nicheresearch_score, nicheresearch_audience, nicheresearch_market,
 ABILITIES += [tiktokstudio, money_research]  # TikTok studio and money research
 ABILITIES += [design, design_extract, design_contrast, design_palette, design_type, design_motion, design_kit, design_logo, design_social,
               design_layout, design_audit, design_components, design_gradient, design_mockup, design_email,
-              skillscan]  # design tools
+              design_icons, design_images, design_cards, design_posts, design_menu,
+              design_signature, design_voucher, design_sign,
+              design_loyalty, design_flyer, design_appointment,
+              design_hours, design_review,
+              design_carousel, design_banner, design_linkpage, design_highlights,
+              design_cookies, design_pages, design_faq, design_pricing, design_testimonials,
+              design_contact, design_hero, design_footer, design_header,
+              design_services, skillscan]  # design tools
 ABILITIES += [alfred_mail, alfred_replies]  # Alfred's own email account and reply drafts for new mail
 ABILITIES += [kinetic_site]  # the Kinetic website: sign-ups, briefs, email series, ad plans
 ABILITIES += [kinetic_find, kinetic_sales, kinetic_outreach, kinetic_invoices]  # Kinetic Web Designs: find clients, quote, track outreach, invoice
@@ -385,6 +421,7 @@ ABILITIES += [browser]  # Alfred's own web browser (Playwright)
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
 ABILITIES += [alfredmem]  # Alfred's own long-term memory (Claude Mem)
+ABILITIES += [bots, higgsfield_guide]  # every bot in one window, and the Higgsfield guide
 
 
 def defer(tool: dict) -> dict:
@@ -572,6 +609,8 @@ def is_safe_url(url: str) -> bool:
 
 
 async def open_url(url: str) -> str:
+    import names  # owner, 24 Nov 2026: "chef modzo.com" opened the wrong site; our own sites are put right
+    url = names.fix_url(url)
     if not is_safe_url(url):
         return f"Refused to open {url!r}: only http(s) URLs are allowed."
     await asyncio.to_thread(webbrowser.open, url)
