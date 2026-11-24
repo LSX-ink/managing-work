@@ -689,6 +689,12 @@ async def _send_free_first(ctx: Ctx) -> str:
         if twin:
             b.set(f"skip.{p['id']}", f"same inbox as {twin}, already emailed")
             continue
+        site = (p.get("website") or "").lower()
+        if (not re.search(r"[A-Za-z]{3}", outbox._base_name(p))  # 24 Nov 2026: a Thai-script name went in the subject
+                or (to.split("@")[-1] not in outbox.FREE_MAIL and to.split("@")[-1].split(".")[-2] not in site)):
+            # ...and a Rentokil address for a local branch: the inbox must be the business's own (or a free mail box)
+            b.set(f"skip.{p['id']}", "free offer: name not in English letters, or the email isn't the business's own")
+            continue
         subject, body = outbox.free_offer_email(s, p)
         facts = {**p, "site_check": kf_line(p), "free_offer": True}
         said = await _vet_and_send(ctx, facts, p["name"], to, subject, body, "", first=True, free=True)
