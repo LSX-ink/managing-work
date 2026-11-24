@@ -37,6 +37,7 @@ import arcade_words
 import bots
 import claudetools
 import browser
+import desktop
 import calcmaths
 import calcmoney
 import calcrandom
@@ -337,7 +338,7 @@ CHAT_CORNERS = ("top-left", "top-right", "bottom-left", "bottom-right")
 ABILITIES = [todo, habits, money, notesearch, screen, helpers]
 # Always in front of Alfred. Every other ability is "deferred": Alfred finds it with tool search when he needs it,
 # so hundreds of abilities don't slow down every reply.
-ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, alfredmem, askclaude}  # headline abilities, never searched for
+ALWAYS_LOADED = {todo, habits, money, notesearch, screen, helpers, tiktokstudio, alfredmem, askclaude, desktop}  # headline abilities, never searched for
 ABILITIES += [worktools_projects, worktools_board, worktools_time, worktools_meetings]  # work
 ABILITIES += [travel_trips, travel_papers, travel_guide]  # travel
 ABILITIES += [modes, modes_practice, modes_learning, modes_debate]  # modes
@@ -420,6 +421,7 @@ ABILITIES += [kinetic_premium]  # Kinetic end to end: a premium mock-up by voice
 ABILITIES += [kinetic_reach]  # Kinetic: trade of the week and its base mock-up, walk-in routes, mock-up videos
 ABILITIES += [instagram_dms]  # Kinetic: replies to Instagram DMs from people who message first
 ABILITIES += [browser]  # Alfred's own web browser (Playwright)
+ABILITIES += [desktop]  # owner, 24 Nov 2026: close the user's real browser tabs, read the screen, type, click, search
 ABILITIES += [mcpbridge]  # the MCP servers from the Claude desktop app
 ABILITIES += [videojoin]  # join video clips (Higgsfield) into one film
 ABILITIES += [alfredmem]  # Alfred's own long-term memory (Claude Mem)
