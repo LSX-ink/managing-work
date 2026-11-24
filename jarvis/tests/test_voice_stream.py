@@ -1208,3 +1208,25 @@ def test_where_things_are_and_parking_by_voice(tmp_path):
     assert instant_answer("where did I put my spare keys?", s) == "You haven't told me where you put your spare keys."
     for other in ("where's my order?", "where is the nearest Tesco", "I put the kettle on", "I put my name down for the trip"):
         assert instant_answer(other, s) is None, other
+
+
+def test_to_do_list_by_voice(tmp_path):
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    assert instant_answer("what's on my to-do list?", s) == "Your to-do list is clear."
+    assert instant_answer("add call the bank to my to-do list", s) == "Added call the bank to your to-do list. That's 1 job."
+    assert instant_answer("put email Lebo, book the MOT on my to do list", s) == \
+        "Added email Lebo and book the MOT to your to-do list. That's 3 jobs."
+    assert instant_answer("add call the bank to my todo list", s) == "Call the bank is already on your to-do list."
+    assert instant_answer("what's on my to-do list", s) == "You've got 3 jobs: call the bank, email Lebo and book the MOT."
+    assert instant_answer("how many jobs have I got?", s) == "You've got 3 jobs on your to-do list."
+    assert instant_answer("what should I do next?", s) == "Next on your to-do list: call the bank."
+    assert instant_answer("is the MOT on my to-do list?", s) == "Yes, book the MOT is on your to-do list."
+    assert instant_answer("tick off call the bank", s) == "Ticked off call the bank. 2 jobs left."
+    assert instant_answer("I've done the MOT", s) == "Ticked off book the MOT. 1 job left."
+    assert instant_answer("tick off the dishes on my to-do list", s) == "The dishes aren't on your to-do list."
+    assert instant_answer("mark email Lebo as done", s) == "Ticked off email Lebo. That's everything done!"
+    for other in ("I've done my homework", "tick off the dishes", "I've done it"):
+        assert instant_answer(other, s) is None, other
+    assert instant_answer("add milk to the shopping list", s) == "Added milk. 1 item on the list."
+    assert instant_answer("tick off milk on my shopping list", s).startswith("Ticked off milk")
