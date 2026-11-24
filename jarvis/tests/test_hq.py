@@ -305,3 +305,30 @@ def test_blank_daily_limits_fall_back_to_default():
     src = inspect.getsource(agents.warden)
     assert 'b.get("settings.followups_per_day") or 15' in src
     assert 'b.get("settings.send_per_day") or 15' in src
+
+
+def test_free_offer_closes_after_ten_yes(tmp_path):
+    """Owner, 24 Nov 2026: the free website offer stops after 10 say yes and Vera goes back to normal pricing."""
+    from hq import outbox
+    b = Brain(tmp_path / "brain.db")
+    b.set("settings.free_offer", {"active": True, "target": 10})
+    for i in range(9):
+        assert "said yes" in outbox.note_free_yes(b, f"Shop {i}", f"s{i}@x.com")
+    assert outbox.free_offer_on(b)
+    assert outbox.note_free_yes(b, "Shop 0", "s0@x.com") == ""  # the same business twice counts once
+    assert "FREE OFFER FULL" in outbox.note_free_yes(b, "Shop 9", "s9@x.com")
+    assert not outbox.free_offer_on(b)
+
+
+def test_free_offer_only_for_weak_websites_and_needs_its_lines():
+    from hq import outbox
+    weak = {"name": "Ace Plumbing", "website": "https://ace.example", "audit": {"grade": "needs work",
+            "problems": [{"problem": "Not mobile friendly", "why": ""}]}}
+    good = {**weak, "audit": {"grade": "good", "problems": []}}
+    assert not outbox.weak_site(good)
+    assert not outbox.weak_site({"name": "No Site"})
+    body = ("Hi,\n\nfree, portfolio, first 10 businesses.\n\nAlfred\n\nIf you'd rather not hear from me, just reply "
+            "'no thanks'.")
+    assert outbox.rule_check("A free new website for Ace", body, "", True, free=True) == []
+    assert "the portfolio condition" in outbox.rule_check("s", body.replace("portfolio", "x"), "", True, free=True)
+    assert outbox.YES_WORDS.search("Yes please!") and not outbox.YES_WORDS.search("No thanks, yes we have one")

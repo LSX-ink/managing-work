@@ -497,6 +497,15 @@ async def _send_follow_up(ctx: Ctx) -> str:
     for row in due:  # an email follow-up that's due
         if b.get(f"held.{row['email'].lower()}") == today:  # held back today: try again tomorrow
             continue
+        if outbox.free_offer_lead(b, row["email"]):  # owner, 24 Nov 2026: free-offer leads hear about the free offer
+            made = outbox.free_offer_follow_up(s, row)
+            if made:
+                said = await _vet_and_send(ctx, None, row["name"], row["email"], *made, "", first=False, row=row,
+                                           free=True)
+                if said.startswith("sent"):
+                    return said
+                b.set(f"held.{row['email'].lower()}", today)
+            continue
         fresh = ""
         if handmade_only(b):  # 11 Nov 2026: no old-style rebuilds; the follow-up carries the mock-up they already have
             pass
@@ -549,6 +558,10 @@ async def _send_first(ctx: Ctx) -> str:
     looked = 0
     await outbox.check_companies(ctx)  # UK leads that are limited companies can be emailed too (PECR)
     handmade = handmade_only(b)
+    if outbox.free_offer_on(b):  # owner, 24 Nov 2026: the free website offer, to businesses with weak websites
+        said = await _send_free_first(ctx)
+        if said.startswith("sent") or not handmade:
+            return said
     for p in outbox.candidates(s, outbox.limited_companies(b)):  # 2. a first email to the best fresh lead we can email
         if b.get(f"skip.{p['id']}"):
             continue
@@ -612,6 +625,44 @@ async def _send_first(ctx: Ctx) -> str:
     return "no fresh leads with an email address right now (Hawk will find more)"
 
 
+async def _send_free_first(ctx: Ctx) -> str:
+    """The free website offer (owner, 24 Nov 2026): the owner's email to a business whose website our audit marked
+    weak, in a country where a cold email is legal. No mock-up. Stops by itself after 10 say yes."""
+    from hq import outbox
+    s, b = ctx.settings, ctx.brain
+    today = outbox.uk_now().date().isoformat()
+    looked = 0
+    for p in outbox.candidates(s, outbox.limited_companies(b)):
+        if b.get(f"skip.{p['id']}") or not outbox.weak_site(p) or b.get(f"strong_site.{p['id']}"):
+            continue
+        if is_barber(p) and not barber_allowed(b):
+            continue
+        looked += 1
+        if looked > 25:  # leads with no email address: the next run carries on
+            break
+        to = await outbox.email_for(ctx, p)
+        if not to:
+            b.set(f"skip.{p['id']}", "no email address found")
+            continue
+        twin = outbox.already_emailed(s, to)
+        if twin:
+            b.set(f"skip.{p['id']}", f"same inbox as {twin}, already emailed")
+            continue
+        subject, body = outbox.free_offer_email(s, p)
+        facts = {**p, "site_check": kf_line(p), "free_offer": True}
+        said = await _vet_and_send(ctx, facts, p["name"], to, subject, body, "", first=True, free=True)
+        if said.startswith("sent"):
+            b.set(f"free_offer.sent.{to.lower().strip()}", today)
+            note_first_sent(b, p)
+            return said
+    return "no businesses with weak websites waiting for the free offer (Hawk will find more)"
+
+
+def kf_line(p: dict) -> str:
+    import kinetic_find as kf
+    return kf.biggest_problem(p).get("line") or ""
+
+
 def _due_by_email(s) -> list[dict]:
     import kinetic_outreach as tracker
     rows, seen = [], set()
@@ -623,7 +674,7 @@ def _due_by_email(s) -> list[dict]:
 
 
 async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: str, body: str, link: str,
-                        first: bool, row: dict | None = None, updated: bool = False) -> str:
+                        first: bool, row: dict | None = None, updated: bool = False, free: bool = False) -> str:
     from hq import outbox
     b = ctx.brain
     # US and Canadian law (CAN-SPAM, CASL) need a postal address; Alfred's template only asks for it there
@@ -633,7 +684,7 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
     if await asyncio.to_thread(outbox.emailed_recently, ctx.settings, to):
         b.log("warden", f"held back the email to {name}: {to} already had an email from us in the last 2 days", "info")
         return f"held back {name}"
-    problems = outbox.rule_check(subject, body, link, first)
+    problems = outbox.rule_check(subject, body, link, first, free)
     if problems:
         if p:
             b.set(f"skip.{p['id']}", "failed checks: " + ", ".join(problems))
@@ -642,6 +693,7 @@ async def _vet_and_send(ctx: Ctx, p: dict | None, name: str, to: str, subject: s
     facts = p or {"name": name, "country": (row or {}).get("country", ""),
                   "first_email_sent": (row or {}).get("contacted", ""), "messages_so_far": (row or {}).get("messages", 0),
                   **({"made_them_an_updated_mockup": True} if updated else {}),
+                  **({"free_offer": True} if free else {}),
                   # 8 Nov 2026: without this the editor held 40 follow-ups as "mock-up link not in the facts"
                   **({"free_mockup_we_made": link} if link else {})}
     ok, why = await outbox.ai_check(ctx, facts, subject, body)

@@ -751,12 +751,13 @@ async def refresh_mockup(ctx, row: dict) -> str:
 
 # ---- Vera's checks ----------------------------------------------------------------------------------
 
-def rule_check(subject: str, body: str, link: str, first: bool) -> list[str]:
-    problems = [why for text, why in MUST if text.lower() not in body.lower()]
+def rule_check(subject: str, body: str, link: str, first: bool, free: bool = False) -> list[str]:
+    must = FREE_MUST if free else MUST  # the free-website offer has no mock-up, price or payment terms
+    problems = [why for text, why in must if text.lower() not in body.lower()]
     problems += [why for rx, why in NEVER if rx.search(body) or rx.search(subject)]
     if first and link and link not in body:
         problems.append("the mock-up link is missing")
-    if "half" not in body.lower() and first:
+    if "half" not in body.lower() and first and not free:
         problems.append("the payment terms (half when we start, half once complete)")
     if not subject or len(subject) > 120:
         problems.append("a missing or overlong subject")
@@ -771,13 +772,13 @@ async def ai_check(ctx, p: dict, subject: str, body: str) -> tuple[bool, str]:
               "it is addressed to the right business; every claim about their website is plausible from the facts; "
               "it is polite, professional, honest and specific; British English; no made-up facts, prices or "
               "promises beyond: websites from £395 (or the local equivalent), half when we start building and half "
-              "once complete (a Shopify store redesign is from £595 or the local equivalent), a free home page mock-up we really made for them (its link is in the facts as free_mockup_we_made), 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), the offer to look after a website they already have (monthly changes to the wording, design and pictures for £20 a month for a single page, £25 for up to 5 pages, £30 for more than 5 pages: our real hosting-and-care plans, owner 15-16 Nov 2026), an invitation to follow "
+              "once complete (a Shopify store redesign is from £595 or the local equivalent), a free home page mock-up we really made for them (its link is in the facts as free_mockup_we_made), 'see your design before you pay anything', anything about their current website taken from site_check (our automated check of it, which is real), the offer to look after a website they already have (monthly changes to the wording, design and pictures for £20 a month for a single page, £25 for up to 5 pages, £30 for more than 5 pages: our real hosting-and-care plans, owner 15-16 Nov 2026), the free website offer (owner, 24 Nov 2026, real: we rebuild the website of a business that has a weak one for free, in return for permission to show the finished site in our portfolio, open to the first 10 businesses who say yes; when the facts say free_offer is true, the email offers this instead of a mock-up and prices, and needs no mock-up link), the care plan line 'business websites starting at £25 a month' (our real plan for a website of up to 5 pages), an invitation to follow "
               "Kinetic Web Designs on Instagram (instagram.com/kineticwebdesigns, our real account); it is signed by "
               "Alfred; it has an opt-out line. Our own phone number and website in the signature are real (8 Nov 2026: "
               "follow-ups were held for them); our own postal address in the signature is real and allowed (US and Canadian law require one, so emails to the US and Canada carry it; 17 Nov 2026: one was wrongly held for it), and 'from about £395' or its local equivalent is fine. A price in the business's own currency (e.g. $499 or €459) is the "
               "local equivalent of £395 and is fine. For a follow-up, the date of our first email is in the facts "
               "(first_email_sent) and is real, and when made_them_an_updated_mockup is true the new design and its link are real. Reply with ONLY JSON: {\"approve\": true|false, \"reason\": \"...\"}.\n\n"
-              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far', 'made_them_an_updated_mockup', 'site_check', 'free_mockup_we_made') if p.get(k) not in (None, '')})}\n\n"
+              f"Business facts: {json.dumps({k: p.get(k) for k in ('name', 'kind', 'town', 'country', 'website', 'rating', 'reviews', 'first_email_sent', 'messages_so_far', 'made_them_an_updated_mockup', 'site_check', 'free_mockup_we_made', 'free_offer') if p.get(k) not in (None, '')})}\n\n"
               f"Subject: {subject}\n\n{body}")
     try:
         text = await ctx.ask_ai(prompt, 2500)
@@ -876,6 +877,111 @@ def watch_replies(ctx) -> list[str]:
         tracker.sync_prospect(s, next(r for r in st.rows_of(s, st.OUTREACH) if r["name"] == row["name"]))
         emailed.pop(sender, None)
         said = " ".join(text.split("On ")[0].split())[:240]  # owner, 13 Nov 2026: alert me on replies, with what they said
+        if status == "replied" and free_offer_lead(ctx.brain, sender) and YES_WORDS.search(said):
+            counted = note_free_yes(ctx.brain, row["name"], sender)
+            if counted:
+                notes.append(counted + " REPLIED")
         notes.append(f"{row['name']} {'opted out (never contacted again)' if status == 'opted out' else 'REPLIED, answer them'}"
                      + (f" ({sender}): \"{said}\"" if status != 'opted out' else ""))
     return notes
+
+
+# ---- the free-website offer (owner, 24 Nov 2026) ------------------------------------------------------
+# "Start the free website offer: email businesses that have weak websites (Vera checks, legal email countries only,
+# daily limit, weekdays only, follow-ups weekends only). No mock-up page needed. Stop after 10 say yes, then go back
+# to normal paid pricing and tell me. Keep the £20 single-page care plan everywhere else."
+
+FREE_TARGET = 10
+FREE_MUST = [("Alfred", "Alfred's signature"), ("reply 'no thanks'", "the opt-out line"),
+             ("portfolio", "the portfolio condition"), ("first 10", "the first-10 limit")]
+YES_WORDS = re.compile(r"^\W*(yes|yeah|yep|yh|ya|interested|i'?m interested|sounds good|go ahead|sure|please do)\b", re.I)
+
+
+def free_offer(brain) -> dict:
+    return brain.get("settings.free_offer") or {}
+
+
+def free_offer_on(brain) -> bool:
+    return bool(free_offer(brain).get("active"))
+
+
+def free_offer_lead(brain, to: str) -> bool:
+    return bool(to and brain.get(f"free_offer.sent.{to.lower().strip()}"))
+
+
+def weak_site(p: dict) -> bool:
+    """A website our audit marked weak or needing work, with one specific problem to name. No website, a site that
+    wouldn't load (often only blocking robots) and good sites don't count."""
+    a = p.get("audit") or {}
+    return (bool(p.get("website")) and not kf.social_only(p) and a.get("grade") in ("needs work", "weak")
+            and bool(kf.biggest_problem(p).get("line")))
+
+
+def free_issue(p: dict) -> str:
+    """The specific issue, worded to follow "Your website isn't doing you justice yet:"."""
+    line = (kf.biggest_problem(p).get("line") or "").strip()
+    line = re.sub(r"^I had a look at your website \([^)]+\):\s*", "", line)
+    line = re.sub(r"^Your website \([^)]+\)\s+", "it ", line)
+    line = re.sub(r"^Your\b", "your", line)
+    if line[:1].isupper() and not line.startswith(("Google", "Shopify", "I ")):
+        line = line[:1].lower() + line[1:]
+    return line if line.endswith(".") else line + "."
+
+
+def free_offer_email(settings, p: dict, contact: str = "") -> tuple[str, str]:
+    """The owner's email, word for word, with their details filled in. Contact details, the postal address where the
+    law asks for one, and the opt-out line come from the sales draft, so the country rules still apply."""
+    d = sales.outreach_draft(settings, {"client": p["id"]}, "email")
+    _, old = split_subject(d["body"])
+    tail = old[old.index("Thanks,"):] if "Thanks," in old else "Alfred, Kinetic Web Designs"
+    name = _base_name(p)
+    rating, reviews = p.get("rating"), int(p.get("reviews") or 0)
+    stood = (f"{float(rating):.1f}★ rating from {reviews:,} Google reviews" if rating and reviews >= 25
+             else "Google reviews")
+    body = (f"Hi {contact or name + ' team'},\n\n"
+            f"I came across {name} and your {stood} stood out. Your website isn't doing you justice yet: {free_issue(p)}\n\n"
+            "We're Kinetic Web Designs, and we'd like to rebuild it for you for free. All we ask in return is permission "
+            "to show the finished site in our portfolio. This is open to the first 10 businesses who say yes.\n\n"
+            "We wouldn't want to build your website and then leave you to it. If you'd like us to make small changes so "
+            "your website matches your mood each month, we offer a care plan based on the size of your website, with "
+            "business websites starting at £25 a month.\n\n"
+            "If you're interested, just reply \"yes\". You can see our work at kineticwebdesigns.co.uk and on Instagram "
+            f"@kineticwebdesigns.\n\n{tail}")
+    return possessive(f"A free new website for {name}", name), possessive(body, name)
+
+
+def free_offer_follow_up(settings, row: dict) -> tuple[str, str] | None:
+    """A short weekend follow-up for a free-offer lead, or None when their follow-ups are done."""
+    d = tracker.follow_up_draft(settings, {"business": row["name"], "channel": "email"})
+    if d.get("stop"):
+        return None
+    _, old = split_subject(d["body"])
+    tail = old[old.index("Thanks,"):] if "Thanks," in old else "Alfred, Kinetic Web Designs"
+    p = st.find_prospect(st.rows_of(settings, st.PROSPECTS), row.get("prospect") or row["name"]) or {}
+    name = _base_name({**p, "name": row["name"]})
+    body = (f"Hi {row.get('contact_name') or name + ' team'},\n\n"
+            f"Just following up on my email about rebuilding the {name} website for free. All we ask in return is "
+            "permission to show the finished site in our portfolio, and it's open to the first 10 businesses who say "
+            "yes.\n\n"
+            "If you're interested, just reply \"yes\". You can see our work at kineticwebdesigns.co.uk and on Instagram "
+            f"@kineticwebdesigns.\n\n{tail}")
+    return possessive(f"Re: A free new website for {name}", name), possessive(body, name)
+
+
+def note_free_yes(brain, name: str, sender: str) -> str:
+    """Counts a "yes" to the free offer; at the 10th the offer closes and Vera goes back to normal pricing."""
+    o = free_offer(brain)
+    yes = list(o.get("yes") or [])
+    if sender in [y.get("email") for y in yes]:
+        return ""
+    yes.append({"name": name, "email": sender, "date": uk_now().date().isoformat()})
+    o["yes"] = yes
+    target = int(o.get("target") or FREE_TARGET)
+    if len(yes) >= target:
+        o["active"] = False
+        o["closed"] = uk_now().date().isoformat()
+        brain.set("settings.free_offer", o)
+        return (f"FREE OFFER FULL: {name} is yes number {len(yes)}. The free website offer is now closed and Vera is "
+                "back to normal paid pricing. The 10: " + ", ".join(y["name"] for y in yes))
+    brain.set("settings.free_offer", o)
+    return f"FREE OFFER: {name} said yes ({len(yes)} of {target})"
