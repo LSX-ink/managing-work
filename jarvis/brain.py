@@ -26,6 +26,7 @@ import dates
 import dates_saved
 import fun
 import omniroute
+import quickpc
 import reminders
 import shopping
 import timers
@@ -3539,6 +3540,9 @@ class Brain:
         if (quick := instant_answer(user_text, self.settings)) is not None:
             self.messages += [{"role": "user", "content": user_text}, {"role": "assistant", "content": quick}]
             await speak(quick)
+            return
+        if (done := await quickpc.handle(user_text, self.settings)) is not None:  # "scroll down", "next tab": at once
+            await speak(done)
             return
         stamp = time.strftime("%A %d %B, %H:%M")
         start = len(self.messages)
