@@ -342,3 +342,36 @@ async def test_a_refused_old_thinking_block_is_dropped_and_the_turn_asked_again(
     last = client.requests[-1]["messages"]
     assert all(not isinstance(m["content"], list) or all(
         (b.get("type") if isinstance(b, dict) else b.type) != "thinking" for b in m["content"]) for m in last)
+
+
+async def test_asking_about_credits_which_ai_and_speed_is_answered_from_the_last_turn(monkeypatch):
+    client = FakeClient(reply("end_turn", text("Paris.")))
+    client.last_route = "Claude"
+    b = Brain(SETTINGS, client, http=None)
+    assert "can't tell" in (await run(b, "Are your credits finished?"))[0]
+    ticks = iter([100.0, 101.2])
+    monkeypatch.setattr(brain.time, "monotonic", lambda: next(ticks, 101.2))
+    await run(b, "Tell me about the history of Rome")
+    monkeypatch.undo()
+    assert await run(b, "Alfred, are your credits finished?") == ["No, my credit's fine. Claude answered your last question in 1.2 seconds."]
+    assert await run(b, "Which AI are you using?") == ["Claude answered your last question, in 1.2 seconds."]
+    assert await run(b, "How long did that take?") == ["That took 1.2 seconds, from Claude."]
+    assert len(client.requests) == 1  # none of these questions went to the AI
+
+
+async def test_a_slow_free_ai_and_an_empty_account_are_explained():
+    slow = {"route": "OmniRoute", "seconds": 14.0}
+    assert "free AI was slow" in brain.brain_status("why are you so slow", slow, SimpleNamespace())
+    assert brain.brain_status("have you run out of credits", {"error": "credit"}, None).startswith("Yes")
+    assert "isn't the problem" in brain.brain_status("is your credit finished", {"error": "APITimeoutError"}, None)
+    resting = SimpleNamespace(resting=lambda: True, free_first=True)
+    assert "using Claude for the next few minutes" in brain.brain_status("are you on the free ai", {"route": "Claude", "seconds": 1.0}, resting)
+    assert brain.brain_status("what's the time", slow, None) is None
+
+
+async def test_an_empty_account_is_remembered_for_the_credit_question():
+    async def broke(**kwargs):
+        raise RuntimeError("Your credit balance is too low to access the Anthropic API.")
+    b = Brain(SETTINGS, SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=broke))), http=None)
+    await run(b, "Make 2 TikTok videos")
+    assert (await run(b, "Are you out of credits?"))[0].startswith("Yes, Claude's credit has run out")
