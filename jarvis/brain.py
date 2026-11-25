@@ -2694,6 +2694,42 @@ def tidy_request(text: str) -> str:
     return spoken_durations(spoken_clocks(said))
 
 
+_ASK_CREDIT = re.compile(_NAME + r"(?:(?:are|is|have) (?:your|ur|the|alfred'?s) (?:ai )?credits? (?:finished|run out|ran out|gone|out|empty|used up|over|done|all gone)|"
+                         r"(?:have|did) you (?:run|ran) out of (?:credits?|money|tokens)|(?:have|got) you (?:got|any) (?:credits?|money) left|"
+                         r"(?:do|have) you (?:still )?(?:have|got) (?:any )?credits?(?: left)?|are you out of (?:credits?|money|tokens)|how(?:'s| is| are) your credits?)" + _END, re.I)
+_ASK_ROUTE = re.compile(_NAME + r"(?:which|what) (?:ai|brain|model|one) (?:are you|did you|answered|is) (?:using|on|use|running(?: on)?|answering)?(?: (?:right )?now| that| last)?|"
+                        r"(?:are|were) you (?:on|using) (?:the )?(?:free (?:ai|one)|gemini|claude)(?: (?:right )?now)?" + _END, re.I)
+_ASK_SPEED = re.compile(_NAME + r"(?:how (?:long|fast) did (?:that|you|it) take|why (?:are|were|was|is) (?:you|it|that) (?:being )?(?:so )?(?:slow|taking so long)|"
+                        r"why did (?:that|it|you) take so long|how quick was that)" + _END, re.I)
+
+
+def brain_status(said: str, last: dict | None, client) -> str | None:
+    """Credits, which AI answered and how long it took, straight from what Alfred saw: no need to ask the AI itself."""
+    credit, route, speed = _ASK_CREDIT.match(said), _ASK_ROUTE.match(said), _ASK_SPEED.match(said)
+    if not (credit or route or speed):
+        return None
+    busy = getattr(client, "resting", lambda: False)() and getattr(client, "free_first", False)
+    if not last:
+        return ("I haven't answered anything with my AI yet this session, so I can't tell. "
+                "Ask me something and I'll know.")
+    if last.get("error"):
+        if last["error"] == "credit":
+            return "Yes, Claude's credit has run out. Top it up at console dot anthropic dot com to get me thinking properly again."
+        return (f"My last answer went wrong ({last['error']}), but my credit isn't the problem. "
+                "Ask me again and I'll try another route.")
+    who = "Claude" if last["route"] != "OmniRoute" else "the free AI"
+    took = f"{last['seconds']:.1f}".rstrip("0").rstrip(".")
+    took = f"{took} second{'s' if took != '1' else ''}"
+    note = " The free AI is busy, so I'm using Claude for the next few minutes." if busy else ""
+    if credit:
+        return f"No, my credit's fine. {who[0].upper() + who[1:]} answered your last question in {took}.{note}"
+    if route:
+        return f"{who[0].upper() + who[1:]} answered your last question, in {took}.{note}"
+    if last["route"] == "OmniRoute" and last["seconds"] > 8:
+        return f"That took {took} because the free AI was slow. If it's slow again I'll hand over to Claude sooner.{note}"
+    return f"That took {took}, from {who}.{note}"
+
+
 _WHAT_HEARD = re.compile(_NAME + r"(?:what did (?:you|u) (?:just )?hear(?: me say)?|what did I (?:just )?say|"
                          r"what do you think I said|did you hear (?:me|that)(?: right| properly| correctly)?|"
                          r"(?:say|repeat) (?:back )?what I (?:just )?said|repeat (?:that|me) back)" + _END, re.I)
@@ -3460,6 +3496,7 @@ class Brain:
         self.messages: list[dict] = load_carry_over(settings)  # picks up where the last session left off
         self._notes: list[str] = []  # announcements made since the user last spoke
         self._heard = ""  # the last thing the user said, for "what did you hear?"
+        self._last_turn: dict | None = None  # which AI answered last, how long it took, or what went wrong
         self.last_model = ""  # the model that answered last, for the HUD and for follow-ups to a hard job
         self._told_no_credit = False  # the out-of-credit line is said in full once, then kept short
 
@@ -3496,6 +3533,9 @@ class Brain:
             return
         if not user_text.startswith("["):
             self._heard = user_text.strip()
+        if (quick := brain_status(tidy_request(user_text), self._last_turn, self.client)) is not None:
+            await speak(quick)
+            return
         if (quick := instant_answer(user_text, self.settings)) is not None:
             self.messages += [{"role": "user", "content": user_text}, {"role": "assistant", "content": quick}]
             await speak(quick)
@@ -3507,9 +3547,12 @@ class Brain:
         notes = "".join(f"(You announced at {n})\n" for n in self._notes)
         self._notes.clear()
         self.messages.append({"role": "user", "content": f"(Local time: {stamp})\n{notes}{user_text}"})
+        began = time.monotonic()
         try:
             await self._run(speak, turn_effort(self.settings, user_text),
                             turn_model(self.settings, user_text, self.last_model))
+            self._last_turn = {"route": getattr(self.client, "last_route", "") or "Claude",
+                               "seconds": time.monotonic() - began}
             self._told_no_credit = False
             reply = " ".join(filter(None, (spoken_text(m["content"]) for m in self.messages[start + 1:]
                                            if m["role"] == "assistant" and not isinstance(m["content"], str))))
@@ -3524,6 +3567,7 @@ class Brain:
             raise
         except Exception as exc:  # API errors, missing credentials, network: keep the session alive
             print(f"[jarvis] Error: {exc!r}", flush=True)
+            self._last_turn = {"error": "credit" if isinstance(exc, omniroute.NoThinkingCredit) or omniroute.out_of_credit(exc) else type(exc).__name__}
             # the free route broke part-way through a reply: rest it and answer this turn with Claude instead
             client = self.client
             if getattr(client, "last_route", "") == "OmniRoute" and hasattr(client, "rest") and not isinstance(exc, asyncio.CancelledError):
@@ -3532,6 +3576,8 @@ class Brain:
                 try:
                     await self._run(speak, turn_effort(self.settings, user_text), turn_model(self.settings, user_text, self.last_model))
                     self.messages = trim_history(self.messages, keep=TRIMMED_TO)
+                    self._last_turn = {"route": getattr(self.client, "last_route", "") or "Claude",
+                                       "seconds": time.monotonic() - began}
                     return
                 except Exception as exc2:  # Claude failed too: fall through and say why
                     print(f"[jarvis] Claude after OmniRoute failed: {exc2!r}", flush=True)
@@ -3542,6 +3588,8 @@ class Brain:
                 try:
                     await self._run(speak, turn_effort(self.settings, user_text), turn_model(self.settings, user_text, self.last_model))
                     self.messages = trim_history(self.messages, keep=TRIMMED_TO)
+                    self._last_turn = {"route": getattr(self.client, "last_route", "") or "Claude",
+                                       "seconds": time.monotonic() - began}
                     return
                 except Exception as exc3:
                     print(f"[jarvis] Again without old thinking: {exc3!r}", flush=True)
