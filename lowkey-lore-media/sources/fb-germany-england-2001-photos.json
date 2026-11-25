@@ -1,0 +1,38 @@
+[
+ {
+  "slug": "owen",
+  "file": "File:Michael_Owen_072007_cropped.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Michael_Owen_072007_cropped.jpg",
+  "license": "CC BY 2.0",
+  "artist": "michael.kjaer",
+  "date": "2007-07-08",
+  "credit": "Photo: michael.kjaer, CC BY 2.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "gerrard",
+  "file": "File:Steven_Gerrard_2006.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Steven_Gerrard_2006.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Christophe95",
+  "date": "2006",
+  "credit": "Photo: Christophe95, CC BY-SA 3.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "heskey",
+  "file": "File:Emile_Heskey_29-04-2006_1.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Emile_Heskey_29-04-2006_1.jpg",
+  "license": "CC BY 2.0",
+  "artist": "Flickr user 42753161@N06",
+  "date": "2006-04-29",
+  "credit": "Photo: Flickr user 42753161@N06, CC BY 2.0, via Wikimedia Commons"
+ },
+ {
+  "slug": "kahn",
+  "file": "File:Oliver_Kahn_06-2004.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Oliver_Kahn_06-2004.jpg",
+  "license": "CC BY-SA 3.0",
+  "artist": "Schwarzwälder",
+  "date": "2004-06",
+  "credit": "Photo: Schwarzwälder, CC BY-SA 3.0, via Wikimedia Commons"
+ }
+]
