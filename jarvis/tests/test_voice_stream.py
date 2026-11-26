@@ -1251,3 +1251,18 @@ def test_hello_and_small_talk_are_instant(tmp_path):
     assert instant_answer("hey, can you email Lebo", s, morning) is None
     named = Settings(speech_lang="en-GB", memory_dir=str(tmp_path), user_name="Thato")
     assert instant_answer("hello", named, morning) == "Hello, Thato. What can I do for you?"
+
+
+def test_what_can_you_do_and_how_do_i_get_instant_examples(tmp_path):
+    from brain import instant_answer
+    s = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    for ask in ("what can you do?", "Alfred, what can I ask you?", "help", "what are your skills", "hello, what can you do"):
+        assert instant_answer(ask, s).startswith("Quite a lot."), ask
+    assert "remind me in 20 minutes" in instant_answer("how do I set a reminder?", s)
+    assert "pasta timer" in instant_answer("how do I use the timer", s)
+    assert "shopping list" in instant_answer("what can you do with the shopping list?", s)
+    assert "to-do list" in instant_answer("how do I add to my to-do list", s)
+    assert "where did I park" in instant_answer("help me with parking", s)
+    assert "12 times 7" in instant_answer("what can you do with sums", s)
+    assert instant_answer("help me write an email to Sam", s) is None
+    assert instant_answer("how do I use Photoshop", s) is None
