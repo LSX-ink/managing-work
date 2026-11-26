@@ -3285,6 +3285,39 @@ _ARE_YOU_THERE = re.compile(_NAME + r"(?:(?:are )?you there|(?:can you )?hear me
 _BYE = re.compile(_NAME + r"(?:good ?night|night night|bye|goodbye|bye bye|see you(?: later| soon| tomorrow)?|see ya|later|catch you later)(?: (?:alfred|jarvis|mate))*" + _END, re.I)
 
 
+_HELP_ALL = re.compile(_NAME + r"(?:what (?:can|could) (?:you|u) do(?: for me)?|what (?:can|could|should) I (?:ask|say to) (?:you|u)|what are you (?:able to do|good at|good for)|"
+                       r"what do you do|what (?:are|r) your (?:skills|abilities|powers)|help(?: me)?|I need (?:some )?help|how do I use you|what things can you do)" + _END, re.I)
+_HELP_TOPIC = re.compile(_NAME + r"(?:how (?:do|can) I (?:use|set|start|make|add to|do)(?: up)? (?:a |an |the |my )?|what can you do with (?:a |an |the |my )?|"
+                         r"what can I say (?:about|for) (?:a |an |the |my )?|help (?:me )?with (?:a |an |the |my )?)"
+                         r"(timers?|reminders?|stopwatch(?:es)?|countdowns?|shopping list|to-?do list|birthdays?|sums?|maths|conversions?|parking|where things are)" + _END, re.I)
+_HELP_EXAMPLES = {
+    "timer": 'Say "set a timer for 10 minutes", or give it a name like "set a pasta timer for 10 minutes". Then "how long left on the pasta timer?", "add 5 minutes to the pasta timer" or "cancel the timer".',
+    "reminder": 'Say "remind me in 20 minutes to check the oven", "remind me at 7 pm to call Mum" or "remind me on Friday at 9 am to pay rent". Then "what reminders do I have?" or "cancel the reminder about the bins".',
+    "stopwatch": 'Say "start a stopwatch", then "lap", "how long has the stopwatch been running?" and "stop the stopwatch".',
+    "countdown": 'Say "count down to my holiday on the 20th of December", then "how many days until my holiday?", "how many sleeps until my holiday?" or "what countdowns have I got?".',
+    "shopping": 'Say "add milk and eggs to the shopping list", "take eggs off the shopping list", "is milk on the shopping list?" or "what\'s on the shopping list?".',
+    "todo": 'Say "add call the bank to my to-do list", "what\'s on my to-do list?", "what should I do next?" or "tick off call the bank".',
+    "birthday": 'Say "my birthday is the 3rd of May" or "Lebo\'s birthday is 12 April 1990", then "how many days until Lebo\'s birthday?" or "whose birthday is next?".',
+    "sums": 'Just ask, like "what\'s 12 times 7?", "what\'s 20% off £50?", "split £60 between 4", "what\'s VAT on £100?" or "10 miles in km".',
+    "where": 'Say "I parked on level 3, bay 42" or "I put my passport in my bag", then "where did I park?" or "where\'s my passport?".',
+}
+
+
+def _help_answer(said: str) -> str | None:
+    """'What can you do?' and 'how do I set a reminder?': a few things to try, said straight away."""
+    if (topic := _HELP_TOPIC.match(said)):
+        word = topic.group(1).lower()
+        key = next(k for k, start in (("timer", "timer"), ("reminder", "reminder"), ("stopwatch", "stopwatch"), ("countdown", "countdown"),
+                                      ("shopping", "shopping"), ("todo", "to"), ("birthday", "birthday"), ("sums", "sum"), ("sums", "math"),
+                                      ("sums", "conversion"), ("where", "parking"), ("where", "where")) if word.startswith(start))
+        return _HELP_EXAMPLES[key]
+    if _HELP_ALL.match(said):
+        return ("Quite a lot. Straight away I can do timers, reminders, a stopwatch, countdowns, your shopping and to-do lists, "
+                "birthdays, where you parked, sums, money, conversions, dates and world times. For anything else, like emails, "
+                "the news, the web or your PC, just ask and I'll think it through. Say \"how do I set a reminder?\" for examples.")
+    return None
+
+
 def _small_talk(said: str, settings: Settings, hour: int) -> str | None:
     """'Hello', 'good morning', 'how are you?', 'can you hear me?', 'thanks', 'goodnight': answered at once, so a
     simple hello never waits on Claude."""
@@ -3322,6 +3355,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := standing.instant(settings, said)) is not None:  # "stop calling me by my name"
         return found
     if (found := _small_talk(said, settings, now.tm_hour)) is not None:
+        return found
+    if (found := _help_answer(said)) is not None:
         return found
     # "Hello Alfred, what's the time?": the greeting is dropped so the question still gets its instant answer.
     if (rest := re.sub(r"^(?:hello|hi|hiya|hey|morning|good (?:morning|afternoon|evening))(?: there)?(?:,? (?:alfred|alfie|jarvis|mate))?[,.!]? +", "", said, flags=re.I)) != said and rest:
