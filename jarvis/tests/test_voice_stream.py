@@ -1260,9 +1260,31 @@ def test_what_can_you_do_and_how_do_i_get_instant_examples(tmp_path):
         assert instant_answer(ask, s).startswith("Quite a lot."), ask
     assert "remind me in 20 minutes" in instant_answer("how do I set a reminder?", s)
     assert "pasta timer" in instant_answer("how do I use the timer", s)
+    assert "every weekday" in instant_answer("how do I set an alarm?", s)
     assert "shopping list" in instant_answer("what can you do with the shopping list?", s)
     assert "to-do list" in instant_answer("how do I add to my to-do list", s)
     assert "where did I park" in instant_answer("help me with parking", s)
     assert "12 times 7" in instant_answer("what can you do with sums", s)
     assert instant_answer("help me write an email to Sam", s) is None
     assert instant_answer("how do I use Photoshop", s) is None
+
+
+def test_alarms_are_set_listed_and_cancelled_instantly(tmp_path):
+    import datetime as dt
+    import reminders
+    from brain import _alarm_answer, instant_answer, tidy_request
+    en = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    night = dt.datetime(2026, 11, 26, 22, 30)  # a Thursday night
+    assert _alarm_answer("set an alarm for 7 am", en, night) == "Alarm set for tomorrow at 07:00."
+    assert _alarm_answer(tidy_request("wake me up at half past 6 on Saturday"), en, night) == "Alarm set for Saturday 28 November at 06:30."
+    assert _alarm_answer("set an alarm for 6 every weekday", en, night) == "Alarm set for tomorrow at 06:00, and every weekday after."
+    assert _alarm_answer("set an alarm for 8 pm today for the gym", en, dt.datetime(2026, 11, 26, 9, 0)) == "Alarm set for today at 20:00."
+    assert "Your alarm: the gym" in [r["text"] for r in reminders.load(en)]
+    assert _alarm_answer("set an alarm for 25:00", en, night) == "That isn't a time I recognise."
+    listed = _alarm_answer("what alarms have I got?", en, night)
+    assert listed.startswith("Your alarms: ") and "repeating weekdays" in listed
+    reminders.add(en, "2026-11-27 12:00", "call Mum", now=night)
+    assert instant_answer("cancel my alarms", en) == "All 4 alarms cancelled."
+    assert [r["text"] for r in reminders.load(en)] == ["call Mum"]  # other reminders are kept
+    assert instant_answer("when is my alarm?", en) == "You haven't got any alarms set."
+    assert instant_answer("when should I wake up if I go to bed at 11?", en) != "You haven't got any alarms set."

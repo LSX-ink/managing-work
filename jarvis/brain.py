@@ -526,6 +526,62 @@ def _more_reminders(said: str, settings: Settings) -> str | None:
     return None
 
 
+_ALARM_SET = re.compile(_NAME + r"(?:(?:set|make|put on|start) (?:an |my |the |a )?alarm (?:for|at) |wake me(?: up)? (?:at )?|get me up (?:at )?)"
+                        r"(?P<h>\d{1,2})(?:[:.](?P<m>\d{2}))? ?(?P<ap>a\.?m\.?|p\.?m\.?|in the morning|tonight|in the evening)?"
+                        r"(?: (?P<day>today|tonight|tomorrow(?: morning)?|" + _WEEKDAY_SAID + r"(?: morning)?))?"
+                        r"(?: (?P<rep>every ?day|every morning|daily|on weekdays|every weekday|weekdays))?"
+                        r"(?: (?:for|to) (?P<what>[a-z' -]+?))?" + _END, re.I)
+_ALARM_LIST = re.compile(_NAME + r"(?:what alarms? (?:do I have|have I got|are set|is set)|(?:list|read|tell me) (?:all )?my alarms?|"
+                         r"(?:have I got|do I have|is there) (?:an |any )?alarms? (?:set|on)|when(?:'s| is) my alarm|what time(?:'s| is) my alarm(?: set for)?)" + _END, re.I)
+_ALARM_OFF = re.compile(_NAME + r"(?:cancel|delete|remove|turn off|switch off|clear) (?:the |my |all (?:my |the )?)?alarms?" + _END, re.I)
+ALARM = "Your alarm"
+
+
+def _alarm_answer(said: str, settings: Settings, now: dt.datetime | None = None) -> str | None:
+    """'Set an alarm for 7 am', 'wake me up at half past 6 tomorrow', 'set an alarm for 6 every weekday',
+    'what alarms have I got?' and 'cancel my alarm'. Alarms are reminders that say 'Your alarm', so they ring the same way."""
+    now = (now or dt.datetime.now()).replace(second=0, microsecond=0)
+    if m := _ALARM_SET.match(said):
+        hour, minute = int(m["h"]), int(m["m"] or 0)
+        ap = (m["ap"] or "").lower()
+        if minute > 59 or hour > 23 or (ap and not 1 <= hour <= 12):
+            return "That isn't a time I recognise."
+        if ap.startswith("p") or ap in ("tonight", "in the evening"):
+            hour = hour % 12 + 12
+        elif ap:
+            hour %= 12
+        at = now.replace(hour=hour, minute=minute)
+        day = (m["day"] or "").lower()
+        weekday = next((i for i, name in enumerate(_WEEKDAYS) if name in day), None)
+        if weekday is not None:
+            at += dt.timedelta(days=(weekday - now.weekday()) % 7)
+            if at <= now:
+                at += dt.timedelta(days=7)
+        elif day.startswith("tomorrow") or at <= now:  # an alarm for 7 said at night is for tomorrow morning
+            at += dt.timedelta(days=1)
+        rep = (m["rep"] or "").lower().replace(" ", "")
+        repeat = "weekdays" if "weekday" in rep else "daily" if rep else "once"
+        text = ALARM + (f": {m['what'].strip()}" if m["what"] else "")
+        try:
+            reminders.add(settings, at.strftime("%Y-%m-%d %H:%M"), text, repeat=repeat, now=now)
+        except ValueError as exc:
+            return str(exc)
+        how = {"once": "", "daily": ", and every day after", "weekdays": ", and every weekday after"}[repeat]
+        return f"Alarm set for {reminders.spoken_time(at, now)}{how}."
+    if _ALARM_LIST.match(said) or _ALARM_OFF.match(said):
+        alarms = [r for r in reminders.load(settings) if r["text"].startswith(ALARM)]
+        if not alarms:
+            return "You haven't got any alarms set."
+        if _ALARM_OFF.match(said):
+            keep = [r for r in reminders.load(settings) if not r["text"].startswith(ALARM)]
+            reminders.save(settings, keep)
+            return "Alarm cancelled." if len(alarms) == 1 else f"All {len(alarms)} alarms cancelled."
+        said_ones = [reminders.spoken_time(reminders.parse_when(r["at"]), now)
+                     + ("" if r.get("repeat", "once") == "once" else f", repeating {r['repeat']}") for r in sorted(alarms, key=lambda r: r["at"])]
+        return ("Your alarm is set for " if len(said_ones) == 1 else "Your alarms: ") + "; ".join(said_ones) + "."
+    return None
+
+
 _LIST = r"(?:the |my )?shopping list"
 _SHOP_ADD = re.compile(_NAME + r"(?:(?:can you |please )?(?:add|put) (?P<items>.+?) (?:to|on|onto) " + _LIST + r")" + _END, re.I)
 _SHOP_REMOVE = re.compile(_NAME + r"(?:(?:take|cross|tick) (?P<a>.+?) off " + _LIST +
@@ -3289,9 +3345,10 @@ _HELP_ALL = re.compile(_NAME + r"(?:what (?:can|could) (?:you|u) do(?: for me)?|
                        r"what do you do|what (?:are|r) your (?:skills|abilities|powers)|help(?: me)?|I need (?:some )?help|how do I use you|what things can you do)" + _END, re.I)
 _HELP_TOPIC = re.compile(_NAME + r"(?:how (?:do|can) I (?:use|set|start|make|add to|do)(?: up)? (?:a |an |the |my )?|what can you do with (?:a |an |the |my )?|"
                          r"what can I say (?:about|for) (?:a |an |the |my )?|help (?:me )?with (?:a |an |the |my )?)"
-                         r"(timers?|reminders?|stopwatch(?:es)?|countdowns?|shopping list|to-?do list|birthdays?|sums?|maths|conversions?|parking|where things are)" + _END, re.I)
+                         r"(timers?|alarms?|reminders?|stopwatch(?:es)?|countdowns?|shopping list|to-?do list|birthdays?|sums?|maths|conversions?|parking|where things are)" + _END, re.I)
 _HELP_EXAMPLES = {
     "timer": 'Say "set a timer for 10 minutes", or give it a name like "set a pasta timer for 10 minutes". Then "how long left on the pasta timer?", "add 5 minutes to the pasta timer" or "cancel the timer".',
+    "alarm": 'Say "set an alarm for 7 am", "wake me up at half past 6 tomorrow" or "set an alarm for 6 every weekday". Then "when is my alarm?" or "cancel my alarm".',
     "reminder": 'Say "remind me in 20 minutes to check the oven", "remind me at 7 pm to call Mum" or "remind me on Friday at 9 am to pay rent". Then "what reminders do I have?" or "cancel the reminder about the bins".',
     "stopwatch": 'Say "start a stopwatch", then "lap", "how long has the stopwatch been running?" and "stop the stopwatch".',
     "countdown": 'Say "count down to my holiday on the 20th of December", then "how many days until my holiday?", "how many sleeps until my holiday?" or "what countdowns have I got?".',
@@ -3307,12 +3364,12 @@ def _help_answer(said: str) -> str | None:
     """'What can you do?' and 'how do I set a reminder?': a few things to try, said straight away."""
     if (topic := _HELP_TOPIC.match(said)):
         word = topic.group(1).lower()
-        key = next(k for k, start in (("timer", "timer"), ("reminder", "reminder"), ("stopwatch", "stopwatch"), ("countdown", "countdown"),
+        key = next(k for k, start in (("timer", "timer"), ("alarm", "alarm"), ("reminder", "reminder"), ("stopwatch", "stopwatch"), ("countdown", "countdown"),
                                       ("shopping", "shopping"), ("todo", "to"), ("birthday", "birthday"), ("sums", "sum"), ("sums", "math"),
                                       ("sums", "conversion"), ("where", "parking"), ("where", "where")) if word.startswith(start))
         return _HELP_EXAMPLES[key]
     if _HELP_ALL.match(said):
-        return ("Quite a lot. Straight away I can do timers, reminders, a stopwatch, countdowns, your shopping and to-do lists, "
+        return ("Quite a lot. Straight away I can do timers, alarms, reminders, a stopwatch, countdowns, your shopping and to-do lists, "
                 "birthdays, where you parked, sums, money, conversions, dates and world times. For anything else, like emails, "
                 "the news, the web or your PC, just ask and I'll think it through. Say \"how do I set a reminder?\" for examples.")
     return None
@@ -3369,7 +3426,8 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
     if (found := _birthday_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None \
             or (found := _countdown_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None \
             or (found := _where_things_answer(said, settings)) is not None \
-            or (found := _todo_answer(said, settings)) is not None:
+            or (found := _todo_answer(said, settings)) is not None \
+            or (found := _alarm_answer(said, settings)) is not None:
         return found
     if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
             or (found := _year_maths(said, now.tm_year)) is not None \
