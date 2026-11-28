@@ -1288,3 +1288,30 @@ def test_alarms_are_set_listed_and_cancelled_instantly(tmp_path):
     assert [r["text"] for r in reminders.load(en)] == ["call Mum"]  # other reminders are kept
     assert instant_answer("when is my alarm?", en) == "You haven't got any alarms set."
     assert instant_answer("when should I wake up if I go to bed at 11?", en) != "You haven't got any alarms set."
+
+
+def test_snooze_and_im_up_after_a_reminder_or_alarm_goes_off(tmp_path):
+    import datetime as dt
+    import reminders
+    from brain import _snooze_answer, instant_answer
+    en = Settings(speech_lang="en-GB", memory_dir=str(tmp_path))
+    reminders.LAST_RANG.update(texts=[], at=None)
+    assert instant_answer("snooze", en) == "There's nothing to snooze right now."
+    evening = dt.datetime(2026, 11, 27, 18, 0)
+    reminders.add(en, "2026-11-27 18:00", "call Mum", now=evening - dt.timedelta(minutes=5))
+    assert reminders.due(en, evening) == ["call Mum"]
+    assert _snooze_answer("snooze for 5 minutes", en, evening) == "Snoozed. I'll do the reminder again in 5 minutes, at 18:05."
+    assert [(r["at"], r["text"]) for r in reminders.load(en)] == [("2026-11-27 18:05", "call Mum")]
+    assert _snooze_answer("snooze", en, evening) == "There's nothing to snooze right now."  # already snoozed
+    # a weekday alarm rings: "I'm up" ends it and keeps tomorrow's alarm
+    morning = dt.datetime(2026, 11, 27, 6, 0)
+    reminders.save(en, [])
+    reminders.add(en, "2026-11-27 06:00", "Your alarm", repeat="weekdays", now=morning - dt.timedelta(hours=8))
+    assert reminders.due(en, morning) == ["Your alarm"]
+    assert _snooze_answer("ten more minutes", en, morning).startswith("Snoozed. I'll do the alarm again in 10 minutes")
+    assert reminders.due(en, morning + dt.timedelta(minutes=10)) == ["Your alarm"]
+    assert _snooze_answer("stop the alarm", en, morning + dt.timedelta(minutes=11)) == "Alarm off. Good morning."
+    assert [r["at"] for r in reminders.load(en)] == ["2026-11-30 06:00"]  # Monday's alarm is still set
+    # long after it rang, "turn off the alarm" cancels alarms as before
+    reminders.LAST_RANG.update(at=morning - dt.timedelta(hours=2), texts=["Your alarm"])
+    assert instant_answer("turn off the alarm", en) == "Alarm cancelled."

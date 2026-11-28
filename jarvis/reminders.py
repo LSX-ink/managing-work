@@ -123,6 +123,16 @@ def cancel(settings: Settings, words: str) -> str:
     return "Cancelled: " + "; ".join(r["text"] for r in gone) + "."
 
 
+LAST_RANG: dict = {"texts": [], "at": None}  # what just went off, for "snooze" and "I'm up"
+
+
+def rang_recently(now: dt.datetime | None = None, within: int = 30) -> list[str]:
+    """The reminders and alarms that went off in the last half hour (newest call to due())."""
+    now = now or dt.datetime.now()
+    at = LAST_RANG["at"]
+    return list(LAST_RANG["texts"]) if at and now - at <= dt.timedelta(minutes=within) else []
+
+
 def due(settings: Settings, now: dt.datetime | None = None) -> list[str]:
     """Take the reminders that are due, reschedule repeating ones, and return what to say."""
     now = now or dt.datetime.now()
@@ -141,6 +151,7 @@ def due(settings: Settings, now: dt.datetime | None = None) -> list[str]:
             keep.append({**r, "at": at.strftime("%Y-%m-%d %H:%M")})
     if say:
         save(settings, keep)
+        LAST_RANG.update(texts=[r["text"] for r in found if parse_when(r["at"]) <= now], at=now)
     return say
 
 

@@ -533,6 +533,44 @@ _ALARM_SET = re.compile(_NAME + r"(?:(?:set|make|put on|start) (?:an |my |the |a
                         r"(?: (?:for|to) (?P<what>[a-z' -]+?))?" + _END, re.I)
 _ALARM_LIST = re.compile(_NAME + r"(?:what alarms? (?:do I have|have I got|are set|is set)|(?:list|read|tell me) (?:all )?my alarms?|"
                          r"(?:have I got|do I have|is there) (?:an |any )?alarms? (?:set|on)|when(?:'s| is) my alarm|what time(?:'s| is) my alarm(?: set for)?)" + _END, re.I)
+_SNOOZE = re.compile(_NAME + r"(?:snooze(?: it| that| the alarm| the reminder)?(?: for (?P<n>\d+|a|an|one|five|ten|fifteen|twenty) (?P<unit>minutes?|mins?|hours?))?|"
+                     r"(?:remind me|ask me|tell me) again(?: in (?P<n2>\d+|a|an|one|five|ten|fifteen|twenty) (?P<unit2>minutes?|mins?|hours?))?|"
+                     r"(?P<n3>\d+|five|ten|two|a few) more minutes)" + _END, re.I)
+_ALARM_STOP = re.compile(_NAME + r"(?:stop(?: the)? alarm|(?:turn|switch) (?:it|that|the alarm) off|(?:turn|switch) off (?:the )?alarm|"
+                         r"I'?m up|I'?m awake|I'?m getting up|ok(?:ay)? I'?m up|dismiss(?: (?:it|the alarm))?)" + _END, re.I)
+_WORD_MINUTES = {"a": 1, "an": 1, "one": 1, "two": 2, "five": 5, "ten": 10, "fifteen": 15, "twenty": 20, "a few": 5}
+SNOOZE_MINUTES = 10
+
+
+def _snooze_answer(said: str, settings: Settings, now: dt.datetime | None = None) -> str | None:
+    """Right after a reminder or alarm goes off: 'snooze', 'snooze for 5 minutes', 'remind me again in an hour',
+    'ten more minutes' set it again; 'I'm up' or 'stop the alarm' ends it without touching tomorrow's alarm."""
+    snooze, stop = _SNOOZE.match(said), _ALARM_STOP.match(said)
+    if not (snooze or stop):
+        return None
+    now = (now or dt.datetime.now()).replace(second=0, microsecond=0)
+    rang = reminders.rang_recently(now)
+    if not rang:
+        if stop and not re.search(r"\bup\b|awake", said, re.I):
+            return None  # "turn off the alarm" with nothing ringing: cancel it as before
+        return "There's nothing to snooze right now." if snooze else None
+    if stop:
+        reminders.LAST_RANG.update(texts=[], at=None)
+        alarm = any(t.startswith(ALARM) for t in rang)
+        return f"Alarm off. Good {time_of_day(now.hour)}." if alarm else "Okay, done."
+    n = snooze["n"] or snooze["n2"] or snooze["n3"]
+    unit = (snooze["unit"] or snooze["unit2"] or "minutes").lower()
+    minutes = SNOOZE_MINUTES if not n else int(n) if n.isdigit() else _WORD_MINUTES.get(n.lower(), SNOOZE_MINUTES)
+    if unit.startswith("h"):
+        minutes *= 60
+    at = now + dt.timedelta(minutes=minutes)
+    for text in rang:
+        reminders.add(settings, at.strftime("%Y-%m-%d %H:%M"), text, now=now)
+    reminders.LAST_RANG.update(texts=[], at=None)
+    what = "alarm" if all(t.startswith(ALARM) for t in rang) else "reminder" if len(rang) == 1 else "reminders"
+    return f"Snoozed. I'll do the {what} again in {minutes} minute{'s' if minutes != 1 else ''}, at {at:%H:%M}."
+
+
 _ALARM_OFF = re.compile(_NAME + r"(?:cancel|delete|remove|turn off|switch off|clear) (?:the |my |all (?:my |the )?)?alarms?" + _END, re.I)
 ALARM = "Your alarm"
 
@@ -3427,6 +3465,7 @@ def instant_answer(text: str, settings: Settings, now: time.struct_time | None =
             or (found := _countdown_answer(said, settings, dt.date(now.tm_year, now.tm_mon, now.tm_mday))) is not None \
             or (found := _where_things_answer(said, settings)) is not None \
             or (found := _todo_answer(said, settings)) is not None \
+            or (found := _snooze_answer(said, settings)) is not None \
             or (found := _alarm_answer(said, settings)) is not None:
         return found
     if (found := _calendar_answer(said, now)) is not None or (found := _sleep_answer(said, now)) is not None \
